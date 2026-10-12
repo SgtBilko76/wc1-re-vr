@@ -21,6 +21,31 @@ static int swcReleaseWeaponPending;
 static int swcGunFirePending;
 static int swcBothButtonsHeld;
 
+/* Borrowed only while SdlRunSwcMission owns these presentation resources. */
+static SDL_Window *swcCinemaWindow;
+static SDL_Renderer *swcCinemaRenderer;
+static const SwcCmf *swcCinemaCockpitCmf;
+static const SwcCmf *swcCinemaSpaceCmf;
+static const SDL_Color *swcCinemaColors;
+static SwcFlightImages *swcCinemaImages;
+int nSwcCinemaResult;
+
+/* SWC CODE_09 +0x00c2: Update_3Space. Mac house_keep (+0x01d0)
+ * has only the periodic nav/hazard checks, without WC1 palette rendering. */
+void SdlSwcUpdateSpace(void)
+{
+    if (nCannedSceneMode == 0 && nTrainSimActive == 0) {
+        if ((nSpaceFrame & 0x1f) == 0)
+            ReleaseStaleNavTarget();
+        if (nHazardFieldCount != 0 && (nSpaceFrame & 0xf) == 0)
+            check_hazards();
+    }
+    house_keep_objects();
+    update_objects_in_space();
+    set_eye_direction_and_position();
+    nSpaceFrame++;
+}
+
 static void SwcSetObjectData(ObjectTypeData saved[OBJECT_TYPE_COUNT])
 {
     /* CODE_08 +0x0286/+0x47cc. The shared runtime has the same object IDs
@@ -425,8 +450,13 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
     ReleaseStaleNavTarget();
     check_hazards();
     check_next_wave();
-    if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCount)
-        update_objective_location((short)cCurrentObjective);
+    /* CODE_13 update_cockpit checks one objective per frame, including
+       unselected objectives; flag_reached owns the escort-wait latch. */
+    if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCount &&
+        objective_lost((short)cCurrentObjective))
+        cycle_next_objective();
+    if (cMissionObjectiveCount > 0)
+        update_objective_location((short)((unsigned short)nSpaceFrame % cMissionObjectiveCount));
     copy_frame(0, EYE_OBJECT);
     aShipPosition[EYE_OBJECT] = aShipPosition[0];
     aShipVelocity[EYE_OBJECT] = aShipVelocity[0];
@@ -534,7 +564,7 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
             SDL_RenderDrawPoint(renderer, 160 + asObjectScreenX[object],
                                  centreY + asObjectScreenY[object]);
     }
-    for (object = 1; object <= SPACE_LAST_MOVING_OBJECT; object++) {
+    for (object = nCameraViewMode == 12 ? 0 : 1; object <= SPACE_LAST_MOVING_OBJECT; object++) {
         if (aeObjectClass[object] < OBJECT_CLASS_EXPLOSION ||
             aeObjectClass[object] == OBJECT_CLASS_FIXED_OBJECT ||
             asObjectScreenX[object] == (short)0x8001)
@@ -576,6 +606,10 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
         if (object == acShipTarget[0])
             targetBounds = SwcRotatedSpriteBounds(&rectangle, asObjectScreenAngle[object]);
     }
+    /* CODE_13 update_cockpit draws the HUD and instruments only in
+       cockpit views. External autopilot includes the player's own ship. */
+    if (nCameraViewMode == 12)
+        return 0;
     if (SdlDrawSwcSpaceHud(targetBounds.w > 0 ? &targetBounds : NULL) != 0)
         return -1;
     if (!cockpitless) {
@@ -613,6 +647,104 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
         }
     }
     return 0;
+}
+
+/* SWC CODE_14 +0x000c: visit_the_cinema. CODE_02 new_view's case 12
+ * (+0x3474) supplies the camera setup; the shared case-12 camera update
+ * matches CODE_02 +0x29f0. SDL owns pacing, window events and presentation. */
+int SdlSwcVisitCinema(int view, int obj, short frames)
+{
+    SDL_Event event;
+    Uint32 previous;
+    Uint32 current;
+    Uint32 elapsed = 0;
+    Uint32 interval = (Uint32)SDL_max(1, nFrameIntervalMs);
+    int savedView = nCameraViewMode;
+    signed char savedViewObject = cViewObject;
+    signed char savedCockpit = cCockpitView;
+    int focused;
+    int paused = 0;
+    int result = 0;
+
+    if (swcCinemaRenderer == NULL || view != 12 || obj != 0)
+        return SDL_SetError("SWC autopilot camera is unavailable");
+    SwcResetFlightInput();
+    nCameraViewMode = view;
+    cViewObject = (signed char)obj;
+    cCockpitView = 4;
+    asObjectCollisionRadius[EYE_OBJECT] = MaxShort(10, asObjectCollisionRadius[obj]);
+    copy_frame(0, EYE_OBJECT);
+    position_relative_ijk(&aShipPosition[EYE_OBJECT], 0, 500, 0, 2000);
+    zero_vector(&aShipVelocity[EYE_OBJECT]);
+    look_at(0);
+    set_eye_direction_and_position();
+    generate_stars();
+    remove_nav_pointer();
+    focused = (SDL_GetWindowFlags(swcCinemaWindow) & SDL_WINDOW_INPUT_FOCUS) != 0;
+    previous = SDL_GetTicks();
+    while (frames > 0) {
+        current = SDL_GetTicks();
+        if (focused && !paused)
+            elapsed += SDL_min(current - previous, 250);
+        previous = current;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT ||
+                (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE) ||
+                (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
+                result = 1;
+                goto done;
+            }
+            if (event.type == SDL_WINDOWEVENT) {
+                if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST ||
+                    event.window.event == SDL_WINDOWEVENT_MINIMIZED)
+                    focused = 0;
+                else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED ||
+                         event.window.event == SDL_WINDOWEVENT_RESTORED)
+                    focused = (SDL_GetWindowFlags(swcCinemaWindow) & SDL_WINDOW_INPUT_FOCUS) != 0;
+            }
+            if (event.type == SDL_KEYDOWN && !event.key.repeat && focused &&
+                event.key.keysym.sym == SDLK_p)
+                paused = !paused;
+        }
+        SDL_SetWindowMouseGrab(swcCinemaWindow,
+            focused && !paused ? SDL_TRUE : SDL_FALSE);
+        if (!focused || paused)
+            elapsed = 0;
+        SDL_SetWindowTitle(swcCinemaWindow, focused && !paused ?
+            "Super Wing Commander - Autopilot | P: pause | Esc: exit" :
+            "Super Wing Commander - Autopilot (paused) | P: resume | Esc: exit");
+        if (elapsed >= interval) {
+            nTickCount60Hz = (unsigned int)((uint64_t)current * 60 / 1000);
+            SdlSwcUpdateSpace();
+            update_star_field();
+            check_next_wave();
+            /* CODE_13 update_cockpit +0x0316..+0x034e also runs during
+               external views and checks one objective per space frame. */
+            if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCount &&
+                objective_lost((short)cCurrentObjective))
+                cycle_next_objective();
+            if (cMissionObjectiveCount > 0)
+                update_objective_location((short)((unsigned short)nSpaceFrame % cMissionObjectiveCount));
+            if (SwcDrawFlight(swcCinemaRenderer, NULL, swcCinemaCockpitCmf,
+                              swcCinemaSpaceCmf, swcCinemaColors, swcCinemaImages, 1, 0) != 0) {
+                result = -1;
+                goto done;
+            }
+            SDL_RenderPresent(swcCinemaRenderer);
+            nRenderedSpaceFrame++;
+            frames--;
+            elapsed -= interval;
+        }
+        SDL_Delay(1);
+    }
+done:
+    nCameraViewMode = savedView;
+    cViewObject = savedViewObject;
+    cCockpitView = savedCockpit;
+    set_eye_direction_and_position();
+    generate_stars();
+    SwcResetFlightInput();
+    return result;
 }
 
 int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
@@ -696,6 +828,14 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     /* Prepare shared mission state for the briefing map. No flight ticks or
        player input run while visiting the carrier or watching launch. */
     swcFlightActive = 1;
+    bSwcWaitingForEscort = 0;
+    nSwcCinemaResult = 0;
+    swcCinemaWindow = window;
+    swcCinemaRenderer = renderer;
+    swcCinemaCockpitCmf = &cockpitCmf;
+    swcCinemaSpaceCmf = &spaceCmf;
+    swcCinemaColors = colors;
+    swcCinemaImages = images;
     SwcSetObjectData(savedObjects);
     objectsConfigured = 1;
     srand(1);
@@ -825,12 +965,21 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
                 case SDLK_a:
                     if (focused && !paused && !bPlayerDestroyed && nArcadeState == 0) {
                         auto_pilot_sequence();
+                        if (nSwcCinemaResult < 0)
+                            goto done;
+                        if (nSwcCinemaResult > 0) {
+                            result = 0;
+                            goto done;
+                        }
+                        focused = checkOnly ||
+                            (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
                         copy_frame(0, EYE_OBJECT);
                         aShipPosition[EYE_OBJECT] = aShipPosition[0];
                         aShipVelocity[EYE_OBJECT] = aShipVelocity[0];
                         elapsed = 0;
                         previous = SDL_GetTicks();
-                        SwcCentreFlightMouse();
+                        if (focused)
+                            SwcCentreFlightMouse();
                     }
                     break;
                 case SDLK_l:
@@ -1013,6 +1162,12 @@ done:
     SetEventManagerPump(savedInputPump);
     bCockpitlessView = savedCockpitlessView;
     swcFlightActive = 0;
+    swcCinemaWindow = NULL;
+    swcCinemaRenderer = NULL;
+    swcCinemaCockpitCmf = NULL;
+    swcCinemaSpaceCmf = NULL;
+    swcCinemaColors = NULL;
+    swcCinemaImages = NULL;
     if (objectsConfigured)
         memcpy(aObjectTypeData, savedObjects, sizeof(aObjectTypeData));
     if (window != NULL)

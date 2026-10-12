@@ -45,6 +45,91 @@ The viewer needs only the host C compiler and SDL2. Mission tests also link
 the existing native core and need its normal build dependencies, including LZO.
 Flight uses SDL2 2.0.18 or later for the VDU polygon rendering.
 
+## Status review — 2026-10-12
+
+The current scope is an experimental Enyo 1 session. Resource loading and the
+initial flight checks passed; a complete interactive mission and presentation
+parity with the Mac executable are still unverified. The autopilot reconstruction
+below follows the initial status review.
+
+Fresh Ghidra instruction exports were checked for CODE_01, 02, 03, 04, 05, 06,
+09, 12, 13 and 14. All thirteen CODE-resource hashes in the provenance inventory
+match the local originals. The GameFlow switch targets at CODE_09 +0x1d68 were
+explicitly disassembled; its death/landing cases must not be inferred from a
+decompilation that omits those targets. Expanded A5 data resolves the intersegment
+calls and strings. Local exports and check logs are under
+`out-modern/swc-status-review/`; no SWC binary-similarity score was produced.
+
+The initial resource review decoded all 23 CMFs (1,011 chunks, 267 sprite sets,
+3,446 frames), 38 movies (3,521 frames), and 92 AIFF recordings. Enyo 1 loaded
+five ships and four objectives. Regenerating `swc_objects.h` from CODE_08 and
+expanded DATA/A5 produced byte-identical output. Those earlier automated checks
+and their build targets have since been removed. They did not establish a full
+mission's gameplay, appearance, audio synchronization or original timing.
+
+The main confirmed differences are:
+
+| Area | Original evidence | Current behavior / implication |
+| --- | --- | --- |
+| Damage probabilities | CODE_05 `your_internal_damage` +0x1830 calls `random_number(10)`; +0x1862 calls `random_number(9)`. CODE_04 `dp_random` +0x5d44 returns a remainder modulo its argument. | `src/ship.c` still uses inclusive `RandomBelowOrEqual(10)` and `(9)`: severity can be 10 instead of 0..9, and table selection can include index 9 instead of 0..8. The existing SWC cockpit-region correction fixes only that separate draw. |
+| Other pilots' post-mission statistics | CODE_09 `PostMission` +0x1794..+0x17b0 calls CODE_04 `Random3DO` +0x5dea with `(0,2)` and `(0,playerKills)`. Its equal-bound case returns zero. | WC1 `PostMission` uses inclusive `RandomInRange`; it can add two missions rather than at most one. When the player made zero kills, its `(0,0)` call can still award another pilot one kill. Common player/wingman statistics and badge control flow agree, but the whole routine is not equivalent. |
+| Autopilot eligibility | CODE_13 `auto_pilot_valid` +0x178a..+0x1880 checks an escort-wait flag; A5-0x1ff0 contains `Wait for %s`. | Resolved in the SDL-only SWC adapter: hazard/enemy/escort/distance priority and the objective-arrival wait latch now drive both A and the lamp. |
+| Movement timing | CODE_02 `accelerate_and_move_object` +0x43ba clamps elapsed Mac ticks to 0..6, then +0x471e scales velocity before adding it to position. A5-0x377a holds Q8 factors 128,154,205,256,320,384,512. | The host adds velocity once per fixed 50 ms step. That matches the table's factor at three Mac ticks; variable-tick behavior remains different. |
+| Campaign and death flow | CODE_09 `GameFlow` calls `PostMission` at +0x1f46 and `UpdateSeries` at +0x1f4a; its death case calls CODE_14 `death_sequence` at +0x1e1c before the player funeral at +0x1e44. | The host always starts series 1 / mission 0, ends after debriefing/funeral, and enters the player's funeral directly on destruction. Save/load, later progression and the separate death presentation remain absent. |
+
+Two apparent rendering/HUD gaps need qualification. CODE_01
+`rotate_Mac_shape2` +0x10ae constructs a centered quad from frame width/height
+and scale (+0x10ec..+0x113c); it does not apply the frame's signed x/y offsets.
+The host's centered ship placement therefore has original-code support. Those
+offsets belong to the separate unscaled `MacDraw2` path (+0x0f20..+0x0f3c).
+Exact rotation rounding, sampling and clipping still require comparison; adding
+frame offsets to all ship sprites would not follow this evidence.
+CODE_13 `show_navigation_disp` +0x121a, `show_damage_disp` +0x123a and
+`show_info_disp` +0x1256 are empty in the original demo. The simulator's
+unavailable message is also original, not a missing implementation to fill in.
+
+Flight sound effects remain deliberately suppressed in `SdlPlayGameSoundEffect`.
+Music, inflight voices/portraits, opening/death presentation, exact text and
+palette transitions remain incomplete despite functioning speech/movie decoders.
+The most useful next work is correcting the demonstrated RNG differences,
+then inspecting a full Enyo 1 route through combat and return before
+expanding campaign support. Other AI/collision paths still need individual
+instruction comparisons; this review does not establish their equivalence.
+
+### Autopilot reconstruction
+
+The SDL counterparts of CODE_13 `auto_pilot_valid` (+0x1732) and
+`flag_reached` (+0x212e) are now implemented in `src/sdl/swc_cockpit.c`.
+They preserve the hazard/enemy/escort/distance priority, the four original
+`Wait for %s` ship types, and the DATA/A5+0x46ec escort latch. Every arrival
+check clears that latch; arriving ahead of the escort sets it again. The
+eligibility routine retains the original +0x179a ship-ID indexing, with a host
+array-bound guard. Speech IDs 1..7 remain disconnected.
+
+`SdlSwcVisitCinema` in `src/sdl/swc_flight.c` reconstructs CODE_14
+`visit_the_cinema` (+0x000c). Fresh Ghidra disassembly of CODE_02's view switch
+tables confirms the view-12 setup at +0x3474: 500 units to the side and 2,000
+ahead, looking at the player. The camera update at +0x29f0 moves ten units
+sideways per frame. The host replaces Mac event handling and sound with SDL
+pause/focus/quit handling and silent presentation; its pacing remains the
+existing fixed flight interval. It restores the prior camera on exit.
+
+Pressing A now runs this 120-frame external view before the shared formation
+travel. The renderer includes the player's ship and omits cockpit/HUD overlays.
+The host updates one objective per frame, including unselected objectives, as
+CODE_13 +0x0316..+0x034e does. P and focus loss pause the sequence; Esc or window
+close exits the session. Camera and input state are restored on exit, and a
+presentation failure propagates to the mission host. CODE_14 +0x077e's final
+simulation frame runs after travel.
+
+All shared-core dispatch is guarded by `SDL_PORT` and `SdlSwcFlightActive()`;
+SWC state and presentation live in the SDL sources. Native and GUI builds pass.
+`binary-comp` reports identical Win32 scores before and after integration:
+`visit_the_cinema` 100%, `auto_pilot_valid` 100%, `auto_pilot_sequence` 96.91%,
+and `flag_reached` 85.84%. Integrated gameplay remains unverified; validation
+for this change is limited to source/assembly inspection and compilation. No
+SWC binary similarity score is claimed.
+
 ## Run
 
 Build the GUI with `make modern-gui`, run `out-modern/wc1-modern-gui`, select the
@@ -148,36 +233,15 @@ The asset viewer's `--check` presents one frame and exits. `--snapshot FILE.bmp`
 320x240 frame and exits. The check runs with SDL's dummy video driver:
 
 ```sh
-make modern-test-swc
-make modern-test-swc-mission
-make modern-test-swc-data SWC_DATA_DIR="/path/to/SuperWing DEMO"
 SDL_VIDEODRIVER=dummy out-modern/swc-demo "/path/to/SuperWing DEMO" \
     --rsrc /path/to/SuperWingCommanderDemo.rsrc \
     --snapshot out-modern/swc-preview.bmp
 ```
 
-The data-free tests cover both RLE commands including 128-byte runs, truncation,
-output overrun, endianness, frame padding, signed offsets, empty frames, CMF
-table bounds, stale handles, and resource-map/color-table bounds. The corpus
-check opens every supplied CMF and decodes every compressed chunk as a sprite
-set, a property verified for this demo rather than assumed by the resource API.
 The known demo contains 23 CMFs, 1,011 chunks, 267 compressed sprite sets,
-3,446 frames, and 18,315,140 decoded chunk bytes. Development builds use ASan
-and UBSan, like the existing SDL2 target.
-
-The mission fixture test also runs as part of `make modern-test`. It covers
-big-endian records, mission-versus-series indexing, narrow WC1 field limits,
-objective terminators, navigation references, formation cycles, and failure
-without changing the previously loaded mission. It exercises WC1's objective
-builder and navigation with synthetic data, so no game assets are needed.
-`modern-test-swc-data` additionally calls `LoadMissionData(1, 0)` against the
-real demo and checks the player's position, speed, and pilot, four objectives,
-objective cycling, and map scaling. It then launches the real native executable
-for 120 input/dynamics/render ticks. SWC test targets stop on UBSan errors.
-`make modern-test-launcher` covers recognition, invalid installations, and
-dispatch to SWC instead of the WC1 startup. A native GUI check uses
-`wc1-modern-gui --gui --swc-demo DIRECTORY --check`; this invokes the real
-launch callback automatically after the window is shown.
+3,446 frames, and 18,315,140 decoded chunk bytes. Development builds retain ASan
+and UBSan diagnostics. The asset viewer's snapshot command remains available
+for inspecting decoded artwork.
 
 ## Recovered format contracts
 
@@ -310,8 +374,9 @@ CODE_03 `landing` +0x447e plays `LANDING1.00`, `LANDING2.00`, `LANDING1`,
 `NN = 2 - evaluate_damage(0)*2/100`. The host uses this order and health variant.
 Missing movies leave debriefing available; malformed present movies fail.
 
-WC1 `PostMission` matches CODE_09 +0x1672, including pilot statistics and the
-first-mission badge fallthrough. `FullMissionScore` +0x17e2 and
+WC1 `PostMission` shares CODE_09 +0x1672's player/wingman statistics and
+first-mission badge fallthrough. Random awards to other pilots differ, as
+documented in the status review above. `FullMissionScore` +0x17e2 and
 `PlayersMissionScore` +0x1840 use 16 signed weights from `CMP0/2` at
 `(series-1)*128 + mission*24 + 40`. Enyo 1's weights are `2,1,2,1` followed by
 zeros. A temporary WC1 campaign score window supplies those weights to its
@@ -445,12 +510,12 @@ rejected because a persisted Mac pointer cannot be used as a host pointer.
 | `fire_players_lasers`, `fire_fixed_projectile_weapon`, `fire_weapon`, `fire_missile` | Energy, cooldowns, projectile initialization and missile release | Recovered SWC definitions and all 63 weapon hardpoints; SDL-only aiming offset and laser cooldown |
 | `house_keep_objects`, `update_objects_in_space`, `object_intelligence` | Lifetimes, collisions, damage, ship AI, missile guidance, recharge and animations | SWC dispatch and common setup verified; complete AI/probability equivalence is not established |
 | `ReleaseStaleNavTarget`, `set_up_action_sphere`, `init_ship`, `check_next_wave` | Enter nav spheres and spawn their ships/hazards/waves | CMF textures replace WC1 packet loading; later mission scripts remain unsupported |
-| `auto_pilot_sequence`, `check_hazards`, `update_star_field` | Formation travel, encounter stops and hazard lifecycle | Original SWC boundary rollback; autopilot cinematic presentation remains pending |
+| `auto_pilot_sequence`, `check_hazards`, `update_star_field` | Formation travel, encounter stops and hazard lifecycle | Original SWC boundary rollback and SDL presentation of the 120-frame external view |
 | `select_new_gun`, `select_new_release_weapon`, `cycle_onscreen_targets`, `target_locking` | Shared selection and missile lock state | SDL presents SWC art and text instead of WC1's cockpit packets |
-| `draw_nav_pointer`, `auto_pilot_valid`, `missile_on_tail`, `calculate_damage_level` | Shared objective projection and warning queries | SWC navigation activation and stale-marker reset; autopilot uses WC1 proximity/hazard gates, without SWC's additional escort-wait gate |
+| `draw_nav_pointer`, `auto_pilot_valid`, `missile_on_tail`, `calculate_damage_level` | Shared objective projection and warning queries | SWC navigation activation and stale-marker reset; autopilot dispatches to the recovered SWC eligibility and escort-wait state |
 | `malf`, `your_internal_damage`, `place_damage_on_cockpit` | Shared component damage and impact flow | SDL-only SWC malfunction countdown and three physical damage regions; original Mac static, damage and spark artwork |
 | `SetSpaceFlightFrameTiming` | Initializes the shared flight tick interval, 50 ms at WC1's default 20 Hz | Replaces the host's hard-coded 62 ms; SWC's elapsed-tick translation scaling is not reproduced |
-| `generate_stars`, `update_star_field`, `transform_objects_to_your_view`, `get_right_shape` | Projects the scene and chooses among 37 decoded ship views | SWC hotspots, scale, and exact presentation still need reconstruction |
+| `generate_stars`, `update_star_field`, `transform_objects_to_your_view`, `get_right_shape` | Projects the scene and chooses among 37 decoded ship views | Centered ship quads have original-code support; projection differences and exact rotation/scaling rasterization remain to be checked |
 
 The SDL version of `nav_getxy` writes coordinates through byte copies because
 the existing packed objective records can place them at odd addresses. Its
@@ -527,7 +592,8 @@ initial ships. Guns use the shared energy gate, hardpoints, projectile creation,
 convergence, collision/damage, and recharge code. Missiles use the shared loadout,
 lock gate, launch timer, guidance, collision grace, expiration, and explosion code.
 WC1 handles shield/armor damage, debris, and ammunition removal. Player destruction
-stops simulation/input and displays an exit message; the death scene is pending.
+stops simulation/input and enters the player funeral; the preceding death
+cinematic is pending.
 
 Original instructions support this reuse:
 
@@ -560,7 +626,8 @@ The renderer now adds projected Y to the scene origin, matching both original
 engines. WC1's cockpit-packet drawing is bypassed for messages, missile removal,
 VDU changes and damage overlays; shared gameplay state is retained. Win32
 reference branches remain unchanged. NPC ship AI and wave spawning are connected;
-mission completion and weapon audio are still pending.
+landing and the first debriefing are connected; later progression and weapon
+audio are still pending.
 
 ### SWC flight data, encounters and ITTS
 
@@ -600,8 +667,8 @@ The SDL renderer caches those sets instead of loading WC1 disk packets.
 `A` calls WC1's `auto_pilot_sequence`. CODE_14 +0x0202 preserves the same
 travel/formation algorithm; the SWC branch also resets the player's gun timer
 and retains the arrival position when undoing the final step would change the
-active nav sphere. SDL resumes rendering after travel; the 120-frame cinematic
-is not presented. NPC dispatch uses WC1's combat routines, with SWC's actual
+active nav sphere. SDL presents the original 120-frame external camera sequence
+before travel, then restores the cockpit and advances the final simulation frame. NPC dispatch uses WC1's combat routines, with SWC's actual
 ship-side test for patrols (CODE_02 +0x1c2c). Hazard updates and render-dependent
 gameplay counters advance once per simulation tick. Communications, carrier
 landing and the first debriefing are described above; later progression is pending.
@@ -666,8 +733,9 @@ Display state, random static frames, component cycling and sparks advance only
 on simulation ticks, so render rate and pausing do not change their duration.
 The shared `malf` entry point uses SWC's countdown during SWC flight, including
 when WC1 targeting or damage logic calls it. CODE_04 `dp_random` +0x5d44,
-`random_number` +0x5d8c and `Random3DO` +0x5dea exclude the upper bound: SWC's
-malfunction test samples 0..14 and its countdown samples 5..9, while dead VDUs
+`random_number` +0x5d8c and `Random3DO` +0x5dea exclude the upper bound for
+these small positive ranges: SWC's malfunction test samples 0..14 and its
+countdown samples 5..9, while dead VDUs
 select frames 0..2 from the four-frame resource. The SDL adapter adjusts WC1's
 inclusive random bounds without replacing its RNG. Likewise CODE_05
 `your_internal_damage` +0x184a selects three cockpit regions, not WC1's four.
@@ -690,9 +758,9 @@ The cockpit toggle retains the spatial HUD, weapon/component status,
 target/navigation text, and messages. ITTS and the L lock control are connected.
 Automatic target acquisition, lock animation, cockpit banking and pilot animation, side/rear views,
 communication portraits, original message timing and other cockpitless instruments
-remain pending. Lamps reuse WC1's availability/proximity queries; SWC-specific
-autopilot escort gates and travel cinematics are not connected. Damage sounds and
-alarms remain silent until SWC audio is implemented.
+remain pending. The autopilot lamp uses SWC's eligibility and escort-wait gate;
+the missile and damage lamps reuse WC1's queries. Damage sounds and alarms remain
+silent until SWC audio is implemented.
 
 #### Text font
 
@@ -718,8 +786,9 @@ check was run for this pass; its appearance still needs user review in flight.
 
 SWC binary similarity measurement is no longer part of this work: the original
 Mac compiler/toolchain is unavailable. Validation uses original instructions,
-actual data, and functional tests. WC1's reference-build verification remains
-in place. Passing these tests is not proof that all SWC gameplay is equivalent.
+actual data, source inspection and compilation. WC1's reference-build
+verification remains in place. These checks do not establish equivalence for
+every SWC gameplay path.
 
 [`config/swc-provenance.json`](../config/swc-provenance.json) records reference
 hashes, CODE-resource offsets, source symbols, and differences in the host
@@ -740,9 +809,10 @@ many WC1 names were already derived from this Mac executable's MacsBug strings.
 1. Continue comparing shared AI/collision behavior with SWC instructions,
    including RNG bounds, elapsed-tick motion and later mission modes. The
    common 58 object definitions are recovered; Mac IDs 58..82 remain unsupported.
-2. Refine ship-sprite hotspots, SWC projection, scaling, and the remaining
-   320x240 HUD. Instrument sprites use their original offsets; the current
-   SDL renderer still centers ship sprites selected and projected by WC1.
+2. Compare SWC projection, rotation/scaling rasterization and the remaining
+   320x240 HUD. Instrument sprites use their original offsets; centered ship
+   quads agree with `rotate_Mac_shape2`, but exact sampling and clipping remain
+   unverified.
 3. Continue flight communications (voices/portraits), remaining HUD modes and
    post-debriefing progression. Landing and the first debriefing are connected;
    the demo disables its simulator.

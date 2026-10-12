@@ -240,6 +240,12 @@ int SdlFindSwcMissionData(char *path, unsigned long capacity);
 int SdlLoadSwcMissionData(const char *path, short series, short mission);
 int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless);
 int SdlSwcFlightActive(void);
+short SdlSwcAutopilotValid(short showReason);
+void SdlSwcFlagReached(short objective, short reached);
+void SdlSwcUpdateSpace(void);
+int SdlSwcVisitCinema(int view, int obj, short frames);
+extern unsigned char bSwcWaitingForEscort; /* SWC DATA/A5+0x46ec */
+extern int nSwcCinemaResult; /* SDL presentation: 0 complete, 1 quit, -1 error. */
 short SdlSwcComponentMalfunction(char component);
 void SdlSwcCockpitDamage(short region);
 void SdlDrawSwcCockpitReadout(signed char slot, const char *text);

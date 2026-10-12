@@ -19,8 +19,10 @@ void visit_the_cinema(int view, int obj, short frames)
 #ifdef SDL_PORT
     /* SWC's travel state is shared below; its movie/space presentation is
        owned by the SDL host, not the WC1 viewport renderer. */
-    if (SdlSwcFlightActive())
+    if (SdlSwcFlightActive()) {
+        nSwcCinemaResult = SdlSwcVisitCinema(view, obj, frames);
         return;
+    }
 #endif
     savedOriginUnlock = nOriginDevUnlock;
     savedInputFlag = bPlayerVulnerable;
@@ -211,6 +213,12 @@ void auto_pilot_sequence(void)
 
         nCannedSceneMode = 4;
         visit_the_cinema(12, 0, 120);
+#ifdef SDL_PORT
+        if (SdlSwcFlightActive() && nSwcCinemaResult != 0) {
+            nCannedSceneMode = savedCannedSceneMode;
+            return;
+        }
+#endif
         while (nCannedSceneMode == 4) {
             ComputeVectorDelta(&aShipPosition[0],
                                &destination, &travelStep);
@@ -282,8 +290,11 @@ void auto_pilot_sequence(void)
         }
 
 #ifdef SDL_PORT
-        if (SdlSwcFlightActive())
+        if (SdlSwcFlightActive()) {
+            /* CODE_14 +0x077e advances one final frame after travel. */
+            SdlSwcUpdateSpace();
             return;
+        }
 #endif
         Update_3Space();
         if (bCockpitlessView == 0) {

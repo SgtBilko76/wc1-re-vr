@@ -66,6 +66,92 @@ static SDL_Point swcSparkPosition;
 static int swcIttsActive;
 static SDL_Point swcIttsPosition = {0x7fff, 0};
 
+unsigned char bSwcWaitingForEscort; /* SWC DATA/A5+0x46ec */
+
+/* SWC CODE_13 +0x1732: auto_pilot_valid. The Mac checks hazards first,
+ * then enemies, the objective-arrival escort latch, and destination range.
+ * CockpitMessage's voice IDs 1..7 are not connected to the SDL speech player. */
+short SdlSwcAutopilotValid(short showReason)
+{
+    const char *reason = NULL;
+    short ship;
+    enum ObjectType type;
+
+    if (cMissionObjectiveCount == 0 || cCurrentObjective < 0 ||
+        cCurrentObjective >= cMissionObjectiveCount)
+        return 0;
+    if (pActiveHazardField != NULL) {
+        reason = "Hazard Near";
+    } else if (kilrathi_near(0, 16000)) {
+        reason = "Enemy Near";
+    } else if (bSwcWaitingForEscort) {
+        if (!showReason)
+            return 0;
+        /* +0x179a indexes the object-type array with this stored ship ID.
+           Only types 6, 4, 7 and 5 have a wait message in the original. */
+        ship = anShipMissionShip[0];
+        if (ship >= 0 && ship < SPACE_OBJECT_COUNT) {
+            type = aeObjectType[ship];
+            if (type == OBJECT_TYPE_DRAYMAN || type == OBJECT_TYPE_VENTURE ||
+                type == OBJECT_TYPE_EXETER || type == OBJECT_TYPE_DILLIGENT) {
+                /* WC1's HUD retains the pointer; its persistent objective
+                   buffer replaces the Mac's copied stack message. */
+                SDL_snprintf(szObjectiveStatusMessage, sizeof(szObjectiveStatusMessage),
+                             "Wait for %s", aObjectTypeData[type].displayName);
+                set_global_message(szObjectiveStatusMessage, 0x84, 3);
+            }
+        }
+        return 0;
+    } else if (distance_from_point(0,
+                   &aMissionObjectives[(int)cCurrentObjective].position) < 8000) {
+        reason = "Already Near";
+    }
+    if (showReason && reason != NULL)
+        set_global_message(reason, 0x84, 3);
+    return reason == NULL;
+}
+
+/* SWC CODE_13 +0x212e: flag_reached. Every call clears the escort latch;
+ * reaching the selected objective ahead of its escort sets it again. */
+void SdlSwcFlagReached(short objective, short reached)
+{
+    short carrierMissionShip = anShipMissionShip[0];
+    short objectiveType = (short)aMissionObjectives[objective].type;
+    short carrierObject = find_ship_index(carrierMissionShip);
+    short markVisited = objective != cCurrentObjective;
+    short advanceDestination = 0;
+
+    bSwcWaitingForEscort = 0;
+    if (objective == cCurrentObjective) {
+        if (reached == 0 && escorting_a_ship() && carrierObject != -1 &&
+            aMissionObjectives[objective].index != carrierMissionShip) {
+            if (objectiveType != 1 || aMissionShips[carrierMissionShip].state != 1) {
+                SDL_snprintf(szObjectiveStatusMessage, sizeof(szObjectiveStatusMessage),
+                             "Wait for %s", aObjectTypeData[aeObjectType[carrierObject]].displayName);
+                CockpitMessage(szObjectiveStatusMessage, 0x84, 4);
+                bSwcWaitingForEscort = 1;
+            }
+        } else {
+            /* Unlike WC1, the Mac suppresses arrival text for type 1. */
+            if (objectiveType != 1) {
+                CockpitMessage(visited(objective) ? "Already Visited" : "Objective Reached",
+                               0x84, 4);
+            }
+            advanceDestination = 1;
+            markVisited = 1;
+        }
+    }
+    if (objectiveType != 1 && markVisited) {
+        if (!visited(objective) && carrierObject != -1 &&
+            aMissionObjectives[objective].index == carrierMissionShip &&
+            aeObjectType[carrierObject] != OBJECT_TYPE_TIGERS_CLAW)
+            send_message(carrierObject, 6);
+        flag_objective(objective, 1);
+    }
+    if (advanceDestination)
+        set_next_destination();
+}
+
 /* DATA/0 +0x7f2: radar, left VDU, right VDU. */
 static const SDL_Point swcDamagePositions[3] = {
     {142, 153}, {33, 134}, {231, 132}

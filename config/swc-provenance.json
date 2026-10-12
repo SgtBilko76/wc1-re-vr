@@ -2,7 +2,31 @@
   "description": "SWC Mac demo evidence inventory; not a binary-similarity configuration or score report.",
   "reference": "Super Wing Commander Mac demo 1.0.2, extracted 68000 CODE resources",
   "address_convention": "Byte offsets from the start of each CODE resource, including its segment header; end offsets are exclusive.",
-  "validation_strategy": "Original instructions, offline original-data inspection, static review and compilation. Runtime tests and interactive checks are not run under the current user instruction. SWC binary scoring is not planned without the original Mac toolchain.",
+  "validation_strategy": "Original instructions, original-data inspection and native compilation. Win32 changes are checked with binary-comp. The earlier automated checks recorded in status_review have been removed at user request; historical results do not establish interactive parity or SWC binary similarity.",
+  "status_review": {
+    "date": "2026-10-12",
+    "scope": "Initial Enyo 1 documentation review, preceding the SDL-only autopilot integration recorded in flight_gameplay.",
+    "method": "Fresh Ghidra instruction exports for CODE_01,02,03,04,05,06,09,12,13,14, including explicit GameFlow switch-target disassembly at CODE_09 +0x1d68; A5 call/string resolution; all 13 inventoried CODE hashes verified. No similarity score.",
+    "local_artifacts": "out-modern/swc-status-review/",
+    "passed": [
+      "Historical codec, mission-translation and launcher checks (suite now removed)",
+      "Historical corpus check: 23 CMFs, 1011 chunks, 267 sprite sets, 3446 frames; five ships/four objectives; 120 simulation/render ticks (suite now removed)",
+      "Ad hoc current-C-reader ASan/UBSan harness: 38 movies, 3521 movie frames, 92 AIFF recordings, without playback",
+      "Original CODE_08 plus expanded DATA/A5 regenerate src/sdl/swc_objects.h byte-identically"
+    ],
+    "limits": "No sanitizer failures reported; existing packed-pointer linker warnings remain. Dummy-driver flight bypasses rooms/movies and supplies steering/throttle only. Combat, autopilot, landing, debriefing, funerals, interactive appearance and audio synchronization were not exercised.",
+    "confirmed_differences": [
+      "CODE_05 your_internal_damage +0x1830/+0x1862 use exclusive bounds 10/9; src/ship.c still uses inclusive WC1 bounds for severity/system selection.",
+      "CODE_09 PostMission +0x1794..+0x17b0 uses Random3DO(0,2)/(0,playerKills); CODE_04 +0x5dea excludes the upper bound for these ranges and returns zero for equal bounds. WC1 RandomInRange permits two missions and can award one kill for a zero-kill player mission.",
+      "CODE_13 auto_pilot_valid +0x178a..+0x1880 includes an escort-wait gate; A5-0x1ff0 is Wait for %s. This gap is now resolved by the SDL-only autopilot integration.",
+      "CODE_02 accelerate_and_move_object +0x43ba/+0x471e scales translation by elapsed ticks; A5-0x377a Q8 factors are 128,154,205,256,320,384,512. The fixed 50 ms host step matches only the nominal three-tick factor.",
+      "CODE_09 GameFlow +0x1f4a calls UpdateSeries; the host ends after Enyo 1. Original +0x1e1c calls CODE_14 death_sequence +0x362a before the player funeral; the host enters the funeral directly."
+    ],
+    "qualified_gaps": [
+      "CODE_01 rotate_Mac_shape2 +0x10ae centers width/height-derived quads without frame x/y offsets. Host ship centering is supported; exact rasterization is still unverified. MacDraw2 +0x0ef4 separately applies frame offsets.",
+      "CODE_13 show_navigation_disp +0x121a, show_damage_disp +0x123a and show_info_disp +0x1256 are empty originals; the demo simulator is intentionally unavailable."
+    ]
+  },
   "reference_binaries": {
     "CODE_01.bin": {
       "path_from_repo_root": "../releases/mac/extracted/code/CODE_01.bin",
@@ -368,7 +392,7 @@
       "source": "src/sdl/swc_cockpit.c",
       "symbol": "SdlUpdateSwcCockpit",
       "relationship": "host-adaptation",
-      "differences": "Seven-tick warning refresh reuses WC1 auto_pilot_valid, missile_on_tail and calculate_damage_level. Original PC00/12, /14 and /13 lamps, low-shield threshold and damage-light cadence; alarms are silent. SWC-specific autopilot escort gates and travel cinematics remain pending; shared travel is connected."
+      "differences": "Seven-tick warning refresh reuses WC1 auto_pilot_valid, missile_on_tail and calculate_damage_level. Original PC00/12, /14 and /13 lamps, low-shield threshold and damage-light cadence; alarms are silent. SWC-specific autopilot escort eligibility and the 120-frame travel camera are connected through SDL-only dispatch."
     },
     {
       "original_name": "update_VDUs",
@@ -458,7 +482,7 @@
     {"name": "cleanup_objectives", "resource": "CODE_06.bin", "entry_offset": "0x0738", "source": "src/screen.c", "wc1_address": "0x0042efc0", "qualification": "Shared patrol/escort/kill completion rules; called by clearance requests and at landing before debriefing."},
     {"name": "can_land", "resource": "CODE_06.bin", "entry_offset": "0x0ab4", "source": "src/screen.c", "wc1_address": "0x0042f2b0", "qualification": "Shared Enyo 1 rule: no enemy within 20000 and health below 50, kills, fuel below 1000 or non-return objective progress. SWC's later series-4 mission-3 story restriction is outside this host's scope."},
     {"name": "request", "resource": "CODE_06.bin", "entry_offset": "0x0c0e", "source": "src/screen.c", "wc1_address": "0x0042f3f0", "qualification": "WC1 command dispatch reused by DOS/Win32 recipient/command menus. Landing command 12 cleans objectives, checks can_land and queues native message 8/9. SDL presents clearance text; inflight voices/portraits remain pending. Native SWC Chosen_communicate_option +0x0276 exposes four quick commands rather than these menus."},
-    {"name": "PostMission", "resource": "CODE_09.bin", "entry_offset": "0x1672", "source": "src/nav.c", "wc1_address": "0x0040f010", "qualification": "Original mission/kill statistics, badge thresholds and deliberate first-mission badge fallthrough match WC1. Shared code is called once after landing; stats are not persisted and full UpdateSeries is not called."},
+    {"name": "PostMission", "resource": "CODE_09.bin", "entry_offset": "0x1672", "source": "src/nav.c", "wc1_address": "0x0040f010", "qualification": "Player/wingman mission/kill statistics, badge thresholds and deliberate first-mission badge fallthrough share WC1 control flow. Random awards to other pilots differ: SWC Random3DO uses exclusive small bounds and returns zero for equal bounds, unlike WC1 RandomInRange. Shared code is called once after landing; stats are not persisted and full UpdateSeries is not called."},
     {"name": "FullMissionScore", "resource": "CODE_09.bin", "entry_offset": "0x17e2", "source": "src/nav.c", "wc1_address": "0x0040f190", "qualification": "Same sum of 16 signed objective weights. Native CMP0/2 uses 128-byte series and 24-byte mission records; the Enyo 1 adapter supplies only WC1's first-mission score window during debriefing and restores the previous data pointer."},
     {"name": "PlayersMissionScore", "resource": "CODE_09.bin", "entry_offset": "0x1840", "source": "src/nav.c", "wc1_address": "0x0040f1e0", "qualification": "Same achieved-objective filter over the adapted native weights; preserves original full/partial debriefing branches without forcing a success outcome."},
     {"name": "TranslateEyes", "resource": "CODE_03.bin", "entry_offset": "0x0d5c", "source": "src/cmpgn.c", "symbol": "ParseFaceAnimation", "wc1_address": "0x00404cd0", "qualification": "Same frame/duration/comma/R command language. WC1 emits short command pairs; the original Mac emits wider pairs. Host validates durations/termination and supplies adequately sized buffers."},
@@ -502,7 +526,7 @@
     {"source_from_repo_root": "../wc2-re/src/cockpt.c", "symbol": "UpdateTargetLeadIndicator", "wc2_address": "0x0043cf5a", "swc_symbol": "SwcUpdateItts", "qualification": "Matching velocity prediction. SWC's original assembly supplies activation, projection, clipping and sprite differences; no WC2 turret-view branch or display globals are transplanted."}
   ],
   "flight_gameplay": {
-    "scope": "Enyo 1 patrol encounters, NPC AI/firing, hazards, autopilot and ITTS. Carrier landing/debriefing and mission completion remain disconnected.",
+    "scope": "Enyo 1 patrol encounters, NPC AI/firing, hazards, autopilot and ITTS. Carrier landing, first debriefing and player/wingman funerals are connected; the host ends after this mission and does not advance the campaign.",
     "generator": "bin/extractSwcFlightData.py",
     "generated_header": "src/sdl/swc_objects.h",
     "data_sha256": "8373edcff90ab35cda5663c1b0cc5112d00ed8c6c35ab14a45a0577a23a54faa",
@@ -512,7 +536,20 @@
     "encounters": {"entry": "Player, wingman, Tiger's Claw, two Scimitars; all friendly", "nav1": "Three Dralthi", "nav2": "Asteroid field", "nav3": "Two Salthi and asteroid field", "evidence": "Data.CMF MOD0 mission index 4 (series 1, mission 0), nav and ship records"},
     "navigation": {"resource": "CODE_04.bin", "entry_offset": "0x0c9e", "wc1_source": "src/brains.c", "wc1_symbol": "set_up_action_sphere", "qualification": "Shares nav state, ship removal/spawning, wave selection, hazard fields, triggers and objective positions. Team ships retain spawnNav=-1. new_sphere_shapes bypasses WC1 packet I/O for the SDL texture cache. Later mission-specific SWC flags remain unimplemented."},
     "ship_ai": {"resource": "CODE_02.bin", "entry_offset": "0x1c2c", "wc1_source": "src/brains.c", "wc1_symbol": "ship_intelligence", "qualification": "Enables existing fighter/capital AI and common init_ship setup. SWC patrol dispatch reads the actual ship's side instead of WC1's retail array-address comparison. This does not establish equivalence for every maneuver, collision edge case or random bound; speech remains disconnected."},
-    "autopilot": {"resource": "CODE_14.bin", "entry_offset": "0x0202", "end_offset": "0x07ae", "wc1_source": "src/auto.c", "wc1_symbol": "auto_pilot_sequence", "qualification": "Shares eligibility, formation travel, 400-unit steps, nav/hazard/enemy stops and restored cruise speeds. SDL-only SWC changes preserve the +0x03a8 gun-timer reset and +0x0648 arrival-position rollback. WC1 cinematic/render calls are bypassed; SWC escort-wait eligibility and travel cinematics remain pending."},
+    "autopilot": {"resource": "CODE_14.bin", "entry_offset": "0x0202", "end_offset": "0x07ae", "wc1_source": "src/auto.c", "wc1_symbol": "auto_pilot_sequence", "qualification": "Shares eligibility, formation travel, 400-unit steps, nav/hazard/enemy stops and restored cruise speeds. SDL-only SWC changes preserve the +0x03a8 gun-timer reset and +0x0648 arrival-position rollback. SDL-only dispatch supplies SWC eligibility, the escort-wait latch, the 120-frame external camera and the +0x077e final simulation update. Rendering includes the player and suppresses cockpit/HUD overlays during travel presentation."},
+    "autopilot_reconstruction": {
+      "status": "Connected to the SDL2 mission host, A-key travel, objective arrival and autopilot lamp. The Win32 reference path is unchanged.",
+      "functions": [
+        {"resource": "CODE_13.bin", "entry_offset": "0x1732", "original_name": "auto_pilot_valid", "source": "src/sdl/swc_cockpit.c", "symbol": "SdlSwcAutopilotValid"},
+        {"resource": "CODE_13.bin", "entry_offset": "0x212e", "original_name": "flag_reached", "source": "src/sdl/swc_cockpit.c", "symbol": "SdlSwcFlagReached"},
+        {"resource": "CODE_09.bin", "entry_offset": "0x00c2", "original_name": "Update_3Space", "source": "src/sdl/swc_flight.c", "symbol": "SdlSwcUpdateSpace"},
+        {"resource": "CODE_14.bin", "entry_offset": "0x000c", "original_name": "visit_the_cinema", "source": "src/sdl/swc_flight.c", "symbol": "SdlSwcVisitCinema"}
+      ],
+      "escort_state": "DATA/A5+0x46ec; CODE_13 +0x2170 clears it on every flag_reached call, +0x2250 sets it while waiting. Eligibility keeps the +0x179a ship-ID indexing with an array-bound guard; only types 6,4,7,5 produce wait text.",
+      "camera": "CODE_02 new_view view-12 case +0x3474 initializes relative (500,0,2000); set_eye_direction_and_position case +0x29f0 moves ten units sideways and looks at the player. Fresh Ghidra exports explicitly decode both switch tables.",
+      "differences": "SDL window/pause/focus handling, fixed flight pacing and persistent HUD message storage replace Mac services. Sound effect 17 and cockpit voice IDs 1..7 remain silent. Core dispatch is guarded by SDL_PORT and SdlSwcFlightActive; live SDL resources are borrowed only during the mission. Quit/errors return through the host, with camera/input restoration.",
+      "validation": "Native and GUI compilation pass. binary-comp Win32 scores are unchanged before/after: visit_the_cinema 100%, auto_pilot_valid 100%, auto_pilot_sequence 96.91%, flag_reached 85.84%. Automated tests and harnesses were removed at user request. Integrated gameplay remains unverified; validation is limited to source/assembly inspection and compilation. No SWC binary similarity measurement."
+    },
     "asteroids": {"resource": "CODE_04.bin", "instructions": "0x04d2..0x054e", "chunks": "Spaceflight.CMF OBJT/17 and OBJT/18, 12 frames each", "qualification": "Shares WC1 hazard lifecycle once per simulation tick through update_star_field; CODE_05 set_objects_data +0x02b0 supplies the first asteroid set for fragments."},
     "validation": "Original Ghidra/Capstone instruction and data inspection, static source review, make modern modern-gui only. No tests, game, GUI, interactive checks or binary-similarity measurement. Runtime combat, travel and display behavior are unverified."
   },
@@ -604,7 +641,7 @@
       ],
       "qualification": "Consecutive frames starting at zero, then 0xa000 removal; one tick per frame. The host temporarily supplies these sequences/scales to WC1's animation interpreter and restores the original definitions on exit."
     },
-    "qualification": "Rendering uses the original (160,100) plus projected XY, with horizontal/vertical flip bits retained. Object scale/definitions now come from SWC. Sprite centering, WC1 projection and simple SDL target brackets are provisional. No original Mac handle management, screen shake or SWC weapon audio. NPC ship AI is connected.",
+    "qualification": "Rendering uses the original (160,100) plus projected XY, with horizontal/vertical flip bits retained. Object scale/definitions now come from SWC. Centered ship quads agree with CODE_01 rotate_Mac_shape2 +0x10ae; exact rotation/scaling rasterization, WC1 projection differences and SDL target brackets remain provisional. No original Mac handle management, screen shake or SWC weapon audio. NPC ship AI is connected.",
     "validation": "Original-instruction and offline resource inspection; static source review; make modern modern-gui only. No interactive execution or tests."
   },
   "movies": {

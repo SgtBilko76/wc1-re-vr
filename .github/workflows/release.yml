@@ -112,8 +112,6 @@ jobs:
         run: brew install cmake lzo pkg-config sdl2
       - name: Build SDL2 release port
         run: make -j2 modern-gui MODERN_RELEASE=1
-      - name: Test launcher options and installation checks
-        run: make -j2 modern-test-launcher MODERN_RELEASE=1
       - name: Validate native release binary
         run: |
           binary=out-modern/wc1-modern-gui
@@ -185,11 +183,6 @@ jobs:
         shell: msys2 {0}
         run: >-
           make -j2 modern-gui MODERN_RELEASE=1
-          MODERN_CC=clang MODERN_CXX=clang++
-      - name: Test launcher options and installation checks
-        shell: msys2 {0}
-        run: >-
-          make -j2 modern-test-launcher MODERN_RELEASE=1
           MODERN_CC=clang MODERN_CXX=clang++
       - name: Validate Windows executable
         shell: msys2 {0}

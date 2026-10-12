@@ -111,24 +111,10 @@ supported feedback. The README documents the common controller bindings.
 ```sh
 make modern
 make modern-gui
-make modern-test
-make modern-test-launcher
 make run-modern
 make run-modern-dos
 make run-modern-mission SERIES=1 MISSION=0
 ```
-
-`modern-test` runs data-free SDL2 initialization, text, and ship-resource
-cleanup checks. `make modern-test-landing MODERN_RUN_DIR=/path/to/WC1` also
-runs all four fighter landing animations at all four damage levels using
-installed game data, checking the damage comment and restored screen bounds.
-
-`modern-test-launcher` exercises argument forwarding, GUI defaults, cancellation,
-and option overrides with a stand-in dialog and SDL's dummy drivers. Its separate
-directory validator uses temporary fixtures for DOS/Saga, missing or truncated
-files, WC2 data, mixed-case filenames, and UTF-8 paths. Neither check launches
-gameplay or requires retail data. The validator can also check an installation
-with `out-modern/tests/sdl_launcher_paths /path/to/WC1`.
 
 The Windows v0.0.12 crash offset `0x1a9da` reported in
 [issue #14](https://github.com/neuromancer/wc1-re/issues/14) is the object-class

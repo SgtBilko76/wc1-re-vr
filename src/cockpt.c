@@ -634,6 +634,10 @@ short auto_pilot_valid(short showReason)
 {
     const char *reason;
 
+#ifdef SDL_PORT
+    if (SdlSwcFlightActive())
+        return SdlSwcAutopilotValid(showReason);
+#endif
     reason = 0;
     if (cMissionObjectiveCount == 0)
         return 0;
@@ -1380,6 +1384,12 @@ void flag_reached(short objective, short reached)
     short advanceDestination;
     short markVisited;
 
+#ifdef SDL_PORT
+    if (SdlSwcFlightActive()) {
+        SdlSwcFlagReached(objective, reached);
+        return;
+    }
+#endif
     carrierMissionShip = anShipMissionShip[0];
     objectiveType = (short)aMissionObjectives[objective].type;
     carrierObject = find_ship_index(carrierMissionShip);

@@ -146,14 +146,14 @@ MODERN_LZO_LIBS = $(shell pkg-config --libs lzo2 2>/dev/null)
 MODERN_CPPFLAGS = -DSDL_PORT=1 -DSDL_MAIN_HANDLED -Iinclude \
 	$(MODERN_SDL_CFLAGS) \
 	$(MODERN_LZO_CFLAGS) $(addprefix -I,$(MODERN_LZO_INCLUDEDIR))
-MODERN_TEST_CPPFLAGS = -DSDL_PORT=1 -DSDL_MAIN_HANDLED -Iinclude \
+SWC_CPPFLAGS = -DSDL_PORT=1 -DSDL_MAIN_HANDLED -Iinclude \
 	$(MODERN_SDL_CFLAGS)
 MODERN_CFLAGS ?= -O2 -std=c11 -Wno-return-type -Wno-return-mismatch \
 	-Wno-error=incompatible-pointer-types
 MODERN_CXXFLAGS ?= -O2 -std=c++11
 MODERN_DEPFLAGS = -MMD -MP
 MODERN_SECTION_FLAGS = -ffunction-sections -fdata-sections
-# Developer and test builds retain runtime diagnostics.  Tagged release jobs
+# Developer builds retain runtime diagnostics.  Tagged release jobs
 # explicitly select the optimized, uninstrumented host build.
 ifeq ($(MODERN_RELEASE),1)
 override MODERN_SANITIZER_FLAGS =
@@ -444,46 +444,22 @@ MODERN_GUI_CMAKE_OBJECTS = $(abspath $(MODERN_GUI_GAME_OBJS))
 ifneq (,$(filter MINGW% MSYS% CYGWIN%,$(UNAME_S)))
 MODERN_GUI_CMAKE_OBJECTS = $(shell cygpath -m $(abspath $(MODERN_GUI_GAME_OBJS)))
 endif
-MODERN_SMOKE_TEST_BIN = \
-	$(MODERN_OUT_DIR)/tests/sdl_smoke$(MODERN_EXE_SUFFIX)
-MODERN_TEXT_TEST_BIN = \
-	$(MODERN_OUT_DIR)/tests/sdl_text_compat$(MODERN_EXE_SUFFIX)
-MODERN_SHIP_RESOURCE_TEST_BIN = \
-	$(MODERN_OUT_DIR)/tests/sdl_ship_resources$(MODERN_EXE_SUFFIX)
-MODERN_LAUNCHER_TEST_BIN = $(MODERN_OUT_DIR)/tests/sdl_launcher$(MODERN_EXE_SUFFIX)
-MODERN_LAUNCHER_PATH_TEST_BIN = $(MODERN_OUT_DIR)/tests/sdl_launcher_paths$(MODERN_EXE_SUFFIX)
-MODERN_LANDING_TEST_BIN = \
-	$(MODERN_OUT_DIR)/tests/sdl_landing$(MODERN_EXE_SUFFIX)
-MODERN_TEST_BINS = $(MODERN_SMOKE_TEST_BIN) $(MODERN_TEXT_TEST_BIN) \
-	$(MODERN_SHIP_RESOURCE_TEST_BIN)
-MODERN_TEST_OBJS = \
-	$(MODERN_OUT_DIR)/tests/sdl_smoke.o \
-	$(MODERN_OUT_DIR)/tests/sdl_text_compat.o \
-	$(MODERN_OUT_DIR)/tests/sdl_ship_resources.o \
-	$(MODERN_OUT_DIR)/tests/sdl_landing.o \
-	$(MODERN_OUT_DIR)/tests/sdl_launcher.o
 MODERN_DEPFILES = \
 	$(MODERN_GAMEPLAY_OBJS:.o=.d) \
 	$(MODERN_IX_OBJS:.o=.d) \
 	$(MODERN_BASE_HOST_OBJS:.o=.d) \
 	$(MODERN_GAME_HOST_OBJS:.o=.d) \
 	$(MODERN_LAUNCHER_OBJ:.o=.d) \
-	$(MODERN_STATIC_GUI_LAUNCHER_OBJ:.o=.d) \
-	$(MODERN_TEST_OBJS:.o=.d)
+	$(MODERN_STATIC_GUI_LAUNCHER_OBJ:.o=.d)
 
-# SWC Mac demo viewer and tests; mission tests link the shared WC1 SDL2 core.
+# SWC Mac demo asset viewer.
 SWC_TARGET = $(MODERN_OUT_DIR)/swc-demo$(MODERN_EXE_SUFFIX)
-SWC_TEST_BIN = $(MODERN_OUT_DIR)/tests/swc_assets$(MODERN_EXE_SUFFIX)
-SWC_MISSION_TEST_BIN = $(MODERN_OUT_DIR)/tests/sdl_swc_mission$(MODERN_EXE_SUFFIX)
 SWC_DATA_DIR ?= data/swc-demo/SuperWing DEMO
 SWC_ARGS ?=
 SWC_SRCS = src/swc/cmf.c src/swc/shape.c src/swc/rsrc.c
 SWC_OBJS = $(patsubst src/%.c,$(MODERN_OUT_DIR)/obj/%.o,$(SWC_SRCS))
 SWC_HOST_OBJ = $(MODERN_OUT_DIR)/obj/sdl/swc_demo.o
-SWC_TEST_OBJ = $(MODERN_OUT_DIR)/tests/swc_assets.o
-SWC_MISSION_TEST_OBJ = $(MODERN_OUT_DIR)/tests/sdl_swc_mission.o
-MODERN_DEPFILES += $(SWC_OBJS:.o=.d) $(SWC_HOST_OBJ:.o=.d) $(SWC_TEST_OBJ:.o=.d) \
-	$(SWC_MISSION_TEST_OBJ:.o=.d)
+MODERN_DEPFILES += $(SWC_OBJS:.o=.d) $(SWC_HOST_OBJ:.o=.d)
 
 # ---------------------------------------------------------------------------
 # Build targets and tool bootstrap
@@ -507,36 +483,12 @@ modern-swc: $(SWC_TARGET)
 # No LZO, ix, Slint, or Win32 reference objects enter this bootstrap.
 $(SWC_OBJS) $(SWC_HOST_OBJ): $(MODERN_OUT_DIR)/obj/%.o: src/%.c | modern-check-sdl
 	@mkdir -p $(dir $@)
-	$(MODERN_CC) $(MODERN_TEST_CPPFLAGS) $(MODERN_CFLAGS) \
+	$(MODERN_CC) $(SWC_CPPFLAGS) $(MODERN_CFLAGS) \
 		$(MODERN_SANITIZER_FLAGS) $(MODERN_DEPFLAGS) -c $< -o $@
 
 $(SWC_TARGET): $(SWC_OBJS) $(SWC_HOST_OBJ)
 	$(MODERN_CC) $(MODERN_CFLAGS) $(MODERN_SANITIZER_FLAGS) \
 		$^ $(MODERN_SDL_LIBS) -o $@
-
-$(SWC_TEST_BIN): $(SWC_OBJS) $(SWC_TEST_OBJ)
-	$(MODERN_CC) $(MODERN_CFLAGS) $(MODERN_SANITIZER_FLAGS) \
-		$^ $(MODERN_SDL_LIBS) -o $@
-
-modern-test-swc: $(SWC_TEST_BIN)
-	@UBSAN_OPTIONS=halt_on_error=1 $(SWC_TEST_BIN) "$(MODERN_OUT_DIR)/tests/swc-fixture"
-
-$(SWC_MISSION_TEST_BIN): $(SWC_MISSION_TEST_OBJ) $(MODERN_BASE_HOST_OBJS) \
-		$(MODERN_GAME_HOST_OBJS) $(MODERN_GAMEPLAY_OBJS) $(MODERN_IX_OBJS)
-	$(MODERN_CXX) $(MODERN_CXXFLAGS) $(MODERN_SANITIZER_FLAGS) \
-		$^ $(MODERN_SDL_LIBS) $(MODERN_LZO_LIBS) $(MODERN_PLATFORM_LIBS) \
-		$(MODERN_DEAD_STRIP_FLAGS) -o $@
-
-modern-test-swc-mission: $(SWC_MISSION_TEST_BIN)
-	@UBSAN_OPTIONS=halt_on_error=1 $(SWC_MISSION_TEST_BIN) "$(MODERN_OUT_DIR)/tests/swc-mission-fixture"
-
-modern-test-swc-data: $(SWC_TEST_BIN) $(SWC_TARGET) $(SWC_MISSION_TEST_BIN) $(MODERN_TARGET)
-	@UBSAN_OPTIONS=halt_on_error=1 $(SWC_TEST_BIN) "$(MODERN_OUT_DIR)/tests/swc-corpus-fixture" "$(SWC_DATA_DIR)"/CMFs/*.CMF
-	@UBSAN_OPTIONS=halt_on_error=1 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
-		$(SWC_TARGET) "$(SWC_DATA_DIR)" --check $(SWC_ARGS)
-	@UBSAN_OPTIONS=halt_on_error=1 $(SWC_MISSION_TEST_BIN) "$(MODERN_OUT_DIR)/tests/swc-mission-data-fixture" "$(SWC_DATA_DIR)"
-	@UBSAN_OPTIONS=halt_on_error=1 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
-		$(MODERN_TARGET) --swc-demo "$(SWC_DATA_DIR)" --check
 
 run-modern-swc: modern-swc
 	@$(SWC_TARGET) "$(SWC_DATA_DIR)" $(SWC_ARGS)
@@ -627,12 +579,6 @@ $(MODERN_OUT_DIR)/obj/sound.o: MODERN_CPPFLAGS += \
 	-Dix_system_new_sound=SdlNewWaveSound
 $(MODERN_OUT_DIR)/obj/sound.o: Makefile
 
-$(MODERN_OUT_DIR)/tests/%.o: tests/%.c | modern-check-sdl
-	@mkdir -p $(dir $@)
-	$(MODERN_CC) $(MODERN_TEST_CPPFLAGS) $(MODERN_CFLAGS) \
-		$(MODERN_SECTION_FLAGS) $(MODERN_SANITIZER_FLAGS) \
-		$(MODERN_DEPFLAGS) -c $< -o $@
-
 $(MODERN_TARGET): \
 		$(MODERN_LAUNCHER_OBJ) \
 		$(MODERN_BASE_HOST_OBJS) \
@@ -644,83 +590,6 @@ $(MODERN_TARGET): \
 		$^ $(MODERN_SDL_LIBS) $(MODERN_LZO_LIBS) \
 		$(MODERN_PLATFORM_LIBS) \
 		$(MODERN_DEAD_STRIP_FLAGS) -o $@
-
-$(MODERN_SMOKE_TEST_BIN): $(MODERN_OUT_DIR)/tests/sdl_smoke.o
-	$(MODERN_CC) $(MODERN_CFLAGS) $(MODERN_SANITIZER_FLAGS) \
-		$^ $(MODERN_SDL_LIBS) -o $@
-
-$(MODERN_TEXT_TEST_BIN): \
-		$(MODERN_OUT_DIR)/tests/sdl_text_compat.o \
-		$(MODERN_BASE_HOST_OBJS) \
-		$(MODERN_GAME_HOST_OBJS) \
-		$(MODERN_GAMEPLAY_OBJS) \
-		$(MODERN_IX_OBJS)
-	$(MODERN_CXX) $(MODERN_CXXFLAGS) $(MODERN_SANITIZER_FLAGS) \
-		$^ $(MODERN_SDL_LIBS) $(MODERN_LZO_LIBS) \
-		$(MODERN_PLATFORM_LIBS) \
-		$(MODERN_DEAD_STRIP_FLAGS) -o $@
-
-$(MODERN_SHIP_RESOURCE_TEST_BIN): \
-		$(MODERN_OUT_DIR)/tests/sdl_ship_resources.o \
-		$(MODERN_BASE_HOST_OBJS) \
-		$(MODERN_GAME_HOST_OBJS) \
-		$(MODERN_GAMEPLAY_OBJS) \
-		$(MODERN_IX_OBJS)
-	$(MODERN_CXX) $(MODERN_CXXFLAGS) $(MODERN_SANITIZER_FLAGS) \
-		$^ $(MODERN_SDL_LIBS) $(MODERN_LZO_LIBS) \
-		$(MODERN_PLATFORM_LIBS) \
-		$(MODERN_DEAD_STRIP_FLAGS) -o $@
-
-$(MODERN_LANDING_TEST_BIN): \
-		$(MODERN_OUT_DIR)/tests/sdl_landing.o \
-		$(MODERN_BASE_HOST_OBJS) \
-		$(MODERN_GAME_HOST_OBJS) \
-		$(MODERN_GAMEPLAY_OBJS) \
-		$(MODERN_IX_OBJS)
-	$(MODERN_CXX) $(MODERN_CXXFLAGS) $(MODERN_SANITIZER_FLAGS) \
-		$^ $(MODERN_SDL_LIBS) $(MODERN_LZO_LIBS) \
-		$(MODERN_PLATFORM_LIBS) \
-		$(MODERN_DEAD_STRIP_FLAGS) -o $@
-
-$(MODERN_LAUNCHER_TEST_BIN): \
-		$(MODERN_OUT_DIR)/tests/sdl_launcher.o \
-		$(MODERN_BASE_HOST_OBJS) \
-		$(MODERN_GAME_HOST_OBJS) \
-		$(MODERN_GAMEPLAY_OBJS) \
-		$(MODERN_IX_OBJS)
-	$(MODERN_CXX) $(MODERN_CXXFLAGS) $(MODERN_SANITIZER_FLAGS) \
-		$^ $(MODERN_SDL_LIBS) $(MODERN_LZO_LIBS) \
-		$(MODERN_PLATFORM_LIBS) \
-		$(MODERN_DEAD_STRIP_FLAGS) -o $@
-
-# Installation validation can be tested without downloading or displaying Slint.
-$(MODERN_LAUNCHER_PATH_TEST_BIN): tests/sdl_launcher_paths.cpp \
-		$(MODERN_GUI_SOURCE_DIR)/launcher_paths.cpp \
-		$(MODERN_GUI_SOURCE_DIR)/launcher_paths.h \
-		$(MODERN_GUI_SOURCE_DIR)/launcher_api.h
-	@mkdir -p $(dir $@)
-	$(MODERN_CXX) $(MODERN_CXXFLAGS) -std=c++20 $(MODERN_SANITIZER_FLAGS) \
-		$(filter %.cpp,$^) -o $@
-
-modern-test-launcher: $(MODERN_LAUNCHER_TEST_BIN) $(MODERN_LAUNCHER_PATH_TEST_BIN)
-	@SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(MODERN_LAUNCHER_TEST_BIN)
-	@$(MODERN_LAUNCHER_PATH_TEST_BIN)
-
-modern-test: $(MODERN_TEST_BINS) modern-test-swc-mission
-	@echo "Running $(MODERN_SMOKE_TEST_BIN)"
-	@SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
-		$(MODERN_SMOKE_TEST_BIN)
-	@echo "Running $(MODERN_TEXT_TEST_BIN)"
-	@SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
-		$(MODERN_TEXT_TEST_BIN)
-	@echo "Running $(MODERN_SHIP_RESOURCE_TEST_BIN)"
-	@SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
-		$(MODERN_SHIP_RESOURCE_TEST_BIN)
-
-# Optional integration check using an installed copy of the game data.
-modern-test-landing: $(MODERN_LANDING_TEST_BIN)
-	@SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
-		$(MODERN_LANDING_TEST_BIN) "$(MODERN_RUN_DIR)"
 
 run-modern: modern
 	@case "$(MODERN_RUN_DIR)" in \
@@ -1113,7 +982,7 @@ clean-modern:
 	rm -rf $(MODERN_OUT_DIR)
 
 .PHONY: \
-	modern-swc modern-test-swc modern-test-swc-mission modern-test-swc-data run-modern-swc \
+	modern-swc run-modern-swc \
 	all \
 	audit-addresses \
 	audit-compiler-glue \
@@ -1146,9 +1015,6 @@ clean-modern:
 	modern-gui \
 	modern-check-deps \
 	modern-check-sdl \
-	modern-test \
-	modern-test-landing \
-	modern-test-launcher \
 	order \
 	report \
 	run \
