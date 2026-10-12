@@ -63,12 +63,15 @@ static int SdlParsePortArguments(int *argumentCount, char **arguments,
             SDL_strlcpy(options->gameDirectory, arguments[++argumentIndex],
                         sizeof(options->gameDirectory));
             options->swcDemo = 1;
+            options->explicitOptions |= SDL_LAUNCHER_EXPLICIT_DIRECTORY;
         } else if (strcmp(argument, "--enhanced") == 0) {
             options->enhancedRenderer = 1;
+            options->explicitOptions |= SDL_LAUNCHER_EXPLICIT_ENHANCED;
         } else if (strcmp(argument, "--joystick-debug") == 0) {
             SdlEnableJoystickDebug();
         } else if (strcmp(argument, "--joystick-rumble") == 0) {
             options->joystickRumble = 1;
+            options->explicitOptions |= SDL_LAUNCHER_EXPLICIT_RUMBLE;
         } else if (strncmp(argument, "--joystick-mode=", 16) == 0) {
             options->joystickMode = SdlFindLauncherChoice(
                 argument + 16, g_apszSdlLauncherJoystickModes,
@@ -78,6 +81,7 @@ static int SdlParsePortArguments(int *argumentCount, char **arguments,
                         argument + 16);
                 return 0;
             }
+            options->explicitOptions |= SDL_LAUNCHER_EXPLICIT_JOYSTICK_MODE;
         } else if (strncmp(argument, "--joystick-axes=", 16) == 0) {
             options->joystickAxes = SdlFindLauncherChoice(
                 argument + 16, g_apszSdlLauncherJoystickAxes,
@@ -87,11 +91,15 @@ static int SdlParsePortArguments(int *argumentCount, char **arguments,
                         argument + 16);
                 return 0;
             }
+            options->explicitOptions |= SDL_LAUNCHER_EXPLICIT_JOYSTICK_AXES;
         } else if (strcmp(argument, "--ega") == 0) {
             options->egaDither = 1;
+            options->explicitOptions |= SDL_LAUNCHER_EXPLICIT_EGA;
         } else {
-            if ((argument[0] == '-' ? argument[1] : argument[0]) == 'c')
+            if ((argument[0] == '-' ? argument[1] : argument[0]) == 'c') {
                 options->cockpitlessView = 1;
+                options->explicitOptions |= SDL_LAUNCHER_EXPLICIT_COCKPITLESS;
+            }
             arguments[outputArgumentIndex++] = argument;
         }
         argumentIndex++;

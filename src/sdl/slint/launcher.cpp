@@ -1,11 +1,13 @@
 #include "launcher.h"
 #include "launcher_api.h"
+#include "launcher_config.h"
 #include "launcher_paths.h"
 
 #include <nfd.h>
 #include <slint.h>
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <string>
@@ -82,6 +84,8 @@ int SdlRunLauncherGui(SdlLauncherOptions *options)
     if (options == nullptr)
         return SDL_LAUNCHER_ERROR;
     const bool swcRequested = options->swcDemo != 0;
+    const auto configPath = launcher_config_path();
+    load_launcher_config(configPath, *options);
 
     if (options->gameDirectory[0] == '\0') {
         std::error_code error;
@@ -115,12 +119,24 @@ int SdlRunLauncherGui(SdlLauncherOptions *options)
             return;
         std::error_code error;
         const std::string directory(window->get_game_directory());
-        fs::current_path(path_from_utf8(directory), error);
+        const auto absoluteDirectory = fs::absolute(path_from_utf8(directory), error);
+        if (error) {
+            report_picker_error(*window, "Cannot resolve the game directory",
+                                error.message().c_str());
+            return;
+        }
+        const auto absoluteText = path_to_utf8(absoluteDirectory);
+        if (absoluteText.size() >= SDL_LAUNCHER_DIRECTORY_CAPACITY) {
+            report_picker_error(*window, "The game directory path is too long", nullptr);
+            return;
+        }
+        fs::current_path(absoluteDirectory, error);
         if (error) {
             report_picker_error(*window, "Cannot open the game directory",
                                 error.message().c_str());
             return;
         }
+        window->set_game_directory(slint::SharedString(absoluteText));
         accepted = true;
         slint::quit_event_loop();
     });
@@ -163,5 +179,8 @@ int SdlRunLauncherGui(SdlLauncherOptions *options)
     options->joystickMode = std::max(0, window->get_joystick_mode_index());
     options->joystickAxes = std::max(0, window->get_joystick_axes_index());
     options->swcDemo = window->get_swc_demo();
+    if (!configPath.empty() && !save_launcher_config(configPath, *options))
+        std::fprintf(stderr, "Cannot save launcher settings: %s\n",
+                     path_to_utf8(configPath).c_str());
     return SDL_LAUNCHER_ACCEPTED;
 }

@@ -50,9 +50,10 @@ The WC1 controls map to:
 | Control mode | `--joystick-mode=original`, `4button-2axis`, or `4button-4axis` |
 | Axis layout | `--joystick-axes=` with a layout listed below |
 
-The axis selector is enabled for four-axis controls. Command-line options seed
-the controls, and accepted choices take precedence. Options are applied after
-the dialog so EGA and rumble can be unchecked. WC1's SDL frame-rate text output
+The axis selector is enabled for four-axis controls. Saved settings seed the
+controls, explicit command-line options override them, and accepted choices
+take precedence. Options are applied after the dialog so EGA and rumble can
+be unchecked. WC1's SDL frame-rate text output
 is a stub, so the launcher does not expose `-f`. WC2's balanced-difficulty option
 has no WC1 counterpart.
 
@@ -85,10 +86,56 @@ D-Bus development packages, plus a working XDG desktop portal for browsing.
 Windows retains WC2's static Slint import fix. On macOS, the folder picker is
 initialized after the native event loop starts so SDL can take focus on launch.
 The GUI changes the working directory only on acceptance; cancellation exits
-before SDL or the game is initialized. No settings file is written.
+before SDL or the game is initialized.
 
 Release jobs build this integrated executable and package it as `wc1-modern`.
 The MSVC reference executable and comparison flags are unchanged.
+
+### Launcher settings
+
+Clicking Launch saves the absolute game directory and all graphics, gameplay,
+and joystick controls in `launcher.ini`. The next GUI launch restores them;
+Cancel or closing the window leaves the saved settings unchanged. The INI lives
+alongside the SDL port's existing `wc1-modern.cfg`, in the per-user directory
+returned by `SDL_GetPrefPath("Origin Systems", "WC Kilrathi Saga")`:
+
+| Platform | Default INI path |
+| --- | --- |
+| macOS | `~/Library/Application Support/Origin Systems/WC Kilrathi Saga/launcher.ini` |
+| Linux | `~/.local/share/Origin Systems/WC Kilrathi Saga/launcher.ini` |
+| Windows | `%APPDATA%\Origin Systems\WC Kilrathi Saga\launcher.ini` |
+
+On Linux, `XDG_DATA_HOME` replaces `~/.local/share` when set. The file uses UTF-8
+and one `[launcher]` section:
+
+```ini
+[launcher]
+game_directory="/absolute/path/to/WC1"
+enhanced_renderer=0
+ega_dither=0
+cockpitless_view=0
+joystick_rumble=0
+joystick_mode=0
+joystick_axes=0
+```
+
+Boolean options use `0` or `1`. `joystick_mode` uses `0` for original, `1` for
+four buttons/two axes, and `2` for four buttons/four axes. `joystick_axes` uses
+`0` through `6` in the order of the axis-layout table below. Directory values
+must be absolute; surrounding double quotes are optional, and backslashes are
+literal. Blank lines and lines beginning with `;` or `#` are ignored.
+
+Missing files, unknown keys, and invalid values leave the corresponding
+defaults in place. A remembered directory is checked normally before Launch is
+enabled. Saving replaces the INI after writing a temporary file; a write failure
+is reported on standard error and does not prevent launching. Delete the INI
+to reset GUI preferences.
+
+Explicit arguments such as `--joystick-mode=original` or `--swc-demo DIRECTORY`
+take precedence over saved values. The GUI can still change those defaults
+before launch. SWC selection is detected from the directory unless explicitly
+requested with `--swc-demo`; the INI does not force a game type. Direct launches
+without the GUI do not read or write this file.
 
 ## Joystick input
 

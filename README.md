@@ -68,11 +68,14 @@ synthesized sound effects work; other DOS-specific data or behavior may not.
 The launcher follows WC2's layout, with WC1's enhanced OpenGL renderer, EGA
 dithering, cockpitless view, joystick modes, axis layouts, and rumble. Kilrathi
 Saga installations also need `STREAMS/PREFLITE.STR`, `POSFLITE.STR`, and
-`MISSION.STR`. Settings apply to the current launch.
+`MISSION.STR`. Clicking Launch saves the selected directory and these options
+in a per-user `launcher.ini` for the next GUI launch. See
+[launcher settings](docs/SDL2.md#launcher-settings) for the file location and format.
 
 Providing command-line arguments starts the game directly from the working
 directory. Add `--gui` to review those options in the launcher first; changing
-a control overrides its command-line default.
+a control overrides its command-line default. Explicit command-line options
+override remembered settings; direct launches do not read or write the INI file.
 
 ### Fixes and features
 

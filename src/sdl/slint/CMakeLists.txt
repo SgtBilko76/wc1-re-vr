@@ -47,13 +47,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(NativeFileDialogExtended)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(WC1_SDL2 REQUIRED IMPORTED_TARGET sdl2)
+
 add_library(wc1-slint-gui STATIC
     launcher.cpp
+    launcher_config.cpp
+    launcher_config.h
     slint_static.h
     launcher_paths.cpp
     launcher_paths.h
 )
-target_link_libraries(wc1-slint-gui PRIVATE Slint::Slint nfd::nfd)
+target_link_libraries(wc1-slint-gui PRIVATE Slint::Slint nfd::nfd PkgConfig::WC1_SDL2)
 slint_target_sources(wc1-slint-gui launcher.slint)
 
 if(UNIX AND NOT APPLE)
@@ -154,8 +159,6 @@ if(WC1_GAME_OBJECTS)
         GENERATED TRUE
     )
 
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(WC1_SDL2 REQUIRED IMPORTED_TARGET sdl2)
     pkg_check_modules(WC1_LZO2 REQUIRED IMPORTED_TARGET lzo2)
 
     add_executable(wc1-modern-gui ${WC1_GAME_OBJECTS})

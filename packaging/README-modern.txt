@@ -13,9 +13,19 @@ joystick options, and click Launch WC1. Kilrathi Saga also needs the sibling
 STREAMS directory with PREFLITE.STR, POSFLITE.STR, and MISSION.STR.
 
 The launcher offers enhanced OpenGL rendering, EGA dithering, cockpitless
-campaign flight, joystick modes and axis layouts, and rumble. Settings apply
-to the current launch. Command-line arguments start the game directly from the
-working directory; add --gui to review them in the launcher before starting.
+campaign flight, joystick modes and axis layouts, and rumble. Clicking Launch
+remembers the directory and options in launcher.ini for the next GUI launch.
+Cancel leaves the saved settings unchanged. The file is stored in:
+
+  macOS: ~/Library/Application Support/Origin Systems/WC Kilrathi Saga/
+  Linux: ~/.local/share/Origin Systems/WC Kilrathi Saga/
+  Windows: %APPDATA%\Origin Systems\WC Kilrathi Saga\
+
+Linux uses XDG_DATA_HOME instead of ~/.local/share when set. Delete launcher.ini
+to reset the GUI preferences. Command-line arguments start the game directly
+from the working directory; add --gui to review them in the launcher before
+starting. Explicit arguments override saved settings. Direct launches do not
+read or write the INI file.
 Linux's Browse button uses an installed XDG desktop portal. The directory can
 also be entered directly.
 
