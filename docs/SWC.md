@@ -27,6 +27,10 @@ Spirit's funeral if she was lost. Player destruction leads through the death
 cinematic and funeral to animated THE END. Losing the carrier with no nearby
 enemies plays BUC and the narrated stranded ending. Completed flights/endings
 return to the title menu; New Game always starts fresh Enyo 1.
+The launcher and command line support enhanced OpenGL, joystick modes and axis
+layouts, rumble, and cockpitless view. EGA dithering remains WC1-only because
+its conversion table depends on the DOS palette. See [SDL2.md](SDL2.md) for
+the graphics options and controller layouts.
 Later missions, campaign progression, save/load, remaining HUD modes and
 side/rear views are still pending. These paths have been compiled and inspected
 without interactive execution.
@@ -313,8 +317,9 @@ Flight uses WC1's DOS/Win32 mouse and keyboard controls through SDL2:
 | Comma/period, Insert/Delete, or keypad 0/decimal | Roll |
 | Shift with a steering key | WC1's fast steering response |
 | Keypad 5 | Centre steering and the mouse pointer |
-| +/- or keypad +/- | Change commanded speed while held |
+| +/- or keypad +/-, mouse wheel | Change commanded speed; keys repeat while held |
 | Backspace | Set commanded speed to zero; the ship decelerates |
+| Backslash | Set commanded speed to maximum |
 | Tab or keypad * | Afterburner, subject to WC1's fuel and timer checks |
 | Space / left mouse button | Fire selected guns; holding repeats while energy and cooldown permit |
 | Enter / press both mouse buttons | Release one selected missile; guided weapons require a lock |
@@ -326,15 +331,42 @@ Flight uses WC1's DOS/Win32 mouse and keyboard controls through SDL2:
 | C / 1..7 | Open/close WC1 communications / choose a numbered recipient or command |
 | Ctrl+F1 | Toggle cockpit |
 | P / Esc | Pause / close communications, otherwise exit |
+| Cmd+Enter (macOS), Alt+Enter (other platforms) | Toggle fullscreen in flight, menus, and movies |
 
 The window title shows the selected objective, actual and commanded speed,
 and afterburner state. The pointer is confined to the flight window; P releases
 it while paused. Losing focus also pauses movement and releases the pointer.
-Keyboard steering takes over until the next mouse movement. Releasing the
+Keyboard steering takes priority while held; moving the mouse or joystick
+selects that steering device. Releasing the
 right-button roll/throttle mode recentres the pointer, as in WC1. Holding both
 buttons releases one missile per press; a latched right-button afterburner keeps
-its existing behavior and allows left-button guns. Joystick flight is still
-unsupported; the GUI disables its options. Q/E are no longer roll bindings.
+its existing behavior and allows left-button guns. Q/E are no longer roll bindings.
+
+Joystick controls use the same launcher options as WC1, including all seven
+four-axis layouts. The default two-button mode uses button 1 for guns, button 2
+as a roll/throttle modifier, a double press and hold of button 2 for afterburner,
+and both buttons for a missile. Mapped controllers use A/B for these buttons.
+The improved modes use these bindings:
+
+| Controller / joystick button | Action |
+| --- | --- |
+| A / 1 | Guns |
+| B / 2 | Release missile |
+| X / 3 | Hold for afterburner |
+| Y / 4 | Roll/throttle modifier in two-axis mode; cycle target in four-axis mode |
+| LB/RB / 5/6 | Cycle guns / missile type |
+| Left/right stick clicks, or raw buttons 7/8 | Next objective / autopilot |
+| D-pad Up/Down/Left/Right | Full speed / stop / communications / target lock |
+| D-pad while communications are open | Up/Down highlights a choice, Right selects, Left closes |
+| Start / Back | Pause / close communications, otherwise exit |
+
+Controller navigation also works in carrier rooms and scenes: D-pad browses
+hotspots, A confirms, B/Back goes back or skips, and Start pauses. Confirmation
+uses button release, matching the keyboard behavior so scene transitions do not
+reuse a held button. Joysticks can connect or disconnect during the session;
+SDL's normalized axes need no `j.cal`. Optional rumble uses the shared heavy-weapon,
+damage, collision, and afterburner feedback and stops on pause, focus loss,
+scene transitions, disconnect, and shutdown.
 
 To return, select the Tiger's Claw objective with N and travel back with A
 when autopilot is available. Use T to target the visible carrier, then C and
@@ -849,8 +881,12 @@ are queued. Right-button state is passed only as a motion modifier; two presses
 within WC1's 20/60-second interval activate the shared `your_afterburner` routine
 while the button is held. This timing-only check tolerates WC1's pointer
 recentering between clicks. SDL handles weapon buttons separately and calls the
-shared firing routines. Short left clicks remain pending until a simulation
-tick. `HandleSpaceFlightControls` is still bypassed because its remaining HUD
+shared firing routines. Short left clicks and controller gun presses remain
+pending until a simulation tick. The joystick adapter samples normalized base
+axes and calls the existing enhanced-axis and rumble code once per flight tick.
+Discrete controller buttons are translated directly into events for the SWC
+loop, including scene navigation, without feeding WC1's separate event queue.
+`HandleSpaceFlightControls` is still bypassed because its remaining HUD
 and mission commands are not connected. SDL builds zero-initialize the legacy
 input event before polling, since motion and empty polls leave some fields
 unset. In SDL builds only, `accelerate` multiplies signed throttle steps by 256
@@ -1054,7 +1090,7 @@ VDU rendering respects the shared mode stack and SWC's physical-damage flags.
 +0x1256 are empty functions in the Mac demo. Destination/range text is produced
 by the separate readout layer, not a missing navigation-page implementation.
 CODE_01 `MacDrawcel2` +0x14a4 maps static over the quad from DATA/0 +0x426/+0x5a6;
-the SDL adapter uses the recovered fixed-point polygon rasterizer and ignores
+the default SDL path uses the recovered fixed-point polygon rasterizer and ignores
 frame-origin offsets for this operation. Communications use their separate +0x4e6 polygon and WGMN
 frames. Cockpit damage, malfunction and communication state reset on a new flight.
 
@@ -1062,7 +1098,8 @@ This pass supports the Enyo 1 Hornet cockpit. Ship capacities use the recovered
 SWC definitions. Shield, armor and weapon-energy displays now respond to shared
 combat state. Target brackets use SDL corners around the rotated sprite bounds;
 the separate `get_Mac_boundaries` calculation and CKPT/36 corner artwork remain
-unimplemented. Flight sprites and VDU polygons use the recovered rasterizer.
+unimplemented. Flight sprites and VDU polygons use the recovered rasterizer by
+default; enhanced OpenGL maps the same corners with GPU triangles.
 Target names use SWC object names without the original pilot/ace-name substitutions.
 Shared targeting/missile-lock notices still use WC1 lifetimes at host positions;
 component and native computer messages use the original SWC status area.
@@ -1114,6 +1151,14 @@ clip interpolation. CODE_09 +0x38d8 draws `max(2, span-1)` texels, skipping
 palette zero. The adapter preserves these rules, using explicit source/output
 bounds to avoid the original unchecked memory accesses. SDL presents the
 completed pixels, replacing rotated rectangles and textured VDU triangles.
+
+Optional `--enhanced` rendering keeps those Q8 transforms but uses SDL's OpenGL
+backend to draw textured triangles at the window's output resolution. Each
+sprite caches its fixed flight palette as a texture, with palette zero
+transparent and nearest sampling. This deliberately uses GPU coverage instead
+of the software rasterizer's exact span rules. Menu and movie rendering remain
+within the same SDL texture/target API; the separate WC1 indexed-frame shader
+does not process SWC frames.
 
 CODE_02 `Cos` +0x557c and `Sin` +0x5608 fold angles into DATA/0 +0x4550's
 91-word Q8 quadrant table. Their three-letter MacsBug names were omitted by

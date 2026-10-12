@@ -5,7 +5,7 @@ The native target reuses the reconstructed game and `ix` audio library.
 native objects stay under `out-modern/` and never enter the MSVC comparison
 build.
 
-The game still renders a 320x200 indexed frame. Both backends present it in a
+WC1 still renders a 320x200 indexed frame. Both backends present it in a
 centered 4:3 viewport and use that viewport for pointer mapping. `--enhanced`
 selects the optional OpenGL 3.2 space-object renderer; the original software
 path remains the default and fallback.
@@ -22,13 +22,13 @@ path retains its separate synthesized music-and-effects mix.
 Development builds use ASan and UBSan. Release builds select
 `MODERN_RELEASE=1`.
 
-The GUI recognizes the Super Wing Commander Mac demo and offers **Start Enyo 1**.
-This experimental SDL2 flight uses SWC cockpit/ship images and mission data with
-WC1 ship setup, flight dynamics, projection, navigation, and player weapons.
-The original Hornet launch movies play first when `Movies/` is present, with
-embedded audio and Space/Enter/Esc/click to skip. NPC AI and mission completion
-are not implemented. `make modern-swc` still builds the separate
-asset viewer. See [SWC.md](SWC.md) for setup, controls, and remaining work.
+The GUI also recognizes the Super Wing Commander Mac demo. Its experimental
+Enyo 1 session includes startup, the animated title menu, carrier conversations,
+briefing, combat, autopilot, landing, and endings. SDL2 presents the Mac artwork
+and audio while WC1 supplies shared flight and mission logic. OpenGL rendering,
+joystick layouts, rumble, and cockpitless view work with this path too.
+`make modern-swc` builds the separate asset viewer. See [SWC.md](SWC.md) for
+setup, controls, and remaining work.
 
 ## Graphical launcher
 
@@ -39,12 +39,12 @@ to show it before startup; otherwise the existing command-line path is used.
 
 The Slint window follows the WC2 launcher: title banner, installation picker,
 graphics and gameplay controls, joystick controls, and Cancel/Launch buttons.
-The WC1 controls map to:
+The controls map to:
 
 | Control | Command-line equivalent |
 | --- | --- |
 | Enhanced OpenGL | `--enhanced` |
-| EGA 16-colour dithering | `--ega` |
+| EGA 16-colour dithering (WC1 only) | `--ega` |
 | Cockpitless view | `-c` (campaign flight; the training simulator keeps its cockpit) |
 | Rumble | `--joystick-rumble` |
 | Control mode | `--joystick-mode=original`, `4button-2axis`, or `4button-4axis` |
@@ -69,8 +69,9 @@ For SWC, select the **SuperWing DEMO** directory containing `CMFs/Data.CMF`,
 `Spaceflight.CMF`, and `PCShipV00.CMF`. Keep the executable's native resource fork
 or place its extracted raw fork at `SuperWingCommanderDemo.rsrc` in that directory.
 The GUI checks archive headers and palette availability, identifies the Mac demo,
-and starts its title menu, carrier visit and Enyo 1 flight. Unsupported graphics
-and joystick options are disabled; cockpitless view is available.
+and starts its title menu, carrier visit and Enyo 1 flight. OpenGL, all joystick
+modes and axis layouts, rumble, and cockpitless view are available. EGA dithering
+uses WC1's DOS palette conversion table, so it stays disabled for Mac data.
 `--swc-demo DIRECTORY` selects SWC from the command line, including when the
 directory also contains WC1 data. With `--gui`, it preselects that directory and
 keeps SWC selected. Otherwise the GUI gives `GAMEDAT` priority over `CMFs` in
@@ -78,6 +79,21 @@ mixed directories, and the command-line launcher defaults to WC1. Game selection
 belongs to the launcher; shared WC1 mission loading never probes SWC archives.
 The runtime `--check` modes and GUI auto-launch/snapshot automation have been
 removed. Passing `--check` reports an error before opening a window.
+
+For example, the demo accepts the same enhancement switches:
+
+```sh
+./wc1-modern --swc-demo "/path/to/SuperWing DEMO" --enhanced \
+    --joystick-mode=4button-4axis --joystick-rumble
+```
+
+SWC keeps its 320x240 logical coordinates and centered 4:3 viewport, including
+high-DPI windows. Its default flight renderer uses the recovered software
+rasterizer. `--enhanced` selects SDL's OpenGL backend and draws ship sprites
+and VDU polygons at output resolution with cached textures and nearest sampling;
+scenes and movies use the same SDL renderer. This is separate from WC1's
+indexed-frame OpenGL backend. An unavailable OpenGL driver reports a startup
+error. EGA dithering is ignored when `--swc-demo` is selected.
 
 `src/sdl/slint/` is a separate CMake project using C++20, CMake 3.21+, and Rust
 1.88+. It pins Slint 1.16.1 and Native File Dialog Extended 1.3.0 and links them
@@ -155,6 +171,9 @@ four-axis mode accepts:
 
 Use `--joystick-debug` for event diagnostics and `--joystick-rumble` for
 supported feedback. The README documents the common controller bindings.
+These modes also apply to SWC. In its menus and scenes, the D-pad browses,
+A confirms, B/Back goes back or skips, and Start pauses. See
+[the demo controls](SWC.md#run) for its flight bindings.
 
 ## Commands
 

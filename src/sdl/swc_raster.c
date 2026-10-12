@@ -1,7 +1,9 @@
 /* SWC CODE_01 software texture mapping, presented through an SDL texture.
  * The original Q8 edge/span arithmetic decides coverage and texels. SDL
- * only copies the completed pixels at 1:1 logical resolution. */
+ * only copies the completed pixels at 1:1 logical resolution. The optional
+ * OpenGL path uses the same Q8 corners with output-resolution triangles. */
 #include "swc.h"
+#include "video_internal.h"
 
 typedef struct SwcTextureVertex {
     int x;
@@ -15,6 +17,25 @@ typedef struct SwcTextureEdge {
     int u;
     int v;
 } SwcTextureEdge;
+
+SDL_Renderer *SdlCreateSwcRenderer(SDL_Window *window)
+{
+    SDL_RendererInfo driver;
+    int index;
+
+    if (!SdlUsingGlRenderer())
+        return SDL_CreateRenderer(window, -1, 0);
+    /* SWC scenes use SDL textures and render targets. SDL's OpenGL backend
+     * owns their context; WC1's indexed-frame GL context is not involved. */
+    for (index = 0; index < SDL_GetNumRenderDrivers(); index++) {
+        if (SDL_GetRenderDriverInfo(index, &driver) == 0 &&
+            SDL_strcmp(driver.name, "opengl") == 0)
+            return SDL_CreateRenderer(window, index,
+                SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
+    }
+    SDL_SetError("The SDL OpenGL renderer is unavailable");
+    return NULL;
+}
 
 int SdlLoadSwcRasterImage(const SwcBuffer *set, uint32_t index, SwcRasterImage *image)
 {
@@ -35,6 +56,64 @@ int SdlLoadSwcRasterImage(const SwcBuffer *set, uint32_t index, SwcRasterImage *
         return -1;
     }
     return 0;
+}
+
+void SdlFreeSwcRasterImage(SwcRasterImage *image)
+{
+    SDL_DestroyTexture(image->texture);
+    SDL_free(image->pixels);
+    SDL_zero(*image);
+}
+
+static int SwcDrawEnhancedPolygon(SDL_Renderer *renderer, SwcRasterImage *image,
+                                    const SDL_Color colors[256], const SDL_Point corners[4])
+{
+    static const int indices[6] = {0, 1, 2, 0, 2, 3};
+    SDL_Vertex vertices[4];
+    SDL_Surface *surface;
+    uint32_t *row;
+    SDL_Color color;
+    uint8_t ink;
+    int x;
+    int y;
+    int corner;
+
+    if (image->texture == NULL) {
+        surface = SDL_CreateRGBSurfaceWithFormat(0, image->width, image->height,
+                                                 32, SDL_PIXELFORMAT_ARGB8888);
+        if (surface == NULL)
+            return -1;
+        for (y = 0; y < image->height; y++) {
+            row = (uint32_t *)((uint8_t *)surface->pixels + y * surface->pitch);
+            for (x = 0; x < image->width; x++) {
+                ink = image->pixels[(size_t)y * image->width + x];
+                color = colors[ink];
+                row[x] = ink == 0 ? 0 : UINT32_C(0xff000000) |
+                    (uint32_t)color.r << 16 | (uint32_t)color.g << 8 | color.b;
+            }
+        }
+        /* Each image uses the fixed flight palette for its lifetime. Keep
+         * nearest sampling so transparent edges retain the original colours. */
+        image->texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+        if (image->texture == NULL)
+            return -1;
+        if (SDL_SetTextureBlendMode(image->texture, SDL_BLENDMODE_BLEND) != 0 ||
+            SDL_SetTextureScaleMode(image->texture, SDL_ScaleModeNearest) != 0) {
+            SDL_DestroyTexture(image->texture);
+            image->texture = NULL;
+            return -1;
+        }
+    }
+    for (corner = 0; corner < 4; corner++) {
+        vertices[corner].position = (SDL_FPoint){corners[corner].x / 256.0f,
+                                                corners[corner].y / 256.0f};
+        vertices[corner].color = (SDL_Color){255, 255, 255, 255};
+        vertices[corner].tex_coord = (SDL_FPoint){
+            corner == 1 || corner == 2 ? 1.0f : 0.0f,
+            corner >= 2 ? 1.0f : 0.0f};
+    }
+    return SDL_RenderGeometry(renderer, image->texture, vertices, 4, indices, 6);
 }
 
 /* CODE_01 adjust +0x5a28. Arithmetic shifts retain negative-coordinate
@@ -157,7 +236,7 @@ static void SwcRasterSpan(uint32_t *pixels, const SwcRasterImage *image,
 /* CODE_01 poly +0x5e3a and MacDrawcel2 +0x14a4. The first extrema
  * select the two edge chains. The bottom clip is 239, exclusive. */
 int SdlDrawSwcPolygon(SDL_Renderer *renderer, SDL_Texture *canvas,
-                        const SwcRasterImage *image, const SDL_Color colors[256],
+                        SwcRasterImage *image, const SDL_Color colors[256],
                         const SDL_Point corners[4])
 {
     SwcTextureVertex vertices[4];
@@ -175,6 +254,8 @@ int SdlDrawSwcPolygon(SDL_Renderer *renderer, SDL_Texture *canvas,
 
     if (image->pixels == NULL)
         return 0;
+    if (SdlUsingGlRenderer())
+        return SwcDrawEnhancedPolygon(renderer, image, colors, corners);
     for (vertex = 0; vertex < 4; vertex++) {
         vertices[vertex] = (SwcTextureVertex){corners[vertex].x, corners[vertex].y,
             (vertex == 1 || vertex == 2) ? (image->width - 1) * 256 : 0,
@@ -269,7 +350,7 @@ static SDL_Rect SwcRotatedSpriteBounds(const SDL_Point corners[4])
  * truncate scale before multiplying dimensions, and swap XY for flips.
  * UV endpoints are width/height minus one, not normalized SDL corners. */
 int SdlDrawSwcRotatedImage(SDL_Renderer *renderer, SDL_Texture *canvas,
-                            const SwcRasterImage *image, const SDL_Color colors[256],
+                            SwcRasterImage *image, const SDL_Color colors[256],
                             int x, int y, int angle, int scale, int flip, SDL_Rect *bounds)
 {
     SDL_Point corners[4];

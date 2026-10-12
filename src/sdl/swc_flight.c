@@ -20,6 +20,11 @@ static Uint32 swcLastRightClick;
 static int swcReleaseWeaponPending;
 static int swcGunFirePending;
 static int swcBothButtonsHeld;
+static int swcJoystickSteering;
+static int swcJoystickAfterburner;
+static int swcJoystickClickPending;
+static unsigned int swcJoystickButtons;
+static Uint32 swcLastJoystickClick;
 
 /* Borrowed only while SdlRunSwcMission owns these presentation resources. */
 static SDL_Window *swcCinemaWindow;
@@ -347,6 +352,11 @@ static void SwcResetFlightInput(void)
     swcReleaseWeaponPending = 0;
     swcGunFirePending = 0;
     swcBothButtonsHeld = 0;
+    swcJoystickSteering = 0;
+    swcJoystickAfterburner = 0;
+    swcJoystickClickPending = 0;
+    swcJoystickButtons = 0;
+    SdlEndJoystickSpaceflight();
 }
 
 static void SwcCentreFlightMouse(void)
@@ -360,7 +370,14 @@ static void SwcCentreFlightMouse(void)
 
 static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
 {
+    InputDeviceSample joystick;
+    Uint32 now = SDL_GetTicks();
     short throttle;
+    int haveJoystick;
+    int enhancedJoystick = SdlJoystickHasEnhancedControls();
+    int joystickModifier;
+    int joystickGuns;
+    int sampledMouse = 0;
     int secondaryButton;
     int bothButtons;
 
@@ -368,13 +385,40 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
         SwcResetFlightInput();
         return;
     }
+    haveJoystick = SdlReadSwcJoystickFlightSample(&joystick);
+    if (!enhancedJoystick && (joystick.buttons & 2) && !(swcJoystickButtons & 2)) {
+        swcJoystickAfterburner = swcJoystickClickPending &&
+            (Uint32)(now - swcLastJoystickClick) <= 20 * 1000 / 60;
+        swcLastJoystickClick = now;
+        swcJoystickClickPending = 1;
+    }
+    if (!(joystick.buttons & 2))
+        swcJoystickAfterburner = 0;
+    if (!enhancedJoystick && (joystick.buttons & 3) == 3 &&
+        (swcJoystickButtons & 3) != 3 && !swcJoystickAfterburner)
+        swcReleaseWeaponPending = 1;
+    swcJoystickButtons = joystick.buttons;
+    joystickModifier = !enhancedJoystick && (joystick.buttons & 2) &&
+        !swcJoystickAfterburner;
+    joystickGuns = (joystick.buttons & 1) &&
+        (enhancedJoystick || (joystick.buttons & 3) != 3 || swcJoystickAfterburner);
     /* Retain WC1's key priority, diagonal keys, ramp and direction reversal.
        Its Win32 key polling is supplied by the same SDL sample for the whole
        tick, including modifiers. */
     SdlSetKeyboardSnapshot(keys);
     cPreviousKey = (signed char)bCurrentKey;
     bCurrentKey = (unsigned char)PollKeyboardState();
-    if (bCurrentKey == 0 && bMouseCursorVisible) {
+    if (bCurrentKey == 0 && haveJoystick &&
+        (joystick.x != 0 || joystick.y != 0 || swcJoystickSteering || joystickModifier)) {
+        swcJoystickSteering = 1;
+        bMouseCursorVisible = 0;
+        bMouseAfterburnerControl = 0;
+        nYawInput = joystickModifier ? 0 : (short)joystick.x;
+        nPitchInput = joystickModifier ? 0 : (short)-joystick.y;
+        nRollInput = joystickModifier ? (short)joystick.x : 0;
+        if (joystickModifier)
+            accelerate((short)-(joystick.y / 2));
+    } else if (bCurrentKey == 0 && bMouseCursorVisible) {
         /* Feed the original mouse branch in player_input. A held position is
            sampled each tick, so right-button throttle is independent of SDL
            motion-event frequency. Button actions that fire weapons stay out
@@ -383,6 +427,7 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
         QueueInputEvent(13, (unsigned short)nHostMouseMessageX,
                         (unsigned short)nHostMouseMessageY, 0, 0, secondaryButton, 0);
         player_input();
+        sampledMouse = 1; /* player_input also applies the enhanced axes. */
         /* WC1 recentres the pointer when right-button roll/throttle ends. */
         nHostMouseMessageX = stMouseCursorState.x;
         nHostMouseMessageY = stMouseCursorState.y;
@@ -408,6 +453,8 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
         }
     }
     SdlSetKeyboardSnapshot(NULL);
+    if (!sampledMouse)
+        SdlApplyJoystickFlightControls();
 
     /* Movement commands from WC1's HandleSpaceFlightControls. Poll held keys
        separately so thrust can change while steering, without host key repeat. */
@@ -418,14 +465,17 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
     else if (throttle != 0)
         accelerate(throttle);
     if (keys[SDL_SCANCODE_TAB] || keys[SDL_SCANCODE_KP_MULTIPLY] ||
-        (swcMouseAfterburner && (mouseButtons & SDL_BUTTON_RMASK)))
+        (swcMouseAfterburner && (mouseButtons & SDL_BUTTON_RMASK)) ||
+        swcJoystickAfterburner)
         your_afterburner();
     bothButtons = (mouseButtons & (SDL_BUTTON_LMASK | SDL_BUTTON_RMASK)) ==
         (SDL_BUTTON_LMASK | SDL_BUTTON_RMASK);
     if (bothButtons && !swcBothButtonsHeld && !swcMouseAfterburner)
         swcReleaseWeaponPending = 1;
     swcBothButtonsHeld = bothButtons;
-    if (keys[SDL_SCANCODE_SPACE] || (swcGunFirePending && !bothButtons) ||
+    if (keys[SDL_SCANCODE_SPACE] || joystickGuns ||
+        (swcGunFirePending && !bothButtons &&
+         (enhancedJoystick || (joystick.buttons & 3) != 3 || swcJoystickAfterburner)) ||
         ((mouseButtons & SDL_BUTTON_LMASK) && (!bothButtons || swcMouseAfterburner)))
         fire_players_lasers();
     swcGunFirePending = 0;
@@ -668,6 +718,8 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
             elapsed += SDL_min(current - previous, 250);
         previous = current;
         while (SDL_PollEvent(&event)) {
+            if (SdlHandleSwcEvent(swcCinemaWindow, &event, 0))
+                continue;
             if (event.type == SDL_QUIT ||
                 (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE) ||
                 (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
@@ -909,6 +961,8 @@ static int SwcRunFlightScene(int titleMenu)
         now = SDL_GetTicks();
         activate = 0;
         while (SDL_PollEvent(&event)) {
+            if (SdlHandleSwcEvent(swcCinemaWindow, &event, 0))
+                continue;
             if (event.type == SDL_QUIT || (event.type == SDL_WINDOWEVENT &&
                 event.window.event == SDL_WINDOWEVENT_CLOSE)) {
                 result = SWC_MOVIE_QUIT;
@@ -1108,16 +1162,17 @@ int SdlRunSwcMission(const char *missionPath, int cockpitless)
         }
     }
     SDL_SetMainReady();
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER) != 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER |
+                 SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) != 0)
         goto done;
     savedCursorVisible = SDL_ShowCursor(SDL_QUERY);
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
     window = SDL_CreateWindow("Super Wing Commander - Enyo 1 (experimental flight)",
                                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 960, 720,
-                               SDL_WINDOW_RESIZABLE);
+                               SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (window == NULL)
         goto done;
-    renderer = SDL_CreateRenderer(window, -1, 0);
+    renderer = SdlCreateSwcRenderer(window);
     if (renderer == NULL || SDL_RenderSetLogicalSize(renderer, 320, 240) != 0)
         goto done;
     if (SwcCMGetChunk(&cockpitCmf, "PC00", 1, &cockpitSet) != 0)
@@ -1261,6 +1316,10 @@ title_menu:
     }
     while (!done) {
         while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_JOYDEVICEREMOVED)
+                SwcResetFlightInput();
+            if (SdlHandleSwcEvent(window, &event, 1))
+                continue;
             if (event.type == SDL_QUIT)
                 done = 1;
             if (event.type == SDL_WINDOWEVENT) {
@@ -1291,11 +1350,20 @@ title_menu:
                 /* SDL_RenderSetLogicalSize already converts these positions
                    to 320x240, including window scaling and letterboxing. */
                 if (event.type == SDL_MOUSEMOTION) {
+                    swcJoystickSteering = 0;
                     nHostMouseMessageX = SDL_clamp(event.motion.x,
                                                    stSpaceBuffer.left, stSpaceBuffer.right);
                     nHostMouseMessageY = SDL_clamp(event.motion.y,
                                                    stSpaceBuffer.top, stSpaceBuffer.bottom);
                     bMouseCursorVisible = 1;
+                } else if (event.type == SDL_MOUSEWHEEL &&
+                           !bPlayerDestroyed && nArcadeState == 0) {
+                    int wheel = event.wheel.y;
+
+                    if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+                        wheel = -wheel;
+                    if (wheel != 0)
+                        accelerate(wheel > 0 ? 1 : -1);
                 } else if (event.type == SDL_MOUSEBUTTONDOWN &&
                            event.button.button == SDL_BUTTON_LEFT) {
                     /* Preserve clicks that begin and end between simulation ticks. */
@@ -1323,6 +1391,18 @@ title_menu:
             }
             if (event.type == SDL_KEYDOWN && !event.key.repeat) {
                 switch (event.key.keysym.sym) {
+                case SDLK_SPACE:
+                    if (focused && !paused)
+                        swcGunFirePending = 1;
+                    break;
+                case SDLK_BACKSPACE:
+                    if (focused && !paused)
+                        anShipSpeed[0] = 0;
+                    break;
+                case SDLK_BACKSLASH:
+                    if (focused && !paused)
+                        celerate(0, (int)asShipMaximumSpeed[0] * 256 - anShipSpeed[0]);
+                    break;
                 case SDLK_ESCAPE:
                     if (IsCommChoiceMenuOpen())
                         CloseCommChoiceMenu();
@@ -1552,7 +1632,7 @@ done:
         SDL_ShowCursor(savedCursorVisible);
     for (object = 0; object < OBJECT_TYPE_COUNT; object++) {
         for (view = 0; (uint32_t)view < images[object].count; view++)
-            SDL_free(images[object].views[view].pixels);
+            SdlFreeSwcRasterImage(&images[object].views[view]);
         SDL_free(images[object].views);
     }
     SdlFreeSwcCockpit();
@@ -1560,6 +1640,7 @@ done:
     SDL_DestroyTexture(swcRasterCanvas);
     swcRasterCanvas = NULL;
     SDL_DestroyRenderer(renderer);
+    SdlShutdownJoysticks();
     SDL_DestroyWindow(window);
     SDL_Quit();
     SDL_free(cockpitSet.data);

@@ -133,13 +133,12 @@ export component LauncherWindow inherits Window {
                     CheckBox {
                         horizontal-stretch: 1;
                         text: "Enhanced OpenGL";
-                        enabled: !root.swc-demo;
                         checked <=> root.enhanced-renderer;
                     }
 
                     CheckBox {
                         horizontal-stretch: 1;
-                        text: "EGA 16-colour dithering";
+                        text: root.swc-demo ? "EGA dithering (WC1 only)" : "EGA 16-colour dithering";
                         enabled: !root.swc-demo;
                         checked <=> root.ega-dither;
                     }
@@ -177,12 +176,10 @@ export component LauncherWindow inherits Window {
                             "WCAT — four buttons / four axes"
                         ];
                         current-index <=> root.joystick-mode-index;
-                        enabled: !root.swc-demo;
                     }
 
                     CheckBox {
                         text: "Rumble";
-                        enabled: !root.swc-demo;
                         checked <=> root.joystick-rumble;
                     }
                 }
@@ -199,7 +196,7 @@ export component LauncherWindow inherits Window {
 
                     ComboBox {
                         horizontal-stretch: 1;
-                        enabled: !root.swc-demo && root.joystick-mode-index == 2;
+                        enabled: root.joystick-mode-index == 2;
                         model: [
                             "Twin-stick roll",
                             "Twin-stick yaw",

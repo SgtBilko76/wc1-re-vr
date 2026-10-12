@@ -99,6 +99,11 @@ void SdlEnableJoystickDebug(void)
     g_bSdlJoystickDebug = 1;
 }
 
+int SdlJoystickHasEnhancedControls(void)
+{
+    return g_eSdlJoystickMode != SDL_PORT_JOYSTICK_ORIGINAL;
+}
+
 void SdlEnableJoystickRumble(void)
 {
     g_bSdlJoystickRumbleEnabled = 1;
@@ -479,6 +484,21 @@ static void SdlRefreshJoysticks(void)
     }
 }
 
+static void SdlSelectSwcJoystick(void)
+{
+    int slot = (int)nActiveInputDevice;
+
+    if (slot >= 0 && slot < 2 && g_aSdlJoystickDevices[slot].joystick != NULL)
+        return;
+    nActiveInputDevice = -1;
+    for (slot = 0; slot < 2; slot++) {
+        if (g_aSdlJoystickDevices[slot].joystick != NULL) {
+            nActiveInputDevice = (short)slot;
+            break;
+        }
+    }
+}
+
 static Sint16 SdlReadJoystickAxis(
     const SdlJoystickDevice *device, int axis)
 {
@@ -648,6 +668,30 @@ static short SdlNormalizeFlightAxis(Sint16 raw)
     return (short)(value < 0 ? -normalized : normalized);
 }
 
+int SdlReadSwcJoystickFlightSample(InputDeviceSample *sample)
+{
+    SdlJoystickDevice *device;
+    int button;
+
+    SDL_zero(*sample);
+    SDL_JoystickUpdate();
+    SdlRefreshJoysticks();
+    SdlSelectSwcJoystick();
+    if (nActiveInputDevice < 0)
+        return 0;
+    device = &g_aSdlJoystickDevices[nActiveInputDevice];
+    sample->x = SdlNormalizeFlightAxis(SdlReadJoystickAxis(device, 0));
+    sample->y = SdlNormalizeFlightAxis(SdlReadJoystickAxis(device, 1));
+    for (button = 0; button < 4; button++) {
+        if (SdlReadJoystickButton(device, button))
+            sample->buttons |= 1U << button;
+    }
+    /* The shared enhanced axis layouts consume this normalized sample.
+     * SDL axes already have known ranges; no legacy j.cal file is needed. */
+    aInputDeviceSamples[nActiveInputDevice] = *sample;
+    return 1;
+}
+
 static void SdlApplyLinearThrottle(Sint16 raw)
 {
     int maximumSpeed;
@@ -672,7 +716,7 @@ void SdlApplyJoystickFlightControls(void)
     int axisCount;
 
     g_bSdlJoystickSpaceflightActive = 1;
-    if (pEventManagerPump != get_player_input ||
+    if ((pEventManagerPump != get_player_input && !SdlSwcFlightActive()) ||
         g_eSdlJoystickMode == SDL_PORT_JOYSTICK_ORIGINAL) {
         SdlUpdateJoystickRumble();
         return;
@@ -755,6 +799,7 @@ void SdlApplyJoystickFlightControls(void)
 void SdlEndJoystickSpaceflight(void)
 {
     g_bSdlJoystickSpaceflightActive = 0;
+    g_bSdlTwoAxisModifierActive = 0;
     g_wSdlRumbleLow = 0;
     g_wSdlRumbleHigh = 0;
     g_dwSdlRumbleDeadline = 0;
@@ -909,6 +954,128 @@ static int SdlControllerMapsRawButton(
     return 0;
 }
 
+void SdlTranslateSwcJoystickEvent(SDL_Event *event, int flight)
+{
+    SdlJoystickDevice *device;
+    SDL_JoystickID instance;
+    SDL_Keycode key = SDLK_UNKNOWN;
+    Uint32 timestamp = event->common.timestamp;
+    Uint8 hatPressed;
+    unsigned short scanCode = 0;
+    int controller = event->type == SDL_CONTROLLERBUTTONDOWN ||
+                     event->type == SDL_CONTROLLERBUTTONUP;
+    int pressed;
+    int button;
+    int selection;
+    int slot;
+
+    instance = controller ? event->cbutton.which :
+        event->type == SDL_JOYHATMOTION ? event->jhat.which : event->jbutton.which;
+    SdlRefreshJoysticks();
+    SdlSelectSwcJoystick();
+    slot = SdlFindJoystick(instance);
+    if (slot < 0 || slot != (int)nActiveInputDevice) {
+        event->type = 0;
+        return;
+    }
+    device = &g_aSdlJoystickDevices[slot];
+    if (event->type == SDL_JOYHATMOTION) {
+        if (device->controller != NULL || event->jhat.hat != 0) {
+            event->type = 0;
+            return;
+        }
+        hatPressed = (Uint8)(event->jhat.value & ~device->hatState);
+        device->hatState = event->jhat.value;
+        pressed = 1;
+        if (hatPressed & SDL_HAT_UP)
+            button = SDL_PORT_JOYSTICK_BUTTON_DPAD_UP;
+        else if (hatPressed & SDL_HAT_DOWN)
+            button = SDL_PORT_JOYSTICK_BUTTON_DPAD_DOWN;
+        else if (hatPressed & SDL_HAT_LEFT)
+            button = SDL_PORT_JOYSTICK_BUTTON_DPAD_LEFT;
+        else if (hatPressed & SDL_HAT_RIGHT)
+            button = SDL_PORT_JOYSTICK_BUTTON_DPAD_RIGHT;
+        else {
+            event->type = 0;
+            return;
+        }
+    } else if (controller) {
+        if (device->controller == NULL) {
+            event->type = 0;
+            return;
+        }
+        button = SdlControllerButtonIndex(event->cbutton.button);
+        pressed = event->type == SDL_CONTROLLERBUTTONDOWN;
+    } else {
+        button = event->jbutton.button;
+        pressed = event->type == SDL_JOYBUTTONDOWN;
+        if (device->controller != NULL && SdlControllerMapsRawButton(device, button)) {
+            event->type = 0;
+            return;
+        }
+    }
+    if (button == SDL_PORT_JOYSTICK_BUTTON_BACK)
+        key = SDLK_ESCAPE;
+    else if (button == SDL_PORT_JOYSTICK_BUTTON_START)
+        key = SDLK_p;
+    else if (button == SDL_PORT_JOYSTICK_BUTTON_A)
+        key = flight ? SDLK_SPACE : SDLK_RETURN;
+    else if (!flight) {
+        switch ((SdlJoystickButton)button) {
+        case SDL_PORT_JOYSTICK_BUTTON_B: key = SDLK_ESCAPE; break;
+        case SDL_PORT_JOYSTICK_BUTTON_X: key = SDLK_SPACE; break;
+        case SDL_PORT_JOYSTICK_BUTTON_DPAD_UP: key = SDLK_UP; break;
+        case SDL_PORT_JOYSTICK_BUTTON_DPAD_DOWN: key = SDLK_DOWN; break;
+        case SDL_PORT_JOYSTICK_BUTTON_DPAD_LEFT: key = SDLK_LEFT; break;
+        case SDL_PORT_JOYSTICK_BUTTON_DPAD_RIGHT: key = SDLK_RIGHT; break;
+        default: break;
+        }
+    } else if (SdlJoystickHasEnhancedControls()) {
+        if (IsCommChoiceMenuOpen() && button >= SDL_PORT_JOYSTICK_BUTTON_DPAD_UP &&
+            button <= SDL_PORT_JOYSTICK_BUTTON_DPAD_RIGHT) {
+            selection = SdlGetCommunicationMenuSelection();
+            if (pressed && selection >= 0) {
+                if (button == SDL_PORT_JOYSTICK_BUTTON_DPAD_UP)
+                    g_nSdlCommunicationMenuSelection =
+                        (selection + nCommMenuChoiceCount - 1) % nCommMenuChoiceCount;
+                else if (button == SDL_PORT_JOYSTICK_BUTTON_DPAD_DOWN)
+                    g_nSdlCommunicationMenuSelection = (selection + 1) % nCommMenuChoiceCount;
+                else if (button == SDL_PORT_JOYSTICK_BUTTON_DPAD_RIGHT)
+                    scanCode = (unsigned short)(selection + 2);
+            }
+            if (button == SDL_PORT_JOYSTICK_BUTTON_DPAD_LEFT)
+                key = SDLK_ESCAPE;
+        } else {
+            scanCode = SdlFlightScanCodeForButton(button);
+        }
+        if (scanCode >= 2 && scanCode <= 8)
+            key = SDLK_1 + scanCode - 2;
+        else {
+            switch (scanCode) {
+            case 0x0e: key = SDLK_BACKSPACE; break;
+            case 0x11: key = SDLK_w; break;
+            case 0x14: key = SDLK_t; break;
+            case 0x1c: key = SDLK_RETURN; break;
+            case 0x1e: key = SDLK_a; break;
+            case 0x22: key = SDLK_g; break;
+            case 0x26: key = SDLK_l; break;
+            case 0x2b: key = SDLK_BACKSLASH; break;
+            case 0x2e: key = SDLK_c; break;
+            case 0x31: key = SDLK_n; break;
+            default: break;
+            }
+        }
+    }
+    SDL_zero(*event);
+    if (key != SDLK_UNKNOWN) {
+        event->type = pressed ? SDL_KEYDOWN : SDL_KEYUP;
+        event->key.timestamp = timestamp;
+        event->key.state = pressed ? SDL_PRESSED : SDL_RELEASED;
+        event->key.keysym.sym = key;
+        event->key.keysym.scancode = SDL_GetScancodeFromKey(key);
+    }
+}
+
 void SdlHandleJoystickButtonEvent(SDL_JoystickID instanceId,
                                       int button, int pressed,
                                       int controllerEvent)
@@ -1033,6 +1200,10 @@ void SdlHandleJoystickDeviceEvent(Uint32 type, Sint32 which)
             SdlCloseJoystick(&g_aSdlJoystickDevices[slot]);
     }
     SdlRefreshJoysticks();
+    if (SdlSwcFlightActive()) {
+        SdlSelectSwcJoystick();
+        return;
+    }
     if (type == SDL_JOYDEVICEADDED &&
         g_bSdlJoystickInputStarted &&
         nActiveInputDevice == -1)

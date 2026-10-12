@@ -401,6 +401,40 @@ static void SdlToggleFullscreen(Uint32 windowId)
         SDL_SetWindowMouseGrab(window, SDL_TRUE);
 }
 
+int SdlHandleSwcEvent(SDL_Window *window, SDL_Event *event, int flight)
+{
+    SdlLogJoystickEvent(event);
+    switch (event->type) {
+    case SDL_JOYDEVICEADDED:
+    case SDL_JOYDEVICEREMOVED:
+        SdlHandleJoystickDeviceEvent(event->type, event->jdevice.which);
+        return 1;
+    case SDL_CONTROLLERBUTTONDOWN:
+    case SDL_CONTROLLERBUTTONUP:
+    case SDL_JOYBUTTONDOWN:
+    case SDL_JOYBUTTONUP:
+    case SDL_JOYHATMOTION:
+        if (!(SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS))
+            return 1;
+        SdlTranslateSwcJoystickEvent(event, flight);
+        return event->type == 0;
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+        if (SdlIsFullscreenShortcut(&event->key)) {
+            if (event->type == SDL_KEYDOWN && !event->key.repeat)
+                SdlToggleFullscreen(SDL_GetWindowID(window));
+            return 1;
+        }
+        if (event->type == SDL_KEYDOWN && event->key.keysym.sym == SDLK_q &&
+            (event->key.keysym.mod & KMOD_GUI))
+            event->type = SDL_QUIT;
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
+
 static int SdlHandleKeyboardEvent(const SDL_KeyboardEvent *event)
 {
     int pressed;

@@ -437,7 +437,7 @@ static void SwcFreeCockpitShape(SwcCockpitShape *shape)
     if (shape->frames != NULL) {
         for (frame = 0; frame < shape->count; frame++) {
             SDL_DestroyTexture(shape->frames[frame].texture);
-            SDL_free(shape->frames[frame].image.pixels);
+            SdlFreeSwcRasterImage(&shape->frames[frame].image);
         }
         SDL_free(shape->frames);
     }
@@ -1316,6 +1316,7 @@ int SdlDrawSwcHud(void)
     if (IsCommChoiceMenuOpen()) {
         SDL_Rect panel = {10, 12, 300, 34 + 11 * SDL_min(nCommMenuChoiceCount, 7)};
         const char *heading = pszCommMenuHeading;
+        int selection = SdlGetCommunicationMenuSelection();
         size_t length;
 
         /* WC1 owns recipients, command availability and request dispatch.
@@ -1338,8 +1339,10 @@ int SdlDrawSwcHud(void)
         }
         for (index = 0; index < nCommMenuChoiceCount && index < 7; index++) {
             SDL_snprintf(text, sizeof(text), "%d. %s", index + 1, apszCommMenuChoiceText[index]);
-            SwcDrawCockpitText(16, 45 + 11 * index, 0x84, text);
+            SwcDrawCockpitText(16, 45 + 11 * index,
+                index == selection ? 0x81 : 0x84, text);
         }
+        nCommMenuReuseMode = 1;
     }
     if (bPlayerDestroyed || nArcadeState == 4)
         SwcDrawCockpitText(125, 65, 0xd4, "SHIP DESTROYED");

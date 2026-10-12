@@ -66,6 +66,8 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
             elapsed += current - previous;
         previous = current;
         while (SDL_PollEvent(&event)) {
+            if (SdlHandleSwcEvent(window, &event, 0))
+                continue;
             if (event.type == SDL_QUIT ||
                 (event.type == SDL_WINDOWEVENT &&
                  event.window.event == SDL_WINDOWEVENT_CLOSE)) {

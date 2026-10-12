@@ -214,6 +214,12 @@ BOOL SdlReadJoystickAxisRange(unsigned int device,
                                  unsigned int *yMaximum);
 int SdlSetJoystickMode(const char *name);
 int SdlSetJoystickAxesMode(const char *name);
+struct InputDeviceSample;
+int SdlJoystickHasEnhancedControls(void);
+int SdlReadSwcJoystickFlightSample(struct InputDeviceSample *sample);
+void SdlTranslateSwcJoystickEvent(SDL_Event *event, int flight);
+/* Consume host shortcuts/device events; translate controller buttons in place. */
+int SdlHandleSwcEvent(SDL_Window *window, SDL_Event *event, int flight);
 void SdlEnableJoystickDebug(void);
 void SdlEnableJoystickRumble(void);
 void SdlLogJoystickEvent(const SDL_Event *event);

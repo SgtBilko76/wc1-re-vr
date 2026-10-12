@@ -211,14 +211,17 @@ typedef struct SwcRasterImage {
     uint8_t *pixels;
     int width;
     int height;
+    SDL_Texture *texture; /* Optional OpenGL sprite cache, owned with pixels. */
 } SwcRasterImage;
+SDL_Renderer *SdlCreateSwcRenderer(SDL_Window *window);
 int SdlLoadSwcRasterImage(const SwcBuffer *set, uint32_t index, SwcRasterImage *image);
+void SdlFreeSwcRasterImage(SwcRasterImage *image);
 /* Polygon corners are Q8 screen coordinates; the complete frame supplies UV. */
 int SdlDrawSwcPolygon(SDL_Renderer *renderer, SDL_Texture *canvas,
-                        const SwcRasterImage *image, const SDL_Color colors[256],
+                        SwcRasterImage *image, const SDL_Color colors[256],
                         const SDL_Point corners[4]);
 int SdlDrawSwcRotatedImage(SDL_Renderer *renderer, SDL_Texture *canvas,
-                            const SwcRasterImage *image, const SDL_Color colors[256],
+                            SwcRasterImage *image, const SDL_Color colors[256],
                             int x, int y, int angle, int scale, int flip, SDL_Rect *bounds);
 SDL_Texture *SdlCreateSwcTexture(SDL_Renderer *renderer, const SwcBuffer *set,
                                  uint32_t index, const SDL_Color colors[256]);

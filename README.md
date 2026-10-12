@@ -72,6 +72,11 @@ Saga installations also need `STREAMS/PREFLITE.STR`, `POSFLITE.STR`, and
 in a per-user `launcher.ini` for the next GUI launch. See
 [launcher settings](docs/SDL2.md#launcher-settings) for the file location and format.
 
+The [Super Wing Commander Mac demo](docs/SWC.md) also supports OpenGL,
+cockpitless view, the joystick modes and axis layouts, and rumble. Select its
+directory in the launcher or use `--swc-demo DIRECTORY` with the same switches.
+EGA dithering applies only to WC1 data.
+
 Providing command-line arguments starts the game directly from the working
 directory. Add `--gui` to review those options in the launcher first; changing
 a control overrides its command-line default. Explicit command-line options

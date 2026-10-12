@@ -137,7 +137,7 @@ static int SdlApplyLauncherOptions(const SdlLauncherOptions *options)
      * be turned off before the video and input systems are initialized. */
     if (options->joystickRumble)
         SdlEnableJoystickRumble();
-    if (options->egaDither)
+    if (options->egaDither && !options->swcDemo)
         SdlEnableEgaDither();
     return 1;
 }
@@ -206,6 +206,11 @@ int main(int argumentCount, char **arguments)
         fprintf(stderr, "Cannot open SWC demo directory: %s\n", SDL_GetError());
         return 1;
     }
+    if (!SdlApplyLauncherOptions(&launcherOptions))
+        return 1;
+    useEnhancedRenderer = launcherOptions.enhancedRenderer;
+    if (useEnhancedRenderer)
+        SdlSetVideoBackend(SDL_PORT_VIDEO_BACKEND_GL_SHARP_BILINEAR);
     if (launcherOptions.swcDemo) {
         if (!SdlFindSwcMissionData(swcPath, sizeof(swcPath))) {
             fprintf(stderr, "The SWC demo needs CMFs/Data.CMF.\n");
@@ -219,13 +224,6 @@ int main(int argumentCount, char **arguments)
                                          SDL_GetError(), NULL);
         }
         return gameResult != 0;
-    }
-    if (!SdlApplyLauncherOptions(&launcherOptions))
-        return 1;
-    useEnhancedRenderer = launcherOptions.enhancedRenderer;
-    if (useEnhancedRenderer) {
-        SdlSetVideoBackend(
-            SDL_PORT_VIDEO_BACKEND_GL_SHARP_BILINEAR);
     }
     /* The build defines SDL_MAIN_HANDLED, so tell SDL the process is already
      * up rather than letting it rename main() out from under us. */

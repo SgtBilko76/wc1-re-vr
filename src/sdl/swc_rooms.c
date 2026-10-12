@@ -213,6 +213,8 @@ static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
 
     SDL_zero(carrier->pendingInput);
     while (SDL_PollEvent(&event)) {
+        if (SdlHandleSwcEvent(carrier->window, &event, 0))
+            continue;
         if (event.type == SDL_QUIT || (event.type == SDL_WINDOWEVENT &&
             event.window.event == SDL_WINDOWEVENT_CLOSE))
             input.quit = 1;

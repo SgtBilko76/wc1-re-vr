@@ -43,6 +43,11 @@ executable. Preserve the original MIDI/*.MooV resource forks, or supply their
 raw .rsrc or AppleDouble ._ sidecars when copying the demo across platforms.
 WC1_SWC_SOUNDFONT can select another complete General MIDI SoundFont. The
 bundled bank is a host substitute for the original QuickTime instruments.
+Select the demo directory in the launcher or use --swc-demo DIRECTORY. Its
+OpenGL rendering, cockpitless view, joystick modes and axis layouts, and rumble
+use the same launcher controls and command-line switches as WC1. EGA dithering
+is WC1-only. In demo menus, use the D-pad to browse, A to confirm, B/Back to go
+back or skip, and Start to pause.
 
 The macOS archives are ad-hoc signed, not notarized with an Apple developer
 certificate. macOS may therefore require the usual confirmation for software
