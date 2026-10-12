@@ -4,7 +4,8 @@
 
 #include <string.h>
 
-int SwcReadPalette(const char *resourceFork, int16_t id, SDL_Color colors[256])
+int SwcReadResource(const char *resourceFork, const char typeName[4], int16_t id,
+                    SwcBuffer *resource)
 {
     uint8_t *data;
     size_t size;
@@ -19,18 +20,15 @@ int SwcReadPalette(const char *resourceFork, int16_t id, SDL_Color colors[256])
     uint32_t referenceCount;
     uint32_t type;
     uint32_t reference;
-    uint32_t color;
     size_t typeOffset;
     size_t referenceOffset;
     size_t mapEnd;
     size_t position;
     char resourceType[4];
     int16_t resourceId;
-    uint16_t colorCount;
-    uint16_t colorIndex;
-    uint16_t colorFlags;
     int result;
 
+    memset(resource, 0, sizeof(*resource));
     data = SDL_LoadFile(resourceFork, &size);
     if (data == NULL)
         return -1;
@@ -69,7 +67,7 @@ int SwcReadPalette(const char *resourceFork, int16_t id, SDL_Color colors[256])
         referenceOffset += typeOffset;
         if (referenceCount > (mapEnd - referenceOffset) / 12)
             goto malformed;
-        if (memcmp(resourceType, "clut", 4) != 0)
+        if (memcmp(resourceType, typeName, 4) != 0)
             continue;
         for (reference = 0; reference < referenceCount; reference++) {
             position = referenceOffset + reference * 12;
@@ -83,41 +81,72 @@ int SwcReadPalette(const char *resourceFork, int16_t id, SDL_Color colors[256])
                 goto malformed;
             SDL_RWseek(reader, (Sint64)dataOffset + resourceOffset, RW_SEEK_SET);
             resourceSize = SDL_ReadBE32(reader);
-            if (resourceSize < 8 || resourceSize > dataSize - resourceOffset - 4)
+            if (resourceSize == 0 || resourceSize > dataSize - resourceOffset - 4)
                 goto malformed;
-            SDL_RWseek(reader, 4, RW_SEEK_CUR);
-            colorFlags = SDL_ReadBE16(reader);
-            colorCount = SDL_ReadBE16(reader);
-            if (colorCount > 255 || (size_t)(colorCount + 1) * 8 > resourceSize - 8)
-                goto malformed;
-            for (color = 0; color < 256; color++) {
-                colors[color].r = 0;
-                colors[color].g = 0;
-                colors[color].b = 0;
-                colors[color].a = SDL_ALPHA_OPAQUE;
+            resource->data = SDL_malloc(resourceSize);
+            if (resource->data == NULL) {
+                SDL_OutOfMemory();
+                goto done;
             }
-            for (color = 0; color <= colorCount; color++) {
-                colorIndex = SDL_ReadBE16(reader);
-                if ((colorFlags & 0x8000) != 0)
-                    colorIndex = (uint16_t)color;
-                if (colorIndex > 255)
-                    goto malformed;
-                colors[colorIndex].r = (uint8_t)(SDL_ReadBE16(reader) >> 8);
-                colors[colorIndex].g = (uint8_t)(SDL_ReadBE16(reader) >> 8);
-                colors[colorIndex].b = (uint8_t)(SDL_ReadBE16(reader) >> 8);
-            }
+            resource->size = resourceSize;
+            memcpy(resource->data, data + dataOffset + resourceOffset + 4, resourceSize);
             result = 0;
             goto done;
         }
     }
-    SDL_SetError("Palette clut/%d not found in %s", id, resourceFork);
+    SDL_SetError("Resource %.4s/%d not found in %s", typeName, id, resourceFork);
     goto done;
 
 malformed:
-    SDL_SetError("Malformed Mac palette resource fork: %s", resourceFork);
+    SDL_SetError("Malformed Mac resource fork: %s", resourceFork);
 done:
     if (reader != NULL)
         SDL_RWclose(reader);
     SDL_free(data);
+    return result;
+}
+
+int SwcReadPalette(const char *resourceFork, int16_t id, SDL_Color colors[256])
+{
+    SwcBuffer resource = {0};
+    SDL_RWops *reader = NULL;
+    uint16_t flags;
+    uint16_t count;
+    uint16_t index;
+    uint32_t color;
+    int result = -1;
+
+    if (SwcReadResource(resourceFork, "clut", id, &resource) != 0)
+        return -1;
+    if (resource.size < 8)
+        goto malformed;
+    reader = SDL_RWFromConstMem(resource.data, (int)resource.size);
+    if (reader == NULL)
+        goto done;
+    SDL_RWseek(reader, 4, RW_SEEK_SET);
+    flags = SDL_ReadBE16(reader);
+    count = SDL_ReadBE16(reader);
+    if (count > 255 || (size_t)(count + 1) * 8 > resource.size - 8)
+        goto malformed;
+    for (color = 0; color < 256; color++)
+        colors[color] = (SDL_Color){0, 0, 0, SDL_ALPHA_OPAQUE};
+    for (color = 0; color <= count; color++) {
+        index = SDL_ReadBE16(reader);
+        if (flags & 0x8000)
+            index = (uint16_t)color;
+        if (index > 255)
+            goto malformed;
+        colors[index].r = (uint8_t)(SDL_ReadBE16(reader) >> 8);
+        colors[index].g = (uint8_t)(SDL_ReadBE16(reader) >> 8);
+        colors[index].b = (uint8_t)(SDL_ReadBE16(reader) >> 8);
+    }
+    result = 0;
+    goto done;
+malformed:
+    SDL_SetError("Malformed Mac palette clut/%d: %s", id, resourceFork);
+done:
+    if (reader != NULL)
+        SDL_RWclose(reader);
+    SDL_free(resource.data);
     return result;
 }

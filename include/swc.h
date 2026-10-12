@@ -36,6 +36,12 @@ typedef struct SwcCmf {
     size_t chunkCount;
 } SwcCmf;
 
+/* Standard Sound Manager header, decoded to unsigned 8-bit mono samples. */
+typedef struct SwcSound {
+    SwcBuffer samples;
+    uint32_t rate; /* 16.16 samples per second. */
+} SwcSound;
+
 typedef struct SwcFrame {
     int16_t x;
     int16_t y;
@@ -84,6 +90,18 @@ int SwcGetFrameCount(const SwcBuffer *set, uint32_t *count);
 int SwcGetFramePtr(const SwcBuffer *set, uint32_t index, SwcFrame *frame);
 int SwcDecodeFrame(const SwcFrame *frame, uint8_t *pixels, size_t capacity);
 int SwcReadPalette(const char *resourceFork, int16_t id, SDL_Color colors[256]);
+int SwcReadResource(const char *resourceFork, const char type[4], int16_t id,
+                    SwcBuffer *resource);
+int SwcReadSound(const SwcBuffer *resource, SwcSound *sound);
+
+int SdlInitSwcSound(const char *resourceFork);
+void SdlFreeSwcSound(void);
+void SdlPauseSwcSound(int paused);
+/* Play returns 1 for a playing sound, 0 for busy channels, -1 unavailable. */
+int SdlPlaySwcSound(int sound, int volume);
+void SdlStopSwcSound(int sound);
+int SdlSwcSoundPlaying(int sound);
+void SdlStopSwcAfterburnerSound(void);
 
 int SwcMovieOpen(const char *path, SwcMovie *movie);
 void SwcMovieClose(SwcMovie *movie);
@@ -125,6 +143,8 @@ int SdlDrawSwcCockpit(void);
 int SdlDrawSwcCockpitDamage(void);
 int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds);
 int SdlDrawSwcHud(void);
+extern SDL_Point swcCockpitOffset; /* SWC DATA/A5+0x47d4/+0x47d8. */
+void SdlSwcCockpitMessage(const char *text, unsigned char color, int flash, int voice);
 void SdlFreeSwcCockpit(void);
 
 #endif

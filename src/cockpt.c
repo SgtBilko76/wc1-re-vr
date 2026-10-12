@@ -893,6 +893,10 @@ void clear_message_time(void)
 /* Function start: 0x4149F0 */
 short message_showing(void)
 {
+#ifdef SDL_PORT
+    if (SdlSwcFlightActive())
+        return SdlSwcMessageShowing();
+#endif
     return 0 < nMessageTimer;
 }
 

@@ -447,6 +447,10 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
         return;
     }
     update_objects_in_space();
+    if (aeSpecialManeuver[0] == SPECIAL_MANEUVER_AFTERBURNER)
+        SdlPlaySwcSound(12, 127);
+    else
+        SdlStopSwcAfterburnerSound();
     ReleaseStaleNavTarget();
     check_hazards();
     check_next_wave();
@@ -613,7 +617,8 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     if (SdlDrawSwcSpaceHud(targetBounds.w > 0 ? &targetBounds : NULL) != 0)
         return -1;
     if (!cockpitless) {
-        if (SDL_RenderCopy(renderer, cockpit, NULL, NULL) != 0 ||
+        rectangle = (SDL_Rect){swcCockpitOffset.x, swcCockpitOffset.y, 320, 240};
+        if (SDL_RenderCopy(renderer, cockpit, NULL, &rectangle) != 0 ||
             SdlDrawSwcCockpit() != 0)
             return -1;
     }
@@ -680,6 +685,8 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
     set_eye_direction_and_position();
     generate_stars();
     remove_nav_pointer();
+    SdlStopSwcAfterburnerSound();
+    SdlPlaySwcSound(17, 255); /* CODE_14 visit_the_cinema +0x0028. */
     focused = (SDL_GetWindowFlags(swcCinemaWindow) & SDL_WINDOW_INPUT_FOCUS) != 0;
     previous = SDL_GetTicks();
     while (frames > 0) {
@@ -710,6 +717,7 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
             focused && !paused ? SDL_TRUE : SDL_FALSE);
         if (!focused || paused)
             elapsed = 0;
+        SdlPauseSwcSound(!focused || paused);
         SDL_SetWindowTitle(swcCinemaWindow, focused && !paused ?
             "Super Wing Commander - Autopilot | P: pause | Esc: exit" :
             "Super Wing Commander - Autopilot (paused) | P: resume | Esc: exit");
@@ -738,6 +746,8 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
         SDL_Delay(1);
     }
 done:
+    SdlStopSwcSound(17);
+    SdlPauseSwcSound(0);
     nCameraViewMode = savedView;
     cViewObject = savedViewObject;
     cCockpitView = savedCockpit;
@@ -863,6 +873,8 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
         /* Carrier/movie input never advances shared WC1 flight state. */
         focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
     }
+    if (SdlInitSwcSound(path) != 0)
+        goto done;
     SwcResetFlightInput();
     FlushInputEvents();
     SetEventManagerPump(NULL);
@@ -1028,6 +1040,8 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
                         command = GetPendingMenuAction() == 2 ? abCommMenuChoiceCommand[choice] : -1;
                         recipient = cCommMenuRecipient;
                         Chosen_communicate_option((short)choice);
+                        if (command > 0)
+                            SdlSwcVocalizeMessage(command);
                         if (command == 12)
                             set_global_message(bLandingAuthorized ? "Landing clearance granted" :
                                 "Landing clearance denied", 0x81, 5);
@@ -1063,6 +1077,7 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
         }
         if (done)
             break;
+        SdlPauseSwcSound(!focused || paused);
         current = SDL_GetTicks();
         if (focused && !paused)
             elapsed += SDL_min(current - previous, 250);
@@ -1085,6 +1100,7 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
                 break;
         }
         if (!checkOnly && (nArcadeState == 1 || nArcadeState == 4 || bPlayerDestroyed)) {
+            SdlFreeSwcSound();
             SDL_SetWindowMouseGrab(window, SDL_FALSE);
             SwcResetFlightInput();
             FlushInputEvents();
@@ -1150,6 +1166,7 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     result = 0;
 done:
     SDL_strlcpy(failure, SDL_GetError(), sizeof(failure));
+    SdlFreeSwcSound();
     SdlSetKeyboardSnapshot(NULL);
     SwcResetFlightInput();
     if (swcFlightActive) {

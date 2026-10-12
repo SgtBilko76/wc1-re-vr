@@ -1719,6 +1719,12 @@ void real_vid_transmit(short obj, short message)
     char *speech;
     int objectOffset;
 
+#ifdef SDL_PORT
+    if (SdlSwcFlightActive()) {
+        SdlSwcTransmit(obj, message);
+        return;
+    }
+#endif
     nCommSpeakerObject = obj;
     nCommSpeakerRating =
         (short)acShipRating[obj];

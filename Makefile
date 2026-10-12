@@ -400,10 +400,12 @@ MODERN_BASE_HOST_SRCS = \
 MODERN_GAME_HOST_SRCS = \
 	src/sdl/swc_flight.c \
 	src/sdl/swc_cockpit.c \
+	src/sdl/swc_sound.c \
 	src/sdl/swc_text.c \
 	src/sdl/swc_rooms.c \
 	src/sdl/swc_movie.c \
 	src/swc/speech.c \
+	src/swc/sound.c \
 	src/swc/movie.c \
 	src/swc/shape.c \
 	src/swc/rsrc.c \

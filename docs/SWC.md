@@ -13,6 +13,8 @@ adapts WC2's matching calculation to SWC's original projection and cockpit art.
 The Hornet cockpit now has speed and navigation readouts, fuel/throttle/energy
 gauges, player/target shield and armor displays, radar contacts, weapon status,
 navigation and hostile-direction markers, warning lamps, and damaged displays.
+Cockpit banking, the pilot's hand, native flight effects, warning sounds,
+computer speech and animated communications portraits are connected.
 The original conversations, briefing, debriefing and funeral scenes use the
 demo's text, portraits and AIFF speech. Hornet launch, landing and funeral
 movies have embedded audio.
@@ -20,8 +22,8 @@ WC1 communications now provide wingman orders and landing-clearance requests;
 returning to the carrier ends Enyo 1 with the original debriefing branches and
 Spirit's funeral if she was lost. Player destruction leads to the player's
 funeral and an end card.
-Later missions, campaign progression, remaining HUD modes, voiced flight
-communications, the separate death cinematic, flight effects and music are
+Later missions, campaign progression, remaining HUD modes, side/rear views,
+the separate death cinematic and music are
 still pending. Landing and funeral paths have been compiled and inspected,
 without interactive execution.
 
@@ -39,18 +41,21 @@ entry point in SDL builds. The CMF reader and mission adapter are linked into
 `src/sdl/swc_cockpit.c` presents the Hornet instruments. `src/sdl/swc_text.c`
 shares bitmap text between the cockpit and carrier. `src/sdl/swc_rooms.c`
 adapts carrier presentation and scenes; `src/swc/speech.c` reads AIFF speech.
+`src/swc/sound.c` decodes the flight `snd ` bank; `src/sdl/swc_sound.c`
+supplies four-channel SDL playback for effects and flight speech.
 `src/swc/movie.c` reads and decodes the Mac movies; `src/sdl/swc_movie.c`
 supplies SDL2 presentation, queued audio, and the launch/landing/funeral sequences.
-The viewer needs only the host C compiler and SDL2. Mission tests also link
-the existing native core and need its normal build dependencies, including LZO.
+The viewer needs only the host C compiler and SDL2. Flight links the existing
+native core and needs its normal build dependencies, including LZO.
 Flight uses SDL2 2.0.18 or later for the VDU polygon rendering.
 
 ## Status review — 2026-10-12
 
 The current scope is an experimental Enyo 1 session. Resource loading and the
 initial flight checks passed; a complete interactive mission and presentation
-parity with the Mac executable are still unverified. The autopilot reconstruction
-below follows the initial status review.
+parity with the Mac executable are still unverified. The user has confirmed the
+autopilot works. The autopilot and sound/cockpit reconstructions below follow
+the initial status review; no game was launched for either implementation.
 
 Fresh Ghidra instruction exports were checked for CODE_01, 02, 03, 04, 05, 06,
 09, 12, 13 and 14. All thirteen CODE-resource hashes in the provenance inventory
@@ -88,9 +93,9 @@ CODE_13 `show_navigation_disp` +0x121a, `show_damage_disp` +0x123a and
 `show_info_disp` +0x1256 are empty in the original demo. The simulator's
 unavailable message is also original, not a missing implementation to fill in.
 
-Flight sound effects remain deliberately suppressed in `SdlPlayGameSoundEffect`.
-Music, inflight voices/portraits, opening/death presentation, exact text and
-palette transitions remain incomplete despite functioning speech/movie decoders.
+Flight effects and voices now use the native Mac sound bank through
+`SdlPlayGameSoundEffect` and the SDL cockpit adapter. Music, opening/death
+presentation, exact text and palette transitions remain incomplete.
 The most useful next work is correcting the demonstrated RNG differences,
 then inspecting a full Enyo 1 route through combat and return before
 expanding campaign support. Other AI/collision paths still need individual
@@ -104,15 +109,16 @@ They preserve the hazard/enemy/escort/distance priority, the four original
 `Wait for %s` ship types, and the DATA/A5+0x46ec escort latch. Every arrival
 check clears that latch; arriving ahead of the escort sets it again. The
 eligibility routine retains the original +0x179a ship-ID indexing, with a host
-array-bound guard. Speech IDs 1..7 remain disconnected.
+array-bound guard. Speech IDs 1..7 now use the native cockpit message queue
+and sound bank; arrival uses voice ID 0.
 
 `SdlSwcVisitCinema` in `src/sdl/swc_flight.c` reconstructs CODE_14
 `visit_the_cinema` (+0x000c). Fresh Ghidra disassembly of CODE_02's view switch
 tables confirms the view-12 setup at +0x3474: 500 units to the side and 2,000
 ahead, looking at the player. The camera update at +0x29f0 moves ten units
-sideways per frame. The host replaces Mac event handling and sound with SDL
-pause/focus/quit handling and silent presentation; its pacing remains the
-existing fixed flight interval. It restores the prior camera on exit.
+sideways per frame. The host supplies SDL pause/focus/quit handling and plays
+the original sound 17 until the sequence ends; its pacing remains the existing
+fixed flight interval. It restores the prior camera on exit.
 
 Pressing A now runs this 120-frame external view before the shared formation
 travel. The renderer includes the player's ship and omits cockpit/HUD overlays.
@@ -126,9 +132,53 @@ All shared-core dispatch is guarded by `SDL_PORT` and `SdlSwcFlightActive()`;
 SWC state and presentation live in the SDL sources. Native and GUI builds pass.
 `binary-comp` reports identical Win32 scores before and after integration:
 `visit_the_cinema` 100%, `auto_pilot_valid` 100%, `auto_pilot_sequence` 96.91%,
-and `flag_reached` 85.84%. Integrated gameplay remains unverified; validation
-for this change is limited to source/assembly inspection and compilation. No
-SWC binary similarity score is claimed.
+and `flag_reached` 85.84%. The user subsequently confirmed autopilot works;
+agent validation was limited to source/assembly inspection and compilation.
+No SWC binary similarity score is claimed.
+
+### Flight sounds and cockpit additions
+
+Fresh Ghidra exports of CODE_01, 06, 09, 13 and 14 supply the sound-channel,
+speech, message and animation behavior. `Sounds.CMF` contains 494 standard
+Sound Manager `snd ` resources: unsigned eight-bit mono PCM, with the original
+16.16 rate `0x2b7745d1` (about 11,127 samples/second). The afterburner release
+is a separate `snd /500` in the executable's resource fork, at rate
+`0x56ee8ba3`. The host keeps these rates when resampling to its SDL output.
+
+| Feature | Original evidence | SDL behavior |
+| --- | --- | --- |
+| Sound channels | CODE_01 `init_sound` +0x6052, `play_sound` +0x626e, `is_sound_playing` +0x5f8e | Four mono channels; an active sound ID is not restarted, and a full mixer does not interrupt another sound. The bank is decoded before flight. |
+| Weapons and impacts | CODE_09 `sound_effect` +0x1508; CODE_05 `fire_weapon` +0x379a | Shared weapon/damage calls use native samples and 100-unit distance attenuation. Enemy lasers select sound 26. |
+| Afterburner | CODE_01 `play_looped_sound` +0x667e, `stop_afterburner_sound` +0x678a | Sound 12 loops over samples `[0x23f8,0x32f5)`; release replaces it with resource-fork sound 500 in the same channel. |
+| Cockpit warnings | CODE_13 `update_lights` +0x04fc, `update_VDUs` +0x0b4e, `malf_sound` +0x19e4 | Native damage alarm 32, malfunction static 23 and impact sound 24. |
+| Computer messages | CODE_13 `CockpitMessage` +0x01aa and `UpdateMessage` +0x000c | Sixteen queued, copied messages, 34-character limit, queued duplicate suppression, flash cadence and voice IDs `79+message`. Arrival/autopilot speech is connected. |
+| Flight communications | CODE_06 `Vocalize_Message` +0x045c, `real_vid_transmit` +0x049e, `check_message` +0x0640; CODE_13 `npc_communication` +0x3d2e | Player order voices, native response table, rank variants, Kilrathi chatter and thirty-second repeat throttling. Playback completion closes portraits and restores the prior VDU mode. |
+| Portrait animation | CODE_13 `update_vid_disp` +0x0d00; DATA/A5 +0x4e6 and +0x2cb4 | WGMN face and mouth frames use the original portrait polygon, with a one-in-four mouth toggle and communication-component malfunction static. |
+| Banking and pilot hand | CODE_13 `handle_cockpit_banking` +0x18f2, `determine_pilot_hand` +0x14e2 | Cockpit and instruments approach the pitch/yaw offset by one pixel per tick, capped at ±6 vertically and ±8 horizontally. PC00/6 supplies sixteen hand frames. |
+
+SDL replaces Sound Manager playback and QuickDraw rendering. Pause/focus loss
+pauses flight audio; flight teardown closes the device before carrier/movie
+playback. If an audio device is unavailable, timed text/portraits keep the
+message queue progressing. Text uses the existing bitmap font. Computer
+messages occupy the host message area above shared targeting notices because
+the host keeps weapon readouts visible; original weapon-selection timers and
+the exact Mac text layout remain pending. Queue overflow drops a new message.
+Communications use base-game speakers for Enyo 1, WC1's RNG with adjusted bounds,
+and the host simulation clock; later campaign voice substitutions are absent.
+
+The earlier WC2 findings identify `HasInRangeGunForTargetLead` (0x43ce8f) and
+`UpdateTargetLeadIndicator` (0x43cf5a), already adapted for ITTS. Further WC2
+module integration and targeting changes are explicitly deferred; this pass
+leaves that targeting implementation in place. Music in `MIDI/*.MooV` still
+needs QuickTime music-sequence support. Side/rear cockpit art (PC00/2..4) is
+absent from this demo's cockpit CMF.
+
+Validation uses original instructions/data, static review and compilation of
+the Win32 reference, native flight, GUI and asset viewer. `binary-comp` scores
+for the two new guarded core hooks are unchanged: `message_showing` 100.00%,
+`real_vid_transmit` 98.53%. No tests were added or run; no game, GUI or audio
+playback was executed. The new sound mix, portrait appearance and timing remain
+unverified interactively.
 
 ## Run
 
@@ -359,7 +409,7 @@ The SDL flight host reuses WC1's communication recipient/command menus and
 `request`, including wingman orders and landing command 12. C and number keys
 follow DOS/Win32 controls; SWC's native CODE_06 `Chosen_communicate_option`
 instead routes four quick commands. SDL draws the menu and clearance feedback;
-original inflight voice/portraits are not yet presented.
+native order/response voices and animated WGMN portraits are now connected.
 
 CODE_06 `cleanup_objectives` +0x0738, `can_land` +0x0ab4 and `request` +0x0c0e
 match the shared Enyo 1 rules. Clearance needs no enemy within 20,000 and either
@@ -505,7 +555,7 @@ rejected because a persisted Mac pointer cannot be used as a host pointer.
 | `cycle_next_objective`, `nav_getxy`, `SetScale` | Cycles and projects the shared objective state | This uses WC1 map units/layout; SWC's `nav_getxy` uses wider coordinates and different scaling |
 | `PollKeyboardState`, `process_player_input` | WC1 keyboard priorities, diagonals, gradual steering, reversals, and Shift response | Deliberately uses DOS/Win32 controls; SWC's Mac event/device layer differs |
 | `player_input`, `QueueInputEvent`, `WarpMouseTo` | Original mouse response, edge limits, right-button roll/throttle, and recentering | SWC supplies only motion events and the right-button modifier; weapon events are excluded |
-| `accelerate`, `celerate`, `your_afterburner`, `fire_afterburner` | Throttle bounds, boost activation, and boost timers | Audio calls stop at the SDL boundary until SWC sound is implemented |
+| `accelerate`, `celerate`, `your_afterburner`, `fire_afterburner` | Throttle bounds, boost activation, and boost timers | SDL supplies the native afterburner loop and resource-fork release tail |
 | `players_flight_dynamics`, `rotate_object`, `accelerate_and_move_object` | Steers and moves ships and active weapons using SWC parameters | Fixed WC1 simulation step; native elapsed-tick scaling remains pending |
 | `fire_players_lasers`, `fire_fixed_projectile_weapon`, `fire_weapon`, `fire_missile` | Energy, cooldowns, projectile initialization and missile release | Recovered SWC definitions and all 63 weapon hardpoints; SDL-only aiming offset and laser cooldown |
 | `house_keep_objects`, `update_objects_in_space`, `object_intelligence` | Lifetimes, collisions, damage, ship AI, missile guidance, recharge and animations | SWC dispatch and common setup verified; complete AI/probability equivalence is not established |
@@ -746,7 +796,8 @@ VDU rendering respects the shared mode stack and SWC's physical-damage flags.
 by the separate readout layer, not a missing navigation-page implementation.
 CODE_01 `MacDrawcel2` +0x14a4 maps static over the quad from DATA/0 +0x426/+0x5a6;
 the SDL replacement uses `SDL_RenderGeometry` and ignores frame-origin offsets
-for this operation. Cockpit damage and malfunction state reset on a new flight.
+for this operation. Communications use their separate +0x4e6 polygon and WGMN
+frames. Cockpit damage, malfunction and communication state reset on a new flight.
 
 This pass supports the Enyo 1 Hornet cockpit. Ship capacities use the recovered
 SWC definitions. Shield, armor and weapon-energy displays now respond to shared
@@ -756,11 +807,12 @@ Target names use SWC object names without the original pilot/ace-name substituti
 Component messages and missile-lock notices use WC1 lifetimes at host positions.
 The cockpit toggle retains the spatial HUD, weapon/component status,
 target/navigation text, and messages. ITTS and the L lock control are connected.
-Automatic target acquisition, lock animation, cockpit banking and pilot animation, side/rear views,
-communication portraits, original message timing and other cockpitless instruments
-remain pending. The autopilot lamp uses SWC's eligibility and escort-wait gate;
-the missile and damage lamps reuse WC1's queries. Damage sounds and alarms remain
-silent until SWC audio is implemented.
+Banking, pilot animation, communication portraits, computer-message timing,
+damage sounds and alarms are connected as described above. Automatic target
+acquisition and lock animation are deferred along with further WC2 integration.
+Side/rear views and other cockpitless instruments remain pending. The autopilot
+lamp uses SWC's eligibility and escort-wait gate; missile/damage lamps reuse
+WC1's queries.
 
 #### Text font
 
@@ -813,11 +865,11 @@ many WC1 names were already derived from this Mac executable's MacsBug strings.
    320x240 HUD. Instrument sprites use their original offsets; centered ship
    quads agree with `rotate_Mac_shape2`, but exact sampling and clipping remain
    unverified.
-3. Continue flight communications (voices/portraits), remaining HUD modes and
+3. Continue later campaign communications, remaining HUD modes and
    post-debriefing progression. Landing and the first debriefing are connected;
    the demo disables its simulator.
 4. Connect opening movies, the death cinematic and later scripted scenes;
-   add save/load, audio-marker lip synchronization, effects, music and palette
+   add save/load, audio-marker lip synchronization, music and palette
    transitions. The first bar, barracks and briefing, AIFF speech and Hornet
    launch/landing playback, first debriefing and player/Spirit funerals are
    present; the animated end background and other scene entry points are pending.

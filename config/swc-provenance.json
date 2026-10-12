@@ -382,7 +382,7 @@
       "source": "src/sdl/swc_flight.c",
       "symbol": "SwcDrawFlight",
       "relationship": "draw-order-evidence-only",
-      "differences": "Spatial HUD is composed before cockpit art, followed by instruments/text and persistent damage/sparks. SDL masks markers with cockpit transparency. Banking, hands, side/rear views and communication are pending."
+      "differences": "Spatial HUD is composed before cockpit art, followed by instruments/text, persistent damage, pilot hand and sparks. Banking offsets move the cockpit layers. SDL masks markers with cockpit transparency. Communication portraits are connected; side/rear views remain pending."
     },
     {
       "original_name": "update_lights",
@@ -392,7 +392,7 @@
       "source": "src/sdl/swc_cockpit.c",
       "symbol": "SdlUpdateSwcCockpit",
       "relationship": "host-adaptation",
-      "differences": "Seven-tick warning refresh reuses WC1 auto_pilot_valid, missile_on_tail and calculate_damage_level. Original PC00/12, /14 and /13 lamps, low-shield threshold and damage-light cadence; alarms are silent. SWC-specific autopilot escort eligibility and the 120-frame travel camera are connected through SDL-only dispatch."
+      "differences": "Seven-tick warning refresh reuses WC1 auto_pilot_valid, missile_on_tail and calculate_damage_level. Original PC00/12, /14 and /13 lamps, low-shield threshold and thirty-frame damage alarm (snd/32, volume 255). SWC-specific autopilot escort eligibility and the 120-frame travel camera are connected through SDL-only dispatch."
     },
     {
       "original_name": "update_VDUs",
@@ -402,7 +402,7 @@
       "source": "src/sdl/swc_cockpit.c",
       "symbol": "SdlDrawSwcCockpit",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Shared mode stack gates player/target displays and mode-zero static. SWC components 3/5 can temporarily replace their displays with static; physical damage suppresses the corresponding VDU. Demo navigation/damage/info routines are empty; communication modes remain pending."
+      "differences": "Shared mode stack gates player/target/communication displays and mode-zero static. SWC components 3/5/4 can temporarily replace their displays with static; physical damage suppresses the corresponding VDU. Static plays snd/23 at volume 199. Demo navigation/damage/info routines are empty."
     },
     {
       "original_name": "update_dead_disp",
@@ -410,7 +410,7 @@
       "entry_offset": "0x0dda",
       "end_offset": "0x0e40",
       "source": "src/sdl/swc_cockpit.c",
-      "symbol": "SwcDrawDeadDisplay",
+      "symbol": "SwcDrawVduShape",
       "relationship": "host-adaptation",
       "differences": "Uses VDUS/1 and /2 (CODE_03 init_vdus +0x0914) and original Hornet polygons. Original random selection 0..2 is sampled per simulation tick; each resource contains four frames. SDL_RenderGeometry replaces MacDrawcel2."
     },
@@ -420,9 +420,9 @@
       "entry_offset": "0x14a4",
       "end_offset": "0x15b2",
       "source": "src/sdl/swc_cockpit.c",
-      "symbol": "SwcDrawDeadDisplay",
+      "symbol": "SwcDrawVduShape",
       "relationship": "placement-evidence-only",
-      "differences": "Maps the full static image to the four VDU polygon corners, ignoring frame x/y. SDL textured triangles replace the original fixed-point polygon rasterizer."
+      "differences": "Maps the full static or portrait image to four polygon corners, ignoring frame x/y. Portraits use DATA/A5+0x4e6; static uses +0x426/+0x5a6. Banking offsets move all corners. SDL textured triangles replace the original fixed-point polygon rasterizer."
     },
     {
       "original_name": "malf",
@@ -442,7 +442,7 @@
       "source": "src/sdl/swc_cockpit.c",
       "symbol": "SdlDrawSwcHud",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original component/severity strings and colors with show_weapon_disp's 30-update component cycle. Weapon text remains persistent with added ammunition/lock state, unlike original selection timers. Shared WC1 messages use host positions, font and lifetimes."
+      "differences": "Original component/severity strings and colors with show_weapon_disp's 30-update component cycle. Weapon text remains persistent with added ammunition/lock state, unlike original selection timers. Computer messages use native queue/speech timing at host position (8,203), above the shared WC1 targeting messages. Bitmap font and text layout remain host substitutes."
     },
     {
       "original_name": "cockpit_explosion",
@@ -452,7 +452,7 @@
       "source": "src/sdl/swc_cockpit.c",
       "symbol": "SdlSwcCockpitDamage",
       "relationship": "host-adaptation",
-      "differences": "Three physical regions and their original origins; active sparks suppress another hit. Reuses the first three WC1 damage flags. Region bounds are checked and sound remains suppressed."
+      "differences": "Three physical regions and their original origins; active sparks suppress another hit. Reuses the first three WC1 damage flags. Region bounds are checked; malf_sound's snd/24 plays at volume 255."
     },
     {
       "original_name": "place_damage_on_cockpit",
@@ -472,7 +472,7 @@
       "source": "src/sdl/swc_cockpit.c",
       "symbol": "SdlDrawSwcCockpitDamage",
       "relationship": "host-adaptation",
-      "differences": "Original eight CKPT/6 spark frames and offsets; SdlUpdateSwcCockpit advances/restarts them on simulation ticks. Repeat probability and position ranges use WC1 RNG with adjusted exclusive upper bounds. Audio remains absent."
+      "differences": "Original eight CKPT/6 spark frames and offsets; SdlUpdateSwcCockpit advances/restarts them on simulation ticks. Repeat probability and position ranges use WC1 RNG with adjusted exclusive upper bounds. Initial impact audio is supplied by SdlSwcCockpitDamage."
     }
   ],
   "shared_wc1_evidence": [
@@ -481,7 +481,7 @@
     {"name": "AddPCName", "resource": "CODE_03.bin", "entry_offset": "0x0df8", "source": "src/cmpgn.c", "wc1_address": "0x00404e10", "qualification": "Shares callsign, name, rank and kill-count expansion. The Enyo carrier validates $C/$N/$R/$K/$L markers, rank bounds and expanded length before using WC1's fixed scratch buffer. Other substitutions are not enabled in this host slice."},
     {"name": "cleanup_objectives", "resource": "CODE_06.bin", "entry_offset": "0x0738", "source": "src/screen.c", "wc1_address": "0x0042efc0", "qualification": "Shared patrol/escort/kill completion rules; called by clearance requests and at landing before debriefing."},
     {"name": "can_land", "resource": "CODE_06.bin", "entry_offset": "0x0ab4", "source": "src/screen.c", "wc1_address": "0x0042f2b0", "qualification": "Shared Enyo 1 rule: no enemy within 20000 and health below 50, kills, fuel below 1000 or non-return objective progress. SWC's later series-4 mission-3 story restriction is outside this host's scope."},
-    {"name": "request", "resource": "CODE_06.bin", "entry_offset": "0x0c0e", "source": "src/screen.c", "wc1_address": "0x0042f3f0", "qualification": "WC1 command dispatch reused by DOS/Win32 recipient/command menus. Landing command 12 cleans objectives, checks can_land and queues native message 8/9. SDL presents clearance text; inflight voices/portraits remain pending. Native SWC Chosen_communicate_option +0x0276 exposes four quick commands rather than these menus."},
+    {"name": "request", "resource": "CODE_06.bin", "entry_offset": "0x0c0e", "source": "src/screen.c", "wc1_address": "0x0042f3f0", "qualification": "WC1 command dispatch reused by DOS/Win32 recipient/command menus. Landing command 12 cleans objectives, checks can_land and queues native message 8/9. SDL presents clearance text plus native order/response voices and WGMN portraits. Native SWC Chosen_communicate_option +0x0276 exposes four quick commands rather than these menus."},
     {"name": "PostMission", "resource": "CODE_09.bin", "entry_offset": "0x1672", "source": "src/nav.c", "wc1_address": "0x0040f010", "qualification": "Player/wingman mission/kill statistics, badge thresholds and deliberate first-mission badge fallthrough share WC1 control flow. Random awards to other pilots differ: SWC Random3DO uses exclusive small bounds and returns zero for equal bounds, unlike WC1 RandomInRange. Shared code is called once after landing; stats are not persisted and full UpdateSeries is not called."},
     {"name": "FullMissionScore", "resource": "CODE_09.bin", "entry_offset": "0x17e2", "source": "src/nav.c", "wc1_address": "0x0040f190", "qualification": "Same sum of 16 signed objective weights. Native CMP0/2 uses 128-byte series and 24-byte mission records; the Enyo 1 adapter supplies only WC1's first-mission score window during debriefing and restores the previous data pointer."},
     {"name": "PlayersMissionScore", "resource": "CODE_09.bin", "entry_offset": "0x1840", "source": "src/nav.c", "wc1_address": "0x0040f1e0", "qualification": "Same achieved-objective filter over the adapted native weights; preserves original full/partial debriefing branches without forcing a success outcome."},
@@ -489,7 +489,7 @@
     {"name": "draw_nav_pointer", "resource": "CODE_13.bin", "entry_offset": "0x3460", "source": "src/cockpt.c", "wc1_address": "0x004168c0", "qualification": "Reuses allocation, objective-relative transform, view-cone/radius gates and projection. SDL-only SWC activation allows target mode; valid-objective guard and per-call invalidation prevent stale markers. CKPT/1 frame 3 replaces the host rectangle."},
     {"name": "your_internal_damage", "resource": "CODE_05.bin", "entry_offset": "0x179e", "source": "src/ship.c", "wc1_address": "0x0041f220", "qualification": "Shared WC1 impact and component-damage flow. Original +0x184a calls random_number(3), which selects regions 0..2; SDL changes only the cockpit-region bound. Other damage probabilities remain WC1; object parameters use the recovered SWC definitions."},
     {"name": "fire_players_lasers", "resource": "CODE_09.bin", "entry_offset": "0x021a", "source": "src/main.c", "wc1_address": "0x00428480", "qualification": "Same cooldown/energy gate and selected-gun call. VDU selection is routed to SWC state without invoking WC1 cockpit drawing."},
-    {"name": "fire_weapon", "resource": "CODE_05.bin", "entry_offset": "0x3320", "source": "src/ship.c", "wc1_address": "0x00420c20", "qualification": "Shares allocation, hardpoint, energy, lifetime and launch flow. SDL-only SWC player convergence adds 400 units along up for lasers, 300 for neutron/mass driver (+0x34c8..+0x3532); laser refire delay is 4 from DATA/0 +0x31f2. Ship/weapon definitions and all 63 hardpoints now come from SWC; sound remains suppressed."},
+    {"name": "fire_weapon", "resource": "CODE_05.bin", "entry_offset": "0x3320", "source": "src/ship.c", "wc1_address": "0x00420c20", "qualification": "Shares allocation, hardpoint, energy, lifetime and launch flow. SDL-only SWC player convergence adds 400 units along up for lasers, 300 for neutron/mass driver (+0x34c8..+0x3532); laser refire delay is 4 from DATA/0 +0x31f2. Ship/weapon definitions and all 63 hardpoints come from SWC; SDL supplies native sound effects, including enemy laser 26."},
     {"name": "fire_missile", "resource": "CODE_05.bin", "entry_offset": "0x3856", "source": "src/logic.c", "wc1_address": "0x00421150", "qualification": "Same enabled-missile iteration and HS/IR lock gate. WC1 also queues the NEED LOCK message."},
     {"name": "fire_fixed_projectile_weapon", "resource": "CODE_05.bin", "entry_offset": "0x38fe", "source": "src/logic.c", "wc1_address": "0x00421220", "qualification": "Same iteration over enabled projectile slots, using WC1's packed seven-byte weapon layout instead of SWC's ten-byte slots."},
     {"name": "find_next_gun", "resource": "CODE_15.bin", "entry_offset": "0x00f2", "source": "src/hudmsg.c", "wc1_address": "0x0042ad00"},
@@ -497,7 +497,7 @@
     {"name": "select_new_gun", "resource": "CODE_15.bin", "entry_offset": "0x0202", "source": "src/hudmsg.c", "wc1_address": "0x0042ae10", "qualification": "Shared gun selection; SWC's 15-tick status-text timer is not reproduced."},
     {"name": "select_new_release_weapon", "resource": "CODE_15.bin", "entry_offset": "0x023e", "source": "src/hudmsg.c", "wc1_address": "0x0042ae50", "qualification": "Shared preferred-type selection and enabled slot state; host text is persistent."},
     {"name": "house_keep_objects", "resource": "CODE_02.bin", "entry_offset": "0x3d38", "source": "src/spc.c", "wc1_address": "0x00412430", "qualification": "Same lifetime/cooldown stages. SDL SWC landing follows +0x414a: clearance, collisions enabled, normal speed and range below 700, without facing checks. Flight exits before another collision pass after docking. Retains WC1's debris-expiration behavior; SWC-only object classes are unsupported."},
-    {"name": "update_objects_in_space", "resource": "CODE_02.bin", "entry_offset": "0x418c", "source": "src/spc.c", "wc1_address": "0x00412820", "qualification": "Shares animation, collision, rotation, missile intelligence, energy, movement and shield stages. WC1 collision/damage remains in use; SWC's collision-candidate prepass is absent. NPC ship intelligence, nav transitions and encounter spawning are connected; flight communication is still disconnected."},
+    {"name": "update_objects_in_space", "resource": "CODE_02.bin", "entry_offset": "0x418c", "source": "src/spc.c", "wc1_address": "0x00412820", "qualification": "Shares animation, collision, rotation, missile intelligence, energy, movement and shield stages. WC1 collision/damage remains in use; SWC's collision-candidate prepass is absent. NPC ship intelligence, nav transitions and encounter spawning are connected; the SDL cockpit services queued flight communication."},
     {"name": "animate_shape", "resource": "CODE_02.bin", "entry_offset": "0x4790", "source": "src/spc.c", "wc1_address": "0x00412cd0", "qualification": "Same frame/loop/scale/removal commands. Host supplies SWC explosion sequences and scales to WC1's interpreter. Original Mac handle management and the final ship-explosion frame's screen-shake trigger are not reproduced."},
     {"name": "replenish_weapon_energy_bank", "resource": "CODE_05.bin", "entry_offset": "0x419e", "source": "src/logic.c", "wc1_address": "0x00421830", "qualification": "Shared one/two-unit recharge and 100-unit cap; shield capacities now use recovered SWC definitions."},
     {"name": "set_sphere_point", "resource": "CODE_04.bin", "entry_offset": "0x000c", "source": "src/brains.c", "wc1_address": "0x0040b670"},
@@ -511,7 +511,7 @@
     {"name": "alter_roll", "resource": "CODE_04.bin", "entry_offset": "0x2bba", "source": "src/geom.c", "wc1_address": "0x00419190"},
     {"name": "celerate", "resource": "CODE_05.bin", "entry_offset": "0x09c6", "source": "src/disk.c", "wc1_address": "0x0041e710", "qualification": "Same speed clamp to 0..maximum*256; the host supplies recovered SWC ship parameters."},
     {"name": "accelerate", "resource": "CODE_05.bin", "entry_offset": "0x428c", "source": "src/logic.c", "wc1_address": "0x004218d0", "qualification": "Same malfunction adjustment and celerate call. SDL multiplies signed steps by 256 to avoid negative-shift undefined behavior; reference expression is preserved."},
-    {"name": "your_afterburner", "resource": "CODE_05.bin", "entry_offset": "0x42e0", "source": "src/logic.c", "wc1_address": "0x00421920", "qualification": "Same fuel/malfunction gates and eight/two-tick renewal. Sound scheduling differs; SWC sound calls are suppressed at the SDL boundary."},
+    {"name": "your_afterburner", "resource": "CODE_05.bin", "entry_offset": "0x42e0", "source": "src/logic.c", "wc1_address": "0x00421920", "qualification": "Same fuel/malfunction gates and eight/two-tick renewal. SDL flight state starts the native sound-12 loop promptly and replaces it with resource-fork sound 500 on release; Sound Manager scheduling is replaced."},
     {"name": "fire_afterburner", "resource": "CODE_05.bin", "entry_offset": "0x3a38", "source": "src/logic.c", "wc1_address": "0x00421350", "qualification": "Same maximum-velocity*0x500 eligibility check and maneuver/timer update."},
     {"name": "accelerate_and_move_object", "resource": "CODE_02.bin", "entry_offset": "0x439e", "source": "src/spc.c", "wc1_address": "0x004129a0", "qualification": "Shared target-velocity, acceleration and boost/brake calculations. SWC scales the final displacement with a seven-entry elapsed-tick table; the host retains WC1's fixed-step movement. SWC also omits WC1's random kill-engines recovery."},
     {"name": "max_acceleration", "resource": "CODE_04.bin", "entry_offset": "0x1a10", "source": "src/geom.c", "symbol": "GetShipAccelerationRate", "wc1_address": "0x004182f0", "qualification": "SWC also grants the one-third acceleration bonus to ratings 1..7. An SDL-only condition enables that difference during SWC flight."},
@@ -535,7 +535,7 @@
     "pilot_turn_intervals": {"resource": "CODE_04.bin", "entry_offset": "0x152a", "data_offset": "0x3f82", "encoding": "BE32[18]", "qualification": "Matches WC1 anPilotTurnInterval exactly; shares find_next_ship_turn_slot and regulate_turn."},
     "encounters": {"entry": "Player, wingman, Tiger's Claw, two Scimitars; all friendly", "nav1": "Three Dralthi", "nav2": "Asteroid field", "nav3": "Two Salthi and asteroid field", "evidence": "Data.CMF MOD0 mission index 4 (series 1, mission 0), nav and ship records"},
     "navigation": {"resource": "CODE_04.bin", "entry_offset": "0x0c9e", "wc1_source": "src/brains.c", "wc1_symbol": "set_up_action_sphere", "qualification": "Shares nav state, ship removal/spawning, wave selection, hazard fields, triggers and objective positions. Team ships retain spawnNav=-1. new_sphere_shapes bypasses WC1 packet I/O for the SDL texture cache. Later mission-specific SWC flags remain unimplemented."},
-    "ship_ai": {"resource": "CODE_02.bin", "entry_offset": "0x1c2c", "wc1_source": "src/brains.c", "wc1_symbol": "ship_intelligence", "qualification": "Enables existing fighter/capital AI and common init_ship setup. SWC patrol dispatch reads the actual ship's side instead of WC1's retail array-address comparison. This does not establish equivalence for every maneuver, collision edge case or random bound; speech remains disconnected."},
+    "ship_ai": {"resource": "CODE_02.bin", "entry_offset": "0x1c2c", "wc1_source": "src/brains.c", "wc1_symbol": "ship_intelligence", "qualification": "Enables existing fighter/capital AI and common init_ship setup. SWC patrol dispatch reads the actual ship's side instead of WC1's retail array-address comparison. This does not establish equivalence for every maneuver, collision edge case or random bound. Queued speech is serviced by the SDL cockpit."},
     "autopilot": {"resource": "CODE_14.bin", "entry_offset": "0x0202", "end_offset": "0x07ae", "wc1_source": "src/auto.c", "wc1_symbol": "auto_pilot_sequence", "qualification": "Shares eligibility, formation travel, 400-unit steps, nav/hazard/enemy stops and restored cruise speeds. SDL-only SWC changes preserve the +0x03a8 gun-timer reset and +0x0648 arrival-position rollback. SDL-only dispatch supplies SWC eligibility, the escort-wait latch, the 120-frame external camera and the +0x077e final simulation update. Rendering includes the player and suppresses cockpit/HUD overlays during travel presentation."},
     "autopilot_reconstruction": {
       "status": "Connected to the SDL2 mission host, A-key travel, objective arrival and autopilot lamp. The Win32 reference path is unchanged.",
@@ -547,11 +547,32 @@
       ],
       "escort_state": "DATA/A5+0x46ec; CODE_13 +0x2170 clears it on every flag_reached call, +0x2250 sets it while waiting. Eligibility keeps the +0x179a ship-ID indexing with an array-bound guard; only types 6,4,7,5 produce wait text.",
       "camera": "CODE_02 new_view view-12 case +0x3474 initializes relative (500,0,2000); set_eye_direction_and_position case +0x29f0 moves ten units sideways and looks at the player. Fresh Ghidra exports explicitly decode both switch tables.",
-      "differences": "SDL window/pause/focus handling, fixed flight pacing and persistent HUD message storage replace Mac services. Sound effect 17 and cockpit voice IDs 1..7 remain silent. Core dispatch is guarded by SDL_PORT and SdlSwcFlightActive; live SDL resources are borrowed only during the mission. Quit/errors return through the host, with camera/input restoration.",
-      "validation": "Native and GUI compilation pass. binary-comp Win32 scores are unchanged before/after: visit_the_cinema 100%, auto_pilot_valid 100%, auto_pilot_sequence 96.91%, flag_reached 85.84%. Automated tests and harnesses were removed at user request. Integrated gameplay remains unverified; validation is limited to source/assembly inspection and compilation. No SWC binary similarity measurement."
+      "differences": "SDL window/pause/focus handling and fixed flight pacing replace Mac services. Native effect 17 accompanies the cinema; cockpit voice IDs 0..7 use a copied message queue and the original snd bank. Core dispatch is guarded by SDL_PORT and SdlSwcFlightActive; live SDL resources are borrowed only during the mission. Quit/errors return through the host, with camera/input restoration.",
+      "validation": "Native and GUI compilation pass. binary-comp Win32 scores are unchanged before/after: visit_the_cinema 100%, auto_pilot_valid 100%, auto_pilot_sequence 96.91%, flag_reached 85.84%. Automated tests and harnesses were removed at user request. The user subsequently confirmed autopilot works; agent validation is limited to source/assembly inspection and compilation. No SWC binary similarity measurement."
     },
     "asteroids": {"resource": "CODE_04.bin", "instructions": "0x04d2..0x054e", "chunks": "Spaceflight.CMF OBJT/17 and OBJT/18, 12 frames each", "qualification": "Shares WC1 hazard lifecycle once per simulation tick through update_star_field; CODE_05 set_objects_data +0x02b0 supplies the first asteroid set for fragments."},
-    "validation": "Original Ghidra/Capstone instruction and data inspection, static source review, make modern modern-gui only. No tests, game, GUI, interactive checks or binary-similarity measurement. Runtime combat, travel and display behavior are unverified."
+    "validation": "Original Ghidra/Capstone instruction and data inspection, static source review, make modern modern-gui only. No tests, game, GUI, interactive checks or binary-similarity measurement. The user confirmed autopilot works; full combat and display parity remain unverified."
+  },
+  "flight_audio": {
+    "sources": ["src/swc/sound.c", "src/sdl/swc_sound.c", "src/sdl/swc_cockpit.c", "src/sdl/swc_flight.c"],
+    "scope": "Native Enyo 1 weapon/impact effects, afterburner loop/release, autopilot effect, cockpit alarms/static, computer messages, player orders and NPC communication. SDL-only; original Win32 source selection and code paths are preserved.",
+    "bank": {"file": "CMFs/Sounds.CMF", "chunks": "snd /1..494", "format": "Sound Manager format 1, one sampledSynth modifier (5, init 0xa0), one bufferCmd (0x8051), standard header encoding 0, unsigned 8-bit mono", "sample_rate_fixed": "0x2b7745d1", "sample_rate_note": "Original 16.16 rate, approximately 11127.27 samples/second; not the AIFF dialogue rate of 11025."},
+    "release": {"file": "SuperWingCommanderDemo resource fork", "chunk": "snd /500", "sample_rate_fixed": "0x56ee8ba3", "sample_count": 13420, "evidence": "CODE_01 stop_afterburner_sound +0x67fc uses GetResource, not CMGetChunk."},
+    "functions": [
+      {"resource": "CODE_01.bin", "entry_offset": "0x6052", "name": "init_sound", "symbol": "SdlInitSwcSound"},
+      {"resource": "CODE_01.bin", "entry_offset": "0x626e", "name": "play_sound", "symbol": "SdlPlaySwcSound"},
+      {"resource": "CODE_01.bin", "entry_offset": "0x61c8", "name": "stop_sound", "symbol": "SdlStopSwcSound"},
+      {"resource": "CODE_01.bin", "entry_offset": "0x5f8e", "name": "is_sound_playing", "symbol": "SdlSwcSoundPlaying"},
+      {"resource": "CODE_01.bin", "entry_offset": "0x667e", "name": "play_looped_sound", "symbol": "SwcMixSound", "qualification": "Original afterburner overrides at +0x66be/+0x66c6 select samples [0x23f8,0x32f5). SDL replaces Sound Manager channel commands."},
+      {"resource": "CODE_01.bin", "entry_offset": "0x678a", "name": "stop_afterburner_sound", "symbol": "SdlStopSwcAfterburnerSound"},
+      {"resource": "CODE_01.bin", "entry_offset": "0x655c", "name": "shut_down_sounds", "symbol": "SdlFreeSwcSound"},
+      {"resource": "CODE_09.bin", "entry_offset": "0x1508", "name": "sound_effect", "symbol": "SdlSwcSoundEffect", "qualification": "Mono attenuation 127 - ((distance/100)>>8), inaudible below 10. Enemy projectile laser 26 follows CODE_05 fire_weapon +0x379a."},
+      {"resource": "CODE_14.bin", "entry_offset": "0x000c", "name": "visit_the_cinema", "symbol": "SdlSwcVisitCinema", "qualification": "Play snd/17 at volume 255 (+0x0028), stop on exit (+0x0058)."}
+    ],
+    "mixer": "Four channels shared by effects and voices. Already playing IDs are retained; new sounds use an idle channel or report busy without interruption. Host caches/decompresses the bank before flight, resamples to 22050 Hz mono signed 16-bit SDL output and clamps mixed samples. Afterburner release replaces its channel while retaining volume. Original Mac volume preferences and hardware resampling are not reconstructed.",
+    "lifecycle": "Audio pauses on pause/focus loss. Device closure joins the callback before freeing decoded samples, and flight closes it before carrier/movie audio. Device unavailability leaves computer messages and NPC portraits on a forty-tick fallback. Invalid present sound resources fail loading.",
+    "pending": "QuickTime music sequences in MIDI/*.MooV, original audio-device behavior and interactive mix/timing verification.",
+    "validation": "Fresh Ghidra original-instruction exports and offline original-resource header/data inspection; static source review; Win32/native/GUI/viewer compilation. No tests, game, GUI, playback or audio-device execution. binary-comp core-hook scores unchanged: message_showing 100.00%, real_vid_transmit 98.53%."
   },
   "wc1_control_reuse": {
     "source": "src/sdl/swc_flight.c",
@@ -571,7 +592,22 @@
   ],
   "cockpit_ui": {
     "source": "src/sdl/swc_cockpit.c",
-    "scope": "Enyo 1 Hornet instruments, target hull/armor/shields, normal reticle, navigation/hostile markers, warning lamps, component text, malfunctioning VDUs, damaged panels and sparks. Spatial HUD is masked by the cockpit; text/HUD also appear without it. Capacities use SWC definitions. L toggles lock mode and the WC2-derived, SWC-adjusted ITTS calculation. Automatic acquisition, lock animation, communication, cockpit banking, pilot animation, side/rear views and other cockpitless instruments remain pending. SDL2 2.0.18 or later is required for VDU polygons.",
+    "scope": "Enyo 1 Hornet instruments, target hull/armor/shields, normal reticle, navigation/hostile markers, warning lamps, component text, malfunctioning VDUs, damaged panels and sparks. Spatial HUD is masked by the cockpit; text/HUD also appear without it. Capacities use SWC definitions. L toggles lock mode and the WC2-derived, SWC-adjusted ITTS calculation. Cockpit banking, pilot hands, communication portraits and computer messages are connected. Further targeting/WC2 integration is deferred at user request. Side/rear views and other cockpitless instruments remain pending. SDL2 2.0.18 or later is required for VDU polygons.",
+    "banking_and_hands": {
+      "evidence": [{"resource": "CODE_13.bin", "entry_offset": "0x18f2", "name": "handle_cockpit_banking"}, {"resource": "CODE_13.bin", "entry_offset": "0x14e2", "name": "determine_pilot_hand"}],
+      "implementation": "SdlUpdateSwcCockpit approaches pitch/yaw rotation*6 by one pixel per tick, clamping Y to +/-6 and X to +/-8. All cockpit layers, instruments, VDU polygons and text use the banking offset. PC00/6 has sixteen hand frames, selected with horizontal priority from input/2. Shared WC1 rotation/input fields and host tick timing replace wider Mac state.",
+      "missing_art": "PC00/2..4 (side/rear views) are absent from the supplied cockpit CMF."
+    },
+    "computer_messages": {
+      "evidence": [{"resource": "CODE_13.bin", "entry_offset": "0x01aa", "name": "CockpitMessage"}, {"resource": "CODE_13.bin", "entry_offset": "0x000c", "name": "UpdateMessage"}],
+      "implementation": "Sixteen queued messages with copied text capped at 34 characters; queued voice IDs or unvoiced text suppress duplicates. Forty-tick unvoiced lifetime, flash counter reset to 20, snd/(voice+79) playback controls voiced lifetime. Autopilot and objective arrival call this queue. Host bounds overflow by dropping new messages; missing audio falls back to timed text. Uses host position (8,203) above shared targeting notices, preserving permanent weapon readouts."
+    },
+    "communication": {
+      "evidence": [{"resource": "CODE_06.bin", "entry_offset": "0x000c", "name": "vid_equiv"}, {"resource": "CODE_06.bin", "entry_offset": "0x00c4", "name": "talk_equiv"}, {"resource": "CODE_06.bin", "entry_offset": "0x045c", "name": "Vocalize_Message"}, {"resource": "CODE_06.bin", "entry_offset": "0x049e", "name": "real_vid_transmit"}, {"resource": "CODE_06.bin", "entry_offset": "0x061e", "name": "message_showing"}, {"resource": "CODE_06.bin", "entry_offset": "0x0640", "name": "check_message"}, {"resource": "CODE_13.bin", "entry_offset": "0x0d00", "name": "update_vid_disp"}, {"resource": "CODE_13.bin", "entry_offset": "0x3d2e", "name": "npc_communication"}],
+      "voices": "Player commands use snd/(482+command). Native eleven-column response table is at DATA/A5+0x2cb4, with Paladin/carrier rank variants. Generic Kilrathi voice selection follows CODE_04 set_up_action_sphere +0x0cb6, sampled when the host notices a nav change. Repeated message IDs 4/10 are suppressed for thirty seconds; spontaneous chatter uses the original random(5000)>4950 gate with adjusted WC1 inclusive bounds.",
+      "portraits": "PCShipV00.CMF WGMN/(face+1), base frame 0 and mouth frame 1, DATA/A5+0x4e6 quad. Mouth toggles on random(4)==0. Component 4 malfunction replaces portraits with static. Completion restores the prior right VDU mode; a neutralized speaker closes the transmission.",
+      "qualification": "Enyo 1 base-game faces 0..13 only; later campaign substitutions are deferred. Uses existing WC1 command menus and queued AI messages, shared mode stack, WC1 RNG and host timing. Sound/table/rendering are SDL-only. No native Mac event handling or QuickDraw drawing."
+    },
     "empty_demo_pages": [
       {"resource": "CODE_13.bin", "entry_offset": "0x121a", "name": "show_navigation_disp"},
       {"resource": "CODE_13.bin", "entry_offset": "0x123a", "name": "show_damage_disp"},
@@ -608,7 +644,7 @@
         {"offset": "0x0886", "encoding": "BE32[5]", "meaning": "component severity text colors", "values": [194, 132, 159, 212, 176]},
         {"offset": "0x089a", "encoding": "BE32 A5-relative string pointers", "meaning": "Ok, Light, Moderate, Heavy, Destroyed"},
         {"offset": "0x08ae", "encoding": "BE32 A5-relative string pointers", "meaning": "nine component names"},
-        {"offset": "0x433e", "encoding": "BE32 triples", "meaning": "cockpit resource list; selected chunks PC00/7, 9, 10, 12, 13, 14, 15, 16, 17, 18"},
+        {"offset": "0x433e", "encoding": "BE32 triples", "meaning": "cockpit resource list; selected chunks PC00/6, 7, 9, 10, 12, 13, 14, 15, 16, 17, 18"},
         {"offset": "0x43e6", "encoding": "BE32 triples", "meaning": "shared cockpit resource list; reticle/nav/hostile CKPT/1, sparks CKPT/6 and contacts CKPT/31"}
       ]
     },
@@ -641,7 +677,7 @@
       ],
       "qualification": "Consecutive frames starting at zero, then 0xa000 removal; one tick per frame. The host temporarily supplies these sequences/scales to WC1's animation interpreter and restores the original definitions on exit."
     },
-    "qualification": "Rendering uses the original (160,100) plus projected XY, with horizontal/vertical flip bits retained. Object scale/definitions now come from SWC. Centered ship quads agree with CODE_01 rotate_Mac_shape2 +0x10ae; exact rotation/scaling rasterization, WC1 projection differences and SDL target brackets remain provisional. No original Mac handle management, screen shake or SWC weapon audio. NPC ship AI is connected.",
+    "qualification": "Rendering uses the original (160,100) plus projected XY, with horizontal/vertical flip bits retained. Object scale/definitions now come from SWC. Centered ship quads agree with CODE_01 rotate_Mac_shape2 +0x10ae; exact rotation/scaling rasterization, WC1 projection differences and SDL target brackets remain provisional. No original Mac handle management or screen shake. Native SWC weapon audio and NPC ship AI are connected.",
     "validation": "Original-instruction and offline resource inspection; static source review; make modern modern-gui only. No interactive execution or tests."
   },
   "movies": {
@@ -703,8 +739,8 @@
       "qualification": "Bounded host reader and SDL queued audio replace Sound Manager streaming. Missing/unreadable recordings or unavailable device leave subtitles usable; malformed present recordings fail. MARK chunks are ignored; script mouth/face timing is provisional and is not native voice-marker synchronization."
     },
     "pending": "Save/load and name entry, later rooms/scenes, campaign progression, exact idle/hover/decorative animation, native map/camera transitions, audio-marker lip synchronization, original text colors/typography, music and fades.",
-    "validation": "Ghidra original-instruction and offline original-data inspection, static review and make modern modern-gui. Existing launcher fixture updated but not run. No tests, game, GUI, interactive checks, playback or audio device executed. Appearance and timing require user review."
+    "validation": "Ghidra original-instruction and offline original-data inspection, static review and make modern modern-gui. No tests, game, GUI, interactive checks, playback or audio device executed. Appearance and timing require user review."
   },
-  "host_only_sources": ["src/swc/rsrc.c", "src/swc/speech.c", "src/sdl/swc_demo.c", "src/sdl/swc_flight.c", "src/sdl/swc_cockpit.c", "src/sdl/swc_text.c", "src/sdl/swc_rooms.c", "src/sdl/swc_movie.c"],
+  "host_only_sources": ["src/swc/rsrc.c", "src/swc/speech.c", "src/swc/sound.c", "src/sdl/swc_sound.c", "src/sdl/swc_demo.c", "src/sdl/swc_flight.c", "src/sdl/swc_cockpit.c", "src/sdl/swc_text.c", "src/sdl/swc_rooms.c", "src/sdl/swc_movie.c"],
   "palette_resource_fork_sha256": "24b707f9e024d86bf8ce996e2bc45521f36f75582b7e7410bef6467c49cb7c2b"
 }

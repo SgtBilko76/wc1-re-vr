@@ -31,6 +31,7 @@ enum SwcCockpitInstrument {
     SWC_MISSILE_LIGHT,
     SWC_COCKPIT_DAMAGE,
     SWC_COCKPIT_SPARKS,
+    SWC_PILOT_HAND,
     SWC_COCKPIT_INSTRUMENT_COUNT
 };
 
@@ -42,6 +43,7 @@ const CockpitScannerGeometry stSwcCockpitScanner = {
 static SwcCockpitShape swcCockpitShapes[SWC_COCKPIT_INSTRUMENT_COUNT];
 static SwcCockpitShape swcTargetShapes[OBJECT_TYPE_COUNT];
 static SwcCockpitShape swcDeadVduShapes[2];
+static SwcCockpitShape swcCommShapes[14];
 static const SwcCmf *swcCockpitCmf;
 static SDL_Renderer *swcCockpitRenderer;
 static SDL_Texture *swcCockpitFont;
@@ -65,25 +67,277 @@ static short swcSparkStartFrame;
 static SDL_Point swcSparkPosition;
 static int swcIttsActive;
 static SDL_Point swcIttsPosition = {0x7fff, 0};
+static int swcPilotHand = -1;
+static SDL_Point swcCockpitDrawOffset;
+SDL_Point swcCockpitOffset;
+
+typedef struct SwcCockpitMessage {
+    char text[35];
+    unsigned char color;
+    int flash;
+    int voice;
+} SwcCockpitMessage;
+
+static SwcCockpitMessage swcMessages[16];
+static SwcCockpitMessage swcCurrentMessage;
+static unsigned int swcMessageRead;
+static unsigned int swcMessageCount;
+static int swcMessageTicks;
+static int swcMessageFlashTicks;
+static int swcMessageVisible;
+static int swcMessageActive;
+static int swcMessageVoiceStarted;
+static int swcCommSound = -1;
+static int swcCommStarted;
+static int swcCommTicks;
+static int swcCommMouth;
+static int swcPlayerVoice = -1;
+static int swcPlayerVoiceStarted;
+static int swcCommNavPoint = -1;
+static int swcKilrathiVoice;
+static signed char swcPreviousCommMessage[10];
+static unsigned int swcPreviousCommTick[10];
+
+short SdlSwcMessageShowing(void)
+{
+    /* CODE_06 message_showing +0x061e includes cockpit computer speech. */
+    return swcCommSound >= 0 ||
+        (swcMessageActive && swcCurrentMessage.voice >= 0);
+}
+
+/* CODE_06 Vocalize_Message +0x045c: player orders are snd/(482+command). */
+void SdlSwcVocalizeMessage(int command)
+{
+    if (swcPlayerVoice == -1 && command >= 1 && command <= 12) {
+        swcPlayerVoice = 482 + command;
+        swcPlayerVoiceStarted = 0;
+    }
+}
+
+/* CODE_06 vid_equiv +0x000c, talk_equiv +0x00c4 and real_vid_transmit
+ * +0x049e. Enyo 1 uses the base-game faces; later expansion substitutions
+ * stay outside the currently supported fresh-demo mission. */
+void SdlSwcTransmit(short object, short message)
+{
+    /* DATA/A5+0x2cb4, eleven entries per speaker. Generic Kilrathi rows
+       have ten lines; message 10 is not a valid entry for those speakers. */
+    static const short sounds[25][11] = {
+        {90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100},
+        {101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111},
+        {112, 113, 114, 115, 121, 122, 123, 129, 130, 131, 132},
+        {138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148},
+        {149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159},
+        {160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170},
+        {171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181},
+        {182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192},
+        {193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 0},
+        {203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 0},
+        {213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 0},
+        {223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 0},
+        {233, 234, 235, 236, 237, 238, 239, 245, 246, 247, 248},
+        {249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259},
+        {260, 261, 262, 263, 269, 270, 271, 272, 278, 279, 280},
+        {281, 282, 283, 284, 290, 291, 292, 293, 299, 300, 301},
+        {302, 303, 305, 306, 307, 308, 309, 310, 311, 312, 313},
+        {314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324},
+        {325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 0},
+        {335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 0},
+        {345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 0},
+        {355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 0},
+        {365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 0},
+        {375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 0},
+        {385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 0}
+    };
+    int rating;
+    int face;
+    int talk;
+    int sound;
+
+    if (object <= 0 || object >= 10 || message < 0 || message > 10 ||
+        SdlSwcMessageShowing() || nCannedSceneMode || nTrainSimActive ||
+        nCameraViewMode != 0 || aeShipSide[object] == SIDE_NEUTRAL)
+        return;
+    rating = acShipRating[object];
+    if (rating == -1) {
+        face = aeShipSide[object] == SIDE_IMPERIAL ? 12 : 13;
+        talk = face == 12 || swcKilrathiVoice == 7 ? face : 18 + swcKilrathiVoice;
+    } else {
+        face = rating - (aeShipSide[object] == SIDE_KILRATHI);
+        talk = face;
+    }
+    if (face < 0 || face >= 14 || talk < 0 || talk >= 25)
+        return;
+    sound = sounds[talk][message];
+    if (sound == 0)
+        return;
+    /* Paladin's rank-addressed lines, and the carrier's destination reply. */
+    if ((face == 2 && (message == 3 || message == 6 || message == 10)) ||
+        (face == 12 && message == 6))
+        sound += stCampaignState.currentPilot->rank + 1;
+    nCommSpeakerObject = object;
+    nCommSpeakerRating = (short)rating;
+    nCommPortraitIndex = (short)face;
+    swcCommSound = sound;
+    swcCommStarted = 0;
+    swcCommTicks = 40;
+    if (get_mode(1) != 6)
+        push_mode(1, 6);
+}
+
+/* CODE_06 check_message +0x0640 and CODE_13 npc_communication +0x3d2e.
+ * Playback completion controls portrait lifetime; paused audio retains it. */
+static void SwcUpdateCommunication(void)
+{
+    int playing;
+    int object;
+    int message;
+
+    if (swcCommNavPoint != nCurrentNavPoint) {
+        swcCommNavPoint = nCurrentNavPoint;
+        /* CODE_04 set_up_action_sphere +0x0cb6: Random3DO(0,8). */
+        swcKilrathiVoice = RandomInRange(0, 7);
+    }
+    if (swcPlayerVoice >= 0) {
+        playing = swcPlayerVoiceStarted ? SdlSwcSoundPlaying(swcPlayerVoice) :
+            SdlPlaySwcSound(swcPlayerVoice, 255);
+        if (playing > 0)
+            swcPlayerVoiceStarted = 1;
+        else if (playing < 0 || swcPlayerVoiceStarted)
+            swcPlayerVoice = -1;
+    }
+    if (swcCommSound >= 0) {
+        playing = swcCommStarted ? SdlSwcSoundPlaying(swcCommSound) :
+            SdlPlaySwcSound(swcCommSound, 255);
+        if (playing > 0)
+            swcCommStarted = 1;
+        if ((playing == 0 && swcCommStarted) ||
+            (playing < 0 && --swcCommTicks <= 0) ||
+            aeShipSide[nCommSpeakerObject] == SIDE_NEUTRAL) {
+            SdlStopSwcSound(swcCommSound);
+            swcCommSound = -1;
+            nCommSpeakerObject = nCommSpeakerRating = nCommPortraitIndex = -1;
+            if (get_mode(1) == 6)
+                pop_mode(1);
+        }
+    }
+    if (swcPlayerVoice >= 0 || nCannedSceneMode || nTrainSimActive)
+        return;
+    for (object = 1; object < 10 && !SdlSwcMessageShowing(); object++) {
+        if (aeObjectClass[object] < OBJECT_CLASS_SHIP)
+            continue;
+        message = acWingmanMessageState[object];
+        if (message == -1)
+            continue;
+        acWingmanMessageState[object] = -1;
+        if (message == swcPreviousCommMessage[object] && (message == 4 || message == 10) &&
+            (unsigned int)(nTickCount60Hz - swcPreviousCommTick[object]) < 30U * 60U)
+            continue;
+        swcPreviousCommMessage[object] = (signed char)message;
+        swcPreviousCommTick[object] = nTickCount60Hz;
+        SdlSwcTransmit((short)object, (short)message);
+    }
+    if (nCommSpeakerObject == -1 && RandomBelowOrEqual(4999) > 4950) {
+        for (object = 1; object < 10; object++) {
+            if (aeObjectClass[object] >= OBJECT_CLASS_SHIP &&
+                aeShipSide[object] == SIDE_KILRATHI &&
+                (aeShipObjective[object] == OBJECTIVE_ENGAGE_ENEMY ||
+                 aeShipObjective[object] == OBJECTIVE_DESTROY_SHIP) &&
+                (acShipRating[object] != -1 || RandomBelowOrEqual(99) < 20)) {
+                acWingmanMessageState[object] = (signed char)RandomInRange(2, 4);
+                break;
+            }
+        }
+    }
+}
+
+/* SWC CODE_13 CockpitMessage +0x01aa: copied, 34-character messages in a
+ * sixteen-entry ring; deduplicate queued voice IDs or unvoiced text. */
+void SdlSwcCockpitMessage(const char *text, unsigned char color, int flash, int voice)
+{
+    unsigned int index;
+    SwcCockpitMessage *message;
+
+    for (index = 0; index < swcMessageCount; index++) {
+        message = &swcMessages[(swcMessageRead + index) % 16];
+        if ((voice >= 0 && message->voice == voice) ||
+            (voice < 0 && strncmp(message->text, text, 34) == 0))
+            return;
+    }
+    /* Bound host storage if more messages arrive than can be spoken. */
+    if (swcMessageCount == 16)
+        return;
+    message = &swcMessages[(swcMessageRead + swcMessageCount++) % 16];
+    SDL_strlcpy(message->text, text, sizeof(message->text));
+    message->color = color == 0 ? 0xfd : color;
+    message->flash = flash;
+    message->voice = voice;
+}
+
+/* CODE_13 UpdateMessage +0x000c and CODE_06 check_message +0x0640.
+ * Voices use snd/(79+voice); unvoiced text lasts forty simulation frames. */
+static void SwcUpdateMessage(void)
+{
+    int playing;
+
+    if (swcCommSound >= 0)
+        return;
+    if (swcMessageActive) {
+        if (swcCurrentMessage.flash && --swcMessageFlashTicks < 0) {
+            swcMessageFlashTicks = 20;
+            swcMessageVisible = !swcMessageVisible;
+        }
+        if (swcCurrentMessage.voice >= 0) {
+            playing = swcMessageVoiceStarted ?
+                SdlSwcSoundPlaying(swcCurrentMessage.voice + 79) :
+                SdlPlaySwcSound(swcCurrentMessage.voice + 79, 255);
+            if (playing > 0) {
+                swcMessageVoiceStarted = 1;
+                return;
+            }
+            if (playing == 0 && !swcMessageVoiceStarted)
+                return;
+            if (playing < 0) {
+                swcCurrentMessage.voice = -1;
+                swcMessageTicks = 40;
+            }
+        }
+        if (--swcMessageTicks >= 0)
+            return;
+        swcMessageActive = 0;
+    }
+    if (swcMessageCount == 0)
+        return;
+    swcCurrentMessage = swcMessages[swcMessageRead];
+    swcMessageRead = (swcMessageRead + 1) % 16;
+    swcMessageCount--;
+    swcMessageActive = 1;
+    swcMessageVisible = 1;
+    swcMessageFlashTicks = 20;
+    swcMessageVoiceStarted = 0;
+    swcMessageTicks = swcCurrentMessage.voice < 0 ? 40 : 0;
+}
 
 unsigned char bSwcWaitingForEscort; /* SWC DATA/A5+0x46ec */
 
 /* SWC CODE_13 +0x1732: auto_pilot_valid. The Mac checks hazards first,
  * then enemies, the objective-arrival escort latch, and destination range.
- * CockpitMessage's voice IDs 1..7 are not connected to the SDL speech player. */
+ * CockpitMessage's voice IDs 1..7 address the original snd bank. */
 short SdlSwcAutopilotValid(short showReason)
 {
     const char *reason = NULL;
     short ship;
     enum ObjectType type;
+    int voice = -1;
 
     if (cMissionObjectiveCount == 0 || cCurrentObjective < 0 ||
         cCurrentObjective >= cMissionObjectiveCount)
         return 0;
     if (pActiveHazardField != NULL) {
         reason = "Hazard Near";
+        voice = 3;
     } else if (kilrathi_near(0, 16000)) {
         reason = "Enemy Near";
+        voice = 2;
     } else if (bSwcWaitingForEscort) {
         if (!showReason)
             return 0;
@@ -94,20 +348,21 @@ short SdlSwcAutopilotValid(short showReason)
             type = aeObjectType[ship];
             if (type == OBJECT_TYPE_DRAYMAN || type == OBJECT_TYPE_VENTURE ||
                 type == OBJECT_TYPE_EXETER || type == OBJECT_TYPE_DILLIGENT) {
-                /* WC1's HUD retains the pointer; its persistent objective
-                   buffer replaces the Mac's copied stack message. */
                 SDL_snprintf(szObjectiveStatusMessage, sizeof(szObjectiveStatusMessage),
                              "Wait for %s", aObjectTypeData[type].displayName);
-                set_global_message(szObjectiveStatusMessage, 0x84, 3);
+                voice = type == OBJECT_TYPE_DRAYMAN ? 4 :
+                    type == OBJECT_TYPE_VENTURE ? 5 : type == OBJECT_TYPE_EXETER ? 6 : 7;
+                SdlSwcCockpitMessage(szObjectiveStatusMessage, 0x84, 1, voice);
             }
         }
         return 0;
     } else if (distance_from_point(0,
                    &aMissionObjectives[(int)cCurrentObjective].position) < 8000) {
         reason = "Already Near";
+        voice = 1;
     }
     if (showReason && reason != NULL)
-        set_global_message(reason, 0x84, 3);
+        SdlSwcCockpitMessage(reason, 0x84, 1, voice);
     return reason == NULL;
 }
 
@@ -128,14 +383,14 @@ void SdlSwcFlagReached(short objective, short reached)
             if (objectiveType != 1 || aMissionShips[carrierMissionShip].state != 1) {
                 SDL_snprintf(szObjectiveStatusMessage, sizeof(szObjectiveStatusMessage),
                              "Wait for %s", aObjectTypeData[aeObjectType[carrierObject]].displayName);
-                CockpitMessage(szObjectiveStatusMessage, 0x84, 4);
+                SdlSwcCockpitMessage(szObjectiveStatusMessage, 0x84, 1, -1);
                 bSwcWaitingForEscort = 1;
             }
         } else {
             /* Unlike WC1, the Mac suppresses arrival text for type 1. */
             if (objectiveType != 1) {
-                CockpitMessage(visited(objective) ? "Already Visited" : "Objective Reached",
-                               0x84, 4);
+                SdlSwcCockpitMessage(visited(objective) ? "Already Visited" : "Objective Reached",
+                                    0x84, 0, visited(objective) ? -1 : 0);
             }
             advanceDestination = 1;
             markVisited = 1;
@@ -224,6 +479,8 @@ void SdlFreeSwcCockpit(void)
         SwcFreeCockpitShape(&swcTargetShapes[shape]);
     for (shape = 0; shape < SDL_arraysize(swcDeadVduShapes); shape++)
         SwcFreeCockpitShape(&swcDeadVduShapes[shape]);
+    for (shape = 0; shape < SDL_arraysize(swcCommShapes); shape++)
+        SwcFreeCockpitShape(&swcCommShapes[shape]);
     SDL_DestroyTexture(swcCockpitFont);
     swcCockpitFont = NULL;
     swcCockpitRenderer = NULL;
@@ -239,6 +496,20 @@ void SdlFreeSwcCockpit(void)
     swcSparkFrame = -1;
     swcIttsActive = 0;
     swcIttsPosition.x = 0x7fff;
+    swcPilotHand = -1;
+    swcCockpitOffset = (SDL_Point){0, 0};
+    swcCockpitDrawOffset = (SDL_Point){0, 0};
+    swcMessageRead = swcMessageCount = 0;
+    swcMessageActive = swcMessageVisible = 0;
+    swcMessageTicks = swcMessageFlashTicks = 0;
+    swcMessageVoiceStarted = 0;
+    swcCommSound = swcPlayerVoice = -1;
+    swcCommStarted = swcPlayerVoiceStarted = swcCommTicks = swcCommMouth = 0;
+    nCommSpeakerObject = nCommSpeakerRating = nCommPortraitIndex = -1;
+    swcCommNavPoint = -1;
+    swcKilrathiVoice = 0;
+    memset(swcPreviousCommMessage, -1, sizeof(swcPreviousCommMessage));
+    memset(swcPreviousCommTick, 0, sizeof(swcPreviousCommTick));
 }
 
 int SdlInitSwcCockpit(SDL_Renderer *renderer, const SwcCmf *cockpit,
@@ -246,8 +517,8 @@ int SdlInitSwcCockpit(SDL_Renderer *renderer, const SwcCmf *cockpit,
 {
     /* DATA/0 +0x433e/+0x43e6 resource lists, and +0x420/+0x786/+0x78c
        frame maxima: energy 10, throttle 13, fuel 13 for the Hornet. */
-    static const uint32_t chunks[] = {10, 15, 16, 17, 18, 31, 9, 1, 12, 13, 14, 7, 6};
-    static const uint32_t counts[] = {7, 11, 14, 14, 1, 13, 2, 14, 1, 1, 2, 3, 8};
+    static const uint32_t chunks[] = {10, 15, 16, 17, 18, 31, 9, 1, 12, 13, 14, 7, 6, 6};
+    static const uint32_t counts[] = {7, 11, 14, 14, 1, 13, 2, 14, 1, 1, 2, 3, 8, 16};
     size_t index;
     int shared;
     int result = -1;
@@ -292,8 +563,8 @@ static void SwcDrawCockpitShape(SwcCockpitShape *shape, int frame, int x, int y)
     destination = shape->frames[frame].bounds;
     if (shape->frames[frame].texture == NULL)
         return;
-    destination.x += x;
-    destination.y += y;
+    destination.x += x + swcCockpitDrawOffset.x;
+    destination.y += y + swcCockpitDrawOffset.y;
     swcCockpitDrawResult = SDL_RenderCopy(swcCockpitRenderer,
         shape->frames[frame].texture, NULL, &destination);
 }
@@ -310,7 +581,8 @@ static void SwcDrawCockpitText(int x, int baseline, unsigned char color,
     if (swcCockpitDrawResult != 0)
         return;
     swcCockpitDrawResult = SdlDrawSwcText(swcCockpitRenderer, swcCockpitFont,
-        x, baseline, swcCockpitColors[color], text);
+        x + swcCockpitDrawOffset.x, baseline + swcCockpitDrawOffset.y,
+        swcCockpitColors[color], text);
 }
 
 void SdlDrawSwcCockpitReadout(signed char slot, const char *text)
@@ -570,6 +842,7 @@ void SdlSwcCockpitDamage(short region)
     swcSparkPosition = swcDamagePositions[region];
     swcSparkFrame = 0;
     swcSparkStartFrame = nSpaceFrame;
+    SdlPlaySwcSound(24, 255); /* CODE_13 malf_sound +0x19e4. */
 }
 
 void SdlUpdateSwcCockpit(void)
@@ -578,6 +851,23 @@ void SdlUpdateSwcCockpit(void)
     int mode;
     int count;
     int offset;
+    int horizontal;
+    int vertical;
+
+    /* CODE_13 handle_cockpit_banking +0x18f2: move one pixel toward
+       six times pitch/yaw velocity, clamped to +/-6 vertically, +/-8 horizontally. */
+    horizontal = SDL_clamp(anObjectYawRotation[0] * 6, -8, 8);
+    vertical = SDL_clamp(anObjectPitchRotation[0] * 6, -6, 6);
+    swcCockpitOffset.x += (swcCockpitOffset.x < horizontal) -
+        (swcCockpitOffset.x > horizontal);
+    swcCockpitOffset.y += (swcCockpitOffset.y < vertical) -
+        (swcCockpitOffset.y > vertical);
+    /* determine_pilot_hand +0x14e2: horizontal input wins over vertical.
+       PC00/6 contains the sixteen Hornet hand frames at their own offsets. */
+    horizontal = SDL_clamp(nYawInput, -8, 8) / 2;
+    vertical = SDL_clamp(nPitchInput, -8, 8) / 2;
+    swcPilotHand = horizontal > 0 ? horizontal - 1 : horizontal < 0 ? 3 - horizontal :
+        vertical < 0 ? 11 - vertical : vertical > 0 ? 7 + vertical : -1;
 
     /* These are simulation updates, never render-frame random draws. */
     if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCount)
@@ -589,6 +879,8 @@ void SdlUpdateSwcCockpit(void)
         swcDamageLight = calculate_damage_level() >= 3 &&
             aasShipShield[0][0] + aasShipShield[0][1] < 10;
     }
+    if (swcDamageLight && nSpaceFrame % 30 == 0)
+        SdlPlaySwcSound(32, 255); /* update_lights +0x04fc. */
     for (vdu = 0; vdu < 2; vdu++) {
         swcVduDead[vdu] = 0;
         if (anCockpitDamageState[vdu + 1])
@@ -596,10 +888,21 @@ void SdlUpdateSwcCockpit(void)
         mode = get_mode((short)vdu);
         swcVduDead[vdu] = mode == 0 ||
             (vdu == 0 && mode == 1 && malf(3)) ||
-            (vdu == 1 && mode == 3 && malf(5));
+            (vdu == 1 && mode == 3 && malf(5)) ||
+            (vdu == 1 && mode == 6 && malf(4));
         if (swcVduDead[vdu])
             swcVduStaticFrame[vdu] = RandomInRange(0, 2);
     }
+    if (swcVduDead[0] || swcVduDead[1])
+        SdlPlaySwcSound(23, 199); /* update_VDUs +0x0b4e. */
+    else
+        SdlStopSwcSound(23);
+    SwcUpdateMessage();
+    SwcUpdateCommunication();
+    /* CODE_13 update_vid_disp +0x0d7e: one-in-four mouth toggle. */
+    if (swcCommSound >= 0 && get_mode(1) == 6 && !swcVduDead[1] &&
+        !anCockpitDamageState[2] && RandomBelowOrEqual(3) == 0)
+        swcCommMouth ^= 1;
     /* CODE_13 show_weapon_disp +0x0fc8 cycles nine damaged components. */
     if (!anCockpitDamageState[1] && !swcVduDead[0] && get_mode(0) == 1 &&
         --swcDamageDisplayTicks <= 0) {
@@ -667,13 +970,16 @@ static void SwcDrawTargetStatus(void)
         SwcDrawInstrument(SWC_TARGET_SHIELDS, 1, 0, 0);
 }
 
-static void SwcDrawDeadDisplay(int vdu)
+/* CODE_01 MacDrawcel2 maps the complete frame into the VDU quadrilateral. */
+static void SwcDrawVduShape(int polygon, SwcCockpitShape *shape, int frame)
 {
-    /* CODE_13 vdu_polygon +0x0b7a; DATA/0 +0x426/+0x5a6. MacDrawcel2
-       maps the full image onto this quad, ignoring sprite x/y offsets. */
-    static const SDL_FPoint polygons[2][4] = {
+    /* CODE_13 vdu_polygon +0x0b7a uses DATA/0 +0x426/+0x5a6 for static;
+       update_vid_disp +0x0d2c uses the separate +0x4e6 portrait polygon.
+       MacDrawcel2 maps the full frame onto the quad, ignoring sprite x/y. */
+    static const SDL_FPoint polygons[3][4] = {
         {{33, 134}, {90, 132}, {90, 188}, {33, 189}},
-        {{231, 132}, {288, 134}, {288, 189}, {231, 188}}
+        {{231, 132}, {288, 134}, {288, 189}, {231, 188}},
+        {{231, 132}, {287, 135}, {287, 188}, {231, 189}}
     };
     static const SDL_FPoint uv[4] = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
     static const int indices[6] = {0, 1, 2, 0, 2, 3};
@@ -683,12 +989,14 @@ static void SwcDrawDeadDisplay(int vdu)
     if (swcCockpitDrawResult != 0)
         return;
     for (corner = 0; corner < 4; corner++) {
-        vertices[corner].position = polygons[vdu][corner];
+        vertices[corner].position = polygons[polygon][corner];
+        vertices[corner].position.x += swcCockpitDrawOffset.x;
+        vertices[corner].position.y += swcCockpitDrawOffset.y;
         vertices[corner].color = (SDL_Color){255, 255, 255, 255};
         vertices[corner].tex_coord = uv[corner];
     }
     swcCockpitDrawResult = SDL_RenderGeometry(swcCockpitRenderer,
-        swcDeadVduShapes[vdu].frames[swcVduStaticFrame[vdu]].texture,
+        shape->frames[frame].texture,
         vertices, 4, indices, 6);
 }
 
@@ -723,6 +1031,7 @@ int SdlDrawSwcCockpit(void)
     int frame;
 
     swcCockpitDrawResult = 0;
+    swcCockpitDrawOffset = swcCockpitOffset;
     /* CODE_13 update_lights +0x0408, DATA/0 +0x3d8. */
     if (swcAutopilotLight)
         SwcDrawInstrument(SWC_AUTOPILOT_LIGHT, 0, 0, 0);
@@ -737,15 +1046,26 @@ int SdlDrawSwcCockpit(void)
        Navigation, damage and info pages are empty in the original demo. */
     if (!anCockpitDamageState[1]) {
         if (get_mode(0) == 0 || swcVduDead[0])
-            SwcDrawDeadDisplay(0);
+            SwcDrawVduShape(0, &swcDeadVduShapes[0], swcVduStaticFrame[0]);
         else if (get_mode(0) == 1)
             SwcDrawPlayerStatus();
     }
     if (!anCockpitDamageState[2]) {
         if (get_mode(1) == 0 || swcVduDead[1])
-            SwcDrawDeadDisplay(1);
+            SwcDrawVduShape(1, &swcDeadVduShapes[1], swcVduStaticFrame[1]);
         else if (get_mode(1) == 3)
             SwcDrawTargetStatus();
+        else if (get_mode(1) == 6 && nCommPortraitIndex >= 0 && nCommPortraitIndex < 14) {
+            SwcCockpitShape *portrait = &swcCommShapes[nCommPortraitIndex];
+
+            swcCockpitDrawResult = SwcLoadCockpitShape(swcCockpitCmf, "WGMN",
+                (uint32_t)nCommPortraitIndex + 1, 2, portrait);
+            if (swcCockpitDrawResult == 0) {
+                SwcDrawVduShape(2, portrait, 0);
+                if (swcCommMouth)
+                    SwcDrawVduShape(2, portrait, 1);
+            }
+        }
     }
     /* CODE_13 update_bars +0x0520. The original uses separate animated
        shape sets for energy, commanded throttle and fuel, not WC1's bars. */
@@ -772,6 +1092,7 @@ int SdlDrawSwcCockpitDamage(void)
     int region;
 
     swcCockpitDrawResult = 0;
+    swcCockpitDrawOffset = swcCockpitOffset;
     /* CODE_13 place_damage_on_cockpit +0x41ae and explosion_draw +0x40a0
        run after instruments and text; damaged panels remain visible. */
     for (region = 0; region < 3; region++) {
@@ -779,6 +1100,9 @@ int SdlDrawSwcCockpitDamage(void)
             SwcDrawInstrument(SWC_COCKPIT_DAMAGE, region,
                 swcDamagePositions[region].x, swcDamagePositions[region].y);
     }
+    /* CODE_13 animate_pilot +0x1574 follows panel damage, before sparks. */
+    if (swcPilotHand >= 0)
+        SwcDrawInstrument(SWC_PILOT_HAND, swcPilotHand, 0, 0);
     if (swcSparkFrame >= 0)
         SwcDrawInstrument(SWC_COCKPIT_SPARKS, swcSparkFrame,
             swcSparkPosition.x - 20, swcSparkPosition.y - 20);
@@ -793,6 +1117,7 @@ int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds)
     int reticle = 0;
 
     swcCockpitDrawResult = 0;
+    swcCockpitDrawOffset = (SDL_Point){0, 0};
     /* CODE_13 overlay_head_up_display +0x2f56: scene center (160,100),
        normal reticle at (center.x-16, center.y-4), including frame offsets.
        update_cockpit draws this layer before the opaque cockpit artwork. */
@@ -860,6 +1185,7 @@ int SdlDrawSwcHud(void)
     char text[64];
 
     swcCockpitDrawResult = 0;
+    swcCockpitDrawOffset = swcCockpitOffset;
     if (damage != 0) {
         /* DATA/0 +0x886/+0x89a/+0x8ae, original status names and colours. */
         static const unsigned char colors[5] = {0xc2, 0x84, 0x9f, 0xd4, 0xb0};
@@ -921,8 +1247,11 @@ int SdlDrawSwcHud(void)
             SDL_strlcpy(text, "FAR", sizeof(text));
         SwcDrawCockpitText(235, 105, 0x84, text);
     }
-    /* WC1 owns lock countdowns and message lifetimes; only their drawing is
-       replaced. These host message positions also work without the cockpit. */
+    /* Keep queued messages above the shared HUD notices: the host's
+       persistent weapon readouts already occupy the original status area. */
+    if (swcMessageActive && swcMessageVisible && swcCurrentMessage.color != 0xfd)
+        SwcDrawCockpitText(8, 203, swcCurrentMessage.color, swcCurrentMessage.text);
+    /* Retain the shared WC1 messages used by the existing targeting path. */
     for (index = 0; index < 2; index++) {
         const HudMessageSlot *slot = &aHudMessageSlots[index];
 
