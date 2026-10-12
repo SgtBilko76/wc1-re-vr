@@ -193,6 +193,16 @@
       "differences": "After the player's completed farewell, SDL presents THE END and waits for input. Uses the existing bitmap font and a static black background; original QuickDraw typography and animated background remain pending. Skipping the funeral bypasses the end card."
     },
     {
+      "original_name": "opening_scene",
+      "resource": "CODE_03.bin",
+      "entry_offset": "0x4374",
+      "end_offset": "0x43e0",
+      "source": "src/sdl/swc_movie.c",
+      "symbol": "SdlPlaySwcOpening",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "Original OPEN0/OPEN1/OPEN2/OPEN3 order before the initial carrier visit, following CODE_09 squadron +0x84..+0x90. Reuses the existing SDL movie decoder and sequence player. Missing files or skipping leave carrier entry available; quit/error end the session. Separate DOCKING.MooV music, palette transitions and the other startup movies remain pending."
+    },
+    {
       "original_name": "scramble",
       "resource": "CODE_03.bin",
       "entry_offset": "0x45d0",
@@ -220,7 +230,7 @@
       "source": "src/sdl/swc_movie.c",
       "symbol": "SdlPlaySwcMovie",
       "relationship": "partial-presentation-adaptation",
-      "differences": "SDL textures, per-movie palette conversion, queued PCM and event handling replace QuickDraw/Sound Manager. Adds pause/focus handling, explicit quit and skip-on-release; skips the complete launch or landing sequence. External music and palette transitions remain pending."
+      "differences": "SDL textures, per-movie palette conversion, queued PCM and event handling replace QuickDraw/Sound Manager. Adds pause/focus handling, explicit quit and skip-on-release; skips the complete current movie group. External music and palette transitions remain pending."
     },
     {
       "original_name": "LMovieOpen",
@@ -683,7 +693,9 @@
   "movies": {
     "decoder_source": "src/swc/movie.c",
     "presentation_source": "src/sdl/swc_movie.c",
-    "scope": "Version-1 LMov decoder and original Hornet launch/landing plus player/Spirit funeral clips for Enyo 1 in both SDL launchers. Missing movie groups preserve flight/dialogue; malformed movies fail explicitly. The check-only flight path bypasses movies.",
+    "scope": "Version-1 LMov decoder and original new-campaign opening, Hornet launch/landing and player/Spirit funeral clips for Enyo 1 in both SDL launchers. Missing movie groups preserve carrier entry/flight/dialogue; malformed movies fail explicitly. The check-only flight path bypasses movies.",
+    "opening_sequence": ["OPEN0", "OPEN1", "OPEN2", "OPEN3"],
+    "opening_string_evidence": "CODE_03 opening_scene +0x4374; expanded DATA/0 A5-relative strings -0x347c, -0x3468, -0x3462, -0x345c. A5-0x3475 names DOCKING.MooV. CODE_09 squadron +0x84 calls opening_scene before StartNewCampaign(0) at +0x8a and GameFlow at +0x90.",
     "launch_sequence": ["ARMOR", "HALL", "LAUNCH01", "LAUNCH02", "LAUNCH03", "LAUNCH04.00", "LAUNCH06.00", "LAUNCH07.00", "LAUNCH08.00"],
     "launch_string_evidence": "CODE_03 scramble +0x45d0, expanded DATA/0 A5-relative strings -0x3414, -0x3402, -0x33fd, -0x33f4, -0x33eb, -0x33e2, -0x33d3, -0x33c4, -0x33b5. Last four format strings use %2.2d; Hornet selects zero.",
     "landing_sequence": ["LANDING1.00", "LANDING2.00", "LANDING1", "LANDING4.00", "LANDING5.00", "LANDING6.00", "LANDING7.NN"],
@@ -691,13 +703,15 @@
     "funeral_sequence": ["FUNSERV0", "FUNSERVA", "eulogy dialogue", "FUNSERVB", "farewell dialogue"],
     "funeral_string_evidence": "CODE_03 funeral_sequence +0x4a08; expanded DATA/0 A5-relative strings -0x3397 FUNSERV0, -0x338e FUNERAL.MooV, -0x3381 FUNSERVA, -0x3378 FUNSERVB.",
     "audio": "Embedded unsigned 8-bit mono at 0x56ee8ba3 fixed-point Hz (22254.545...), rounded to 22255 Hz by SDL. Stored blocks are 11128 bytes; header +0xa6 is the valid sample count. SDL queues trimmed PCM, pauses with video, and falls back to silent playback if the device is unavailable.",
-    "pending": "Separate ARMOR.MooV/LANDING.MooV/FUNERAL.MooV music, palette transitions, opening game-flow integration and later scripted scenes. First briefing/bar/debriefing/funeral conversations are connected through the carrier adapter.",
+    "pending": "Separate DOCKING.MooV/ARMOR.MooV/LANDING.MooV/FUNERAL.MooV music, palette transitions, remaining startup movies (INTROxx/Lion/BUC) and later scripted scenes. First briefing/bar/debriefing/funeral conversations are connected through the carrier adapter.",
+    "opening_validation": "Fresh Ghidra CODE_09 squadron export, original opening_scene instructions and expanded A5 strings; static source review and make modern modern-gui. No tests, game, GUI, playback or audio device executed for this change.",
     "validation": "Original assembly and A5-string inspection; offline parsing of all 38 original files and 3521 encoded frames, including record bounds, scanline commands, exact frame consumption and audio lengths; static source review and make modern modern-gui. No interactive code, game, GUI, playback or audio device executed."
   },
   "carrier": {
     "source": "src/sdl/swc_rooms.c",
-    "scope": "Fresh Enyo 1: bar, three conversations, rankings, barracks, medals, briefing, Hornet launch, flight, landing, debriefing and player/Spirit funerals. Player death enters the funeral without landing/PostMission; Spirit's funeral follows debriefing if she was lost. Dismissal ends the session; later campaign progression is not implemented. GUI and CLI enter the carrier; check-only bypasses rooms and movies. Save bunks explain unsupported saving/loading. Simulator remains disabled as in the original demo.",
+    "scope": "Fresh Enyo 1: opening movies, bar, three conversations, rankings, barracks, medals, briefing, Hornet launch, flight, landing, debriefing and player/Spirit funerals. Player death enters the funeral without landing/PostMission; Spirit's funeral follows debriefing if she was lost. Dismissal ends the session; later campaign progression is not implemented. GUI and CLI play the opening before carrier entry; check-only bypasses rooms and movies. Save bunks explain unsupported saving/loading. Simulator remains disabled as in the original demo.",
     "flow_evidence": [
+      {"resource": "CODE_09.bin", "entry_offset": "0x000c", "name": "squadron", "qualification": "+0x84..+0x90 calls opening_scene, StartNewCampaign(0), then GameFlow for a new campaign. The SDL host uses this order for its fresh Enyo 1 session."},
       {"resource": "CODE_09.bin", "entry_offset": "0x1a70", "name": "StartNewCampaign", "qualification": "Enables the recreation-room path."},
       {"resource": "CODE_09.bin", "entry_offset": "0x1b8e", "name": "GameFlow", "qualification": "RecRoom, BarracksScreen, Briefing, scramble, landing, PostMission and DeBriefing; simulator selection shows the demo restriction. Player funeral call at +0x1e44 passes 1; wingman-loss check +0x218c calls the funeral with 0 at +0x2196. Full UpdateSeries and later scenes are not connected; the separate death_sequence cinematic is still pending."},
       {"resource": "CODE_03.bin", "entry_offset": "0x137c", "name": "DeBriefing"},

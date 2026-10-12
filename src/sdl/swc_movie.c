@@ -182,16 +182,18 @@ done:
     return result;
 }
 
-/* Shared SDL presentation for CODE_03 scramble, landing and funeral MovieDisplay
- * calls. Separate music streams and palette fades remain pending. */
+/* Shared SDL presentation for CODE_03 opening_scene, scramble, landing and
+ * funeral MovieDisplay calls. Separate music streams and palette fades remain
+ * pending. */
 enum SwcMovieSequence {
-    SWC_MOVIES_LAUNCH, SWC_MOVIES_LANDING,
+    SWC_MOVIES_OPENING, SWC_MOVIES_LAUNCH, SWC_MOVIES_LANDING,
     SWC_MOVIES_FUNERAL_START, SWC_MOVIES_FUNERAL_FAREWELL
 };
 
 static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
                                    enum SwcMovieSequence sequence, int health)
 {
+    static const char *const openingNames[] = {"OPEN0", "OPEN1", "OPEN2", "OPEN3"};
     static const char *const launchNames[] = {
         "ARMOR", "HALL", "LAUNCH01", "LAUNCH02", "LAUNCH03",
         "LAUNCH04.00", "LAUNCH06.00", "LAUNCH07.00", "LAUNCH08.00"
@@ -218,6 +220,11 @@ static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
                  2 - SDL_clamp(health, 0, 100) * 2 / 100);
     landingNames[6] = finalLanding;
     switch (sequence) {
+    case SWC_MOVIES_OPENING:
+        names = openingNames;
+        count = SDL_arraysize(openingNames);
+        title = "opening";
+        break;
     case SWC_MOVIES_LAUNCH:
         names = launchNames;
         count = SDL_arraysize(launchNames);
@@ -267,6 +274,12 @@ static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
     SDL_ShowCursor(cursorVisible);
     SDL_SetWindowTitle(window, "Super Wing Commander - Enyo 1 (experimental flight)");
     return result;
+}
+
+/* CODE_03 opening_scene +0x4374: four clips before a new campaign. */
+int SdlPlaySwcOpening(SDL_Window *window, SDL_Renderer *renderer)
+{
+    return SdlPlaySwcMovieSequence(window, renderer, SWC_MOVIES_OPENING, 100);
 }
 
 /* CODE_03 scramble +0x45d0: nine clips, Hornet suffix 00. */

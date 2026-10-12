@@ -107,6 +107,8 @@ int SwcMovieOpen(const char *path, SwcMovie *movie);
 void SwcMovieClose(SwcMovie *movie);
 /* Advances the retained indexed image: 1 = frame, 0 = end, -1 = error. */
 int SwcMovieNextFrame(SwcMovie *movie);
+/* New-campaign opening before the carrier; returns a SwcMovieResult. */
+int SdlPlaySwcOpening(SDL_Window *window, SDL_Renderer *renderer);
 /* Hornet launch for the Enyo 1 host; returns a SwcMovieResult. */
 int SdlPlaySwcLaunch(SDL_Window *window, SDL_Renderer *renderer);
 int SdlPlaySwcLanding(SDL_Window *window, SDL_Renderer *renderer, int health);

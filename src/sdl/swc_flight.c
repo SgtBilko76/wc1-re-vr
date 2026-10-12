@@ -856,6 +856,15 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
         SDL_ShowWindow(window);
         SDL_RaiseWindow(window);
         SDL_PumpEvents();
+        /* CODE_09 squadron +0x84 calls opening_scene before StartNewCampaign
+           and GameFlow. Each host session starts a fresh Enyo 1 campaign. */
+        movieResult = SdlPlaySwcOpening(window, renderer);
+        if (movieResult == SWC_MOVIE_ERROR)
+            goto done;
+        if (movieResult == SWC_MOVIE_QUIT) {
+            result = 0;
+            goto done;
+        }
         movieResult = SdlRunSwcCarrier(window, renderer, missionPath, path, SWC_CARRIER_PREFLIGHT);
         if (movieResult == -1)
             goto done;
