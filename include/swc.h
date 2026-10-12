@@ -137,6 +137,7 @@ void SdlStopSwcSounds(void);
 int SdlQueueSwcPcm(const SwcBuffer *pcm, int rate, SDL_AudioFormat format);
 void SdlClearSwcPcm(void);
 int SdlSwcPcmPlaying(void);
+Uint32 SdlSwcPcmTicks(void);
 /* Play returns 1 for a playing sound, 0 for busy channels, -1 unavailable. */
 int SdlPlaySwcSound(int sound, int volume);
 void SdlStopSwcSound(int sound);
@@ -185,6 +186,19 @@ int SdlDrawSwcText(SDL_Renderer *renderer, SDL_Texture *font, int x,
                     int baseline, SDL_Color ink, const char *text);
 int SdlDrawSwcSubtitle(SDL_Renderer *renderer, SDL_Texture *font,
                         const char *text);
+
+/* QuickDraw's carrier text layer: Helvetica 14, proportional advances.
+ * Kept separate from the cockpit's small bitmap font. */
+typedef struct SwcRoomFont {
+    SDL_Texture *texture;
+    SDL_Rect glyphs[95];
+    int advances[95];
+    int baseline;
+    int bearing;
+} SwcRoomFont;
+int SdlCreateSwcRoomFont(SDL_Renderer *renderer, SwcRoomFont *font);
+int SdlDrawSwcRoomSubtitle(SDL_Renderer *renderer, const SwcRoomFont *font,
+                            const char *text);
 
 /* SDL presentation of the Mac demo's cockpit resources. */
 SDL_Texture *SdlCreateSwcTexture(SDL_Renderer *renderer, const SwcBuffer *set,

@@ -102,6 +102,9 @@ UNAME_M := $(shell uname -m)
 
 MODERN_EXE_SUFFIX :=
 MODERN_PLATFORM_LIBS :=
+ifeq ($(UNAME_S),Darwin)
+MODERN_PLATFORM_LIBS += -framework CoreText -framework CoreGraphics -framework CoreFoundation
+endif
 ifneq (,$(filter MINGW% MSYS% CYGWIN%,$(UNAME_S)))
 MODERN_EXE_SUFFIX := .exe
 MODERN_PLATFORM_LIBS := -limm32

@@ -236,6 +236,26 @@ int SdlSwcPcmPlaying(void)
     return playing;
 }
 
+/* Sound Manager's playback clock, expressed in the 60 Hz units used by
+ * CODE_12 GetMouthPos. Reading the mixer position keeps lips in step with
+ * paused audio and frames delayed by loading or rendering. */
+Uint32 SdlSwcPcmTicks(void)
+{
+    uint64_t frames = 0;
+
+    if (swcAudioDevice == 0)
+        return 0;
+    SDL_LockAudioDevice(swcAudioDevice);
+    if (swcPcmStep != 0 && swcPcmSampleBytes != 0) {
+        frames = SDL_min(swcPcmPosition,
+            ((uint64_t)swcPcm.size / swcPcmSampleBytes) << 32) / swcPcmStep;
+        /* The callback fills 512 frames ahead of the audible output. */
+        frames = frames > 512 ? frames - 512 : 0;
+    }
+    SDL_UnlockAudioDevice(swcAudioDevice);
+    return (Uint32)(frames * 60 / 48000);
+}
+
 /* CODE_01 play_sound +0x626e: already playing IDs are not restarted;
  * idle channels are reused, and a full four-channel mixer rejects the play. */
 int SdlPlaySwcSound(int sound, int volume)

@@ -541,6 +541,12 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
                           SwcFlightImages images[OBJECT_TYPE_COUNT],
                           int cockpitless, int showMap)
 {
+    static const SDL_Rect frameBorder[] = {
+        {0, 0, SWC_FRAME_WIDTH, 6},
+        {0, 6, 8, SWC_FRAME_HEIGHT - 12},
+        {SWC_FRAME_WIDTH - 8, 6, 8, SWC_FRAME_HEIGHT - 12},
+        {0, SWC_FRAME_HEIGHT - 6, SWC_FRAME_WIDTH, 6}
+    };
     SDL_Rect rectangle;
     SDL_Rect targetBounds = {0};
     SDL_Point pivot;
@@ -615,7 +621,7 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     /* CODE_13 update_cockpit draws the HUD and instruments only in
        cockpit views. External autopilot includes the player's own ship. */
     if (nCameraViewMode == 12)
-        return 0;
+        goto border;
     if (SdlDrawSwcSpaceHud(targetBounds.w > 0 ? &targetBounds : NULL) != 0)
         return -1;
     if (!cockpitless) {
@@ -653,6 +659,15 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
             SDL_RenderDrawLine(renderer, x, y, 85 + mapX, 27 + mapY);
         }
     }
+border:
+    /* CODE_01 dump_buffer_to_screen +0x06dc calls DrawBorder +0x065c
+     * in flight modes. Its fixed 8x6 margins cover the full banking range,
+     * leaving a stable (8,6)-(312,234) picture at every steering offset.
+     * Apply it after all cockpit layers, including the pilot's hand. */
+    if (SDL_SetRenderDrawColor(renderer, colors[255].r, colors[255].g,
+            colors[255].b, 255) != 0 ||
+        SDL_RenderFillRects(renderer, frameBorder, SDL_arraysize(frameBorder)) != 0)
+        return -1;
     return 0;
 }
 

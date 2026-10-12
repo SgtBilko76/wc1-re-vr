@@ -1,8 +1,8 @@
 /* SDL carrier presentation for the Mac demo's first mission.
  * Room routing: CODE_09 GameFlow +0x1b8e; CODE_07 RecRoom +0x059a;
  * CODE_03 BarracksScreen +0x5c70 and SceneDirector +0x254c.
- * WC1 owns pilot/campaign state, hit testing, scene tests, substitutions and
- * animation parsing. Mac sprites, palettes, audio and events are adapted here.
+ * WC1 owns pilot/campaign state, scene tests, substitutions and animation
+ * parsing. Mac sprites, palettes, hit testing, audio and events are adapted here.
  * This is not a replacement for WC1's disk-backed room/scene director. */
 #include "wc1.h"
 #include "swc.h"
@@ -28,14 +28,33 @@ typedef struct SwcRoomArt {
 typedef struct SwcRoomPack {
     SwcCmf cmf;
     SDL_Color colors[256];
-    SwcRoomArt art[8];
+    SDL_Color dimColors[256];
+    SwcRoomArt art[16];
     int count;
 } SwcRoomPack;
+
+typedef struct SwcRoomInput {
+    int quit;
+    int back;
+    int activate;
+    int clicked;
+    int moved;
+    int step;
+} SwcRoomInput;
 
 typedef struct SwcCarrier {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *font;
+    SwcRoomFont roomFont;
+    SDL_Texture *picture;
+    SDL_Texture *dimPicture;
+    enum SwcRoomPackId picturePalette;
+    int pictureVisible;
+    SwcRoomInput pendingInput;
+    SwcSpeechMark *marks;
+    size_t markCount;
+    int haveSpeech;
     const char *resourceFork;
     SwcRoomPack packs[SWC_ROOM_PACKS];
     SwcBuffer script;
@@ -49,15 +68,6 @@ typedef struct SwcCarrier {
     enum SwcCarrierVisit visit;
 } SwcCarrier;
 
-typedef struct SwcRoomInput {
-    int quit;
-    int back;
-    int activate;
-    int clicked;
-    int moved;
-    int step;
-} SwcRoomInput;
-
 typedef struct SwcRoomScene {
     ConversationSceneRecord records[256];
     size_t count;
@@ -65,11 +75,12 @@ typedef struct SwcRoomScene {
     size_t textSize;
 } SwcRoomScene;
 
-/* CODE_07 RecRoom: characters override the door/board regions. WC1's
- * FindMenuRegionAtPoint returns the first matching inclusive rectangle. */
+/* CODE_07 RecRoom +0x05f6..0x064e, +0x0d56..0x0dcc. Mac PtInRect
+ * excludes right/bottom edges; characters override the door/board regions.
+ * The Paladin/Angel bounds come from RCRM/29 and /28 frame zero. */
 static const TitleMenuRegion swcBarRegions[] = {
     {0, 173, 76, 216, 106}, {1, 137, 99, 182, 191}, {2, 254, 103, 307, 193},
-    {3, 268, 26, 320, 65}, {4, 250, 65, 318, 127}, {5, 0, 90, 70, 145},
+    {3, 250, 65, 318, 127}, {4, 268, 26, 320, 65}, {5, 0, 90, 70, 145},
     {-1, 0, 0, 0, 0}
 };
 static const char *const swcBarLabels[] = {
@@ -120,6 +131,9 @@ static SwcRoomArt *SwcGetRoomArt(SwcCarrier *carrier, enum SwcRoomPackId packId,
         }
         if (SwcCMOpen(path, &pack->cmf) != 0 ||
             SwcReadPalette(carrier->resourceFork, palettes[packId], pack->colors) != 0)
+            goto fail;
+        if (packId < SWC_INTRO_BEFORE_ATTACK &&
+            SwcReadPalette(carrier->resourceFork, palettes[packId] + 10, pack->dimColors) != 0)
             goto fail;
     }
     for (entry = 0; entry < pack->count; entry++) {
@@ -187,15 +201,17 @@ static void SwcDrawRoomArt(SwcCarrier *carrier, enum SwcRoomPackId packId,
     }
     destination.x += x;
     destination.y += y;
+    carrier->picturePalette = packId;
     carrier->drawResult = SDL_RenderCopy(carrier->renderer, art->textures[frame],
                                          NULL, &destination);
 }
 
 static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
 {
-    SwcRoomInput input = {0};
+    SwcRoomInput input = carrier->pendingInput;
     SDL_Event event;
 
+    SDL_zero(carrier->pendingInput);
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT || (event.type == SDL_WINDOWEVENT &&
             event.window.event == SDL_WINDOWEVENT_CLOSE))
@@ -263,6 +279,112 @@ static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
     }
     SdlPauseSwcSound(!carrier->focused || carrier->paused);
     return input;
+}
+
+/* SDL replacement for CODE_01 dump_buffer_to_screen +0x06d4. Retaining
+ * the complete picture allows palette transitions without rereading the
+ * window backbuffer (undefined after SDL_RenderPresent). */
+static int SwcPresentRoom(SwcCarrier *carrier, int brightness)
+{
+    if (SDL_SetRenderTarget(carrier->renderer, NULL) != 0 ||
+        SDL_SetRenderDrawColor(carrier->renderer, 0, 0, 0, 255) != 0 ||
+        SDL_RenderClear(carrier->renderer) != 0 ||
+        SDL_RenderCopy(carrier->renderer, carrier->picture, NULL, NULL) != 0)
+        return -1;
+    if (brightness < 255 &&
+        (SDL_SetTextureAlphaMod(carrier->dimPicture, 255 - brightness) != 0 ||
+         SDL_RenderCopy(carrier->renderer, carrier->dimPicture, NULL, NULL) != 0))
+        return -1;
+    SDL_RenderPresent(carrier->renderer);
+    carrier->pictureVisible = brightness != 0;
+    return 0;
+}
+
+/* CODE_15 dark +0x03c2 uses the scene's actual clut ID+10. Retain its
+ * per-entry colors rather than assuming a fade to black: the demo's dim
+ * palettes keep the picture visible, at different levels in each room. */
+static int SwcDarkRoom(SwcCarrier *carrier)
+{
+    SwcRoomPack *pack = &carrier->packs[carrier->picturePalette];
+    Uint32 *pixels;
+    Uint32 source;
+    Uint32 replacement;
+    SDL_Color color;
+    size_t pixel;
+    int entry;
+    int result = -1;
+
+    pixels = SDL_malloc(SWC_FRAME_WIDTH * SWC_FRAME_HEIGHT * sizeof(*pixels));
+    if (pixels == NULL)
+        return SDL_OutOfMemory();
+    if (SDL_SetRenderTarget(carrier->renderer, carrier->picture) != 0 ||
+        SDL_RenderReadPixels(carrier->renderer, NULL, SDL_PIXELFORMAT_ARGB8888,
+            pixels, SWC_FRAME_WIDTH * sizeof(*pixels)) != 0)
+        goto done;
+    for (pixel = 0; pixel < SWC_FRAME_WIDTH * SWC_FRAME_HEIGHT; pixel++) {
+        source = pixels[pixel] & UINT32_C(0xffffff);
+        for (entry = 0; entry < 256; entry++) {
+            color = pack->colors[entry];
+            if (source == ((Uint32)color.r << 16 | (Uint32)color.g << 8 | color.b))
+                break;
+        }
+        if (entry < 256) {
+            color = pack->dimColors[entry];
+        } else {
+            /* SDL-only route lines and keyboard focus colors have no
+             * palette index; use the palette's white level for these. */
+            color.r = (source >> 16) * pack->dimColors[0].r / 255;
+            color.g = ((source >> 8) & 255) * pack->dimColors[0].g / 255;
+            color.b = (source & 255) * pack->dimColors[0].b / 255;
+        }
+        replacement = UINT32_C(0xff000000) | (Uint32)color.r << 16 | (Uint32)color.g << 8 | color.b;
+        pixels[pixel] = replacement;
+    }
+    result = SDL_UpdateTexture(carrier->dimPicture, NULL, pixels, SWC_FRAME_WIDTH * sizeof(*pixels));
+done:
+    SDL_SetRenderTarget(carrier->renderer, NULL);
+    SDL_free(pixels);
+    return result;
+}
+
+/* CODE_15 dark +0x03c2 switches to clut ID+10; ChangeSWPaletteClut
+ * restores the scene palette. SDL interpolates between the two over ten
+ * Mac ticks at room boundaries. This interpolation is a host transition;
+ * the Mac routines change palette resources directly. */
+static int SwcFadeRoom(SwcCarrier *carrier, int entering)
+{
+    SwcRoomInput input;
+    Uint32 previous;
+    Uint32 current;
+    Uint32 elapsed = 0;
+    int playing = carrier->focused && !carrier->paused;
+    int brightness;
+
+    if (!entering && !carrier->pictureVisible)
+        return 0;
+    if (SwcDarkRoom(carrier) != 0)
+        return -1;
+    previous = SDL_GetTicks();
+    for (;;) {
+        current = SDL_GetTicks();
+        if (playing)
+            elapsed += current - previous;
+        previous = current;
+        input = SwcPollCarrier(carrier);
+        if (input.quit)
+            return SWC_MOVIE_QUIT;
+        playing = carrier->focused && !carrier->paused;
+        if (input.back || (playing && (input.activate || input.clicked || input.step))) {
+            carrier->pendingInput = input;
+            elapsed = 167;
+        }
+        brightness = (int)(SDL_min(elapsed, 167U) * 255 / 167);
+        if (SwcPresentRoom(carrier, entering ? brightness : 255 - brightness) != 0)
+            return -1;
+        if (elapsed >= 167)
+            return 0;
+        SDL_Delay(8);
+    }
 }
 
 /* CODE_12 ShowSplash +0x4bb6: PICT/129 and INTRO.MooV, up to 1500 Mac
@@ -363,6 +485,7 @@ int SdlPlaySwcIntroSpeech(SDL_Window *window, SDL_Renderer *renderer,
     Uint64 current;
     Uint64 elapsed;
     Uint64 duration;
+    Uint32 speechTicks;
     Uint64 animationTick = 0;
     Uint64 nextAnimation = 0;
     Uint64 sequenceTime = 0;
@@ -437,8 +560,11 @@ int SdlPlaySwcIntroSpeech(SDL_Window *window, SDL_Renderer *renderer,
             SDL_SetWindowTitle(window, playing
                 ? "Super Wing Commander - prologue | Space/Enter/Esc/click: skip | P: pause"
                 : "Super Wing Commander - prologue (paused) | P: resume");
-            while (mark < markCount && marks[mark].tick <= elapsed * 60 / frequency)
+            speechTicks = swcAudioDevice != 0 ? SdlSwcPcmTicks() : (Uint32)(elapsed * 60 / frequency);
+            while (mark < markCount && marks[mark].tick <= speechTicks)
                 mouth = marks[mark++].frame;
+            if (swcAudioDevice != 0 && !SdlSwcPcmPlaying())
+                mouth = -1;
             /* CODE_07 randomeyes changes every tenth draw. The two ships
              * move every sixth draw and return toward their initial points
              * every third update, using the original exclusive RNG bounds. */
@@ -702,7 +828,7 @@ static int SwcLoadRoomScene(SwcCarrier *carrier, int section, SwcRoomScene *scen
     return 0;
 }
 
-static int SwcSceneAnimationFrame(const short *commands, Uint32 ticks)
+static int SwcSceneAnimationFrame(const short *commands, Uint32 ticks, int eyes)
 {
     const short *cursor = commands;
     const short *repeat = NULL;
@@ -715,7 +841,7 @@ static int SwcSceneAnimationFrame(const short *commands, Uint32 ticks)
             repeat = cursor + 2;
             prefix = period;
         } else {
-            period += (Uint32)SDL_max(1, cursor[1]);
+            period += (Uint32)(eyes ? SDL_max(24, cursor[1]) + 1 : SDL_max(1, cursor[1]));
         }
         cursor += 2;
     }
@@ -727,7 +853,7 @@ static int SwcSceneAnimationFrame(const short *commands, Uint32 ticks)
     for (cursor = commands; *cursor != -1; cursor += 2) {
         if (*cursor == -2)
             continue;
-        duration = (Uint32)SDL_max(1, cursor[1]);
+        duration = (Uint32)(eyes ? SDL_max(24, cursor[1]) + 1 : SDL_max(1, cursor[1]));
         if (ticks < duration)
             return *cursor == 10 ? -1 : *cursor;
         ticks -= duration;
@@ -746,6 +872,10 @@ static int SwcStartSpeech(SwcCarrier *carrier, int section, int line, Uint32 *du
     int result = 0;
 
     SdlClearSwcPcm();
+    SDL_free(carrier->marks);
+    carrier->marks = NULL;
+    carrier->markCount = 0;
+    carrier->haveSpeech = 0;
     /* SceneDirector +0x2cb6; DATA/0 +0x4322/+0x4326:
      * "%s%d:%2.2d%2.2d%2.2d%2.2d.AIF", "camp.". The archive groups files
      * by mission: 04 for Enyo 1, 00 for funerals. Keep original record indices.
@@ -762,6 +892,11 @@ static int SwcStartSpeech(SwcCarrier *carrier, int section, int line, Uint32 *du
     SDL_RWclose(file);
     if (SwcReadSpeech(path, &pcm) != 0)
         return -1;
+    if (SwcReadSpeechMarks(path, &carrier->marks, &carrier->markCount) != 0) {
+        SDL_free(pcm.data);
+        return -1;
+    }
+    carrier->haveSpeech = 1;
     speechDuration = (Uint32)((uint64_t)pcm.size * 1000 / (11025 * 2)) + 250;
     if (swcAudioDevice != 0) {
         result = SdlQueueSwcPcm(&pcm, 11025, AUDIO_S16MSB);
@@ -773,10 +908,11 @@ static int SwcStartSpeech(SwcCarrier *carrier, int section, int line, Uint32 *du
     return result;
 }
 
-static void SwcDrawBriefingMap(SwcCarrier *carrier, int objective)
+static void SwcDrawBriefingMap(SwcCarrier *carrier, int objective, Uint32 ticks, int reveal)
 {
     SDL_Renderer *renderer = carrier->renderer;
-    SDL_Rect panel = {80, 25, 160, 146};
+    SDL_Rect panel = {44, 21, 185, 210};
+    SDL_Rect clip;
     SDL_Rect marker;
     SDL_Color ink = {100, 245, 165, 255};
     short x;
@@ -791,32 +927,51 @@ static void SwcDrawBriefingMap(SwcCarrier *carrier, int objective)
     if (carrier->drawResult != 0)
         return;
     SetScale();
-    if (SDL_SetRenderDrawColor(renderer, 0, 5, 10, 255) != 0 ||
-        SDL_RenderFillRect(renderer, &panel) != 0 ||
-        SDL_SetRenderDrawColor(renderer, 75, 210, 140, 255) != 0) {
+    /* CODE_14 BriefingMap_ShowGrid +0x0cfe expands the grid two pixels
+     * per edge per update. DATA/0 +0x272 gives its origin (40,20).
+     * The sprite's own (4,1) offset is applied by SwcDrawRoomArt. */
+    clip = panel;
+    if (reveal && ticks < 53) {
+        clip.y = 124 - (int)ticks * 2;
+        clip.h = 2 + (int)ticks * 4;
+        SDL_IntersectRect(&clip, &panel, &clip);
+    }
+    if (SDL_RenderSetClipRect(renderer, &clip) != 0) {
         carrier->drawResult = -1;
         return;
     }
-    /* Share WC1's mission objective list and coordinate transform. The
-     * original Mac map's panning, globe and transition animation are pending. */
+    SwcDrawRoomArt(carrier, SWC_BRIEFING_MAP, "BRFG", 27, 0, 40, 20);
+    if (SDL_RenderSetClipRect(renderer, NULL) != 0) {
+        carrier->drawResult = -1;
+        return;
+    }
+    if (reveal && ticks < 53)
+        return;
+    if (SDL_SetRenderDrawColor(renderer, 75, 210, 140, 255) != 0) {
+        carrier->drawResult = -1;
+        return;
+    }
+    /* Share WC1's mission objective list and coordinate transform. Labels
+     * and route lines remain host drawing; the original grid is preserved. */
     for (index = 0; index < cMissionObjectiveCount; index++) {
         nav_getxy(&x, &y, aMissionObjectives[index].position.x, aMissionObjectives[index].position.z);
         next = (index + 1) % cMissionObjectiveCount;
         nav_getxy(&nextX, &nextY, aMissionObjectives[next].position.x, aMissionObjectives[next].position.z);
-        marker = (SDL_Rect){85 + x - 2, 30 + y - 2, index == objective ? 7 : 4,
-                            index == objective ? 7 : 4};
+        marker = (SDL_Rect){54 + x - 2, 45 + y - 2, 4, 4};
         SDL_snprintf(label, sizeof(label), "%d", index + 1);
-        if (SDL_RenderDrawLine(renderer, 85 + x, 30 + y, 85 + nextX, 30 + nextY) != 0 ||
-            SDL_RenderDrawRect(renderer, &marker) != 0 ||
-            SdlDrawSwcText(renderer, carrier->font, 91 + x, 30 + y, ink, label) != 0) {
+        if (SDL_RenderDrawLine(renderer, 54 + x, 45 + y, 54 + nextX, 45 + nextY) != 0 ||
+            ((index != objective || ticks >= 30 || ticks % 6 < 3) &&
+             SDL_RenderDrawRect(renderer, &marker) != 0) ||
+            SdlDrawSwcText(renderer, carrier->font, 60 + x, 45 + y, ink, label) != 0) {
             carrier->drawResult = -1;
             return;
         }
     }
+    SwcDrawRoomArt(carrier, SWC_BRIEFING_MAP, "BRFG", 27, 1, 40, 20);
 }
 
 static void SwcDrawScene(SwcCarrier *carrier, int shot, int textColour, int talker,
-                          int mouth, int face)
+                          int mouth, int face, Uint32 elapsed)
 {
     enum SwcRoomPackId pack;
     const char *background;
@@ -867,7 +1022,7 @@ static void SwcDrawScene(SwcCarrier *carrier, int shot, int textColour, int talk
             SwcDrawRoomArt(carrier, pack, "TKHD", (uint32_t)(shot - 19), face + 11, 0, 0);
         if (mouth >= 0)
             SwcDrawRoomArt(carrier, pack, "TKHD", (uint32_t)(shot - 19), mouth + 1, 0, 0);
-    } else if (shot == 0 || shot == 1 || shot == 5) {
+    } else if (shot == 0 || shot == 1) {
         SwcDrawRoomArt(carrier, SWC_BRIEFING, "BRFG", 1, 0, 0, 0);
         /* DrawBriefingLongShot +0x1e54; DATA/0 +0x4306/+0x430a. */
         SwcDrawRoomArt(carrier, SWC_BRIEFING, "BRFG", 2, SDL_max(0, mouth), 90, 90);
@@ -875,8 +1030,22 @@ static void SwcDrawScene(SwcCarrier *carrier, int shot, int textColour, int talk
         /* DrawPodiumShot +0x1e02: background 1; body at (25,50). */
         SwcDrawRoomArt(carrier, SWC_BRIEFING, "BRFG", 3, 1, 0, 0);
         SwcDrawRoomArt(carrier, SWC_BRIEFING, "BRFG", 4, mouth + 1, 25, 50);
+    } else if (shot == 3 && elapsed < 800) {
+        /* PanToScreen +0x2288: commander turns through BRFG/4 11..16
+         * at SetPace(7), i.e. the first tick strictly after seven ticks. */
+        SwcDrawRoomArt(carrier, SWC_BRIEFING, "BRFG", 3, 1, 0, 0);
+        SwcDrawRoomArt(carrier, SWC_BRIEFING, "BRFG", 4,
+            11 + (int)((uint64_t)elapsed * 60 / 8000), 25, 50);
     } else if (shot == 3 || shot == 4) {
-        SwcDrawBriefingMap(carrier, talker < 0 ? -talker : talker);
+        SwcDrawBriefingMap(carrier, talker < 0 ? -talker : talker,
+            (Uint32)((uint64_t)(elapsed - (shot == 3 ? 800 : 0)) * 30 / 1000), shot == 3);
+    } else if (shot == 5) {
+        /* CODE_03 Dismissed +0x1eba: this is a separate reverse angle,
+         * not the ordinary briefing long shot. */
+        SwcDrawRoomArt(carrier, SWC_BRIEFING, "BRFG", 29, 0, 0, 0);
+        if (mouth >= 0)
+            SwcDrawRoomArt(carrier, SWC_BRIEFING, "BRFG", 31, mouth, 240, 0);
+        SwcDrawRoomArt(carrier, SWC_BRIEFING, "BRFG", 32, 0, 10, 85);
     } else if (shot == 10 || shot == 11) {
         /* MountGraphics +0x23b8 and DrawDebriefingLongShot +0x1b8c. */
         SwcDrawRoomArt(carrier, SWC_DEBRIEFING, "BRFG", 11, 0, 0, 0);
@@ -897,7 +1066,7 @@ static void SwcDrawScene(SwcCarrier *carrier, int shot, int textColour, int talk
 
 static int SwcPlayRoomScene(SwcCarrier *carrier, int section)
 {
-    SwcRoomScene scene;
+    SwcRoomScene scene = {0};
     ConversationSceneRecord *record;
     ConversationSceneRecord *selected;
     SwcRoomInput input;
@@ -908,16 +1077,26 @@ static int SwcPlayRoomScene(SwcCarrier *carrier, int section)
     Uint32 current;
     Uint32 elapsed;
     Uint32 duration;
+    Uint32 speechTicks;
+    Uint32 leadIn;
+    size_t mark;
     size_t index = 0;
     size_t commands = 0;
     int shot = 0;
     int talker = -1;
     int colour = 0;
     int wasPlaying;
+    int mouthFrame;
+    int firstPicture = 1;
+    int speechStarted;
     int result = -1;
 
     if (SwcLoadRoomScene(carrier, section, &scene) != 0)
         return -1;
+    result = SwcFadeRoom(carrier, 0);
+    if (result != 0)
+        return result;
+    result = -1;
     SDL_SetCursor(SDL_GetDefaultCursor());
     carrier->armedKey = SDL_SCANCODE_UNKNOWN;
     carrier->mouseDown = 0;
@@ -957,9 +1136,30 @@ static int SwcPlayRoomScene(SwcCarrier *carrier, int section)
         ParseMouthAnimation((char *)scene.text + record->mouthAnimationOffset, mouth);
         ParseFaceAnimation((char *)scene.text + record->faceAnimationOffset, face);
         SDL_strlcpy(text, AddPCName((char *)scene.text + record->textOffset), sizeof(text));
+        if (text[0] == 0) {
+            index++;
+            continue;
+        }
         duration = (Uint32)SDL_max(2000, (int)strlen(text) * 50 + 1000);
-        if (SwcStartSpeech(carrier, section, (int)index, &duration) != 0)
-            break;
+        leadIn = shot == 3 ? 800 : 0;
+        speechStarted = 0;
+        mark = 0;
+        mouthFrame = -1;
+        if (firstPicture) {
+            if (SDL_SetRenderTarget(carrier->renderer, carrier->picture) != 0 ||
+                SDL_SetRenderDrawColor(carrier->renderer, 0, 0, 0, 255) != 0 ||
+                SDL_RenderClear(carrier->renderer) != 0)
+                goto done;
+            SwcDrawScene(carrier, shot, colour, talker, -1, -1, 0);
+            if (carrier->drawResult != 0 ||
+                SdlDrawSwcRoomSubtitle(carrier->renderer, &carrier->roomFont, text) != 0)
+                goto done;
+            result = SwcFadeRoom(carrier, 1);
+            if (result != 0)
+                goto done;
+            result = -1;
+            firstPicture = 0;
+        }
         previous = SDL_GetTicks();
         elapsed = 0;
         wasPlaying = 0;
@@ -978,31 +1178,68 @@ static int SwcPlayRoomScene(SwcCarrier *carrier, int section)
                 goto done;
             }
             wasPlaying = carrier->focused && !carrier->paused;
+            if (wasPlaying && !speechStarted && elapsed >= leadIn) {
+                if (SwcStartSpeech(carrier, section, (int)index, &duration) != 0)
+                    goto done;
+                if (shot == 3)
+                    duration = SDL_max(duration, 1767U);
+                speechStarted = 1;
+            }
             if (wasPlaying && (input.activate || input.clicked ||
-                (elapsed >= duration && !SdlSwcPcmPlaying() &&
+                (speechStarted && elapsed >= duration + leadIn && !SdlSwcPcmPlaying() &&
                  carrier->armedKey == SDL_SCANCODE_UNKNOWN && !carrier->mouseDown)))
                 break;
-            if (SDL_SetRenderDrawColor(carrier->renderer, 0, 0, 0, 255) != 0 ||
+            if (SDL_SetRenderTarget(carrier->renderer, carrier->picture) != 0 ||
+                SDL_SetRenderDrawColor(carrier->renderer, 0, 0, 0, 255) != 0 ||
                 SDL_RenderClear(carrier->renderer) != 0)
                 goto done;
-            SwcDrawScene(carrier, shot, colour, talker,
-                SwcSceneAnimationFrame(mouth, elapsed / 50),
-                SwcSceneAnimationFrame(face, elapsed / 50));
-            if (carrier->drawResult != 0 || SdlDrawSwcSubtitle(carrier->renderer, carrier->font,
-                carrier->paused ? "Paused - P to resume" : text) != 0)
+            if (speechStarted) {
+                speechTicks = swcAudioDevice != 0 && carrier->haveSpeech ? SdlSwcPcmTicks() :
+                    (Uint32)((uint64_t)(elapsed - leadIn) * 60 / 1000);
+                if (carrier->haveSpeech) {
+                    while (mark < carrier->markCount && carrier->marks[mark].tick <= speechTicks)
+                        mouthFrame = carrier->marks[mark++].frame;
+                    if (swcAudioDevice != 0 && !SdlSwcPcmPlaying())
+                        mouthFrame = -1;
+                } else {
+                    mouthFrame = SwcSceneAnimationFrame(mouth, (elapsed - leadIn) / 50, 0);
+                }
+            }
+            /* SceneDirector +0x2e34 selects CloseLook for a listening
+             * portrait: its mouth must stay still during another voice. */
+            if (shot >= 20 && shot <= 30 && shot - 20 != colour)
+                mouthFrame = -1;
+            SwcDrawScene(carrier, shot, colour, talker, mouthFrame,
+                SwcSceneAnimationFrame(face, (Uint32)((uint64_t)elapsed * 30 / 1000), 1), elapsed);
+            if (carrier->drawResult != 0 || SdlDrawSwcRoomSubtitle(carrier->renderer, &carrier->roomFont,
+                carrier->paused ? "Paused - P to resume" : elapsed < leadIn ? "" : text) != 0 ||
+                SwcPresentRoom(carrier, 255) != 0)
                 goto done;
-            SDL_RenderPresent(carrier->renderer);
             SDL_Delay(16);
         }
+        SdlClearSwcPcm();
+        if (shot == 3)
+            shot = 4;
+        else if (shot == 5)
+            shot = 1;
         index++;
     }
 done:
     SdlClearSwcPcm();
+    SDL_free(carrier->marks);
+    carrier->marks = NULL;
+    carrier->markCount = 0;
+    SDL_SetRenderTarget(carrier->renderer, NULL);
     carrier->paused = 0;
+    if (result == 0 || result == SWC_MOVIE_SKIPPED) {
+        int fadeResult = SwcFadeRoom(carrier, 0);
+        if (fadeResult != 0)
+            result = fadeResult;
+    }
     return result;
 }
 
-static int SwcBarIdleFrame(int character, Uint32 ticks)
+static int SwcBarIdleFrame(int character, Uint32 ticks, int hovered)
 {
     /* Original byte programs: DATA/0 +0x27ae, +0x2816, +0x27da. A high
      * bit encodes a delay, 255 repeats. WC1's idle frame sets differ. */
@@ -1010,16 +1247,21 @@ static int SwcBarIdleFrame(int character, Uint32 ticks)
     static const uint8_t paladin[] = {1, 2, 3, 178, 2, 1, 2, 3, 148, 2, 1, 2, 3, 255};
     static const uint8_t angel[] = {2, 138, 3, 4, 148, 3, 4, 3, 4, 138, 0, 1, 255};
     static const uint8_t *const programs[] = {shotglass, paladin, angel};
+    /* Hover programs: DATA/0 +0x2782/+0x2788/+0x278a. */
+    static const int hoverFrames[] = {3, 4, 5};
     const uint8_t *cursor;
     Uint32 period = 0;
     Uint32 duration;
     int frame = 0;
 
+    if (hovered)
+        return hoverFrames[character];
     for (cursor = programs[character]; *cursor != 255; cursor++)
-        period += (*cursor & 128) ? (*cursor & 127) : 1;
+        period += (*cursor & 128) ? (*cursor & 127) + 1 : 1;
+    period++; /* The repeat opcode itself consumes an update. */
     ticks %= period;
     for (cursor = programs[character]; *cursor != 255; cursor++) {
-        duration = (*cursor & 128) ? (*cursor & 127) : 1;
+        duration = (*cursor & 128) ? (*cursor & 127) + 1 : 1;
         if (!(*cursor & 128))
             frame = *cursor;
         if (ticks < duration)
@@ -1116,6 +1358,15 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
     Uint32 elapsed = 0;
     char failure[256];
     int room = 0; /* 0: bar, 1: barracks, 2: ranking, 3: medals. */
+    int previousRoom;
+    int fadeIn = 1;
+    int simulatorFrame = 0;
+    int wallFrame = 0;
+    int bunkHover[3] = {-1, -1, -1};
+    Uint32 animationTick = 0;
+    Uint32 tick;
+    Uint32 steps;
+    int hover;
     int selected = -1;
     int keyboard = 0;
     int count;
@@ -1155,6 +1406,17 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
     }
     carrier.font = SdlCreateSwcFont(renderer);
     if (carrier.font == NULL)
+        goto done;
+    if (SdlCreateSwcRoomFont(renderer, &carrier.roomFont) != 0)
+        goto done;
+    carrier.picture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_TARGET, SWC_FRAME_WIDTH, SWC_FRAME_HEIGHT);
+    if (carrier.picture == NULL)
+        goto done;
+    carrier.dimPicture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING, SWC_FRAME_WIDTH, SWC_FRAME_HEIGHT);
+    if (carrier.dimPicture == NULL ||
+        SDL_SetTextureBlendMode(carrier.dimPicture, SDL_BLENDMODE_BLEND) != 0)
         goto done;
     hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
     SDL_ShowCursor(SDL_ENABLE);
@@ -1232,10 +1494,21 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
     while (1) {
         SdlPlaySwcMusic(room == 0 || room == 2 ? "RECROOM.MooV" : "BARRACKS.MooV", 50);
         current = SDL_GetTicks();
-        if (carrier.focused)
+        if (carrier.focused && !carrier.paused)
             elapsed += current - previous;
         previous = current;
         input = SwcPollCarrier(&carrier);
+        if (input.quit) {
+            result = SWC_MOVIE_QUIT;
+            break;
+        }
+        if (input.back)
+            carrier.paused = 0;
+        if (!carrier.focused || carrier.paused) {
+            SDL_Delay(16);
+            continue;
+        }
+        previousRoom = room;
         if (input.quit || (input.back && room == 0 && notice == NULL)) {
             result = SWC_MOVIE_QUIT;
             break;
@@ -1256,7 +1529,15 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
                 selected = -1;
             } else {
                 if (input.moved || input.clicked) {
-                    selected = FindMenuRegionAtPoint((short)carrier.mouseX, (short)carrier.mouseY, regions);
+                    selected = -1;
+                    /* Original PtInRect is half-open. RecRoom scans doors
+                     * first, then characters; the last match wins. */
+                    for (entry = 0; entry < count; entry++) {
+                        hover = room == 0 ? (entry + 3) % 6 : entry;
+                        if (carrier.mouseX >= regions[hover].left && carrier.mouseX < regions[hover].right &&
+                            carrier.mouseY >= regions[hover].top && carrier.mouseY < regions[hover].bottom)
+                            selected = regions[hover].frame;
+                    }
                     keyboard = 0;
                 }
                 if (input.step != 0) {
@@ -1274,6 +1555,7 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
                             result = sceneResult;
                             break;
                         }
+                        fadeIn = 1;
                     } else if (room == 0) {
                         if (selected == 3)
                             room = 1;
@@ -1300,17 +1582,47 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
             : "Super Wing Commander - carrier | Click: select | Tab/arrows, Enter | Esc: back");
         if (hand != NULL)
             SDL_SetCursor(selected >= 0 && room < 2 && notice == NULL ? hand : savedCursor);
-        if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255) != 0 || SDL_RenderClear(renderer) != 0)
+        if (room != previousRoom) {
+            result = SwcFadeRoom(&carrier, 0);
+            if (result != 0)
+                break;
+            result = -1;
+            fadeIn = 1;
+            previous = SDL_GetTicks();
+        }
+        tick = (Uint32)((uint64_t)elapsed * 30 / 1000);
+        steps = SDL_min(8U, tick / 2 - animationTick / 2);
+        if (room == 1 && tick != animationTick)
+            wallFrame = RandomBelowOrEqual(2);
+        animationTick = tick;
+        simulatorFrame = SDL_clamp(simulatorFrame + (room == 0 && selected == 5 ? (int)steps : -(int)steps), 0, 6);
+        for (entry = 0; entry < 3; entry++) {
+            bunkHover[entry] = SDL_clamp(bunkHover[entry] +
+                (room == 1 && selected == entry ? (int)steps : -(int)steps), -1, entry == 2 ? 4 : 7);
+        }
+        if (SDL_SetRenderTarget(renderer, carrier.picture) != 0 ||
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255) != 0 || SDL_RenderClear(renderer) != 0)
             break;
         if (room == 0) {
             SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 1, 0, 0, 0);
-            SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 1, 1, 0, 0);
-            SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 12, 0, 0, 85);
-            SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 34, SwcBarIdleFrame(0, elapsed / 20), 0, 0);
-            SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 29, SwcBarIdleFrame(1, elapsed / 20), 0, 0);
-            SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 28, SwcBarIdleFrame(2, elapsed / 20), 0, 0);
+            if (selected == 3)
+                SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 1, 1, 0, 0);
+            SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 34, SwcBarIdleFrame(0, tick, selected == 0), 0, 0);
+            SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 29, SwcBarIdleFrame(1, tick, selected == 1), 0, 0);
+            SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 28, SwcBarIdleFrame(2, tick, selected == 2), 0, 0);
+            SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 11, simulatorFrame, 0, 85);
+            if (selected == 4)
+                SwcDrawRoomArt(&carrier, SWC_RECROOM, "RCRM", 12, 0, 245, 15);
         } else if (room == 1) {
             SwcDrawRoomArt(&carrier, SWC_BARRACKS, "RCRM", 13, 0, 0, 0);
+            for (entry = 0; entry < 3; entry++) {
+                if (bunkHover[entry] >= 0)
+                    SwcDrawRoomArt(&carrier, SWC_BARRACKS, "RCRM", 13,
+                        entry * 8 + 1 + bunkHover[entry], 0, 0);
+            }
+            /* BarracksScreen: wall display and the small desk light. */
+            SwcDrawRoomArt(&carrier, SWC_BARRACKS, "RCRM", 23, wallFrame, 0, 5);
+            SwcDrawRoomArt(&carrier, SWC_BARRACKS, "RCRM", 14, 0, 219, 183);
         } else if (room == 2) {
             SwcDrawRankings(&carrier);
         } else {
@@ -1319,7 +1631,7 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
         if (carrier.drawResult != 0)
             break;
         if (notice != NULL) {
-            if (SdlDrawSwcSubtitle(renderer, carrier.font, notice) != 0)
+            if (SdlDrawSwcRoomSubtitle(renderer, &carrier.roomFont, notice) != 0)
                 break;
         } else if (room < 2) {
             regions = room == 0 ? swcBarRegions : swcBunkRegions;
@@ -1332,12 +1644,17 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
                     SDL_RenderDrawRect(renderer, &highlight) != 0)
                     break;
             }
-            if (SdlDrawSwcSubtitle(renderer, carrier.font, selected >= 0 ? labels[selected] :
-                room == 0 ? "Tiger's Claw - bar. Visit the barracks to reach your briefing."
-                          : "Barracks - enter the briefing room when ready to fly.") != 0)
+            if (SdlDrawSwcRoomSubtitle(renderer, &carrier.roomFont,
+                selected >= 0 ? labels[selected] : "") != 0)
                 break;
         }
-        SDL_RenderPresent(renderer);
+        result = fadeIn ? SwcFadeRoom(&carrier, 1) : SwcPresentRoom(&carrier, 255);
+        if (result != 0)
+            break;
+        if (fadeIn)
+            previous = SDL_GetTicks();
+        fadeIn = 0;
+        result = -1;
         SDL_Delay(20);
     }
 done:
@@ -1348,6 +1665,11 @@ done:
     SDL_SetCursor(savedCursor);
     SDL_FreeCursor(hand);
     SDL_ShowCursor(oldCursorVisible);
+    SDL_SetRenderTarget(renderer, NULL);
+    SDL_DestroyTexture(carrier.picture);
+    SDL_DestroyTexture(carrier.dimPicture);
+    SDL_DestroyTexture(carrier.roomFont.texture);
+    SDL_free(carrier.marks);
     SDL_DestroyTexture(carrier.font);
     for (pack = 0; pack < SWC_ROOM_PACKS; pack++) {
         for (entry = 0; entry < carrier.packs[pack].count; entry++) {

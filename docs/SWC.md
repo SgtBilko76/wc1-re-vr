@@ -162,6 +162,7 @@ is a separate `snd /500` in the executable's resource fork, at rate
 | Flight communications | CODE_06 `Vocalize_Message` +0x045c, `real_vid_transmit` +0x049e, `check_message` +0x0640; CODE_13 `npc_communication` +0x3d2e | Player order voices, native response table, rank variants, Kilrathi chatter and thirty-second repeat throttling. Playback completion closes portraits and restores the prior VDU mode. |
 | Portrait animation | CODE_13 `update_vid_disp` +0x0d00; DATA/A5 +0x4e6 and +0x2cb4 | WGMN face and mouth frames use the original portrait polygon, with a one-in-four mouth toggle and communication-component malfunction static. |
 | Banking and pilot hand | CODE_13 `handle_cockpit_banking` +0x18f2, `determine_pilot_hand` +0x14e2 | Cockpit and instruments approach the pitch/yaw offset by one pixel per tick, capped at ±6 vertically and ±8 horizontally. PC00/6 supplies sixteen hand frames. |
+| Flight frame | CODE_01 `DrawBorder` +0x065c, `dump_buffer_to_screen` +0x06dc | A fixed palette-255 frame covers 8 pixels at each side and 6 at the top/bottom after all flight layers. The interior `(8,6)-(312,234)` stays covered throughout cockpit banking; steering no longer exposes moving black strips at the artwork edges. |
 
 SDL replaces Sound Manager playback and QuickDraw rendering. Pause/focus loss
 pauses the shared mixer. One device stays open across carrier, movie and flight
@@ -185,6 +186,10 @@ for the two new guarded core hooks are unchanged: `message_showing` 100.00%,
 `real_vid_transmit` 98.53%. No tests were added or run; no game, GUI or audio
 playback was executed. The new sound mix, portrait appearance and timing remain
 unverified interactively.
+
+The flight-frame correction was checked against the original Ghidra instructions
+and clut/251, then compiled with `make modern modern-gui modern-swc` and reviewed
+with compiler static analysis. No tests or game execution were used for this fix.
 
 ### QuickTime music
 
@@ -416,7 +421,7 @@ The SDL adapter shares these existing WC1 functions without changing them:
 | WC1 code | Use in the SWC carrier |
 | --- | --- |
 | `ResetCampaignData`, `CorrectPointers` | Fresh campaign and pilot records, including callsign, rankings, medals and badges |
-| `FindMenuRegionAtPoint`, `IsPointInRect` | Hotspot hit testing, with coordinates recovered from the Mac instructions |
+| `TitleMenuRegion` | Shared rectangle storage; SDL follows the Mac's half-open hit testing and overlap priority |
 | `ConversationSceneRecord`, `ParseTests` | Original 13-byte scene commands and conditional branches |
 | `AddPCName` | Player callsign, name, rank and player/wingman kill substitutions in original dialogue |
 | `ParseMouthAnimation`, `ParseFaceAnimation` | Original script strings decoded into animation commands |
@@ -472,21 +477,64 @@ of Angel's `04060000.AIF` and the other original recordings.
 
 Scope remains a fresh Enyo 1 visit using WC1's initial pilot template. Save/load,
 name entry, later mission rooms and post-debriefing progression are not connected.
-The scene adapter preserves original dialogue and artwork but does not claim
-exact Mac presentation: audio-marker lip synchronization, scene-specific text
-colors and typography, camera pans, palette fades, hover/decorative
-animations and exact idle timing are pending. Mouth/face commands currently run
-on a host clock; the map uses WC1 coordinates with simple SDL markers. The
-Anonymous Pro bitmap and readable subtitle panel are shared with the cockpit.
+Carrier presentation now includes the following recovered behavior:
+
+- The bar's **Barracks and Pilot Ranking hotspots were reversed**. CODE_07
+  +0x060e..+0x0638 and the strings at A5-0x2b7d/-0x2b6e establish Barracks
+  at `(250,65)-(318,127)` and rankings at `(268,26)-(320,65)`. Hit testing
+  follows Mac `PtInRect`: right/bottom edges are excluded, and character
+  regions take priority. Paladin and Angel retain their initial sprite bounds,
+  as in `GetScreenRect2` +0x1420 and `RecRoom` +0x0b54.
+- Hovering characters selects DATA/0 +0x2782/+0x2788/+0x278a frames 3/4/5.
+  The Barracks door uses RCRM/1 frame 1; the ranking highlight uses RCRM/12
+  at `(245,15)`. The simulator opens/closes RCRM/11 at `(0,85)` through
+  frames 0..6. Previously its position incorrectly held the ranking highlight.
+  Barracks door/medal hover sequences use RCRM/13 frames 1..8, 9..16 and
+  17..21; the wall display and desk light are also drawn.
+- Carrier mouths now consume AIFF `MARK` phonemes through the same
+  CODE_12 `ParseMarks`/`GetMouthPos` reader used by the intro. Timing comes
+  from the audio mixer's consumed sample position, with a one-buffer latency
+  allowance; pause/focus loss freezes both audio and animation. Without a
+  device, elapsed speech time supplies the clock. Recordings without markers
+  keep the mouth closed; missing recordings retain script animation/subtitles.
+  `SceneDirector` +0x2e34 chooses `CloseLook` when the displayed portrait
+  is listening, so another character's voice no longer moves its mouth.
+  Eyes retain their separate scripts, with `GetEyePos`'s minimum 24-update
+  delay, on a 30 Hz host presentation clock.
+- `PanToScreen` +0x2222 is the commander's turn toward the display, followed
+  by the map reveal. BRFG/4 frames 11..16 run at eight Mac ticks per frame;
+  CODE_14 `BriefingMap_ShowGrid` +0x0cfe reveals BRFG/27 two pixels per edge
+  per update at its DATA/0 origin `(40,20)`. `Dismissed` uses its own BRFG/29,
+  /31 and /32 reverse angle. Route labels/markers still use WC1 transforms
+  and SDL drawing; the dismissal's subsequent walk-out is not yet animated.
+- `print_subtitle` +0x1122 uses **white, centered Helvetica 14**. The record's
+  `textColour` also identifies the speaker; it does not directly select the
+  Mac subtitle ink. Wrapping uses measured advances and a 275-pixel width,
+  with 15-pixel line spacing and the original text-layer position. Long
+  expanded captions are kept inside the host picture. macOS uses system
+  Helvetica through CoreText, without redistributing font data. The demo has
+  no FONT/NFNT resource; original classic-Mac bitmap glyphs remain unavailable,
+  and other hosts retain the bundled bitmap fallback. Cockpit text is unchanged.
+- CODE_15 `dark` +0x03c2 loads the current palette's **clut ID + 10**;
+  these resources dim the picture rather than making it black. Room and
+  conversation transitions use those actual palette colors. SDL interpolates
+  between the normal and dim pictures over ten Mac ticks (167 ms); that
+  interpolation is a host presentation choice, while the Mac routines switch
+  palettes directly. Captured render targets keep resize, pause and skip safe.
+
+Remaining presentation differences include classic bitmap font rasterization,
+the portable font fallback, the complete Mac navigation-map renderer, dismissal
+walk-out, bunk occupants, incidental bar animations and exact frame pacing.
+Movie palette transitions remain separate work.
 
 Mission state is prepared before the carrier for the briefing map; simulation
 starts only after launch. Actions complete on release, focus loss pauses
 speech and scene time, and textures/audio are released on every exit. The
 finite `--check` path bypasses both rooms and movies. Validation for this change
 was original-instruction/data inspection, static review and compilation with
-`make modern modern-gui`; no tests, interactive code, game, GUI or audio
-playback were run. The existing launcher fixture was updated for the required
-CMFs but was not executed. Visual behavior and audio timing still need user review.
+`make modern modern-gui modern-swc`, plus compiler static analysis; no tests,
+interactive code, game, GUI or audio playback were run. Visual behavior and
+audio timing still need user review.
 
 ## Carrier return and debriefing
 
@@ -567,7 +615,7 @@ pilot's rank is zero, matching the supplied `$R` speech variant.
 
 The host presents a static THE END card after the player's farewell, retaining
 `the_end` +0x4b1e's input wait. The original animated end background, separate
-death cinematic, fades and exact scene timing remain
+death cinematic, movie fades and exact scene timing remain
 pending. Validation was original-instruction/data inspection, static review
 and `make -j4 modern modern-gui`; no tests, interactive sessions or playback
 were run. The GUI requires `Funeral.CMF`.
@@ -609,8 +657,9 @@ Eye frames change every ten host draws. CODE_12 `ParseMarks` (+0x00de) and
 `GetMouthPos` (+0x036a), plus the phoneme table at expanded DATA/0 +0x0908,
 supply mouth frames from the AIFF `MARK` words: five 60 Hz ticks per phoneme,
 including `th`/`ch`, and a closed-mouth event after each word. Recordings
-without markers retain the base mouth. Speech duration remains available if
-the audio device is unavailable.
+without markers retain the base mouth. The intro and carrier now share the
+audio mixer's playback clock for mouth timing. Speech duration remains available
+if the audio device is unavailable.
 
 Space, Enter, Escape or left click dismiss the splash and logo separately;
 during the prologue, they skip the remaining movies and dialogue. This follows
@@ -1022,7 +1071,7 @@ many WC1 names were already derived from this Mac executable's MacsBug strings.
    post-debriefing progression. Landing and the first debriefing are connected;
    the demo disables its simulator.
 4. Connect the animated title menu, death cinematic and later scripted scenes;
-   add save/load, carrier audio-marker lip synchronization and palette
-   transitions. The first bar, barracks and briefing, AIFF speech and Hornet
+   add save/load, movie palette transitions, remaining room animations and the
+   complete Mac map renderer. The first bar, barracks and briefing, AIFF speech and Hornet
    startup/opening/launch/landing playback, first debriefing and player/Spirit funerals are
    present; the animated end background and other scene entry points are pending.
