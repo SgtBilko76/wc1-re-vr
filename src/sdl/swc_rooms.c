@@ -249,7 +249,7 @@ static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
             case SDLK_RETURN:
             case SDLK_KP_ENTER:
             case SDLK_SPACE:
-            case SDLK_ESCAPE:
+            case SDLK_BACKSPACE:
                 carrier->armedKey = event.key.keysym.scancode;
                 break;
             case SDLK_TAB:
@@ -263,6 +263,7 @@ static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
             case SDLK_UP:
                 input.step = -1;
                 break;
+            case SDLK_ESCAPE:
             case SDLK_p:
                 carrier->paused = !carrier->paused;
                 break;
@@ -274,7 +275,7 @@ static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
          * its first line, and launch input must not fire the player's guns. */
         if (event.type == SDL_KEYUP && carrier->armedKey != SDL_SCANCODE_UNKNOWN &&
             event.key.keysym.scancode == carrier->armedKey) {
-            input.back = event.key.keysym.sym == SDLK_ESCAPE;
+            input.back = event.key.keysym.sym == SDLK_BACKSPACE;
             input.activate = !input.back;
             carrier->armedKey = SDL_SCANCODE_UNKNOWN;
         }
@@ -433,9 +434,6 @@ int SdlShowSwcSplash(SDL_Window *window, SDL_Renderer *renderer, const char *res
             result = input.quit ? SWC_MOVIE_QUIT : SWC_MOVIE_SKIPPED;
             break;
         }
-        SDL_SetWindowTitle(window, playing
-            ? "Super Wing Commander - splash | Space/Enter/Esc/click: skip | P: pause"
-            : "Super Wing Commander - splash (paused) | P: resume");
         if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255) != 0 ||
             SDL_RenderClear(renderer) != 0 || SDL_RenderCopy(renderer, texture, NULL, NULL) != 0)
             goto done;
@@ -559,9 +557,6 @@ int SdlPlaySwcIntroSpeech(SDL_Window *window, SDL_Renderer *renderer,
                 result = input.quit ? SWC_MOVIE_QUIT : SWC_MOVIE_SKIPPED;
                 goto done;
             }
-            SDL_SetWindowTitle(window, playing
-                ? "Super Wing Commander - prologue | Space/Enter/Esc/click: skip | P: pause"
-                : "Super Wing Commander - prologue (paused) | P: resume");
             speechTicks = swcAudioDevice != 0 ? SdlSwcPcmTicks() : (Uint32)(elapsed * 60 / frequency);
             while (mark < markCount && marks[mark].tick <= speechTicks)
                 mouth = marks[mark++].frame;
@@ -1107,13 +1102,6 @@ static int SwcPlayRoomScene(SwcCarrier *carrier, int section)
     SdlPauseSwcSound(!carrier->focused);
     if (carrier->visit == SWC_CARRIER_PREFLIGHT && section == 0)
         SdlPlaySwcMusic("BRIEFIN0.MooV", 50);
-    SDL_SetWindowTitle(carrier->window, carrier->visit >= SWC_CARRIER_PLAYER_FUNERAL
-        ? "Super Wing Commander - funeral | Click/Space/Enter: next | Esc: finish | P: pause"
-        : section == 0
-        ? "Super Wing Commander - briefing | Click/Space/Enter: next | Esc: launch | P: pause"
-        : section == 2
-        ? "Super Wing Commander - debriefing | Click/Space/Enter: next | Esc: finish | P: pause"
-        : "Super Wing Commander - conversation | Click/Space/Enter: next | Esc: bar | P: pause");
     while (index < scene.count) {
         record = &scene.records[index];
         if (record->shot == -2) {
@@ -1492,9 +1480,6 @@ int SdlShowSwcEnding(SDL_Window *window, SDL_Renderer *renderer,
         SwcGenerateEndShard(&shards, index);
     ink = carrier.packs[SWC_RECROOM].colors[4];
     previous = SDL_GetTicks();
-    SDL_SetWindowTitle(window, stranded ?
-        "Super Wing Commander - Stranded | Space/Enter: continue | P: pause" :
-        "Super Wing Commander - THE END | Space/Enter: continue | P: pause");
     for (;;) {
         now = SDL_GetTicks();
         input = SwcPollCarrier(&carrier);
@@ -1726,6 +1711,9 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
             result = SWC_MOVIE_QUIT;
             break;
         }
+        /* RecRoom does not use the Mac cancel flag to leave the bar. */
+        if (room == 0 && notice == NULL)
+            input.back = 0;
         if (input.back)
             carrier.paused = 0;
         if (!carrier.focused || carrier.paused) {
@@ -1733,10 +1721,6 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
             continue;
         }
         previousRoom = room;
-        if (input.quit || (input.back && room == 0 && notice == NULL)) {
-            result = SWC_MOVIE_QUIT;
-            break;
-        }
         if (notice != NULL) {
             if (input.back || input.activate || input.clicked)
                 notice = NULL;
@@ -1801,9 +1785,6 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
                 }
             }
         }
-        SDL_SetWindowTitle(window, room == 0
-            ? "Super Wing Commander - bar | Click: select | Tab/arrows, Enter | Esc: exit"
-            : "Super Wing Commander - carrier | Click: select | Tab/arrows, Enter | Esc: back");
         if (hand != NULL)
             SDL_SetCursor(selected >= 0 && room < 2 && notice == NULL ? hand : savedCursor);
         if (room != previousRoom) {

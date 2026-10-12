@@ -137,8 +137,8 @@ fixed flight interval. It restores the prior camera on exit.
 Pressing A now runs this 120-frame external view before the shared formation
 travel. The renderer includes the player's ship and omits cockpit/HUD overlays.
 The host updates one objective per frame, including unselected objectives, as
-CODE_13 +0x0316..+0x034e does. P and focus loss pause the sequence; Esc or window
-close exits the session. Camera and input state are restored on exit, and a
+CODE_13 +0x0316..+0x034e does. Escape/P and focus loss pause the sequence.
+Window close exits the session. Camera and input state are restored on exit, and a
 presentation failure propagates to the mission host. CODE_14 +0x077e's final
 simulation frame runs after travel.
 
@@ -289,21 +289,22 @@ out-modern/wc1-modern --swc-demo "data/swc-demo/SuperWing DEMO"
 Click a person or doorway to interact; hover shows its label. Tab/arrows select
 hotspots and Enter activates them. From the bar, enter the barracks through the
 upper-right door, then the briefing room through its right-hand door. Click,
-Space or Enter advances dialogue; Esc returns from a conversation or skips the
-briefing into launch. P pauses dialogue and speech; focus loss also pauses both.
-Esc returns from the barracks, rankings or medals, and exits from the bar.
+Space or Enter advances dialogue; Backspace returns from a conversation or skips
+the briefing into launch. Escape or P pauses dialogue and speech; focus loss
+also pauses both. Backspace returns from the barracks, rankings or medals, and
+leaves the bar open.
 Window close exits at any point. The simulator retains the demo's unavailable
 message. Save/load bunks explain that SWC saves are not supported yet.
 
 With the archive's startup assets present, the splash, Lion logo and prologue
 precede the title menu. New Game plays the four-part opening and first carrier visit.
 The Hornet launch follows the briefing. Space,
-Enter, Esc, or a left click skips the entire current sequence on release; P
-pauses it. Splash and logo dismiss separately; skipping the prologue advances
+Enter, Backspace, or a left click skips the entire current sequence on release;
+Escape or P pauses it. Splash and logo dismiss separately; skipping the prologue advances
 to the title menu. Losing focus pauses video and audio together. Skipping the opening
 enters the bar; closing the movie window exits the session. Once in flight,
-Esc resumes its normal exit behavior and Space/Enter/mouse buttons resume
-their weapon bindings.
+Escape and P continue to toggle pause. C closes an open communications menu,
+and Space/Enter/mouse buttons resume their weapon bindings.
 
 Flight uses WC1's DOS/Win32 mouse and keyboard controls through SDL2:
 
@@ -330,12 +331,12 @@ Flight uses WC1's DOS/Win32 mouse and keyboard controls through SDL2:
 | N / M | Next objective / nav map |
 | C / 1..7 | Open/close WC1 communications / choose a numbered recipient or command |
 | Ctrl+F1 | Toggle cockpit |
-| P / Esc | Pause / close communications, otherwise exit |
+| P / Esc | Toggle pause |
 | Cmd+Enter (macOS), Alt+Enter (other platforms) | Toggle fullscreen in flight, menus, and movies |
 
-The window title shows the selected objective, actual and commanded speed,
-and afterburner state. The pointer is confined to the flight window; P releases
-it while paused. Losing focus also pauses movement and releases the pointer.
+The window title remains **Super Wing Commander** throughout the demo, without
+control hints or flight telemetry. The pointer is confined to the flight window;
+Escape/P releases it while paused. Losing focus also pauses movement and releases the pointer.
 Keyboard steering takes priority while held; moving the mouse or joystick
 selects that steering device. Releasing the
 right-button roll/throttle mode recentres the pointer, as in WC1. Holding both
@@ -358,7 +359,7 @@ The improved modes use these bindings:
 | Left/right stick clicks, or raw buttons 7/8 | Next objective / autopilot |
 | D-pad Up/Down/Left/Right | Full speed / stop / communications / target lock |
 | D-pad while communications are open | Up/Down highlights a choice, Right selects, Left closes |
-| Start / Back | Pause / close communications, otherwise exit |
+| Start / Back | Toggle pause |
 
 Controller navigation also works in carrier rooms and scenes: D-pad browses
 hotspots, A confirms, B/Back goes back or skips, and Start pauses. Confirmation
@@ -376,10 +377,11 @@ approach within 700 range units without afterburning to begin landing. Skipping
 landing movies continues into debriefing; closing the window exits. If Spirit
 was lost, her funeral follows debriefing. Player destruction instead starts the
 player's funeral without landing or mission-stat updates. Click, Space or Enter
-advances funeral dialogue; Esc skips the rest of the funeral. Skipping a funeral
+advances funeral dialogue; Backspace skips the rest of the funeral. Skipping a funeral
 movie also ends the sequence. The player's completed farewell leads to animated
 THE END, which waits for input. Death, stranded and completed Enyo 1 paths return
-to the title menu. Escape at the title menu exits to the launcher when started there.
+to the title menu. Escape/P pauses the title animation. Window close or the host's
+quit command exits the session.
 
 Point `SWC_DATA_DIR` at the extracted **SuperWing DEMO** directory containing
 `CMFs/`. For example, from the repository root on macOS:
@@ -697,10 +699,10 @@ without markers retain the base mouth. The intro and carrier now share the
 audio mixer's playback clock for mouth timing. Speech duration remains available
 if the audio device is unavailable.
 
-Space, Enter, Escape or left click dismiss the splash and logo separately;
+Space, Enter, Backspace or left click dismiss the splash and logo separately;
 during the prologue, they skip the remaining movies and dialogue. This follows
 the movie skip latch and CODE_15 `movie_dim_screen` (+0x046c), which clears it
-after `Lion`. Input completes on release. P and focus loss pause video,
+after `Lion`. Input completes on release. Escape/P and focus loss pause video,
 dialogue animation and the shared audio device. Missing startup movie/dialogue
 files skip the group; malformed present assets report an error. Quit ends the
 session, and music, PCM, textures and temporary buffers are released on exit.
@@ -751,7 +753,7 @@ use 63 particles from `RecRoomScene.CMF` `PLNT/1`, palette 135, the original
 15-entry frame table, Q8 yaw/projection and retirement/respawn conditions.
 Stranded draws text before the particles; the funeral's THE END draws after them
 at baseline 110. Both use Helvetica 14 and palette index 4. Input is consumed on
-release, and P/focus loss pause animation and audio. Completed endings return to
+release, and Escape/P/focus loss pause animation and audio. Completed endings return to
 the menu; window close exits throughout.
 
 Validation: fresh Ghidra instruction exports, original DATA/CMF/clut inspection,
@@ -892,6 +894,32 @@ input event before polling, since motion and empty polls leave some fields
 unset. In SDL builds only, `accelerate` multiplies signed throttle steps by 256
 instead of left-shifting negative values. The reference build retains the
 original expressions and event declaration.
+
+### Escape and quitting in the original Mac demo
+
+Ghidra's original-instruction exports distinguish cancellation from quitting.
+CODE_01 `SetGInputForChar` +0x3ec4 routes ASCII Escape (`0x1b`) to +0x43b2,
+which sets the input byte at unrelocated address `0xa7c6`; Space sets that same
+byte as well as the gun flag. CODE_01 `process_player_input` +0x3cba does not
+consume the Escape byte. CODE_07 `Title_Sequence` +0x1c86 and `RecRoom` +0x059a
+also have no Escape-to-exit branch. CODE_14 `visit_the_cinema` +0x000c ends on
+its frame count or game state, not Escape. Escape therefore does not quit or
+return to the title from normal flight, autopilot, the title screen, or the bar.
+
+Other screens do consume this flag: CODE_03 `CheckEscaped` +0x4336 latches a
+cinematic skip, and the rankings/medal screens wait for it or the activation
+flag. Quitting instead uses a separate flag at `0xbeec`. Original `MENU/201`
+item 10 is **Quit**, with the Q command key. The quit path calls `YesNoAlert`
+(CODE_03 +0x72f4) with `0x800003`, selecting `STR#/128` item 3:
+“Are you sure you want to quit Super Wing Commander?” `DITL/128` supplies OK
+and Cancel, and CODE_01 `HAPPYDIALOGFILTER` +0x225a maps Escape to Cancel
+(item 2 at +0x231a).
+
+The SDL host deliberately maps Escape to P's pause action in flight, autopilot,
+menus, scenes, and movies. Backspace takes the room-back/scene-skip binding;
+controller B/Back retains that action outside flight. C or communications
+D-pad Left closes the communications menu. Window close and the host quit
+shortcut remain separate exit actions.
 
 ### Movement comparison
 

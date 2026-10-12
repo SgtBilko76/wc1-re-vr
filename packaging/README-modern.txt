@@ -47,7 +47,8 @@ Select the demo directory in the launcher or use --swc-demo DIRECTORY. Its
 OpenGL rendering, cockpitless view, joystick modes and axis layouts, and rumble
 use the same launcher controls and command-line switches as WC1. EGA dithering
 is WC1-only. In demo menus, use the D-pad to browse, A to confirm, B/Back to go
-back or skip, and Start to pause.
+back or skip, and Start to pause. Escape and P both toggle pause throughout
+the demo; Backspace goes back in menus or skips scenes.
 
 The macOS archives are ad-hoc signed, not notarized with an Apple developer
 certificate. macOS may therefore require the usual confirmation for software

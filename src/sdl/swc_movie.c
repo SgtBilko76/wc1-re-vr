@@ -6,7 +6,7 @@
 #include <string.h>
 
 static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
-                           const char *path, const char *sequence)
+                           const char *path)
 {
     SwcMovie movie = {0};
     SDL_Surface *indexed = NULL;
@@ -23,7 +23,6 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
     Uint64 targetFrame;
     uint32_t frame = 1;
     char failure[256];
-    char title[160];
     int focused;
     int paused = 0;
     int playing = 0;
@@ -88,12 +87,13 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
             }
             if (event.type == SDL_KEYDOWN && !event.key.repeat && focused) {
                 switch (event.key.keysym.sym) {
-                case SDLK_ESCAPE:
+                case SDLK_BACKSPACE:
                 case SDLK_SPACE:
                 case SDLK_RETURN:
                 case SDLK_KP_ENTER:
                     skipKey = event.key.keysym.scancode;
                     break;
+                case SDLK_ESCAPE:
                 case SDLK_p:
                     paused = !paused;
                     break;
@@ -117,10 +117,6 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
         if (playing != (focused && !paused) || redraw) {
             playing = focused && !paused;
             SdlPauseSwcSound(!playing);
-            SDL_snprintf(title, sizeof(title),
-                "Super Wing Commander - %s%s | Space/Enter/Esc/click: skip | P: %s",
-                sequence, playing ? "" : " (paused)", playing ? "pause" : "resume");
-            SDL_SetWindowTitle(window, title);
         }
         targetFrame = elapsed * movie.framesPerSecond / frequency + 1;
         while (frame < movie.frameCount && frame < targetFrame) {
@@ -239,7 +235,7 @@ int SdlPlaySwcStartup(SDL_Window *window, SDL_Renderer *renderer,
             SdlPauseSwcSound(1);
             SdlPlaySwcMusic("SUPRWNG4.MooV", 50);
         }
-        result = SdlPlaySwcMovie(window, renderer, paths[index], "prologue");
+        result = SdlPlaySwcMovie(window, renderer, paths[index]);
         if (index == 0 && result == SWC_MOVIE_SKIPPED)
             continue;
         if (result != SWC_MOVIE_FINISHED)
@@ -249,7 +245,6 @@ done:
     SdlClearSwcPcm();
     SdlStopSwcMusic();
     SDL_ShowCursor(cursorVisible);
-    SDL_SetWindowTitle(window, "Super Wing Commander - Enyo 1 (experimental flight)");
     return result;
 unavailable:
     fprintf(stderr, "Skipping SWC startup: cannot read %s (%s)\n", relative, SDL_GetError());
@@ -358,14 +353,13 @@ static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
     /* Funeral music spans the movies and both room speeches. Its lifetime
      * belongs to SdlRunSwcCarrier, as in CODE_03 funeral_sequence. */
     for (index = 0; index < count; index++) {
-        result = SdlPlaySwcMovie(window, renderer, paths[index], title);
+        result = SdlPlaySwcMovie(window, renderer, paths[index]);
         if (result != SWC_MOVIE_FINISHED)
             break;
     }
     SDL_ShowCursor(cursorVisible);
     if (sequence <= SWC_MOVIES_LANDING)
         SdlStopSwcMusic();
-    SDL_SetWindowTitle(window, "Super Wing Commander - Enyo 1 (experimental flight)");
     return result;
 }
 

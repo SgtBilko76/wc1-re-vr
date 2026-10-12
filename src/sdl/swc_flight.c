@@ -721,8 +721,7 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
             if (SdlHandleSwcEvent(swcCinemaWindow, &event, 0))
                 continue;
             if (event.type == SDL_QUIT ||
-                (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE) ||
-                (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
+                (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE)) {
                 result = 1;
                 goto done;
             }
@@ -735,7 +734,7 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
                     focused = (SDL_GetWindowFlags(swcCinemaWindow) & SDL_WINDOW_INPUT_FOCUS) != 0;
             }
             if (event.type == SDL_KEYDOWN && !event.key.repeat && focused &&
-                event.key.keysym.sym == SDLK_p)
+                (event.key.keysym.sym == SDLK_p || event.key.keysym.sym == SDLK_ESCAPE))
                 paused = !paused;
         }
         SDL_SetWindowMouseGrab(swcCinemaWindow,
@@ -744,9 +743,6 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
         if (!focused || paused)
             elapsed = 0;
         SdlPauseSwcSound(!focused || paused);
-        SDL_SetWindowTitle(swcCinemaWindow, focused && !paused ?
-            "Super Wing Commander - Autopilot | P: pause | Esc: exit" :
-            "Super Wing Commander - Autopilot (paused) | P: resume | Esc: exit");
         if (elapsed >= interval) {
             nTickCount60Hz = (unsigned int)((uint64_t)current * 60 / 1000);
             SdlSwcUpdateSpace();
@@ -954,9 +950,6 @@ static int SwcRunFlightScene(int titleMenu)
     nRenderedSpaceFrame = 0;
     focused = (SDL_GetWindowFlags(swcCinemaWindow) & SDL_WINDOW_INPUT_FOCUS) != 0;
     previous = SDL_GetTicks();
-    SDL_SetWindowTitle(swcCinemaWindow, titleMenu ?
-        "Super Wing Commander | Click/Space/Enter: new game | P: pause | Esc: exit" :
-        "Super Wing Commander | P: pause | Space/Enter: continue");
     for (;;) {
         now = SDL_GetTicks();
         activate = 0;
@@ -982,17 +975,14 @@ static int SwcRunFlightScene(int titleMenu)
             if (!focused)
                 continue;
             if (event.type == SDL_KEYDOWN && !event.key.repeat) {
-                if (titleMenu && event.key.keysym.sym == SDLK_ESCAPE) {
-                    result = SWC_MOVIE_QUIT;
-                    goto done;
-                } else if (event.key.keysym.sym == SDLK_p) {
+                if (event.key.keysym.sym == SDLK_p || event.key.keysym.sym == SDLK_ESCAPE) {
                     paused = !paused;
                     armedKey = SDL_SCANCODE_UNKNOWN;
                     mouseDown = 0;
                 } else if (!paused && (event.key.keysym.sym == SDLK_SPACE ||
                     event.key.keysym.sym == SDLK_RETURN ||
                     event.key.keysym.sym == SDLK_KP_ENTER ||
-                    event.key.keysym.sym == SDLK_ESCAPE)) {
+                    (!titleMenu && event.key.keysym.sym == SDLK_BACKSPACE))) {
                     armedKey = event.key.keysym.scancode;
                 } else if (titleMenu && !paused &&
                     (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_DOWN ||
@@ -1125,7 +1115,6 @@ int SdlRunSwcMission(const char *missionPath, int cockpitless)
     Uint32 tickInterval;
     Uint32 elapsed = 0;
     char path[PATH_MAX];
-    char title[384];
     char failure[256];
     int shipCount;
     int object;
@@ -1167,7 +1156,7 @@ int SdlRunSwcMission(const char *missionPath, int cockpitless)
         goto done;
     savedCursorVisible = SDL_ShowCursor(SDL_QUERY);
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
-    window = SDL_CreateWindow("Super Wing Commander - Enyo 1 (experimental flight)",
+    window = SDL_CreateWindow("Super Wing Commander",
                                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 960, 720,
                                SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (window == NULL)
@@ -1403,12 +1392,6 @@ title_menu:
                     if (focused && !paused)
                         celerate(0, (int)asShipMaximumSpeed[0] * 256 - anShipSpeed[0]);
                     break;
-                case SDLK_ESCAPE:
-                    if (IsCommChoiceMenuOpen())
-                        CloseCommChoiceMenu();
-                    else
-                        done = 1;
-                    break;
                 case SDLK_n:
                     if (focused && !paused)
                         cycle_next_objective();
@@ -1498,6 +1481,7 @@ title_menu:
                 case SDLK_m:
                     showMap = !showMap;
                     break;
+                case SDLK_ESCAPE:
                 case SDLK_p:
                     paused = !paused;
                     elapsed = 0;
@@ -1592,14 +1576,6 @@ title_menu:
                           images, cockpitless, showMap) != 0)
             goto done;
         SDL_RenderPresent(renderer);
-        SDL_snprintf(title, sizeof(title),
-                     "SWC Enyo 1%s | %s | speed %ld (set %d)%s | mouse/arrows: steer RMB: roll/throttle +/-: speed Tab: boost Space/LMB: guns Enter/both buttons: missile G/W: weapons T: target L: lock N: nav A: autopilot C: comms 1-7: choice M: map Ctrl+F1: cockpit P: pause Esc: exit",
-                     paused || !focused ? " (paused)" : "",
-                     aMissionObjectives[(int)cCurrentObjective].name,
-                     MultiplyFixed(Vector_magnitude(&aShipVelocity[0]), 0xa00) >> 8,
-                     (anShipSpeed[0] >> 8) * 10,
-                     aeSpecialManeuver[0] == SPECIAL_MANEUVER_AFTERBURNER ? " afterburner" : "");
-        SDL_SetWindowTitle(window, title);
         SDL_Delay(8);
     }
     result = 0;

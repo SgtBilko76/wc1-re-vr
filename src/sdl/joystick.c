@@ -1015,14 +1015,14 @@ void SdlTranslateSwcJoystickEvent(SDL_Event *event, int flight)
         }
     }
     if (button == SDL_PORT_JOYSTICK_BUTTON_BACK)
-        key = SDLK_ESCAPE;
+        key = flight ? SDLK_ESCAPE : SDLK_BACKSPACE;
     else if (button == SDL_PORT_JOYSTICK_BUTTON_START)
         key = SDLK_p;
     else if (button == SDL_PORT_JOYSTICK_BUTTON_A)
         key = flight ? SDLK_SPACE : SDLK_RETURN;
     else if (!flight) {
         switch ((SdlJoystickButton)button) {
-        case SDL_PORT_JOYSTICK_BUTTON_B: key = SDLK_ESCAPE; break;
+        case SDL_PORT_JOYSTICK_BUTTON_B: key = SDLK_BACKSPACE; break;
         case SDL_PORT_JOYSTICK_BUTTON_X: key = SDLK_SPACE; break;
         case SDL_PORT_JOYSTICK_BUTTON_DPAD_UP: key = SDLK_UP; break;
         case SDL_PORT_JOYSTICK_BUTTON_DPAD_DOWN: key = SDLK_DOWN; break;
@@ -1044,7 +1044,7 @@ void SdlTranslateSwcJoystickEvent(SDL_Event *event, int flight)
                     scanCode = (unsigned short)(selection + 2);
             }
             if (button == SDL_PORT_JOYSTICK_BUTTON_DPAD_LEFT)
-                key = SDLK_ESCAPE;
+                key = SDLK_c;
         } else {
             scanCode = SdlFlightScanCodeForButton(button);
         }
