@@ -9,7 +9,7 @@
 #include <string.h>
 
 typedef struct SwcFlightImages {
-    SDL_Texture **views;
+    SwcRasterImage *views;
     uint32_t count;
 } SwcFlightImages;
 
@@ -28,6 +28,7 @@ static const SwcCmf *swcCinemaCockpitCmf;
 static const SwcCmf *swcCinemaSpaceCmf;
 static const SDL_Color *swcCinemaColors;
 static SwcFlightImages *swcCinemaImages;
+static SDL_Texture *swcRasterCanvas;
 int nSwcCinemaResult;
 
 /* SWC CODE_09 +0x00c2: Update_3Space. Mac house_keep (+0x01d0)
@@ -119,8 +120,7 @@ SDL_Texture *SdlCreateSwcTexture(SDL_Renderer *renderer,
     return texture;
 }
 
-static int SwcLoadFlightImages(SDL_Renderer *renderer, const SwcCmf *cockpit,
-                                const SwcCmf *space, const SDL_Color colors[256],
+static int SwcLoadFlightImages(const SwcCmf *cockpit, const SwcCmf *space,
                                 enum ObjectType type, SwcFlightImages *images)
 {
     SwcBuffer set = {0};
@@ -206,8 +206,7 @@ static int SwcLoadFlightImages(SDL_Renderer *renderer, const SwcCmf *cockpit,
         /* The final red-spark frame is intentionally empty. */
         if (frame.width == 0 || frame.height == 0)
             continue;
-        images->views[index] = SdlCreateSwcTexture(renderer, &set, index, colors);
-        if (images->views[index] == NULL)
+        if (SdlLoadSwcRasterImage(&set, index, &images->views[index]) != 0)
             goto done;
     }
     result = 0;
@@ -493,48 +492,6 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
     nRenderedSpaceFrame++;
 }
 
-static SDL_Rect SwcRotatedSpriteBounds(const SDL_Rect *sprite, short angle)
-{
-    double radians = angle * DEGREES_TO_RADIANS;
-    double cosine = SDL_cos(radians);
-    double sine = SDL_sin(radians);
-    double pivotX = sprite->w / 2;
-    double pivotY = sprite->h / 2;
-    double minX = 0;
-    double minY = 0;
-    double maxX = 0;
-    double maxY = 0;
-    double x;
-    double y;
-    double rotatedX;
-    double rotatedY;
-    SDL_Rect bounds;
-    int corner;
-
-    /* Match the explicit integer pivot passed to SDL_RenderCopyEx below. */
-    if (angle % 360 == 0)
-        return *sprite;
-    for (corner = 0; corner < 4; corner++) {
-        x = (corner & 1 ? sprite->w : 0) - pivotX;
-        y = (corner & 2 ? sprite->h : 0) - pivotY;
-        rotatedX = sprite->x + pivotX + x * cosine - y * sine;
-        rotatedY = sprite->y + pivotY + x * sine + y * cosine;
-        if (corner == 0 || rotatedX < minX)
-            minX = rotatedX;
-        if (corner == 0 || rotatedX > maxX)
-            maxX = rotatedX;
-        if (corner == 0 || rotatedY < minY)
-            minY = rotatedY;
-        if (corner == 0 || rotatedY > maxY)
-            maxY = rotatedY;
-    }
-    bounds.x = (int)SDL_floor(minX);
-    bounds.y = (int)SDL_floor(minY);
-    bounds.w = (int)SDL_ceil(maxX) - bounds.x;
-    bounds.h = (int)SDL_ceil(maxY) - bounds.y;
-    return bounds;
-}
-
 static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
                           const SwcCmf *cockpitCmf, const SwcCmf *spaceCmf,
                           const SDL_Color colors[256],
@@ -549,8 +506,7 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     };
     SDL_Rect rectangle;
     SDL_Rect targetBounds = {0};
-    SDL_Point pivot;
-    SDL_Texture *texture;
+    SwcRasterImage *image;
     short object;
     short frame;
     short sorted[SPACE_OBJECT_COUNT];
@@ -562,7 +518,6 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     int centreY = 100;
     int x;
     int y;
-    int scale;
 
     transform_objects_to_your_view();
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -576,6 +531,8 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
             SDL_RenderDrawPoint(renderer, 160 + asObjectScreenX[object],
                                  centreY + asObjectScreenY[object]);
     }
+    if (SdlDrawSwcSpaceGlare() != 0)
+        return -1;
     for (object = nCameraViewMode == 12 ? 0 : 1; object <= SPACE_LAST_MOVING_OBJECT; object++) {
         if (aeObjectClass[object] < OBJECT_CLASS_EXPLOSION ||
             aeObjectClass[object] == OBJECT_CLASS_FIXED_OBJECT ||
@@ -591,32 +548,19 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     }
     for (index = 0; index < count; index++) {
         object = sorted[index];
-        if (SwcLoadFlightImages(renderer, cockpitCmf, spaceCmf, colors,
+        if (SwcLoadFlightImages(cockpitCmf, spaceCmf,
                                aeObjectType[object], &images[aeObjectType[object]]) != 0)
             return -1;
         frame = asObjectViewFrame[object];
         if (frame < 0 || (uint32_t)frame >= images[aeObjectType[object]].count)
             return SDL_SetError("Unsupported SWC frame %d for object type %d",
                                 frame, aeObjectType[object]);
-        texture = images[aeObjectType[object]].views[frame];
-        if (texture == NULL)
-            continue;
-        if (SDL_QueryTexture(texture, NULL, NULL, &rectangle.w, &rectangle.h) != 0)
+        image = &images[aeObjectType[object]].views[frame];
+        if (SdlDrawSwcRotatedImage(renderer, swcRasterCanvas, image, colors,
+                160 + asObjectScreenX[object], centreY + asObjectScreenY[object],
+                asObjectScreenAngle[object], (unsigned short)asObjectScreenScale[object],
+                asObjectFlip[object], object == acShipTarget[0] ? &targetBounds : NULL) != 0)
             return -1;
-        scale = (unsigned short)asObjectScreenScale[object];
-        rectangle.w = SDL_max(1, rectangle.w * scale / 256);
-        rectangle.h = SDL_max(1, rectangle.h * scale / 256);
-        rectangle.x = 160 + asObjectScreenX[object] - rectangle.w / 2;
-        rectangle.y = centreY + asObjectScreenY[object] - rectangle.h / 2;
-        pivot = (SDL_Point){rectangle.w / 2, rectangle.h / 2};
-        if (SDL_RenderCopyEx(renderer, texture, NULL, &rectangle,
-                             asObjectScreenAngle[object], &pivot,
-                             (SDL_RendererFlip)(((asObjectFlip[object] & 0x10) ?
-                                 SDL_FLIP_HORIZONTAL : 0) | ((asObjectFlip[object] & 0x20) ?
-                                 SDL_FLIP_VERTICAL : 0))) != 0)
-            return -1;
-        if (object == acShipTarget[0])
-            targetBounds = SwcRotatedSpriteBounds(&rectangle, asObjectScreenAngle[object]);
     }
     /* CODE_13 update_cockpit draws the HUD and instruments only in
        cockpit views. External autopilot includes the player's own ship. */
@@ -850,7 +794,12 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     cockpit = SdlCreateSwcTexture(renderer, &cockpitSet, 0, colors);
     if (cockpit == NULL)
         goto done;
-    if (SdlInitSwcCockpit(renderer, &cockpitCmf, &spaceCmf, colors) != 0)
+    swcRasterCanvas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING, SWC_FRAME_WIDTH, SWC_FRAME_HEIGHT);
+    if (swcRasterCanvas == NULL ||
+        SDL_SetTextureBlendMode(swcRasterCanvas, SDL_BLENDMODE_BLEND) != 0)
+        goto done;
+    if (SdlInitSwcCockpit(renderer, &cockpitCmf, &spaceCmf, colors, swcRasterCanvas) != 0)
         goto done;
     /* Prepare shared mission state for the briefing map. No flight ticks or
        player input run while visiting the carrier or watching launch. */
@@ -927,7 +876,7 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     SetSpaceFlightFrameTiming();
     tickInterval = (Uint32)nFrameIntervalMs;
     for (object = 1; object < shipCount; object++) {
-        if (SwcLoadFlightImages(renderer, &cockpitCmf, &spaceCmf, colors,
+        if (SwcLoadFlightImages(&cockpitCmf, &spaceCmf,
                                 aeObjectType[object], &images[aeObjectType[object]]) != 0)
             goto done;
     }
@@ -1229,11 +1178,13 @@ done:
         SDL_SetWindowMouseGrab(window, SDL_FALSE);
     for (object = 0; object < OBJECT_TYPE_COUNT; object++) {
         for (view = 0; (uint32_t)view < images[object].count; view++)
-            SDL_DestroyTexture(images[object].views[view]);
+            SDL_free(images[object].views[view].pixels);
         SDL_free(images[object].views);
     }
     SdlFreeSwcCockpit();
     SDL_DestroyTexture(cockpit);
+    SDL_DestroyTexture(swcRasterCanvas);
+    swcRasterCanvas = NULL;
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

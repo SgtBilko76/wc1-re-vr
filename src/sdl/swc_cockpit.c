@@ -1,7 +1,7 @@
 /* SDL presentation of the SWC Mac demo's Hornet instruments.
  * CODE_13 and the expanded DATA/0 tables provide the layout and sprite
  * selection. WC1 supplies flight state, speed readouts and scanner maths.
- * Mac QuickDraw text is replaced by a bundled, pre-rendered bitmap font. */
+ * QuickDraw Helvetica is supplied by the host text adapter. */
 #include "wc1.h"
 #include "swc.h"
 
@@ -10,6 +10,7 @@
 typedef struct SwcCockpitFrame {
     SDL_Texture *texture;
     SDL_Rect bounds;
+    SwcRasterImage image;
 } SwcCockpitFrame;
 
 typedef struct SwcCockpitShape {
@@ -32,6 +33,7 @@ enum SwcCockpitInstrument {
     SWC_COCKPIT_DAMAGE,
     SWC_COCKPIT_SPARKS,
     SWC_PILOT_HAND,
+    SWC_SPACE_GLARE,
     SWC_COCKPIT_INSTRUMENT_COUNT
 };
 
@@ -46,7 +48,8 @@ static SwcCockpitShape swcDeadVduShapes[2];
 static SwcCockpitShape swcCommShapes[14];
 static const SwcCmf *swcCockpitCmf;
 static SDL_Renderer *swcCockpitRenderer;
-static SDL_Texture *swcCockpitFont;
+static SDL_Texture *swcCockpitCanvas; /* Borrowed from the flight host. */
+static SwcTextFont swcCockpitFont;
 static SDL_Color swcCockpitColors[256];
 static int swcCockpitDrawing;
 static int swcCockpitDrawResult;
@@ -70,6 +73,12 @@ static SDL_Point swcIttsPosition = {0x7fff, 0};
 static int swcPilotHand = -1;
 static SDL_Point swcCockpitDrawOffset;
 SDL_Point swcCockpitOffset;
+int anSwcWeaponNoticeTicks[2]; /* SWC DATA/A5+0x4848/+0x484c. */
+static int swcWeaponNoticeVisible[2];
+int nSwcSpaceGlareTicks; /* SWC DATA/A5+0x8c62. */
+int bSwcExplosionGlare; /* SWC DATA/A5+0x8c6a. */
+static int swcSpaceGlareColor;
+static SDL_Point swcSpaceGlareOffset;
 
 typedef struct SwcCockpitMessage {
     char text[35];
@@ -279,10 +288,12 @@ static void SwcUpdateMessage(void)
 {
     int playing;
 
-    if (swcCommSound >= 0)
-        return;
     if (swcMessageActive) {
-        if (swcCurrentMessage.flash && --swcMessageFlashTicks < 0) {
+        if (swcMessageFlashTicks >= 0)
+            swcMessageFlashTicks--;
+        if (swcMessageTicks >= 0)
+            swcMessageTicks--;
+        if (swcCurrentMessage.flash && swcMessageFlashTicks < 0) {
             swcMessageFlashTicks = 20;
             swcMessageVisible = !swcMessageVisible;
         }
@@ -301,20 +312,27 @@ static void SwcUpdateMessage(void)
                 swcMessageTicks = 40;
             }
         }
-        if (--swcMessageTicks >= 0)
+        if (swcMessageTicks >= 0 || swcCommSound >= 0)
             return;
         swcMessageActive = 0;
     }
-    if (swcMessageCount == 0)
+    if (swcMessageCount == 0 || swcCommSound >= 0)
         return;
     swcCurrentMessage = swcMessages[swcMessageRead];
     swcMessageRead = (swcMessageRead + 1) % 16;
     swcMessageCount--;
     swcMessageActive = 1;
     swcMessageVisible = 1;
-    swcMessageFlashTicks = 20;
     swcMessageVoiceStarted = 0;
     swcMessageTicks = swcCurrentMessage.voice < 0 ? 40 : 0;
+    if (swcCurrentMessage.voice >= 0) {
+        playing = SdlPlaySwcSound(swcCurrentMessage.voice + 79, 255);
+        swcMessageVoiceStarted = playing > 0;
+        if (playing < 0) {
+            swcCurrentMessage.voice = -1;
+            swcMessageTicks = 40;
+        }
+    }
 }
 
 unsigned char bSwcWaitingForEscort; /* SWC DATA/A5+0x46ec */
@@ -417,8 +435,10 @@ static void SwcFreeCockpitShape(SwcCockpitShape *shape)
     uint32_t frame;
 
     if (shape->frames != NULL) {
-        for (frame = 0; frame < shape->count; frame++)
+        for (frame = 0; frame < shape->count; frame++) {
             SDL_DestroyTexture(shape->frames[frame].texture);
+            SDL_free(shape->frames[frame].image.pixels);
+        }
         SDL_free(shape->frames);
     }
     memset(shape, 0, sizeof(*shape));
@@ -430,9 +450,14 @@ static int SwcLoadCockpitShape(const SwcCmf *cmf, const char *type,
 {
     SwcBuffer set = {0};
     SwcFrame frame;
+    SDL_Color maskColors[256];
     uint32_t image;
     int result = -1;
 
+    /* MacDrawColor2 replaces every nonzero source pixel with the ink.
+       A white alpha mask lets SDL modulation perform that exact recolor. */
+    for (image = 0; image < SDL_arraysize(maskColors); image++)
+        maskColors[image] = (SDL_Color){255, 255, 255, 255};
     if (shape->frames != NULL)
         return 0;
     if (SwcCMGetChunk(cmf, type, chunk, &set) != 0)
@@ -457,8 +482,10 @@ static int SwcLoadCockpitShape(const SwcCmf *cmf, const char *type,
         if (frame.width == 0 || frame.height == 0)
             continue;
         shape->frames[image].texture =
-            SdlCreateSwcTexture(swcCockpitRenderer, &set, image, swcCockpitColors);
-        if (shape->frames[image].texture == NULL)
+            SdlCreateSwcTexture(swcCockpitRenderer, &set, image,
+                shape == &swcCockpitShapes[SWC_SPACE_GLARE] ? maskColors : swcCockpitColors);
+        if (shape->frames[image].texture == NULL ||
+            SdlLoadSwcRasterImage(&set, image, &shape->frames[image].image) != 0)
             goto done;
     }
     result = 0;
@@ -481,9 +508,10 @@ void SdlFreeSwcCockpit(void)
         SwcFreeCockpitShape(&swcDeadVduShapes[shape]);
     for (shape = 0; shape < SDL_arraysize(swcCommShapes); shape++)
         SwcFreeCockpitShape(&swcCommShapes[shape]);
-    SDL_DestroyTexture(swcCockpitFont);
-    swcCockpitFont = NULL;
+    SDL_DestroyTexture(swcCockpitFont.texture);
+    memset(&swcCockpitFont, 0, sizeof(swcCockpitFont));
     swcCockpitRenderer = NULL;
+    swcCockpitCanvas = NULL;
     swcCockpitCmf = NULL;
     swcCockpitDrawing = 0;
     memset(swcMalfunctionTicks, 0, sizeof(swcMalfunctionTicks));
@@ -499,6 +527,10 @@ void SdlFreeSwcCockpit(void)
     swcPilotHand = -1;
     swcCockpitOffset = (SDL_Point){0, 0};
     swcCockpitDrawOffset = (SDL_Point){0, 0};
+    memset(anSwcWeaponNoticeTicks, 0, sizeof(anSwcWeaponNoticeTicks));
+    memset(swcWeaponNoticeVisible, 0, sizeof(swcWeaponNoticeVisible));
+    nSwcSpaceGlareTicks = bSwcExplosionGlare = swcSpaceGlareColor = 0;
+    swcSpaceGlareOffset = (SDL_Point){0, 0};
     swcMessageRead = swcMessageCount = 0;
     swcMessageActive = swcMessageVisible = 0;
     swcMessageTicks = swcMessageFlashTicks = 0;
@@ -513,18 +545,19 @@ void SdlFreeSwcCockpit(void)
 }
 
 int SdlInitSwcCockpit(SDL_Renderer *renderer, const SwcCmf *cockpit,
-                       const SwcCmf *space, const SDL_Color colors[256])
+                       const SwcCmf *space, const SDL_Color colors[256], SDL_Texture *canvas)
 {
     /* DATA/0 +0x433e/+0x43e6 resource lists, and +0x420/+0x786/+0x78c
        frame maxima: energy 10, throttle 13, fuel 13 for the Hornet. */
-    static const uint32_t chunks[] = {10, 15, 16, 17, 18, 31, 9, 1, 12, 13, 14, 7, 6, 6};
-    static const uint32_t counts[] = {7, 11, 14, 14, 1, 13, 2, 14, 1, 1, 2, 3, 8, 16};
+    static const uint32_t chunks[] = {10, 15, 16, 17, 18, 31, 9, 1, 12, 13, 14, 7, 6, 6, 19};
+    static const uint32_t counts[] = {7, 11, 14, 14, 1, 13, 2, 14, 1, 1, 2, 3, 8, 16, 1};
     size_t index;
     int shared;
     int result = -1;
 
     SdlFreeSwcCockpit();
     swcCockpitRenderer = renderer;
+    swcCockpitCanvas = canvas;
     swcCockpitCmf = cockpit;
     memcpy(swcCockpitColors, colors, sizeof(swcCockpitColors));
     for (index = 0; index < SDL_arraysize(chunks); index++) {
@@ -540,8 +573,7 @@ int SdlInitSwcCockpit(SDL_Renderer *renderer, const SwcCmf *cockpit,
                                &swcDeadVduShapes[index]) != 0)
             goto done;
     }
-    swcCockpitFont = SdlCreateSwcFont(renderer);
-    if (swcCockpitFont == NULL)
+    if (SdlCreateSwcTextFont(renderer, &swcCockpitFont, 9) != 0)
         goto done;
     result = 0;
 done:
@@ -580,7 +612,7 @@ static void SwcDrawCockpitText(int x, int baseline, unsigned char color,
 {
     if (swcCockpitDrawResult != 0)
         return;
-    swcCockpitDrawResult = SdlDrawSwcText(swcCockpitRenderer, swcCockpitFont,
+    swcCockpitDrawResult = SdlDrawSwcProportionalText(swcCockpitRenderer, &swcCockpitFont,
         x + swcCockpitDrawOffset.x, baseline + swcCockpitDrawOffset.y,
         swcCockpitColors[color], text);
 }
@@ -847,6 +879,9 @@ void SdlSwcCockpitDamage(short region)
 
 void SdlUpdateSwcCockpit(void)
 {
+    /* CODE_09 handle_space_glare +0x0128, DATA/0 +0x1cb0/+0x1cba. */
+    static const unsigned char impactColors[5] = {0, 253, 236, 212, 191};
+    static const unsigned char explosionColors[9] = {0, 237, 192, 176, 161, 144, 140, 131, 129};
     int vdu;
     int mode;
     int count;
@@ -854,6 +889,16 @@ void SdlUpdateSwcCockpit(void)
     int horizontal;
     int vertical;
 
+    swcSpaceGlareColor = 0;
+    /* handle_space_glare precedes this frame's handle_cockpit_banking. */
+    swcSpaceGlareOffset = swcCockpitOffset;
+    if (nCameraViewMode <= 3 && nSwcSpaceGlareTicks > 0) {
+        swcSpaceGlareColor = bSwcExplosionGlare ?
+            explosionColors[SDL_min(nSwcSpaceGlareTicks, 8)] :
+            impactColors[SDL_min(nSwcSpaceGlareTicks, 4)];
+        if (--nSwcSpaceGlareTicks == 0)
+            bSwcExplosionGlare = 0;
+    }
     /* CODE_13 handle_cockpit_banking +0x18f2: move one pixel toward
        six times pitch/yaw velocity, clamped to +/-6 vertically, +/-8 horizontally. */
     horizontal = SDL_clamp(anObjectYawRotation[0] * 6, -8, 8);
@@ -870,6 +915,11 @@ void SdlUpdateSwcCockpit(void)
         vertical < 0 ? 11 - vertical : vertical > 0 ? 7 + vertical : -1;
 
     /* These are simulation updates, never render-frame random draws. */
+    for (vdu = 0; vdu < 2; vdu++) {
+        swcWeaponNoticeVisible[vdu] = anSwcWeaponNoticeTicks[vdu] > 0;
+        if (swcWeaponNoticeVisible[vdu])
+            anSwcWeaponNoticeTicks[vdu]--;
+    }
     if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCount)
         set_objective_range(1);
     if (nSpaceFrame % 7 == 0) {
@@ -976,28 +1026,22 @@ static void SwcDrawVduShape(int polygon, SwcCockpitShape *shape, int frame)
     /* CODE_13 vdu_polygon +0x0b7a uses DATA/0 +0x426/+0x5a6 for static;
        update_vid_disp +0x0d2c uses the separate +0x4e6 portrait polygon.
        MacDrawcel2 maps the full frame onto the quad, ignoring sprite x/y. */
-    static const SDL_FPoint polygons[3][4] = {
+    static const SDL_Point polygons[3][4] = {
         {{33, 134}, {90, 132}, {90, 188}, {33, 189}},
         {{231, 132}, {288, 134}, {288, 189}, {231, 188}},
         {{231, 132}, {287, 135}, {287, 188}, {231, 189}}
     };
-    static const SDL_FPoint uv[4] = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
-    static const int indices[6] = {0, 1, 2, 0, 2, 3};
-    SDL_Vertex vertices[4];
+    SDL_Point vertices[4];
     int corner;
 
     if (swcCockpitDrawResult != 0)
         return;
     for (corner = 0; corner < 4; corner++) {
-        vertices[corner].position = polygons[polygon][corner];
-        vertices[corner].position.x += swcCockpitDrawOffset.x;
-        vertices[corner].position.y += swcCockpitDrawOffset.y;
-        vertices[corner].color = (SDL_Color){255, 255, 255, 255};
-        vertices[corner].tex_coord = uv[corner];
+        vertices[corner].x = (polygons[polygon][corner].x + swcCockpitDrawOffset.x) * 256;
+        vertices[corner].y = (polygons[polygon][corner].y + swcCockpitDrawOffset.y) * 256;
     }
-    swcCockpitDrawResult = SDL_RenderGeometry(swcCockpitRenderer,
-        shape->frames[frame].texture,
-        vertices, 4, indices, 6);
+    swcCockpitDrawResult = SdlDrawSwcPolygon(swcCockpitRenderer, swcCockpitCanvas,
+        &shape->frames[frame].image, swcCockpitColors, vertices);
 }
 
 static void SwcDrawPlayerStatus(void)
@@ -1109,6 +1153,22 @@ int SdlDrawSwcCockpitDamage(void)
     return swcCockpitDrawResult;
 }
 
+/* CODE_09 draws glare before sorted space objects and the cockpit. This
+ * is a colored PC00/19 mask at the banking origin, not a camera shake. */
+int SdlDrawSwcSpaceGlare(void)
+{
+    SDL_Color color;
+
+    if (swcSpaceGlareColor == 0 || nCameraViewMode > 3)
+        return 0;
+    color = swcCockpitColors[swcSpaceGlareColor];
+    swcCockpitDrawResult = SDL_SetTextureColorMod(
+        swcCockpitShapes[SWC_SPACE_GLARE].frames[0].texture, color.r, color.g, color.b);
+    swcCockpitDrawOffset = swcSpaceGlareOffset;
+    SwcDrawInstrument(SWC_SPACE_GLARE, 0, 0, 0);
+    return swcCockpitDrawResult;
+}
+
 int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds)
 {
     int target = SwcCockpitTarget();
@@ -1128,9 +1188,11 @@ int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds)
             swcIttsPosition.y + 20 >= 107 && swcIttsPosition.y + 10 <= 115)
             reticle = 4;
     }
+    swcCockpitDrawOffset = swcCockpitOffset;
     SwcDrawInstrument(SWC_RETICLE, reticle, 144, 96);
     if (!anCockpitDamageState[0] && swcHostileArrow != -1)
         SwcDrawInstrument(SWC_RETICLE, 6 + swcHostileArrow, 144, 96);
+    swcCockpitDrawOffset = (SDL_Point){0, 0};
     if (object >= 0 && asObjectScreenX[object] != (short)0x8001) {
         const SDL_Rect *bounds = &swcCockpitShapes[SWC_RETICLE].frames[3].bounds;
 
@@ -1167,8 +1229,8 @@ int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds)
 
 int SdlDrawSwcHud(void)
 {
-    /* Original short names and status origin: DATA/0 +0x8ee/+0x8d6/+0x726.
-       Keep status visible in this host, with ammunition added to the name. */
+    /* CODE_13 update_status_text +0x102e: one proportional text cursor
+       at DATA/0 +0x726, with eleven-pixel line advances. */
     static const char *const guns[] = {"Lasers", "Neutron", "Mass Drv"};
     static const char *const weapons[] = {
         "DF Missile", "HS Missile", "FF Missile", "IR Missile", "Torpedo", "Mine"
@@ -1178,7 +1240,6 @@ int SdlDrawSwcHud(void)
     int target = SwcCockpitTarget();
     int gun = (int)eSelectedGunType;
     int index;
-    int ammunition = 0;
     int range;
     int baseline = 84;
     int damage = SDL_clamp(acPlayerComponentDamage[swcDamageComponent], 0, 4);
@@ -1199,58 +1260,52 @@ int SdlDrawSwcHud(void)
         SwcDrawCockpitText(51, baseline, colors[damage], text);
         baseline += 11;
     }
-    SwcDrawCockpitText(51, baseline, 0x81, "GUNS: ");
-    SwcDrawCockpitText(81, baseline, 0xb0,
-        gun == -1 ? "NONE" : (gun & 0x80) ? "FULL" :
-        gun >= OBJECT_TYPE_LASER_CANNON && gun <= OBJECT_TYPE_MASS_DRIVER_CANNON ?
-            guns[gun - OBJECT_TYPE_LASER_CANNON] : "NONE");
-    if (nSelectedReleaseWeaponIndex >= 0 &&
-        nSelectedReleaseWeaponIndex < (signed char)aShipWeapons[0][0]) {
-        weapon = loadout[nSelectedReleaseWeaponIndex].type;
-        for (index = 0; index < (signed char)aShipWeapons[0][0]; index++) {
-            if (loadout[index].type == weapon)
-                ammunition++;
-        }
+    if (swcWeaponNoticeVisible[0]) {
+        SwcDrawCockpitText(51, baseline, 0x81, "GUNS: ");
+        SwcDrawCockpitText(51 + SdlSwcTextWidth(&swcCockpitFont, "GUNS: "), baseline, 0xb0,
+            gun == -1 ? "NONE" : (gun & 0x80) ? "FULL" :
+            gun >= OBJECT_TYPE_LASER_CANNON && gun <= OBJECT_TYPE_MASS_DRIVER_CANNON ?
+                guns[gun - OBJECT_TYPE_LASER_CANNON] : "NONE");
+        baseline += 11;
     }
-    baseline += 11;
-    SwcDrawCockpitText(51, baseline, 0x81, "WEAP: ");
-    if (weapon >= OBJECT_TYPE_DUMB_FIRE_MISSILE && weapon <= OBJECT_TYPE_SPACE_MINE)
-        SDL_snprintf(text, sizeof(text), "%s x%d",
-                     weapons[weapon - OBJECT_TYPE_DUMB_FIRE_MISSILE], ammunition);
-    else
-        SDL_strlcpy(text, "NONE", sizeof(text));
-    SwcDrawCockpitText(81, baseline, 0xb0, text);
-    if (weapon == OBJECT_TYPE_HEAT_SEEKING_MISSILE ||
-        weapon == OBJECT_TYPE_IMAGE_RECOGNITION_MISSILE)
-        SwcDrawCockpitText(51, baseline + 11, 0x81, nTargetLockCountdown == 0 ? "LOCKED" :
-            nTargetLockCountdown > 0 ? "LOCKING" : "NO LOCK");
+    if (swcWeaponNoticeVisible[1]) {
+        if (nSelectedReleaseWeaponIndex >= 0 &&
+            nSelectedReleaseWeaponIndex < (signed char)aShipWeapons[0][0])
+            weapon = loadout[nSelectedReleaseWeaponIndex].type;
+        SwcDrawCockpitText(51, baseline, 0x81, "WEAP: ");
+        SwcDrawCockpitText(51 + SdlSwcTextWidth(&swcCockpitFont, "WEAP: "), baseline, 0xb0,
+            weapon >= OBJECT_TYPE_DUMB_FIRE_MISSILE && weapon <= OBJECT_TYPE_SPACE_MINE ?
+                weapons[weapon - OBJECT_TYPE_DUMB_FIRE_MISSILE] : "NONE");
+        baseline += 11;
+    }
+    if (swcMessageActive && swcMessageVisible && swcCurrentMessage.color != 0xfd)
+        SwcDrawCockpitText(51, baseline, swcCurrentMessage.color, swcCurrentMessage.text);
 
     if (target != -1) {
         /* CODE_13 digital readouts use the target's surface range, as WC1 does. */
         SwcDrawCockpitText(200, 110, 0x81, "Target: ");
-        SwcDrawCockpitText(240, 110, 0x84, aObjectTypeData[aeObjectType[target]].displayName);
+        SwcDrawCockpitText(200 + SdlSwcTextWidth(&swcCockpitFont, "Target: "),
+            110, 0x84, aObjectTypeData[aeObjectType[target]].displayName);
         range = distance_from_object(0, (short)target);
-        SwcDrawCockpitText(200, 121, 0x81, "Range: ");
-        SDL_snprintf(text, sizeof(text), "%d", range);
-        SwcDrawCockpitText(235, 121, 0x84, range < 32000 ? text : "FAR");
+        SwcDrawCockpitText(200, 121, 0x81, "Range:");
+        SDL_snprintf(text, sizeof(text), " %d", range);
+        SwcDrawCockpitText(200 + SdlSwcTextWidth(&swcCockpitFont, "Range:"),
+            121, 0x84, range < 32000 ? text : " FAR");
     } else if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCount) {
         set_objective_range(0);
         /* Original destination/range layer at DATA/0 +0x6f6, including FAR
            at 32,000. Name visibility and distance remain WC1 core logic. */
         SwcDrawCockpitText(200, 94, 0x81, "Dest: ");
-        SwcDrawCockpitText(230, 94, 0x84, objective_name((short)cCurrentObjective));
+        SwcDrawCockpitText(200 + SdlSwcTextWidth(&swcCockpitFont, "Dest: "),
+            94, 0x84, objective_name((short)cCurrentObjective));
         /* CODE_06 tprintf +0x2214 advances by font size + 2 (9 + 2). */
-        SwcDrawCockpitText(200, 105, 0x81, "Range: ");
+        SwcDrawCockpitText(200, 105, 0x81, "Range:");
         if (nCurrentObjectiveRange < 32000)
-            SDL_snprintf(text, sizeof(text), "%d", nCurrentObjectiveRange);
+            SDL_snprintf(text, sizeof(text), " %d", nCurrentObjectiveRange);
         else
-            SDL_strlcpy(text, "FAR", sizeof(text));
-        SwcDrawCockpitText(235, 105, 0x84, text);
+            SDL_strlcpy(text, " FAR", sizeof(text));
+        SwcDrawCockpitText(200 + SdlSwcTextWidth(&swcCockpitFont, "Range:"), 105, 0x84, text);
     }
-    /* Keep queued messages above the shared HUD notices: the host's
-       persistent weapon readouts already occupy the original status area. */
-    if (swcMessageActive && swcMessageVisible && swcCurrentMessage.color != 0xfd)
-        SwcDrawCockpitText(8, 203, swcCurrentMessage.color, swcCurrentMessage.text);
     /* Retain the shared WC1 messages used by the existing targeting path. */
     for (index = 0; index < 2; index++) {
         const HudMessageSlot *slot = &aHudMessageSlots[index];

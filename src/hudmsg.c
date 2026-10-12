@@ -1300,6 +1300,11 @@ unsigned int select_new_gun(void)
 {
     eSelectedGunType = (enum ObjectType)select_guns(
         0, find_next_gun(0, eSelectedGunType));
+#ifdef SDL_PORT
+    /* SWC CODE_15 +0x0222: fifteen status-text updates per selection. */
+    if (SdlSwcFlightActive())
+        anSwcWeaponNoticeTicks[0] = 15;
+#endif
     if (get_mode(0) == 1)
         InvalidateVduMode(0);
     return 0;
@@ -1374,6 +1379,11 @@ unsigned int select_new_release_weapon(enum ObjectType preferredType)
                 weapon = 0;
         } while (weapon != firstWeapon);
     }
+#ifdef SDL_PORT
+    /* SWC CODE_15 +0x0398, including automatic selection after firing. */
+    if (SdlSwcFlightActive())
+        anSwcWeaponNoticeTicks[1] = 15;
+#endif
     if (get_mode(0) == 1)
         InvalidateVduMode(0);
     return 0;

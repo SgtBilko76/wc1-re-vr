@@ -187,28 +187,44 @@ int SdlDrawSwcText(SDL_Renderer *renderer, SDL_Texture *font, int x,
 int SdlDrawSwcSubtitle(SDL_Renderer *renderer, SDL_Texture *font,
                         const char *text);
 
-/* QuickDraw's carrier text layer: Helvetica 14, proportional advances.
- * Kept separate from the cockpit's small bitmap font. */
-typedef struct SwcRoomFont {
+/* QuickDraw Helvetica: size 9 in the cockpit, 14 in carrier dialogue. */
+typedef struct SwcTextFont {
     SDL_Texture *texture;
     SDL_Rect glyphs[95];
     int advances[95];
     int baseline;
     int bearing;
-} SwcRoomFont;
-int SdlCreateSwcRoomFont(SDL_Renderer *renderer, SwcRoomFont *font);
-int SdlDrawSwcRoomSubtitle(SDL_Renderer *renderer, const SwcRoomFont *font,
+} SwcTextFont;
+int SdlCreateSwcTextFont(SDL_Renderer *renderer, SwcTextFont *font, int size);
+int SdlSwcTextWidth(const SwcTextFont *font, const char *text);
+int SdlDrawSwcProportionalText(SDL_Renderer *renderer, const SwcTextFont *font,
+                                int x, int baseline, SDL_Color ink, const char *text);
+int SdlDrawSwcRoomSubtitle(SDL_Renderer *renderer, const SwcTextFont *font,
                             const char *text);
 
 /* SDL presentation of the Mac demo's cockpit resources. */
+typedef struct SwcRasterImage {
+    uint8_t *pixels;
+    int width;
+    int height;
+} SwcRasterImage;
+int SdlLoadSwcRasterImage(const SwcBuffer *set, uint32_t index, SwcRasterImage *image);
+/* Polygon corners are Q8 screen coordinates; the complete frame supplies UV. */
+int SdlDrawSwcPolygon(SDL_Renderer *renderer, SDL_Texture *canvas,
+                        const SwcRasterImage *image, const SDL_Color colors[256],
+                        const SDL_Point corners[4]);
+int SdlDrawSwcRotatedImage(SDL_Renderer *renderer, SDL_Texture *canvas,
+                            const SwcRasterImage *image, const SDL_Color colors[256],
+                            int x, int y, int angle, int scale, int flip, SDL_Rect *bounds);
 SDL_Texture *SdlCreateSwcTexture(SDL_Renderer *renderer, const SwcBuffer *set,
                                  uint32_t index, const SDL_Color colors[256]);
 int SdlInitSwcCockpit(SDL_Renderer *renderer, const SwcCmf *cockpit,
-                       const SwcCmf *space, const SDL_Color colors[256]);
+                       const SwcCmf *space, const SDL_Color colors[256], SDL_Texture *canvas);
 void SdlUpdateSwcCockpit(void);
 int SdlDrawSwcCockpit(void);
 int SdlDrawSwcCockpitDamage(void);
 int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds);
+int SdlDrawSwcSpaceGlare(void);
 int SdlDrawSwcHud(void);
 extern SDL_Point swcCockpitOffset; /* SWC DATA/A5+0x47d4/+0x47d8. */
 void SdlSwcCockpitMessage(const char *text, unsigned char color, int flash, int voice);

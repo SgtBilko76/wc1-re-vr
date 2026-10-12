@@ -167,10 +167,11 @@ is a separate `snd /500` in the executable's resource fork, at rate
 SDL replaces Sound Manager playback and QuickDraw rendering. Pause/focus loss
 pauses the shared mixer. One device stays open across carrier, movie and flight
 transitions and closes before session resources are freed. If it is unavailable, timed text/portraits keep the
-message queue progressing. Text uses the existing bitmap font. Computer
-messages occupy the host message area above shared targeting notices because
-the host keeps weapon readouts visible; original weapon-selection timers and
-the exact Mac text layout remain pending. Queue overflow drops a new message.
+message queue progressing. Cockpit text uses Helvetica 9 on macOS and the
+portable bitmap fallback elsewhere. Computer messages follow component/weapon
+notices in the original status area. Weapon selection lasts fifteen updates;
+unvoiced messages use the forty-update countdown and flashing retains its
+twenty-update reset across messages. Queue overflow drops a new message.
 Communications use base-game speakers for Enyo 1, WC1's RNG with adjusted bounds,
 and the host simulation clock; later campaign voice substitutions are absent.
 
@@ -767,7 +768,7 @@ rejected because a persisted Mac pointer cannot be used as a host pointer.
 | `draw_nav_pointer`, `auto_pilot_valid`, `missile_on_tail`, `calculate_damage_level` | Shared objective projection and warning queries | SWC navigation activation and stale-marker reset; autopilot dispatches to the recovered SWC eligibility and escort-wait state |
 | `malf`, `your_internal_damage`, `place_damage_on_cockpit` | Shared component damage and impact flow | SDL-only SWC malfunction countdown and three physical damage regions; original Mac static, damage and spark artwork |
 | `SetSpaceFlightFrameTiming` | Initializes the shared flight tick interval, 50 ms at WC1's default 20 Hz | Replaces the host's hard-coded 62 ms; SWC's elapsed-tick translation scaling is not reproduced |
-| `generate_stars`, `update_star_field`, `transform_objects_to_your_view`, `get_right_shape` | Projects the scene and chooses among 37 decoded ship views | Centered ship quads have original-code support; projection differences and exact rotation/scaling rasterization remain to be checked |
+| `generate_stars`, `update_star_field`, `transform_objects_to_your_view`, `get_right_shape` | Projects the scene and chooses among 37 decoded ship views | Fixed-point ship/VDU rasterization is recovered; WC1 projection and target brackets remain provisional |
 
 The SDL version of `nav_getxy` writes coordinates through byte copies because
 the existing packed objective records can place them at odd addresses. Its
@@ -866,7 +867,10 @@ Original instructions support this reuse:
   commands. SWC explosion types 48/49/50 use 15/20/22 frames, scale 768/512/1024,
   and one tick per frame. The host supplies the recovered sequences from
   DATA/0 +0x2564/+0x261c/+0x25c0 to WC1's interpreter and restores the original
-  definitions on exit. Mac handle management and explosion screen shake are absent.
+  definitions on exit. The final visible type-49 frame now triggers the original
+  eight-color cockpit glare. Earlier documentation called this screen shake;
+  CODE_09 draws a recolored PC00/19 mask without moving the camera. Mac handle
+  management is not reproduced.
 
 CODE_08 `get_Mac_mem` +0x0050..+0x022c identifies the projectile/effect OBJT
 chunks; CODE_03 supplies debris aliases. The SDL cache loads each used resource
@@ -958,8 +962,8 @@ X offset only during SWC flight. The Win32 reference branches are preserved.
 | Destination / range | CODE_13 `update_digital_readouts`; DATA/0 +0x6f6 | Baseline (200, 94), 11-pixel line spacing, `FAR` at 32,000 or above |
 | Target / range | CODE_13 `update_digital_readouts`; DATA/0 +0x6c6 | Baseline (200, 110), using WC1's object name and surface range |
 | Target hull / armor / shields | CODE_13 `show_target_disp` +0x1270; DATA/0 +0x756 | STnn/2 or SHnn/38 at (230,136), with PC00/9 shields |
-| Gun / missile selection | CODE_13 `update_status_text` +0x102e; DATA/0 +0x726 | Original short names at (51,84); host keeps them visible and adds ammunition/lock state |
-| Reticle | CODE_13 `overlay_head_up_display` +0x2f56; DATA/0 +0x792 | CKPT/1 frame 0 at (144,96), including the frame's offsets |
+| Gun / missile selection | CODE_13 `update_status_text` +0x102e; DATA/0 +0x726 | Original short names at (51,84), fifteen-update selection notices, followed by computer messages |
+| Reticle | CODE_13 `overlay_head_up_display` +0x2f56; DATA/0 +0x792 | CKPT/1 frame 0 at (144,96), including frame and cockpit banking offsets |
 | Forward navigation marker | CODE_13 `draw_nav_pointer` +0x3460 | Shared WC1 projection, CKPT/1 frame 3; visible in target mode too, with stale offscreen positions cleared |
 | Hostile direction | CODE_13 `draw_3d_scanner` +0x285a | CKPT/1 frames 6..13; tracks the last hostile target or first enemy contact within scanner range |
 | Autopilot / missile / severe damage lamps | CODE_13 `update_lights` +0x0408; DATA/0 +0x3d8 | PC00/12, /14, /13; shared WC1 warning queries refreshed every seven simulation ticks, damage alarm at (156,45) |
@@ -978,7 +982,7 @@ scene projection cache omitting objects close to the player.
 Spatial markers and target brackets are drawn before the cockpit artwork,
 following CODE_13 `update_cockpit` +0x02d4, so solid panels mask them. Text remains
 on its own overlay, and panel damage/sparks are drawn last. Target bounds include
-the SDL sprite rotation around the same explicit pivot used to draw the ship.
+the same fixed-point corners used to rasterize the ship.
 The hostile arrow is suppressed outside scanner range to avoid stale coordinates.
 
 Display state, random static frames, component cycling and sparks advance only
@@ -997,16 +1001,18 @@ VDU rendering respects the shared mode stack and SWC's physical-damage flags.
 +0x1256 are empty functions in the Mac demo. Destination/range text is produced
 by the separate readout layer, not a missing navigation-page implementation.
 CODE_01 `MacDrawcel2` +0x14a4 maps static over the quad from DATA/0 +0x426/+0x5a6;
-the SDL replacement uses `SDL_RenderGeometry` and ignores frame-origin offsets
-for this operation. Communications use their separate +0x4e6 polygon and WGMN
+the SDL adapter uses the recovered fixed-point polygon rasterizer and ignores
+frame-origin offsets for this operation. Communications use their separate +0x4e6 polygon and WGMN
 frames. Cockpit damage, malfunction and communication state reset on a new flight.
 
 This pass supports the Enyo 1 Hornet cockpit. Ship capacities use the recovered
 SWC definitions. Shield, armor and weapon-energy displays now respond to shared
 combat state. Target brackets use SDL corners around the rotated sprite bounds;
-the original MacScale1 rasterizer and CKPT/36 corner artwork remain unimplemented.
+the separate `get_Mac_boundaries` calculation and CKPT/36 corner artwork remain
+unimplemented. Flight sprites and VDU polygons use the recovered rasterizer.
 Target names use SWC object names without the original pilot/ace-name substitutions.
-Component messages and missile-lock notices use WC1 lifetimes at host positions.
+Shared targeting/missile-lock notices still use WC1 lifetimes at host positions;
+component and native computer messages use the original SWC status area.
 The cockpit toggle retains the spatial HUD, weapon/component status,
 target/navigation text, and messages. ITTS and the L lock control are connected.
 Banking, pilot animation, communication portraits, computer-message timing,
@@ -1020,23 +1026,68 @@ WC1's queries.
 
 The inspected Mac cockpit layers request QuickDraw font ID 21 (Helvetica) at
 size 9: CODE_06 `AllocTextLayer` +0x1d9a and CODE_14 `init_text` +0x1fec.
-CODE_06 `tprintf` +0x1ef4 draws QuickDraw text, advancing a newline by font size
-plus two pixels. SDL2 has no built-in font. The current substitute is a
-monochrome, nine-pixel ASCII atlas derived from Anonymous Pro Regular, with a
-five-pixel character advance. This is a provisional display substitute and does
-not claim identical Monaco metrics or original SWC typography.
+CODE_06 `tprintf` +0x1ef4 advances a newline by font size plus two pixels.
+The cockpit now shares the carrier's CoreText adapter at size 9, with antialiasing
+and font smoothing disabled, integer proportional advances and baseline origins.
+Colored label/value segments share a pen position instead of fixed columns.
+The demo contains no FONT/NFNT resources, so modern system Helvetica supplies
+the face on macOS; classic QuickDraw bitmap glyphs and advances are not claimed
+pixel-identical. Carrier dialogue keeps Helvetica 14.
 
-The generated **SWC HUD Bitmap** is compiled into the executable, so normal
-builds and installations need neither SDL2_ttf nor a system font. The original
-TTF, source hash and SIL Open Font License are in
-[`third_party/anonymouspro`](../third_party/anonymouspro/README.md). The optional
-[`bin/buildSwcHudFont.py`](../bin/buildSwcHudFont.py) generator uses Pillow and
-records its rasterizer versions in the output. Release archives include the
-font license. Bytes outside printable ASCII currently display as `?`.
+Other hosts retain the generated **SWC HUD Bitmap**, a monochrome ASCII atlas
+with a five-pixel advance. The TTF, source hash and SIL Open Font License remain
+in [`third_party/anonymouspro`](../third_party/anonymouspro/README.md); the optional
+[`bin/buildSwcHudFont.py`](../bin/buildSwcHudFont.py) generator records rasterizer
+versions. Release archives include the license. A portable Helvetica provider
+and bytes outside printable ASCII remain pending.
 
-Cockpit and weapon validation consists of original-instruction and resource inspection,
-static source review, and `make modern modern-gui`. No game, GUI, or interactive
-check was run for this pass; its appearance still needs user review in flight.
+`update_status_text` +0x102e starts at (51,84), draws a damaged-component line,
+then any active gun/weapon selection notices, then the computer message.
+CODE_15 `select_new_gun` +0x0222 and `select_new_release_weapon` +0x0398 reset
+fifteen-update notices, including automatic weapon changes after firing.
+The SDL hooks preserve the Win32 reference branches. `UpdateMessage` +0x000c
+retains its flash countdown across messages and lets the lifetime/flash clocks
+advance during communications, deferring the next message until speech ends.
+Voices start when dequeued; missing audio falls back to timed text.
+
+#### Sprite rasterization and cockpit glare
+
+`src/sdl/swc_raster.c` adapts CODE_01 `rotate_Mac_shape2` +0x10ae,
+`MacDrawcel2` +0x14a4, `adjust` +0x5a28, `span` +0x5a5a, `edge` +0x5d00
+and `poly` +0x5e3a. Fresh Ghidra instructions establish Q8 corners/UV, the
+scale-before-dimensions truncation, width/height-minus-one UV endpoints,
+first-extrema edge chains, exclusive bottom row, and unrounded horizontal
+clip interpolation. CODE_09 +0x38d8 draws `max(2, span-1)` texels, skipping
+palette zero. The adapter preserves these rules, using explicit source/output
+bounds to avoid the original unchecked memory accesses. SDL presents the
+completed pixels, replacing rotated rectangles and textured VDU triangles.
+
+CODE_02 `Cos` +0x557c and `Sin` +0x5608 fold angles into DATA/0 +0x4550's
+91-word Q8 quadrant table. Their three-letter MacsBug names were omitted by
+the older symbol extraction, which incorrectly extended `Magnitude` over them;
+the fresh instruction export resolves their actual entry points.
+Target brackets still use host geometry; the projection is still WC1's.
+Pixel parity has not been checked against a running original.
+
+The effect previously described as explosion screen shake is cockpit **glare**.
+CODE_02 `animate_shape` +0x4832 triggers it at animation index 19 of a visible
+type-49 explosion. CODE_05 `ShipExplosion` +0x2302 uses type 50 for fighters
+and type 49 for capital ships; the SDL hook now preserves that distinction.
+CODE_09 `handle_space_glare` +0x0128 calls `MacDrawColor2`
+with the PC00/19 mask before sorted objects and cockpit art. DATA/0 +0x1cba
+supplies eight colors, traversed 129,131,140,144,161,176,192,237. Player hits
+use the four-color sequence 191,212,236,253 at +0x1cb0 and cannot interrupt
+explosion glare. The mask includes its (0,2) frame origin and cockpit banking;
+there is no random camera displacement in this path. Action-sphere changes
+clear it. The SDL host advances these effects on simulation updates rather
+than render calls, so pause and redraw frequency do not change the duration.
+
+Validation: fresh Ghidra exports and offline original resource inspection,
+native/GUI/viewer compilation, Clang static analysis, portable-font syntax
+compilation and reference `binary-comp` checks. No tests, game, GUI, audio
+playback or interactive checks were run. All six changed core functions retain
+their previous Win32 `binary-comp` scores, recorded in the provenance inventory.
+Appearance and timing need user review.
 
 SWC binary similarity measurement is no longer part of this work: the original
 Mac compiler/toolchain is unavailable. Validation uses original instructions,
@@ -1063,10 +1114,10 @@ many WC1 names were already derived from this Mac executable's MacsBug strings.
 1. Continue comparing shared AI/collision behavior with SWC instructions,
    including RNG bounds, elapsed-tick motion and later mission modes. The
    common 58 object definitions are recovered; Mac IDs 58..82 remain unsupported.
-2. Compare SWC projection, rotation/scaling rasterization and the remaining
-   320x240 HUD. Instrument sprites use their original offsets; centered ship
-   quads agree with `rotate_Mac_shape2`, but exact sampling and clipping remain
-   unverified.
+2. Continue SWC projection, target-bracket and remaining 320x240 HUD work.
+   Flight sprites and VDUs now use the recovered fixed-point rasterizer;
+   classic-Mac font pixels, target/ace names and interactive visual parity
+   remain unverified.
 3. Continue later campaign communications, remaining HUD modes and
    post-debriefing progression. Landing and the first debriefing are connected;
    the demo disables its simulator.

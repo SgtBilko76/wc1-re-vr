@@ -1361,6 +1361,15 @@ unsigned int animate_shape(short obj)
         aObjectTypeData[type].yawRate;
     command = *(unsigned short *)(animation +
               asObjectAnimationIndex[obj] * 4);
+#ifdef SDL_PORT
+    /* SWC CODE_02 animate_shape +0x4832: final visible type-49 frame
+       starts the eight-color cockpit glare sequence. */
+    if (SdlSwcFlightActive() && type == OBJECT_TYPE_EXPLOSION1 &&
+        asObjectScreenX[obj] != (short)0x8001 && asObjectAnimationIndex[obj] == 19) {
+        bSwcExplosionGlare = 1;
+        nSwcSpaceGlareTicks = 8;
+    }
+#endif
     switch (command & 0xf000) {
     case 0x9000:
         command &= 0x0fff;

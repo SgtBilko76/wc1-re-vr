@@ -346,6 +346,15 @@ unsigned int Update_3Space(void)
 /* Function start: 0x427C80 */
 unsigned int TriggerPlayerHitPaletteFlash(void)
 {
+#ifdef SDL_PORT
+    /* SWC CODE_09 glare_players_view +0x00f0: impacts cannot interrupt
+       the longer explosion glare. WC1's palette remains unchanged. */
+    if (SdlSwcFlightActive()) {
+        if (nCameraViewMode <= 3 && !bSwcExplosionGlare)
+            nSwcSpaceGlareTicks = 4;
+        return 0;
+    }
+#endif
     if (nCameraViewMode <= 3)
         asDamageFlashColour[0] = 0x30;
     return 0;

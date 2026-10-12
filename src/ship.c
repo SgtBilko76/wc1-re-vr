@@ -833,6 +833,14 @@ short ShipExplosion(short obj)
             aShipVelocity[obj];
         acObjectOwner[explosion] = (signed char)obj;
     }
+#ifdef SDL_PORT
+    /* SWC CODE_05 ShipExplosion +0x2302: fighters use type 50; only
+       capital-ship type 49 carries the final-frame glare trigger. */
+    if (SdlSwcFlightActive() && aeObjectClass[obj] < OBJECT_CLASS_CAPITAL_SHIP)
+        set_objects_data(explosion, OBJECT_TYPE_EXPLOSION2,
+                         (short)acObjectOwner[explosion]);
+    else
+#endif
     set_objects_data(explosion, OBJECT_TYPE_EXPLOSION1,
                      (short)acObjectOwner[explosion]);
     asObjectScale[explosion] = (short)(

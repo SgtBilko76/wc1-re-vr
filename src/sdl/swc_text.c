@@ -106,10 +106,11 @@ int SdlDrawSwcSubtitle(SDL_Renderer *renderer, SDL_Texture *font,
 }
 
 /* CODE_06 AllocTextLayer +0x1d9a selects Helvetica (QuickDraw ID 21).
+ * CODE_14 init_text +0x1fec selects size 9 for cockpit readouts;
  * CODE_03 print_subtitle +0x1122 selects size 14. The demo contains no
  * FONT/NFNT resources: on macOS use the system face, without bundling it.
  * Other hosts retain the bundled bitmap until a Helvetica provider exists. */
-int SdlCreateSwcRoomFont(SDL_Renderer *renderer, SwcRoomFont *font)
+int SdlCreateSwcTextFont(SDL_Renderer *renderer, SwcTextFont *font, int size)
 {
     int character;
 #ifdef __APPLE__
@@ -128,7 +129,7 @@ int SdlCreateSwcRoomFont(SDL_Renderer *renderer, SwcRoomFont *font)
     if (surface == NULL)
         return -1;
     SDL_FillRect(surface, NULL, 0);
-    face = CTFontCreateWithName(CFSTR("Helvetica"), 14, NULL);
+    face = CTFontCreateWithName(CFSTR("Helvetica"), size, NULL);
     colorSpace = CGColorSpaceCreateDeviceRGB();
     context = colorSpace == NULL ? NULL : CGBitmapContextCreate(surface->pixels,
         surface->w, surface->h, 8, surface->pitch, colorSpace,
@@ -146,7 +147,7 @@ int SdlCreateSwcRoomFont(SDL_Renderer *renderer, SwcRoomFont *font)
     CGContextSetShouldAntialias(context, false);
     CGContextSetShouldSmoothFonts(context, false);
     CGContextSetRGBFillColor(context, 1, 1, 1, 1);
-    font->baseline = 18;
+    font->baseline = size + 4;
     font->bearing = 2;
     for (character = 0; character < 95; character++) {
         code = (UniChar)(character + 32);
@@ -164,6 +165,7 @@ int SdlCreateSwcRoomFont(SDL_Renderer *renderer, SwcRoomFont *font)
     font->texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
 #else
+    (void)size;
     memset(font, 0, sizeof(*font));
     font->texture = SdlCreateSwcFont(renderer);
     font->baseline = SWC_HUD_FONT_BASELINE;
@@ -176,7 +178,48 @@ int SdlCreateSwcRoomFont(SDL_Renderer *renderer, SwcRoomFont *font)
 #endif
     if (font->texture == NULL)
         return -1;
-    return SDL_SetTextureBlendMode(font->texture, SDL_BLENDMODE_BLEND);
+    if (SDL_SetTextureBlendMode(font->texture, SDL_BLENDMODE_BLEND) != 0) {
+        SDL_DestroyTexture(font->texture);
+        font->texture = NULL;
+        return -1;
+    }
+    return 0;
+}
+
+/* CODE_03 GetLineLength and CODE_06 tprintf: integer glyph advances, with
+ * the supplied origin on the baseline. Color changes keep the same pen. */
+int SdlSwcTextWidth(const SwcTextFont *font, const char *text)
+{
+    int width = 0;
+    unsigned char character;
+
+    while (*text != 0) {
+        character = (unsigned char)*text++;
+        character = character < 32 || character > 126 ? '?' - 32 : character - 32;
+        width += font->advances[character];
+    }
+    return width;
+}
+
+int SdlDrawSwcProportionalText(SDL_Renderer *renderer, const SwcTextFont *font,
+                                int x, int baseline, SDL_Color ink, const char *text)
+{
+    SDL_Rect destination;
+    unsigned char character;
+
+    if (SDL_SetTextureColorMod(font->texture, ink.r, ink.g, ink.b) != 0)
+        return -1;
+    while (*text != 0 && x < SWC_FRAME_WIDTH) {
+        character = (unsigned char)*text++;
+        character = character < 32 || character > 126 ? '?' - 32 : character - 32;
+        destination = font->glyphs[character];
+        destination.x = x - font->bearing;
+        destination.y = baseline - font->baseline;
+        if (SDL_RenderCopy(renderer, font->texture, &font->glyphs[character], &destination) != 0)
+            return -1;
+        x += font->advances[character];
+    }
+    return 0;
 }
 
 /* CODE_03 print_subtitle/GetLineLength and CODE_06 CenterPrint: remove
@@ -184,7 +227,7 @@ int SdlCreateSwcRoomFont(SDL_Renderer *renderer, SwcRoomFont *font)
  * advance by 15 pixels. init_text gives this layer a 300x200 extent and
  * print_subtitle moves it to (10,120). The Mac draws white text directly
  * over the picture; the record's textColour also identifies the speaker. */
-int SdlDrawSwcRoomSubtitle(SDL_Renderer *renderer, const SwcRoomFont *font,
+int SdlDrawSwcRoomSubtitle(SDL_Renderer *renderer, const SwcTextFont *font,
                             const char *text)
 {
     char clean[256];

@@ -46,7 +46,7 @@ typedef struct SwcCarrier {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *font;
-    SwcRoomFont roomFont;
+    SwcTextFont roomFont;
     SDL_Texture *picture;
     SDL_Texture *dimPicture;
     enum SwcRoomPackId picturePalette;
@@ -1407,7 +1407,7 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
     carrier.font = SdlCreateSwcFont(renderer);
     if (carrier.font == NULL)
         goto done;
-    if (SdlCreateSwcRoomFont(renderer, &carrier.roomFont) != 0)
+    if (SdlCreateSwcTextFont(renderer, &carrier.roomFont, 14) != 0)
         goto done;
     carrier.picture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
         SDL_TEXTUREACCESS_TARGET, SWC_FRAME_WIDTH, SWC_FRAME_HEIGHT);

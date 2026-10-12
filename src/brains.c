@@ -3913,6 +3913,13 @@ int set_up_action_sphere(short navPoint)
     short objective;
     signed char triggerType;
 
+#ifdef SDL_PORT
+    /* SWC CODE_04 +0x0c9e clears glare on entering an action sphere. */
+    if (SdlSwcFlightActive()) {
+        nSwcSpaceGlareTicks = 0;
+        bSwcExplosionGlare = 0;
+    }
+#endif
     nCurrentNavPoint = navPoint;
     nav = &aMissionNavPoints[navPoint];
     nCurrentWave =
