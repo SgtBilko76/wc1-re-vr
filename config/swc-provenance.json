@@ -130,7 +130,7 @@
       "source": "src/sdl/swc_rooms.c",
       "symbol": "SdlRunSwcCarrier",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Enyo 1 Shotglass/Paladin/Angel roster, original room artwork and hotspot coordinates. Shares WC1 hit testing and campaign state. SDL events/cursors/text replace Mac hardware presentation. Original idle programs use a provisional host clock; hover/decorative animations and music are pending. Simulator restriction follows CODE_09 GameFlow +0x1b8e. Debug mission/campaign selection is excluded."
+      "differences": "Enyo 1 Shotglass/Paladin/Angel roster, original room artwork and hotspot coordinates. Shares WC1 hit testing and campaign state. SDL events/cursors/text replace Mac hardware presentation. Original idle programs use a provisional host clock; hover/decorative animations are pending. RECROOM.MooV accompanies the bar/rankings. Simulator restriction follows CODE_09 GameFlow +0x1b8e. Debug mission/campaign selection is excluded."
     },
     {
       "original_name": "BarracksScreen",
@@ -180,7 +180,7 @@
       "source": "src/sdl/swc_rooms.c",
       "symbol": "SdlRunSwcCarrier",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Fresh Enyo 1 player/Spirit paths: SdlPlaySwcFuneralMovies plays FUNSERV0/FUNSERVA before the eulogy and FUNSERVB before farewell. Original BRF0/1 dialogue branches, artwork and AIFF speech use the shared WC1 parser and pilot state. Movie and dialogue audio devices have separate lifetimes; skip/quit/errors stop the sequence. Separate FUNERAL.MooV music, fades and exact scene timing remain pending."
+      "differences": "Fresh Enyo 1 player/Spirit paths: SdlPlaySwcFuneralMovies plays FUNSERV0/FUNSERVA before the eulogy and FUNSERVB before farewell. Original BRF0/1 dialogue branches, artwork and AIFF speech use the shared WC1 parser and pilot state. A shared SDL device mixes movie/dialogue PCM with continuous FUNERAL.MooV music; skip/quit/errors stop the sequence. Fades and exact scene timing remain pending."
     },
     {
       "original_name": "the_end",
@@ -200,7 +200,7 @@
       "source": "src/sdl/swc_movie.c",
       "symbol": "SdlPlaySwcOpening",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original OPEN0/OPEN1/OPEN2/OPEN3 order before the initial carrier visit, following CODE_09 squadron +0x84..+0x90. Reuses the existing SDL movie decoder and sequence player. Missing files or skipping leave carrier entry available; quit/error end the session. Separate DOCKING.MooV music, palette transitions and the other startup movies remain pending."
+      "differences": "Original OPEN0/OPEN1/OPEN2/OPEN3 order before the initial carrier visit, following CODE_09 squadron +0x84..+0x90. Reuses the existing SDL movie decoder and sequence player. Missing files or skipping leave carrier entry available; quit/error end the session. DOCKING.MooV accompanies the group. Palette transitions and the other startup movies remain pending."
     },
     {
       "original_name": "scramble",
@@ -210,7 +210,7 @@
       "source": "src/sdl/swc_movie.c",
       "symbol": "SdlPlaySwcLaunch",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original nine-clip order with Hornet suffix 00. Uses the existing SDL path resolver; missing movies preserve direct flight. Skipping, quit and error are explicit results. Separate ARMOR.MooV music and palette transitions are pending. WC1's sprite-based scramble is not suitable for these assets."
+      "differences": "Original nine-clip order with Hornet suffix 00. Uses the existing SDL path resolver; missing movies preserve direct flight. Skipping, quit and error are explicit results. ARMOR.MooV accompanies the group; palette transitions remain pending. WC1's sprite-based scramble is not suitable for these assets."
     },
     {
       "original_name": "landing",
@@ -220,7 +220,7 @@
       "source": "src/sdl/swc_movie.c",
       "symbol": "SdlPlaySwcLanding",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original seven-clip order with Hornet suffix 00; LANDING7 variant is 2-evaluate_damage(0)*2/100. Shares the launch SDL decoder/presentation and skip/quit/error handling. Missing movies leave debriefing available. Separate LANDING.MooV music and palette transitions are pending."
+      "differences": "Original seven-clip order with Hornet suffix 00; LANDING7 variant is 2-evaluate_damage(0)*2/100. Shares the launch SDL decoder/presentation and skip/quit/error handling. Missing movies leave debriefing available. LANDING.MooV accompanies the group; palette transitions remain pending."
     },
     {
       "original_name": "MovieDisplay",
@@ -230,7 +230,7 @@
       "source": "src/sdl/swc_movie.c",
       "symbol": "SdlPlaySwcMovie",
       "relationship": "partial-presentation-adaptation",
-      "differences": "SDL textures, per-movie palette conversion, queued PCM and event handling replace QuickDraw/Sound Manager. Adds pause/focus handling, explicit quit and skip-on-release; skips the complete current movie group. External music and palette transitions remain pending."
+      "differences": "SDL textures, per-movie palette conversion, shared PCM/music mixing and event handling replace QuickDraw/Sound Manager. Adds pause/focus handling, explicit quit and skip-on-release; skips the complete current movie group. Separate sequence music is connected; palette transitions remain pending."
     },
     {
       "original_name": "LMovieOpen",
@@ -563,6 +563,115 @@
     "asteroids": {"resource": "CODE_04.bin", "instructions": "0x04d2..0x054e", "chunks": "Spaceflight.CMF OBJT/17 and OBJT/18, 12 frames each", "qualification": "Shares WC1 hazard lifecycle once per simulation tick through update_star_field; CODE_05 set_objects_data +0x02b0 supplies the first asteroid set for fragments."},
     "validation": "Original Ghidra/Capstone instruction and data inspection, static source review, make modern modern-gui only. No tests, game, GUI, interactive checks or binary-similarity measurement. The user confirmed autopilot works; full combat and display parity remain unverified."
   },
+  "music": {
+    "sources": [
+      "src/swc/music.c",
+      "src/sdl/swc_music.c",
+      "src/sdl/swc_sound.c"
+    ],
+    "scope": "SDL-only QuickTime note-sequence playback for the connected Enyo 1 scenes and flight. Original Win32 functions and source selection are unchanged.",
+    "original_functions": [
+      {
+        "resource": "CODE_12.bin",
+        "entry_offset": "0x0930",
+        "name": "QTSound",
+        "qualification": "Opens the QuickTime movie named by the caller. The host reads the musi track and replaces the QuickTime synthesizer."
+      },
+      {
+        "resource": "CODE_09.bin",
+        "entry_offset": "0x0d1e",
+        "name": "spacetrack",
+        "qualification": "DATA/A5 +0x1a98 holds ten 16-byte filenames. Retains an already selected track."
+      },
+      {
+        "resource": "CODE_09.bin",
+        "entry_offset": "0x1168",
+        "name": "gametrack",
+        "qualification": "Mode 3 starts a named scene movie; mode 4 stops/disposes it."
+      },
+      {
+        "resource": "CODE_09.bin",
+        "entry_offset": "0x13d0",
+        "name": "servicetrack",
+        "qualification": "Services and restarts completed movies; SDL callback supplies timing and looping."
+      },
+      {
+        "resource": "CODE_09.bin",
+        "entry_offset": "0x159e",
+        "name": "ChangeMusicVolume",
+        "qualification": "Doubles scene level to percent and scales by the user music-volume percentage. Opening level 30; GameFlow +0x1d3a sets flight 25; connected other scenes use 50."
+      },
+      {
+        "resource": "CODE_09.bin",
+        "entry_offset": "0x0e88",
+        "name": "new_space_music_changes",
+        "qualification": "Initial mission-type selection, then sphere-change home/objective/hazard/hostile selection. This is not WC1 new_space_music_changes(attacker,victim)."
+      },
+      {
+        "resource": "CODE_05.bin",
+        "entry_offset": "0x6970",
+        "name": "triumph",
+        "qualification": "Patrol switch target +0x69a2..+0x69ce fails on the first unvisited flight-path objective. WC1 currently differs; the SDL music adapter checks patrol completion locally. Other mission predicates are shared."
+      },
+      {
+        "resource": "CODE_05.bin",
+        "entry_offset": "0x6784",
+        "name": "hostile_sphere",
+        "qualification": "Same ten mission-ship entries and side comparison as the shared WC1 predicate."
+      }
+    ],
+    "container": {
+      "files": "MIDI/*.MooV, 27 supplied tracks",
+      "format": "QuickTime single-track musi, 600 ticks/second, one sample per chunk. BRIEFIN0 uses a fixed 840-byte sample; the other tracks use a per-sample size table. Original data forks are size-zero mdat atoms; moov/128 is in each file resource fork.",
+      "forks": "Native macOS resource fork, raw .rsrc sidecar, AppleDouble ._ sidecar, or embedded moov atom. Copying original data forks alone is insufficient.",
+      "events": "Note requests with 1-based GM instruments and 0x4001-based percussion kits; rests, short and extended notes, controllers, sample markers. Extended pitches below 128 are integer keys, otherwise 8.8; controller 32 is signed 8.8 semitones. Notes survive sample boundaries. All 27 instrument headers end in 0x60000000; twelve have trailing zero padding, which is accepted.",
+      "bounds": "Bounded atoms, resource offsets, sample tables, event counts/parts/notes/durations; each sample rest total matches its stts duration. Fractional extended pitches and other formats outside the supplied corpus are rejected."
+    },
+    "scene_tracks": {
+      "opening": "DOCKING.MooV",
+      "bar_and_rankings": "RECROOM.MooV",
+      "barracks_and_medals": "BARRACKS.MooV",
+      "briefing": "BRIEFIN0.MooV",
+      "launch": "ARMOR.MooV",
+      "landing": "LANDING.MooV",
+      "debriefing": "DEBRIEF1 when full score is zero; otherwise DEBRIEFI above 70 percent, DEBRIEF0 at most 70 percent.",
+      "funeral": "FUNERAL.MooV, retained across both movie groups and both speeches."
+    },
+    "flight_table": [
+      "DULLPATR.MooV",
+      "FLYINGTO.MooV",
+      "FLOUNDER.MooV",
+      "REGULARC.MooV",
+      "GRIMORES.MooV",
+      "GOALLINE.MooV",
+      "MISSLETR.MooV",
+      "RETURNI0.MooV",
+      "RETURNI1.MooV",
+      "RETURNIN.MooV"
+    ],
+    "flight_selection": "Initial strike 1, defend/rendezvous 2, otherwise 0. On a new sphere: home objective selects 9 on failure, 7 for successful patrol, 8 for other successful missions; otherwise preload asteroid/mine 22/23 selects Random3DO(5,6)=5; otherwise hostile selects 2 or 3, quiet selects 0. Shared WC1 RNG replaces the Mac generator; no per-frame combat/tailing changes are invented.",
+    "missing_demo_tracks": [
+      "FLYINGTO.MooV",
+      "RETURNI1.MooV",
+      "DEBRIEF1.MooV"
+    ],
+    "synthesizer": {
+      "implementation": "TinySoundFont",
+      "commit": "853a0a171759f1ddba0de1442133a75912bbeffa",
+      "bank": "GeneralUser GS 2.0.3",
+      "bank_commit": "684543d5e5efaef08d02be50dcda8d552478fa60",
+      "bank_sha256": "9575028c7a1f589f5770fccc8cff2734566af40cd26ed836944e9a5152688cfe",
+      "lookup": "swc-music.sf2 beside the executable, optionally overridden by WC1_SWC_SOUNDFONT. Build/release packaging copies the bank; source and license notices are bundled.",
+      "callback": "48000 Hz interleaved stereo float, 256 preallocated voices and 32 channels; preloaded event arrays, no callback allocation/file I/O or game-state reads."
+    },
+    "limits": "Host General MIDI synthesis is not the original QuickTime/Roland sound. Instrument timbres, envelopes and volume curve differ; reverb/chorus sends are not rendered. Supplied modulation-wheel events are zero. Missing or unsupported tracks log once when selected and leave other audio usable. Original hardware resampling, exact mix, loop transitions and interactive timing remain unverified; startup/death/later-scene entry points remain pending.",
+    "validation": "Fresh Ghidra CODE_09 and CODE_05 exports with explicit switch-target disassembly, original CODE_03/07/12 instructions and DATA/A5 strings, offline original music-file/header/event inspection, static source review and make modern modern-gui modern-swc. The user reported five rejected tracks during implementation; original-data inspection identified the missing header terminator/padding and fixed-size stsz handling, now corrected. No agent tests, game, GUI, audio device or playback executed. No SWC similarity claim.",
+    "format_references": [
+      "https://developer.apple.com/documentation/quicktime-file-format/music_media",
+      "https://leopard-adc.pepas.com/documentation/QuickTime/RM/MusicAndAudio/qtma/B-Chapter/2TheQuickTimeMusicAr.html",
+      "Apple QuickTimeMusic.h (MacOSX10.6.sdk)"
+    ]
+  },
   "flight_audio": {
     "sources": ["src/swc/sound.c", "src/sdl/swc_sound.c", "src/sdl/swc_cockpit.c", "src/sdl/swc_flight.c"],
     "scope": "Native Enyo 1 weapon/impact effects, afterburner loop/release, autopilot effect, cockpit alarms/static, computer messages, player orders and NPC communication. SDL-only; original Win32 source selection and code paths are preserved.",
@@ -579,9 +688,9 @@
       {"resource": "CODE_09.bin", "entry_offset": "0x1508", "name": "sound_effect", "symbol": "SdlSwcSoundEffect", "qualification": "Mono attenuation 127 - ((distance/100)>>8), inaudible below 10. Enemy projectile laser 26 follows CODE_05 fire_weapon +0x379a."},
       {"resource": "CODE_14.bin", "entry_offset": "0x000c", "name": "visit_the_cinema", "symbol": "SdlSwcVisitCinema", "qualification": "Play snd/17 at volume 255 (+0x0028), stop on exit (+0x0058)."}
     ],
-    "mixer": "Four channels shared by effects and voices. Already playing IDs are retained; new sounds use an idle channel or report busy without interruption. Host caches/decompresses the bank before flight, resamples to 22050 Hz mono signed 16-bit SDL output and clamps mixed samples. Afterburner release replaces its channel while retaining volume. Original Mac volume preferences and hardware resampling are not reconstructed.",
-    "lifecycle": "Audio pauses on pause/focus loss. Device closure joins the callback before freeing decoded samples, and flight closes it before carrier/movie audio. Device unavailability leaves computer messages and NPC portraits on a forty-tick fallback. Invalid present sound resources fail loading.",
-    "pending": "QuickTime music sequences in MIDI/*.MooV, original audio-device behavior and interactive mix/timing verification.",
+    "mixer": "Four channels shared by effects and voices. Already playing IDs are retained; new sounds use an idle channel or report busy without interruption. Host caches/decompresses the bank before the opening, resamples mono voices into a shared 48000 Hz stereo float SDL mixer with QuickTime music and foreground movie/dialogue PCM, and clamps mixed samples. Afterburner release replaces its channel while retaining volume. Original Mac volume preferences and hardware resampling are not reconstructed.",
+    "lifecycle": "Audio pauses on pause/focus loss. One device remains open across movies, carrier speech and flight; closure joins the callback before freeing decoded samples and the synthesizer. Device unavailability leaves computer messages and NPC portraits on a forty-tick fallback. Invalid present sound resources fail loading.",
+    "pending": "Original audio-device behavior and interactive mix/timing verification.",
     "validation": "Fresh Ghidra original-instruction exports and offline original-resource header/data inspection; static source review; Win32/native/GUI/viewer compilation. No tests, game, GUI, playback or audio-device execution. binary-comp core-hook scores unchanged: message_showing 100.00%, real_vid_transmit 98.53%."
   },
   "wc1_control_reuse": {
@@ -702,8 +811,8 @@
     "landing_string_evidence": "CODE_03 landing +0x447e; expanded DATA/0 +0x42a6..0x42ba filename pointers, A5-0x341d LANDING1. Final NN is 2-evaluate_damage(0)*2/100, yielding 00..02.",
     "funeral_sequence": ["FUNSERV0", "FUNSERVA", "eulogy dialogue", "FUNSERVB", "farewell dialogue"],
     "funeral_string_evidence": "CODE_03 funeral_sequence +0x4a08; expanded DATA/0 A5-relative strings -0x3397 FUNSERV0, -0x338e FUNERAL.MooV, -0x3381 FUNSERVA, -0x3378 FUNSERVB.",
-    "audio": "Embedded unsigned 8-bit mono at 0x56ee8ba3 fixed-point Hz (22254.545...), rounded to 22255 Hz by SDL. Stored blocks are 11128 bytes; header +0xa6 is the valid sample count. SDL queues trimmed PCM, pauses with video, and falls back to silent playback if the device is unavailable.",
-    "pending": "Separate DOCKING.MooV/ARMOR.MooV/LANDING.MooV/FUNERAL.MooV music, palette transitions, remaining startup movies (INTROxx/Lion/BUC) and later scripted scenes. First briefing/bar/debriefing/funeral conversations are connected through the carrier adapter.",
+    "audio": "Embedded unsigned 8-bit mono at 0x56ee8ba3 fixed-point Hz (22254.545...), rounded to 22255 Hz by SDL. Stored blocks are 11128 bytes; header +0xa6 is the valid sample count. The shared SDL mixer resamples trimmed PCM alongside sequence music, pauses with video, and falls back to silent playback if the device is unavailable.",
+    "pending": "Palette transitions, remaining startup movies (INTROxx/Lion/BUC) and later scripted scenes. DOCKING/ARMOR/LANDING cues span their respective movie groups; FUNERAL spans movies and both speeches. First briefing/bar/debriefing/funeral conversations are connected through the carrier adapter.",
     "opening_validation": "Fresh Ghidra CODE_09 squadron export, original opening_scene instructions and expanded A5 strings; static source review and make modern modern-gui. No tests, game, GUI, playback or audio device executed for this change.",
     "validation": "Original assembly and A5-string inspection; offline parsing of all 38 original files and 3521 encoded frames, including record bounds, scanline commands, exact frame consumption and audio lengths; static source review and make modern modern-gui. No interactive code, game, GUI, playback or audio device executed."
   },
@@ -735,13 +844,13 @@
       "campaign_scores": "CMP0/2 +(series-1)*128+mission*24+40: 16 signed byte weights. Enyo 1 is 2,1,2,1, then zeros. Host validates Enyo 1/Spirit, copies only these weights into WC1's first-mission score window at +14, and restores pMissionCampaignData on every exit.",
       "art": "DeBriefing.CMF palette 190: BRFG/11 background, /12 player at (40,45), /14 commander mouth+1 at (140,60), /13 living wingman at (195,40). DeBriefingHeads.CMF palette 191: BRFG/15 frame 1 for talker 10, frame 0 for talker 11, TKHD portraits selected by shot-19 with base frame 21.",
       "branches": "Original 32 records select complete/partial mission, surviving/lost Spirit and player/wingman kill reports. Callsign/kills use the unchanged WC1 AddPCName. Early landing is not forced into a success result.",
-      "limits": "Finishes the first-mission session after debriefing and any lost-Spirit funeral; no full campaign progression, office/award ceremonies or persistence. Original scene timing/music/fades remain pending."
+      "limits": "Finishes the first-mission session after debriefing and any lost-Spirit funeral; no full campaign progression, office/award ceremonies or persistence. Original scene timing/fades remain pending. Music selection follows the full/player mission score and original 70-percent threshold."
     },
     "funeral": {
       "script": "Data.CMF BRF0/1: 14 LE32 offsets, same 13-byte records. Enyo player eulogy/farewell sections 2/0, Spirit sections 12/10. DATA/0 +0x42be selects player story 0 for series 1. Wingman dialogue uses shared ParseTests command 30 and wing_status.",
       "art": "Funeral.CMF palette 193: BRFG/19 long shot, BRFG/20 background frame 0 for textColour 0 otherwise 1, TKHD/1 and TKHD/10 with base frame 0. Original MountGraphics +0x2484/+0x2498 and SceneDirector +0x29b0 identify these assets. GUI requires this CMF.",
       "speech": "AIFF/camp.0/00/00SSLL00.AIF; 11 supplied recordings for the player/Spirit sequences. Fresh pilot rank 0 is validated for the $R voice variant. Missing speech keeps subtitles usable.",
-      "limits": "Fresh Enyo 1 only. Movie/dialogue ordering and terminal input wait are connected, but the separate death cinematic, animated end background, FUNERAL.MooV music, fades and exact timing remain pending. End card uses existing SDL bitmap text on black."
+      "limits": "Fresh Enyo 1 only. Movie/dialogue ordering and terminal input wait are connected, but the separate death cinematic, animated end background, fades and exact timing remain pending. FUNERAL.MooV continues across the movies and both speeches, then stops. End card uses existing SDL bitmap text on black."
     },
     "data_offsets": {"palettes": "0x3fd2", "filenames": "0x4046", "ranking_rows": "0x2690", "idle_sequences": ["0x27ae", "0x2816", "0x27da"], "medal_frames": "0x42f2", "briefing_origin": ["0x4306", "0x430a"]},
     "speech": {
@@ -750,11 +859,11 @@
       "form_length_quirk": "All 92 original files declare FORM four bytes short, apparently excluding the AIFF form type. Each final SSND chunk ends at physical EOF with exactly the PCM byte count declared by COMM. The reader permits only this exact four-byte overrun by a final SSND chunk; other bounds/sample-count checks remain in force. Observed directly in 04060000.AIF and the full original speech corpus without playback.",
       "path": "AIFF/camp.0/MM/MMSSLL00.AIF; MM=04 for Enyo 1 or 00 for funerals, SS=section, LL=original record index",
       "evidence": "CODE_03 SceneDirector +0x2cb6; DATA/0 +0x4322/+0x4326 resolves to %s%d:%2.2d%2.2d%2.2d%2.2d.AIF and camp.; SpoolSoundFile +0x6b02 provides original Sound Manager context. Archive supplies the mission subdirectory.",
-      "qualification": "Bounded host reader and SDL queued audio replace Sound Manager streaming. Missing/unreadable recordings or unavailable device leave subtitles usable; malformed present recordings fail. MARK chunks are ignored; script mouth/face timing is provisional and is not native voice-marker synchronization."
+      "qualification": "Bounded host reader and foreground PCM in the shared SDL mixer replace Sound Manager streaming. Missing/unreadable recordings or unavailable device leave subtitles usable; malformed present recordings fail. MARK chunks are ignored; script mouth/face timing is provisional and is not native voice-marker synchronization."
     },
-    "pending": "Save/load and name entry, later rooms/scenes, campaign progression, exact idle/hover/decorative animation, native map/camera transitions, audio-marker lip synchronization, original text colors/typography, music and fades.",
+    "pending": "Save/load and name entry, later rooms/scenes, campaign progression, exact idle/hover/decorative animation, native map/camera transitions, audio-marker lip synchronization, original text colors/typography and fades.",
     "validation": "Ghidra original-instruction and offline original-data inspection, static review and make modern modern-gui. No tests, game, GUI, interactive checks, playback or audio device executed. Appearance and timing require user review."
   },
-  "host_only_sources": ["src/swc/rsrc.c", "src/swc/speech.c", "src/swc/sound.c", "src/sdl/swc_sound.c", "src/sdl/swc_demo.c", "src/sdl/swc_flight.c", "src/sdl/swc_cockpit.c", "src/sdl/swc_text.c", "src/sdl/swc_rooms.c", "src/sdl/swc_movie.c"],
+  "host_only_sources": ["src/swc/rsrc.c", "src/swc/speech.c", "src/swc/sound.c", "src/swc/music.c", "src/sdl/swc_sound.c", "src/sdl/swc_music.c", "src/sdl/swc_demo.c", "src/sdl/swc_flight.c", "src/sdl/swc_cockpit.c", "src/sdl/swc_text.c", "src/sdl/swc_rooms.c", "src/sdl/swc_movie.c"],
   "palette_resource_fork_sha256": "24b707f9e024d86bf8ce996e2bc45521f36f75582b7e7410bef6467c49cb7c2b"
 }

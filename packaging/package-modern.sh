@@ -45,6 +45,9 @@ cp packaging/THIRD-PARTY-NOTICES.txt \
 cp third_party/ymfm/LICENSE "$stage_dir/YMFM-LICENSE.txt"
 cp packaging/NFD-LICENSE.txt "$stage_dir/NFD-LICENSE.txt"
 cp third_party/anonymouspro/OFL.txt "$stage_dir/SWC-HUD-FONT-OFL.txt"
+cp third_party/tinysoundfont/LICENSE "$stage_dir/TINYSOUNDFONT-LICENSE.txt"
+cp third_party/generaluser/LICENSE.txt "$stage_dir/GENERALUSER-GS-LICENSE.txt"
+cp third_party/generaluser/GeneralUser-GS.sf2 "$stage_dir/swc-music.sf2"
 
 if test "$platform" = windows; then
     executable="$stage_dir/wc1-modern.exe"

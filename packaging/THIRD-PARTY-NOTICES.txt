@@ -20,6 +20,13 @@ The SDL2 release archives may include these components:
   under the SIL Open Font License 1.1:
   https://github.com/google/fonts/tree/main/ofl/anonymouspro
   See SWC-HUD-FONT-OFL.txt for the copyright and license notice.
+- TinySoundFont, under the MIT license:
+  https://github.com/schellingb/TinySoundFont
+  See TINYSOUNDFONT-LICENSE.txt for its license notice.
+- GeneralUser GS 2.0.3 by S. Christian Collins, under its included license:
+  https://www.schristiancollins.com/generaluser.php
+  See GENERALUSER-GS-LICENSE.txt. This General MIDI bank supplies SWC's host
+  music instruments; it is not the original QuickTime synthesizer bank.
 
 The exact set is platform-dependent. System libraries supplied by Windows,
 macOS, or the Linux distribution are not copied into these archives.

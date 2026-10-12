@@ -27,6 +27,13 @@ or sound bank is required. DOS game-data support remains partial.
 Kilrathi Saga sound effects are balanced against the streamed music. During
 spaceflight, Ctrl+M toggles music and Ctrl+S toggles sound effects.
 
+The experimental Super Wing Commander Mac demo path includes sequence music
+for its first-mission scenes and flight. Keep swc-music.sf2 beside the
+executable. Preserve the original MIDI/*.MooV resource forks, or supply their
+raw .rsrc or AppleDouble ._ sidecars when copying the demo across platforms.
+WC1_SWC_SOUNDFONT can select another complete General MIDI SoundFont. The
+bundled bank is a host substitute for the original QuickTime instruments.
+
 The macOS archives are ad-hoc signed, not notarized with an Apple developer
 certificate. macOS may therefore require the usual confirmation for software
 downloaded outside the App Store.

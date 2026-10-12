@@ -38,11 +38,7 @@ typedef struct SwcCarrier {
     const char *resourceFork;
     SwcRoomPack packs[SWC_ROOM_PACKS];
     SwcBuffer script;
-    SDL_AudioDeviceID audio;
-    SDL_AudioSpec audioSpec;
     SDL_Scancode armedKey;
-    int audioInitialized;
-    int audioAttempted;
     int mouseDown;
     int mouseX;
     int mouseY;
@@ -264,8 +260,7 @@ static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
             carrier->armedKey = SDL_SCANCODE_UNKNOWN;
         }
     }
-    if (carrier->audio != 0)
-        SDL_PauseAudioDevice(carrier->audio, !carrier->focused || carrier->paused);
+    SdlPauseSwcSound(!carrier->focused || carrier->paused);
     return input;
 }
 
@@ -472,7 +467,6 @@ static int SwcSceneAnimationFrame(const short *commands, Uint32 ticks)
 static int SwcStartSpeech(SwcCarrier *carrier, int section, int line, Uint32 *duration)
 {
     SwcBuffer pcm = {0};
-    SDL_AudioSpec desired = {0};
     SDL_RWops *file;
     char relative[96];
     char path[PATH_MAX];
@@ -480,10 +474,7 @@ static int SwcStartSpeech(SwcCarrier *carrier, int section, int line, Uint32 *du
     int mission = carrier->visit >= SWC_CARRIER_PLAYER_FUNERAL ? 0 : 4;
     int result = 0;
 
-    if (carrier->audio != 0) {
-        SDL_PauseAudioDevice(carrier->audio, 1);
-        SDL_ClearQueuedAudio(carrier->audio);
-    }
+    SdlClearSwcPcm();
     /* SceneDirector +0x2cb6; DATA/0 +0x4322/+0x4326:
      * "%s%d:%2.2d%2.2d%2.2d%2.2d.AIF", "camp.". The archive groups files
      * by mission: 04 for Enyo 1, 00 for funerals. Keep original record indices.
@@ -501,24 +492,9 @@ static int SwcStartSpeech(SwcCarrier *carrier, int section, int line, Uint32 *du
     if (SwcReadSpeech(path, &pcm) != 0)
         return -1;
     speechDuration = (Uint32)((uint64_t)pcm.size * 1000 / (11025 * 2)) + 250;
-    if (!carrier->audioAttempted) {
-        carrier->audioAttempted = 1;
-        if (SDL_InitSubSystem(SDL_INIT_AUDIO) == 0) {
-            carrier->audioInitialized = 1;
-            desired.freq = 11025;
-            desired.format = AUDIO_S16MSB;
-            desired.channels = 1;
-            desired.samples = 1024;
-            carrier->audio = SDL_OpenAudioDevice(NULL, 0, &desired, &carrier->audioSpec, 0);
-        }
-        if (carrier->audio == 0) {
-            fprintf(stderr, "SWC speech audio unavailable; using subtitles: %s\n", SDL_GetError());
-            SDL_ClearError();
-        }
-    }
-    if (carrier->audio != 0) {
-        result = SDL_QueueAudio(carrier->audio, pcm.data, (Uint32)pcm.size);
-        *duration = speechDuration + (Uint32)carrier->audioSpec.samples * 1000 / 11025;
+    if (swcAudioDevice != 0) {
+        result = SdlQueueSwcPcm(&pcm, 11025, AUDIO_S16MSB);
+        *duration = speechDuration + 512 * 1000 / 48000;
     } else {
         *duration = SDL_max(*duration, speechDuration);
     }
@@ -676,6 +652,9 @@ static int SwcPlayRoomScene(SwcCarrier *carrier, int section)
     carrier->mouseDown = 0;
     carrier->paused = 0;
     carrier->focused = (SDL_GetWindowFlags(carrier->window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+    SdlPauseSwcSound(!carrier->focused);
+    if (carrier->visit == SWC_CARRIER_PREFLIGHT && section == 0)
+        SdlPlaySwcMusic("BRIEFIN0.MooV", 50);
     SDL_SetWindowTitle(carrier->window, carrier->visit >= SWC_CARRIER_PLAYER_FUNERAL
         ? "Super Wing Commander - funeral | Click/Space/Enter: next | Esc: finish | P: pause"
         : section == 0
@@ -729,7 +708,7 @@ static int SwcPlayRoomScene(SwcCarrier *carrier, int section)
             }
             wasPlaying = carrier->focused && !carrier->paused;
             if (wasPlaying && (input.activate || input.clicked ||
-                (elapsed >= duration && (carrier->audio == 0 || SDL_GetQueuedAudioSize(carrier->audio) == 0) &&
+                (elapsed >= duration && !SdlSwcPcmPlaying() &&
                  carrier->armedKey == SDL_SCANCODE_UNKNOWN && !carrier->mouseDown)))
                 break;
             if (SDL_SetRenderDrawColor(carrier->renderer, 0, 0, 0, 255) != 0 ||
@@ -747,10 +726,7 @@ static int SwcPlayRoomScene(SwcCarrier *carrier, int section)
         index++;
     }
 done:
-    if (carrier->audio != 0) {
-        SDL_PauseAudioDevice(carrier->audio, 1);
-        SDL_ClearQueuedAudio(carrier->audio);
-    }
+    SdlClearSwcPcm();
     carrier->paused = 0;
     return result;
 }
@@ -886,6 +862,7 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
     carrier.resourceFork = resourceFork;
     carrier.visit = visit;
     carrier.focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+    SdlPauseSwcSound(!carrier.focused);
     carrier.mouseX = carrier.mouseY = -1;
     if (visit < SWC_CARRIER_PREFLIGHT || visit > SWC_CARRIER_WINGMAN_FUNERAL) {
         SDL_SetError("Unsupported SWC carrier visit");
@@ -919,27 +896,20 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
             SDL_SetError("Unsupported SWC funeral (expected fresh Enyo 1 pilot)");
             goto done;
         }
+        SdlPlaySwcMusic("FUNERAL.MooV", 50);
         result = SdlPlaySwcFuneralMovies(window, renderer, 0);
         if (result != SWC_MOVIE_FINISHED)
             goto done;
         result = SwcPlayRoomScene(&carrier, visit == SWC_CARRIER_PLAYER_FUNERAL ? 2 : 12);
         if (result != SWC_MOVIE_FINISHED)
             goto done;
-        /* Hand the audio device back before MovieDisplay, then let the
-         * farewell reopen speech. Some SDL backends allow only one device. */
-        if (carrier.audio != 0)
-            SDL_CloseAudioDevice(carrier.audio);
-        if (carrier.audioInitialized)
-            SDL_QuitSubSystem(SDL_INIT_AUDIO);
-        carrier.audio = 0;
-        carrier.audioInitialized = 0;
-        carrier.audioAttempted = 0;
         result = SdlPlaySwcFuneralMovies(window, renderer, 1);
         if (result != SWC_MOVIE_FINISHED)
             goto done;
         result = SwcPlayRoomScene(&carrier, visit == SWC_CARRIER_PLAYER_FUNERAL ? 0 : 10);
         if (result != SWC_MOVIE_FINISHED || visit == SWC_CARRIER_WINGMAN_FUNERAL)
             goto done;
+        SdlStopSwcMusic();
         /* CODE_03 the_end +0x4b1e retains a terminal screen until input.
          * SDL draws a static end card; the original background animation is pending. */
         SDL_SetWindowTitle(window, "Super Wing Commander - THE END | Click/Space/Enter/Esc: finish");
@@ -979,11 +949,17 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
         memcpy(campaignData + 14, campaign.data + 40, 16);
         pMissionCampaignData = campaignData;
         nDebriefingPersonality = 0;
+        /* CODE_03 DeBriefing +0x13e4: the zero-score cue is a distinct
+         * filename (DEBRIEF1), absent from the supplied demo. */
+        count = FullMissionScore();
+        SdlPlaySwcMusic(count == 0 ? "DEBRIEF1.MooV" :
+            PlayersMissionScore() * 100 / count > 70 ? "DEBRIEFI.MooV" : "DEBRIEF0.MooV", 50);
         result = SwcPlayRoomScene(&carrier, 2);
         goto done;
     }
     previous = SDL_GetTicks();
     while (1) {
+        SdlPlaySwcMusic(room == 0 || room == 2 ? "RECROOM.MooV" : "BARRACKS.MooV", 50);
         current = SDL_GetTicks();
         if (carrier.focused)
             elapsed += current - previous;
@@ -1096,10 +1072,8 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
 done:
     SDL_strlcpy(failure, SDL_GetError(), sizeof(failure));
     pMissionCampaignData = savedCampaignData;
-    if (carrier.audio != 0)
-        SDL_CloseAudioDevice(carrier.audio);
-    if (carrier.audioInitialized)
-        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    SdlClearSwcPcm();
+    SdlStopSwcMusic();
     SDL_SetCursor(savedCursor);
     SDL_FreeCursor(hand);
     SDL_ShowCursor(oldCursorVisible);

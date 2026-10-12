@@ -112,6 +112,7 @@ endif
 MODERN_OUT_DIR = out-modern
 MODERN_TARGET = $(MODERN_OUT_DIR)/wc1-modern$(MODERN_EXE_SUFFIX)
 MODERN_GUI_TARGET = $(MODERN_OUT_DIR)/wc1-modern-gui$(MODERN_EXE_SUFFIX)
+SWC_MUSIC_SOUNDFONT = $(MODERN_OUT_DIR)/swc-music.sf2
 MODERN_CMAKE ?= cmake
 MODERN_GUI_SOURCE_DIR = src/sdl/slint
 MODERN_GUI_BUILD_DIR = $(MODERN_OUT_DIR)/slint-gui
@@ -401,12 +402,14 @@ MODERN_GAME_HOST_SRCS = \
 	src/sdl/swc_flight.c \
 	src/sdl/swc_cockpit.c \
 	src/sdl/swc_sound.c \
+	src/sdl/swc_music.c \
 	src/sdl/swc_text.c \
 	src/sdl/swc_rooms.c \
 	src/sdl/swc_movie.c \
 	src/swc/speech.c \
 	src/swc/sound.c \
 	src/swc/movie.c \
+	src/swc/music.c \
 	src/swc/shape.c \
 	src/swc/rsrc.c \
 	src/sdl/audio.c \
@@ -498,9 +501,13 @@ run-modern-swc: modern-swc
 # Optional native launcher; the ordinary modern target does not need Slint.
 modern-gui: $(MODERN_GUI_TARGET)
 
+$(SWC_MUSIC_SOUNDFONT): third_party/generaluser/GeneralUser-GS.sf2
+	@mkdir -p $(dir $@)
+	cp $< $@
+
 # Slint enables full Rust LTO upstream; the small launcher does not need its
 # substantial clean-build cost.
-$(MODERN_GUI_TARGET): $(MODERN_GUI_GAME_OBJS) $(MODERN_GUI_SRCS) Makefile
+$(MODERN_GUI_TARGET): $(MODERN_GUI_GAME_OBJS) $(MODERN_GUI_SRCS) Makefile | $(SWC_MUSIC_SOUNDFONT)
 	@command -v $(MODERN_CMAKE) >/dev/null 2>&1 || { \
 		echo "CMake 3.21 or newer is required for modern-gui." >&2; \
 		exit 1; \
@@ -586,7 +593,7 @@ $(MODERN_TARGET): \
 		$(MODERN_BASE_HOST_OBJS) \
 		$(MODERN_GAME_HOST_OBJS) \
 		$(MODERN_GAMEPLAY_OBJS) \
-		$(MODERN_IX_OBJS)
+		$(MODERN_IX_OBJS) | $(SWC_MUSIC_SOUNDFONT)
 	@mkdir -p $(dir $@)
 	$(MODERN_CXX) $(MODERN_CXXFLAGS) $(MODERN_SANITIZER_FLAGS) \
 		$^ $(MODERN_SDL_LIBS) $(MODERN_LZO_LIBS) \

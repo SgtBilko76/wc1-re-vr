@@ -18,13 +18,14 @@ Cockpit banking, the pilot's hand, native flight effects, warning sounds,
 computer speech and animated communications portraits are connected.
 The original conversations, briefing, debriefing and funeral scenes use the
 demo's text, portraits and AIFF speech. Opening, Hornet launch, landing and
-funeral movies have embedded audio.
+funeral movies have embedded audio. QuickTime music sequences now accompany
+the opening, carrier, briefing/debriefing, launch, flight, landing and funeral.
 WC1 communications now provide wingman orders and landing-clearance requests;
 returning to the carrier ends Enyo 1 with the original debriefing branches and
 Spirit's funeral if she was lost. Player destruction leads to the player's
 funeral and an end card.
 Later missions, campaign progression, remaining HUD modes, side/rear views,
-the separate death cinematic and music are
+the separate death cinematic and remaining startup scenes are
 still pending. Landing and funeral paths have been compiled and inspected,
 without interactive execution.
 
@@ -43,9 +44,11 @@ entry point in SDL builds. The CMF reader and mission adapter are linked into
 shares bitmap text between the cockpit and carrier. `src/sdl/swc_rooms.c`
 adapts carrier presentation and scenes; `src/swc/speech.c` reads AIFF speech.
 `src/swc/sound.c` decodes the flight `snd ` bank; `src/sdl/swc_sound.c`
-supplies four-channel SDL playback for effects and flight speech.
+supplies a shared stereo SDL mixer for four effect/flight-speech voices,
+foreground movie/dialogue PCM and music. `src/swc/music.c` reads QuickTime
+music sequences; `src/sdl/swc_music.c` selects and synthesizes them.
 `src/swc/movie.c` reads and decodes the Mac movies; `src/sdl/swc_movie.c`
-supplies SDL2 presentation, queued audio, and the opening/launch/landing/funeral
+supplies SDL2 presentation, foreground audio, and the opening/launch/landing/funeral
 sequences.
 The viewer needs only the host C compiler and SDL2. Flight links the existing
 native core and needs its normal build dependencies, including LZO.
@@ -96,7 +99,7 @@ CODE_13 `show_navigation_disp` +0x121a, `show_damage_disp` +0x123a and
 unavailable message is also original, not a missing implementation to fill in.
 
 Flight effects and voices now use the native Mac sound bank through
-`SdlPlayGameSoundEffect` and the SDL cockpit adapter. Music, startup
+`SdlPlayGameSoundEffect` and the SDL cockpit adapter. Startup
 logos/prologue, death presentation, exact text and palette transitions remain
 incomplete. The new-campaign opening is connected before the carrier visit.
 The most useful next work is correcting the demonstrated RNG differences,
@@ -160,8 +163,8 @@ is a separate `snd /500` in the executable's resource fork, at rate
 | Banking and pilot hand | CODE_13 `handle_cockpit_banking` +0x18f2, `determine_pilot_hand` +0x14e2 | Cockpit and instruments approach the pitch/yaw offset by one pixel per tick, capped at ±6 vertically and ±8 horizontally. PC00/6 supplies sixteen hand frames. |
 
 SDL replaces Sound Manager playback and QuickDraw rendering. Pause/focus loss
-pauses flight audio; flight teardown closes the device before carrier/movie
-playback. If an audio device is unavailable, timed text/portraits keep the
+pauses the shared mixer. One device stays open across carrier, movie and flight
+transitions and closes before session resources are freed. If it is unavailable, timed text/portraits keep the
 message queue progressing. Text uses the existing bitmap font. Computer
 messages occupy the host message area above shared targeting notices because
 the host keeps weapon readouts visible; original weapon-selection timers and
@@ -172,8 +175,7 @@ and the host simulation clock; later campaign voice substitutions are absent.
 The earlier WC2 findings identify `HasInRangeGunForTargetLead` (0x43ce8f) and
 `UpdateTargetLeadIndicator` (0x43cf5a), already adapted for ITTS. Further WC2
 module integration and targeting changes are explicitly deferred; this pass
-leaves that targeting implementation in place. Music in `MIDI/*.MooV` still
-needs QuickTime music-sequence support. Side/rear cockpit art (PC00/2..4) is
+leaves that targeting implementation in place. Side/rear cockpit art (PC00/2..4) is
 absent from this demo's cockpit CMF.
 
 Validation uses original instructions/data, static review and compilation of
@@ -182,6 +184,79 @@ for the two new guarded core hooks are unchanged: `message_showing` 100.00%,
 `real_vid_transmit` 98.53%. No tests were added or run; no game, GUI or audio
 playback was executed. The new sound mix, portrait appearance and timing remain
 unverified interactively.
+
+### QuickTime music
+
+The demo's 27 `MIDI/*.MooV` files contain QuickTime `musi` note sequences,
+not sampled audio. Their data forks hold `mdat` events; the `moov/128`
+resource supplies instrument requests, the 600-tick time scale, sample sizes,
+chunk offsets and sample durations. `SwcReadMusic` bounds these structures and
+decodes rests, short/extended notes, controllers and markers. Notes can cross
+sample boundaries. Extended pitches below 128 are integer MIDI keys; larger
+ones are 8.8 values. Controller 32 is signed 8.8 pitch bend in semitones.
+Every instrument header ends with `0x60000000`; twelve retain zero padding
+after it. `BRIEFIN0` uses a fixed 840-byte sample in `stsz`, while the other
+tracks carry individual sample sizes. Both layouts are accepted.
+
+Preserve each music file's resource fork. The reader accepts a native macOS
+fork, a raw `<filename>.rsrc` sidecar, an AppleDouble `._<filename>` sidecar,
+or a flattened movie with `moov` in its data fork. Copying only the original
+data forks loses the track metadata. Missing or unsupported tracks are silent
+and report a warning when selected; effects and speech remain available.
+
+Selection follows Ghidra exports of CODE_09 `gametrack` (+0x1168),
+`spacetrack` (+0x0d1e), `servicetrack` (+0x13d0),
+`new_space_music_changes` (+0x0e88), and their original scene callers:
+
+| Context | Track |
+| --- | --- |
+| New-campaign opening | `DOCKING.MooV` |
+| Bar and pilot rankings | `RECROOM.MooV` |
+| Barracks and medals | `BARRACKS.MooV` |
+| Briefing | `BRIEFIN0.MooV` |
+| Launch / landing | `ARMOR.MooV` / `LANDING.MooV` |
+| Initial patrol / quiet navigation sphere | `DULLPATR.MooV` |
+| Hostile sphere | `FLOUNDER.MooV` or `REGULARC.MooV` |
+| Asteroid/mine sphere | `GOALLINE.MooV` |
+| Successful patrol return / incomplete return | `RETURNI0.MooV` / `RETURNIN.MooV` |
+| Debriefing above 70% / at most 70% | `DEBRIEFI.MooV` / `DEBRIEF0.MooV` |
+| Funeral movies and both speeches | `FUNERAL.MooV`, continuous across the sequence |
+
+The original filename table also references `FLYINGTO.MooV` (initial strike),
+`RETURNI1.MooV` (successful non-patrol return), and `DEBRIEF1.MooV`
+(zero full mission score). None is supplied in this demo; these names are not
+aliased to other tracks. Navigation cues change only when the action sphere
+changes. WC1's same-named music function instead takes attacker/victim arguments
+and uses different rules. Completed tracks loop, and reselecting an active track
+preserves its position. Original scene volume is doubled to a percentage:
+opening 30, flight 25, other connected scenes 50.
+
+The return cue also follows CODE_05 `triumph` +0x69a2..+0x69ce: a patrol is
+complete only when every flight-path objective was visited. WC1's current
+patrol branch returns success on an incomplete route, so the SDL music adapter
+performs this check locally. Other mission types share the existing predicate.
+
+TinySoundFont renders the sequences at 48 kHz with the bundled GeneralUser GS
+2.0.3 bank. `make modern` and `make modern-gui` copy `swc-music.sf2` beside the
+executables; release archives include it and both component licenses.
+`WC1_SWC_SOUNDFONT` optionally selects another complete General MIDI bank.
+Music has host mix headroom and honors the existing 0..20 music-volume setting.
+One SDL device mixes it with foreground mono PCM and four effect voices;
+pause/focus loss pauses all of them. The callback uses cached sequences and
+preallocated synth channels/voices, with no file I/O or allocation.
+
+This is a host synthesizer substitution: GeneralUser's instrument timbres,
+envelopes and volume response differ from QuickTime's instruments. TinySoundFont
+does not implement the sequences' reverb/chorus sends; modulation-wheel events
+in the supplied data are zero. Exact mix, timing and loop transitions remain
+unverified interactively. Validation for this work is original-instruction/data
+inspection and native/GUI compilation only. No tests or game/audio playback.
+Win32 source selection and reconstructed functions are unchanged.
+
+Format references: Apple's [QuickTime music media specification](https://developer.apple.com/documentation/quicktime-file-format/music_media)
+and [QuickTime Music Architecture event definitions](https://leopard-adc.pepas.com/documentation/QuickTime/RM/MusicAndAudio/qtma/B-Chapter/2TheQuickTimeMusicAr.html),
+plus Apple's `QuickTimeMusic.h`. Pinned component sources and hashes are in
+`third_party/tinysoundfont/README.md` and `third_party/generaluser/README.md`.
 
 ## Run
 
@@ -378,7 +453,7 @@ section and `LL` the original record index, including branch-skipped records.
 The format string is used by CODE_03 `SceneDirector` +0x2cb6; the archive adds
 the `04` directory. All 92 demo recordings inspected use AIFF with one channel,
 16-bit big-endian PCM at 11025 Hz. The reader validates FORM/COMM/SSND sizes,
-chunk padding, data offsets and declared sample counts. SDL queues the PCM;
+chunk padding, data offsets and declared sample counts. SDL mixes the PCM with music;
 missing/unreadable files or an unavailable device leave subtitles usable.
 Malformed present speech is an error. No external audio codec is required.
 
@@ -394,7 +469,7 @@ Scope remains a fresh Enyo 1 visit using WC1's initial pilot template. Save/load
 name entry, later mission rooms and post-debriefing progression are not connected.
 The scene adapter preserves original dialogue and artwork but does not claim
 exact Mac presentation: audio-marker lip synchronization, scene-specific text
-colors and typography, camera pans, palette fades, music, hover/decorative
+colors and typography, camera pans, palette fades, hover/decorative
 animations and exact idle timing are pending. Mouth/face commands currently run
 on a host clock; the map uses WC1 coordinates with simple SDL markers. The
 Anonymous Pro bitmap and readable subtitle panel are shared with the cockpit.
@@ -487,10 +562,10 @@ pilot's rank is zero, matching the supplied `$R` speech variant.
 
 The host presents a static THE END card after the player's farewell, retaining
 `the_end` +0x4b1e's input wait. The original animated end background, separate
-death cinematic, `FUNERAL.MooV` music, fades and exact scene timing remain
+death cinematic, fades and exact scene timing remain
 pending. Validation was original-instruction/data inspection, static review
 and `make -j4 modern modern-gui`; no tests, interactive sessions or playback
-were run. The GUI requires `Funeral.CMF`; its existing fixture was updated only.
+were run. The GUI requires `Funeral.CMF`.
 
 ## Opening, launch, landing and funeral movies
 
@@ -535,7 +610,7 @@ direct-flight path available. Invalid movie data reports an error. The finite
 The host accepts the demo's 320x240, 256-color layout, checks record and scanline
 bounds, and limits loaded movies to 64 MiB. Every video delta is decoded in
 order even when presentation must catch up. SDL2 displays each movie's own
-palette, queues its embedded PCM, and rounds the original sample rate to an
+palette, mixes its embedded PCM with sequence music, and rounds the original sample rate to an
 integer Hz. Playback falls back to silent video if no audio device is available.
 The video clock and audio device pause together, and the last frame remains
 while longer audio finishes. All movie resources are released on finish, skip,
@@ -697,8 +772,8 @@ The renderer now adds projected Y to the scene origin, matching both original
 engines. WC1's cockpit-packet drawing is bypassed for messages, missile removal,
 VDU changes and damage overlays; shared gameplay state is retained. Win32
 reference branches remain unchanged. NPC ship AI and wave spawning are connected;
-landing and the first debriefing are connected; later progression and weapon
-audio are still pending.
+landing, the first debriefing and native weapon audio are connected; later
+progression remains pending.
 
 ### SWC flight data, encounters and ITTS
 
@@ -890,7 +965,7 @@ many WC1 names were already derived from this Mac executable's MacsBug strings.
    post-debriefing progression. Landing and the first debriefing are connected;
    the demo disables its simulator.
 4. Connect remaining startup movies, the death cinematic and later scripted scenes;
-   add save/load, audio-marker lip synchronization, music and palette
+   add save/load, audio-marker lip synchronization and palette
    transitions. The first bar, barracks and briefing, AIFF speech and Hornet
    opening/launch/landing playback, first debriefing and player/Spirit funerals are
    present; the animated end background and other scene entry points are pending.

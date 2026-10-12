@@ -94,9 +94,47 @@ int SwcReadResource(const char *resourceFork, const char type[4], int16_t id,
                     SwcBuffer *resource);
 int SwcReadSound(const SwcBuffer *resource, SwcSound *sound);
 
+/* QuickTime music events, timed in the source media's ticks. */
+enum SwcMusicEventType {
+    SWC_MUSIC_NOTE_ON, SWC_MUSIC_NOTE_OFF, SWC_MUSIC_CONTROL
+};
+
+typedef struct SwcMusicEvent {
+    uint32_t tick;
+    uint32_t order;
+    uint16_t part;
+    uint16_t value;
+    uint8_t type;
+    uint8_t key;
+} SwcMusicEvent;
+
+typedef struct SwcMusic {
+    SwcMusicEvent *events;
+    size_t count;
+    uint32_t timeScale;
+    uint32_t duration;
+    uint16_t instruments[32];
+} SwcMusic;
+
+int SwcReadMusic(const char *path, SwcMusic *music);
+int SdlInitSwcMusic(void);
+void SdlFreeSwcMusic(void);
+void SdlPlaySwcMusic(const char *name, int volume);
+void SdlStopSwcMusic(void);
+void SdlUpdateSwcFlightMusic(void);
+/* Called only by the shared SWC audio callback: interleaved stereo float. */
+void SdlMixSwcMusic(float *samples, int frames);
+
+/* One SDL device owns music, flight effects and foreground movie/speech PCM.
+ * Main-thread music changes lock this device against its callback. */
+extern SDL_AudioDeviceID swcAudioDevice;
 int SdlInitSwcSound(const char *resourceFork);
 void SdlFreeSwcSound(void);
 void SdlPauseSwcSound(int paused);
+void SdlStopSwcSounds(void);
+int SdlQueueSwcPcm(const SwcBuffer *pcm, int rate, SDL_AudioFormat format);
+void SdlClearSwcPcm(void);
+int SdlSwcPcmPlaying(void);
 /* Play returns 1 for a playing sound, 0 for busy channels, -1 unavailable. */
 int SdlPlaySwcSound(int sound, int volume);
 void SdlStopSwcSound(int sound);

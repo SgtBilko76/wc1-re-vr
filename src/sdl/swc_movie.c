@@ -12,9 +12,6 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
     SDL_Surface *indexed = NULL;
     SDL_Surface *rgba = NULL;
     SDL_Texture *texture = NULL;
-    SDL_AudioDeviceID audio = 0;
-    SDL_AudioSpec desired = {0};
-    SDL_AudioSpec obtained = {0};
     SDL_Event event;
     SDL_Scancode skipKey = SDL_SCANCODE_UNKNOWN;
     Uint64 frequency = SDL_GetPerformanceFrequency();
@@ -27,7 +24,6 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
     uint32_t frame = 1;
     char failure[256];
     char title[160];
-    int audioInitialized = 0;
     int focused;
     int paused = 0;
     int playing = 0;
@@ -36,6 +32,8 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
     int redraw = 1;
     int result = SWC_MOVIE_ERROR;
 
+    SdlPauseSwcSound(1);
+    SdlClearSwcPcm();
     if (SwcMovieOpen(path, &movie) != 0)
         goto done;
     if (SwcMovieNextFrame(&movie) != 1)
@@ -53,25 +51,11 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
     duration = (Uint64)movie.frameCount * frequency / movie.framesPerSecond;
     if (movie.audio.size != 0) {
         audioDuration = (Uint64)movie.audio.size * frequency / movie.sampleRate;
-        if (SDL_InitSubSystem(SDL_INIT_AUDIO) == 0) {
-            audioInitialized = 1;
-            desired.freq = movie.sampleRate;
-            desired.format = AUDIO_U8;
-            desired.channels = 1;
-            desired.samples = 1024;
-            audio = SDL_OpenAudioDevice(NULL, 0, &desired, &obtained, 0);
-        }
-        if (audio == 0) {
-            fprintf(stderr, "SWC movie audio unavailable; playing silently: %s\n",
-                    SDL_GetError());
-            SDL_ClearError();
-        } else {
-            if (SDL_QueueAudio(audio, movie.audio.data, (Uint32)movie.audio.size) != 0)
-                goto done;
-            /* Queued-byte counts exclude the device's current buffer. Give
-             * the final buffer time to finish before closing the device. */
-            audioDuration += (Uint64)obtained.samples * frequency / obtained.freq;
-        }
+        if (SdlQueueSwcPcm(&movie.audio, movie.sampleRate, AUDIO_U8) != 0)
+            goto done;
+        /* The mixer cursor excludes its current hardware buffer. */
+        if (swcAudioDevice != 0)
+            audioDuration += 512 * frequency / 48000;
         duration = SDL_max(duration, audioDuration);
     }
     focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
@@ -130,8 +114,7 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
         }
         if (playing != (focused && !paused) || redraw) {
             playing = focused && !paused;
-            if (audio != 0)
-                SDL_PauseAudioDevice(audio, !playing);
+            SdlPauseSwcSound(!playing);
             SDL_snprintf(title, sizeof(title),
                 "Super Wing Commander - %s%s | Space/Enter/Esc/click: skip | P: %s",
                 sequence, playing ? "" : " (paused)", playing ? "pause" : "resume");
@@ -159,7 +142,7 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
             SDL_RenderPresent(renderer);
             redraw = 0;
         }
-        if (elapsed >= duration && (audio == 0 || SDL_GetQueuedAudioSize(audio) == 0) &&
+        if (elapsed >= duration && !SdlSwcPcmPlaying() &&
             skipKey == SDL_SCANCODE_UNKNOWN && !skipMouse) {
             result = SWC_MOVIE_FINISHED;
             goto done;
@@ -169,10 +152,7 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
 
 done:
     SDL_strlcpy(failure, SDL_GetError(), sizeof(failure));
-    if (audio != 0)
-        SDL_CloseAudioDevice(audio);
-    if (audioInitialized)
-        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    SdlClearSwcPcm();
     SDL_DestroyTexture(texture);
     SDL_FreeSurface(rgba);
     SDL_FreeSurface(indexed);
@@ -183,8 +163,7 @@ done:
 }
 
 /* Shared SDL presentation for CODE_03 opening_scene, scramble, landing and
- * funeral MovieDisplay calls. Separate music streams and palette fades remain
- * pending. */
+ * funeral MovieDisplay calls. Palette fades remain pending. */
 enum SwcMovieSequence {
     SWC_MOVIES_OPENING, SWC_MOVIES_LAUNCH, SWC_MOVIES_LANDING,
     SWC_MOVIES_FUNERAL_START, SWC_MOVIES_FUNERAL_FAREWELL
@@ -266,12 +245,23 @@ static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
     }
     cursorVisible = SDL_ShowCursor(SDL_QUERY);
     SDL_ShowCursor(SDL_DISABLE);
+    SdlPauseSwcSound(1);
+    if (sequence == SWC_MOVIES_OPENING)
+        SdlPlaySwcMusic("DOCKING.MooV", 30);
+    else if (sequence == SWC_MOVIES_LAUNCH)
+        SdlPlaySwcMusic("ARMOR.MooV", 50);
+    else if (sequence == SWC_MOVIES_LANDING)
+        SdlPlaySwcMusic("LANDING.MooV", 50);
+    /* Funeral music spans the movies and both room speeches. Its lifetime
+     * belongs to SdlRunSwcCarrier, as in CODE_03 funeral_sequence. */
     for (index = 0; index < count; index++) {
         result = SdlPlaySwcMovie(window, renderer, paths[index], title);
         if (result != SWC_MOVIE_FINISHED)
             break;
     }
     SDL_ShowCursor(cursorVisible);
+    if (sequence <= SWC_MOVIES_LANDING)
+        SdlStopSwcMusic();
     SDL_SetWindowTitle(window, "Super Wing Commander - Enyo 1 (experimental flight)");
     return result;
 }

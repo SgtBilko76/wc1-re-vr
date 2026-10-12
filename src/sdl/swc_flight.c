@@ -43,6 +43,7 @@ void SdlSwcUpdateSpace(void)
     house_keep_objects();
     update_objects_in_space();
     set_eye_direction_and_position();
+    SdlUpdateSwcFlightMusic();
     nSpaceFrame++;
 }
 
@@ -487,6 +488,7 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
             RefreshCommunicationMenu();
     }
     SdlUpdateSwcCockpit();
+    SdlUpdateSwcFlightMusic();
     nSpaceFrame++;
     nRenderedSpaceFrame++;
 }
@@ -852,7 +854,11 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     shipCount = SwcStartMissionShips();
     if (shipCount < 0)
         goto done;
+    if (SdlInitSwcSound(path) != 0)
+        goto done;
     if (!checkOnly) {
+        if (SdlInitSwcMusic() != 0)
+            goto done;
         SDL_ShowWindow(window);
         SDL_RaiseWindow(window);
         SDL_PumpEvents();
@@ -881,9 +887,9 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
         }
         /* Carrier/movie input never advances shared WC1 flight state. */
         focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+        SdlUpdateSwcFlightMusic();
+        SdlPauseSwcSound(!focused);
     }
-    if (SdlInitSwcSound(path) != 0)
-        goto done;
     SwcResetFlightInput();
     FlushInputEvents();
     SetEventManagerPump(NULL);
@@ -1109,7 +1115,8 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
                 break;
         }
         if (!checkOnly && (nArcadeState == 1 || nArcadeState == 4 || bPlayerDestroyed)) {
-            SdlFreeSwcSound();
+            SdlStopSwcSounds();
+            SdlStopSwcMusic();
             SDL_SetWindowMouseGrab(window, SDL_FALSE);
             SwcResetFlightInput();
             FlushInputEvents();

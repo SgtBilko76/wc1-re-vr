@@ -1,5 +1,6 @@
 /* SWC CODE_01 sound player, with SDL replacing the Mac Sound Manager.
- * Four voices share the snd bank for effects and inflight speech. */
+ * Four voices share the snd bank for effects and inflight speech. One device
+ * also mixes QuickTime music and the current movie/carrier PCM stream. */
 #include "wc1.h"
 #include "swc.h"
 
@@ -13,20 +14,28 @@ typedef struct SwcSoundChannel {
 
 static SwcSound swcSounds[501];
 static SwcSoundChannel swcSoundChannels[4];
-static SDL_AudioDeviceID swcSoundDevice;
+SDL_AudioDeviceID swcAudioDevice;
 static int swcSoundInitialized;
+static SwcBuffer swcPcm;
+static uint64_t swcPcmPosition; /* 32.32 mono sample position. */
+static uint64_t swcPcmStep;
+static int swcPcmSampleBytes;
 
 /* Sound Manager completion and sample scheduling are owned by SDL here.
  * No game state, allocation, resource lookup or renderer calls on this thread. */
 static void SwcMixSound(void *context, Uint8 *stream, int bytes)
 {
-    Sint16 *output = (Sint16 *)stream;
+    float *output = (float *)stream;
     int frame;
     int channel;
-    int mixed;
+    int frames = bytes / (int)(2 * sizeof(*output));
+    float mixed;
+    size_t position;
 
     (void)context;
-    for (frame = 0; frame < bytes / (int)sizeof(*output); frame++) {
+    SDL_memset(stream, 0, bytes);
+    SdlMixSwcMusic(output, frames);
+    for (frame = 0; frame < frames; frame++) {
         mixed = 0;
         for (channel = 0; channel < 4; channel++) {
             SwcSoundChannel *voice = &swcSoundChannels[channel];
@@ -49,10 +58,20 @@ static void SwcMixSound(void *context, Uint8 *stream, int bytes)
                 continue;
             }
             mixed += ((int)sample->samples.data[voice->position >> 16] - 128) *
-                voice->volume;
-            voice->position += sample->rate / 22050U;
+                voice->volume / 32768.0f;
+            voice->position += sample->rate / 48000U;
         }
-        output[frame] = (Sint16)SDL_clamp(mixed, -32768, 32767);
+        position = (size_t)(swcPcmPosition >> 32) * swcPcmSampleBytes;
+        if (position < swcPcm.size) {
+            if (swcPcmSampleBytes == 1)
+                mixed += ((int)swcPcm.data[position] - 128) / 128.0f;
+            else
+                mixed += (int16_t)((swcPcm.data[position] << 8) |
+                                    swcPcm.data[position + 1]) / 32768.0f;
+            swcPcmPosition += swcPcmStep;
+        }
+        output[frame * 2] = SDL_clamp(output[frame * 2] + mixed, -1.0f, 1.0f);
+        output[frame * 2 + 1] = SDL_clamp(output[frame * 2 + 1] + mixed, -1.0f, 1.0f);
     }
 }
 
@@ -61,9 +80,14 @@ void SdlFreeSwcSound(void)
 {
     size_t sound;
 
-    if (swcSoundDevice != 0)
-        SDL_CloseAudioDevice(swcSoundDevice);
-    swcSoundDevice = 0;
+    if (swcAudioDevice != 0)
+        SDL_CloseAudioDevice(swcAudioDevice);
+    swcAudioDevice = 0;
+    SdlFreeSwcMusic();
+    SDL_free(swcPcm.data);
+    SDL_zero(swcPcm);
+    swcPcmPosition = swcPcmStep = 0;
+    swcPcmSampleBytes = 0;
     for (sound = 0; sound < SDL_arraysize(swcSounds); sound++) {
         SDL_free(swcSounds[sound].samples.data);
         SDL_zero(swcSounds[sound]);
@@ -118,18 +142,18 @@ int SdlInitSwcSound(const char *resourceFork)
         goto unavailable;
     swcSoundInitialized = 1;
     SDL_zero(desired);
-    desired.freq = 22050;
-    desired.format = AUDIO_S16SYS;
-    desired.channels = 1;
+    desired.freq = 48000;
+    desired.format = AUDIO_F32SYS;
+    desired.channels = 2;
     desired.samples = 512;
     desired.callback = SwcMixSound;
-    swcSoundDevice = SDL_OpenAudioDevice(NULL, 0, &desired, NULL, 0);
-    if (swcSoundDevice == 0)
+    swcAudioDevice = SDL_OpenAudioDevice(NULL, 0, &desired, NULL, 0);
+    if (swcAudioDevice == 0)
         goto unavailable;
-    SDL_PauseAudioDevice(swcSoundDevice, 0);
+    SDL_PauseAudioDevice(swcAudioDevice, 0);
     goto done;
 unavailable:
-    fprintf(stderr, "SWC flight audio unavailable: %s\n", SDL_GetError());
+    fprintf(stderr, "SWC audio unavailable: %s\n", SDL_GetError());
 done:
     SDL_free(resource.data);
     SwcCMClose(&cmf);
@@ -140,8 +164,76 @@ done:
 
 void SdlPauseSwcSound(int paused)
 {
-    if (swcSoundDevice != 0)
-        SDL_PauseAudioDevice(swcSoundDevice, paused != 0);
+    if (swcAudioDevice != 0)
+        SDL_PauseAudioDevice(swcAudioDevice, paused != 0);
+}
+
+/* CODE_01 stop_all_sounds +0x65e8 only stops the flight sound channels. */
+void SdlStopSwcSounds(void)
+{
+    if (swcAudioDevice != 0)
+        SDL_LockAudioDevice(swcAudioDevice);
+    SDL_zero(swcSoundChannels);
+    if (swcAudioDevice != 0)
+        SDL_UnlockAudioDevice(swcAudioDevice);
+}
+
+/* Shared replacement for LMovie's Sound Manager buffers and SpoolSoundFile.
+ * Copy on the main thread; the callback only reads and advances the cursor. */
+int SdlQueueSwcPcm(const SwcBuffer *pcm, int rate, SDL_AudioFormat format)
+{
+    uint8_t *copy;
+    uint8_t *previous;
+    int sampleBytes = format == AUDIO_U8 ? 1 : 2;
+
+    if ((format != AUDIO_U8 && format != AUDIO_S16MSB) || rate < 1 || rate > 192000 ||
+        pcm->size % sampleBytes != 0 || pcm->size > 64 * 1024 * 1024)
+        return SDL_SetError("Unsupported SWC foreground PCM");
+    if (pcm->size == 0) {
+        SdlClearSwcPcm();
+        return 0;
+    }
+    if (swcAudioDevice == 0)
+        return 0;
+    copy = SDL_malloc(pcm->size);
+    if (copy == NULL)
+        return SDL_OutOfMemory();
+    SDL_memcpy(copy, pcm->data, pcm->size);
+    SDL_LockAudioDevice(swcAudioDevice);
+    previous = swcPcm.data;
+    swcPcm = (SwcBuffer){copy, pcm->size};
+    swcPcmPosition = 0;
+    swcPcmStep = ((uint64_t)rate << 32) / 48000;
+    swcPcmSampleBytes = sampleBytes;
+    SDL_UnlockAudioDevice(swcAudioDevice);
+    SDL_free(previous);
+    return 0;
+}
+
+void SdlClearSwcPcm(void)
+{
+    uint8_t *previous;
+
+    if (swcAudioDevice != 0)
+        SDL_LockAudioDevice(swcAudioDevice);
+    previous = swcPcm.data;
+    SDL_zero(swcPcm);
+    swcPcmPosition = 0;
+    if (swcAudioDevice != 0)
+        SDL_UnlockAudioDevice(swcAudioDevice);
+    SDL_free(previous);
+}
+
+int SdlSwcPcmPlaying(void)
+{
+    int playing;
+
+    if (swcAudioDevice == 0)
+        return 0;
+    SDL_LockAudioDevice(swcAudioDevice);
+    playing = (swcPcmPosition >> 32) * swcPcmSampleBytes < swcPcm.size;
+    SDL_UnlockAudioDevice(swcAudioDevice);
+    return playing;
 }
 
 /* CODE_01 play_sound +0x626e: already playing IDs are not restarted;
@@ -151,13 +243,13 @@ int SdlPlaySwcSound(int sound, int volume)
     int channel;
     int idle = -1;
 
-    if (swcSoundDevice == 0 || sound <= 0 ||
+    if (swcAudioDevice == 0 || sound <= 0 ||
         sound >= (int)SDL_arraysize(swcSounds) || swcSounds[sound].samples.data == NULL)
         return -1;
-    SDL_LockAudioDevice(swcSoundDevice);
+    SDL_LockAudioDevice(swcAudioDevice);
     for (channel = 0; channel < 4; channel++) {
         if (swcSoundChannels[channel].sound == sound) {
-            SDL_UnlockAudioDevice(swcSoundDevice);
+            SDL_UnlockAudioDevice(swcAudioDevice);
             return 1;
         }
         if (idle == -1 && swcSoundChannels[channel].sound == 0)
@@ -168,7 +260,7 @@ int SdlPlaySwcSound(int sound, int volume)
         swcSoundChannels[idle].volume = SDL_clamp(volume, 0, 255);
         swcSoundChannels[idle].position = 0;
     }
-    SDL_UnlockAudioDevice(swcSoundDevice);
+    SDL_UnlockAudioDevice(swcAudioDevice);
     return idle != -1;
 }
 
@@ -177,14 +269,14 @@ void SdlStopSwcSound(int sound)
 {
     int channel;
 
-    if (swcSoundDevice == 0)
+    if (swcAudioDevice == 0)
         return;
-    SDL_LockAudioDevice(swcSoundDevice);
+    SDL_LockAudioDevice(swcAudioDevice);
     for (channel = 0; channel < 4; channel++) {
         if (swcSoundChannels[channel].sound == sound)
             swcSoundChannels[channel].sound = 0;
     }
-    SDL_UnlockAudioDevice(swcSoundDevice);
+    SDL_UnlockAudioDevice(swcAudioDevice);
 }
 
 int SdlSwcSoundPlaying(int sound)
@@ -192,14 +284,14 @@ int SdlSwcSoundPlaying(int sound)
     int channel;
     int playing = 0;
 
-    if (swcSoundDevice == 0)
+    if (swcAudioDevice == 0)
         return 0;
-    SDL_LockAudioDevice(swcSoundDevice);
+    SDL_LockAudioDevice(swcAudioDevice);
     for (channel = 0; channel < 4; channel++) {
         if (swcSoundChannels[channel].sound == sound)
             playing = 1;
     }
-    SDL_UnlockAudioDevice(swcSoundDevice);
+    SDL_UnlockAudioDevice(swcAudioDevice);
     return playing;
 }
 
@@ -209,16 +301,16 @@ void SdlStopSwcAfterburnerSound(void)
 {
     int channel;
 
-    if (swcSoundDevice == 0)
+    if (swcAudioDevice == 0)
         return;
-    SDL_LockAudioDevice(swcSoundDevice);
+    SDL_LockAudioDevice(swcAudioDevice);
     for (channel = 0; channel < 4; channel++) {
         if (swcSoundChannels[channel].sound == 12) {
             swcSoundChannels[channel].sound = 500;
             swcSoundChannels[channel].position = 0;
         }
     }
-    SDL_UnlockAudioDevice(swcSoundDevice);
+    SDL_UnlockAudioDevice(swcAudioDevice);
 }
 
 /* CODE_09 sound_effect +0x1508: mono volume falls by one per 100 units.

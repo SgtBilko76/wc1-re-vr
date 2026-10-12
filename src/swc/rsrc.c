@@ -1,5 +1,5 @@
 /* SDL replacement for Resource Manager/GetCTable, not recovered game code.
- * Accept an extracted raw resource fork or macOS's ..namedfork/rsrc path. */
+ * Accept a raw resource fork, macOS's ..namedfork/rsrc, or AppleDouble. */
 #include "swc.h"
 
 #include <string.h>
@@ -8,6 +8,7 @@ int SwcReadResource(const char *resourceFork, const char typeName[4], int16_t id
                     SwcBuffer *resource)
 {
     uint8_t *data;
+    uint8_t *fileData;
     size_t size;
     SDL_RWops *reader;
     uint32_t dataOffset;
@@ -29,9 +30,10 @@ int SwcReadResource(const char *resourceFork, const char typeName[4], int16_t id
     int result;
 
     memset(resource, 0, sizeof(*resource));
-    data = SDL_LoadFile(resourceFork, &size);
-    if (data == NULL)
+    fileData = SDL_LoadFile(resourceFork, &size);
+    if (fileData == NULL)
         return -1;
+    data = fileData;
     result = -1;
     reader = NULL;
     if (size < 16 || size > INT32_MAX)
@@ -39,6 +41,36 @@ int SwcReadResource(const char *resourceFork, const char typeName[4], int16_t id
     reader = SDL_RWFromConstMem(data, (int)size);
     if (reader == NULL)
         goto done;
+    if (SDL_ReadBE32(reader) == UINT32_C(0x00051607)) {
+        /* AppleDouble entry 2 carries the resource fork. Other entries
+         * (Finder information, dates, etc.) are not resource data. */
+        if (size < 26 || SDL_ReadBE32(reader) != UINT32_C(0x00020000))
+            goto malformed;
+        SDL_RWseek(reader, 24, RW_SEEK_SET);
+        referenceCount = SDL_ReadBE16(reader);
+        if (referenceCount > (size - 26) / 12)
+            goto malformed;
+        for (reference = 0; reference < referenceCount; reference++) {
+            type = SDL_ReadBE32(reader);
+            resourceOffset = SDL_ReadBE32(reader);
+            resourceSize = SDL_ReadBE32(reader);
+            if (type != 2)
+                continue;
+            if (resourceOffset > size || resourceSize > size - resourceOffset ||
+                resourceSize < 16)
+                goto malformed;
+            data += resourceOffset;
+            size = resourceSize;
+            break;
+        }
+        if (reference == referenceCount)
+            goto malformed;
+        SDL_RWclose(reader);
+        reader = SDL_RWFromConstMem(data, (int)size);
+        if (reader == NULL)
+            goto done;
+    }
+    SDL_RWseek(reader, 0, RW_SEEK_SET);
     dataOffset = SDL_ReadBE32(reader);
     mapOffset = SDL_ReadBE32(reader);
     dataSize = SDL_ReadBE32(reader);
@@ -102,7 +134,7 @@ malformed:
 done:
     if (reader != NULL)
         SDL_RWclose(reader);
-    SDL_free(data);
+    SDL_free(fileData);
     return result;
 }
 
