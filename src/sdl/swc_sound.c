@@ -235,8 +235,15 @@ int SdlSwcSoundEffect(int sound, int object)
         volume -= (Vector_magnitude(&delta) / 100) >> 8;
         if (volume < 10)
             return 1;
-        if (sound == 8 && aeShipSide[object] != SIDE_IMPERIAL)
-            sound = 26;
+        if (sound == 8) {
+            int owner = acObjectOwner[object];
+
+            /* fire_weapon passes the projectile for attenuation, but the
+               original selects the laser sample from the firing ship's side. */
+            if (owner >= 0 && owner < (int)SDL_arraysize(aeShipSide) &&
+                aeShipSide[owner] != SIDE_IMPERIAL)
+                sound = 26;
+        }
     }
     return SdlPlaySwcSound(sound, volume);
 }
