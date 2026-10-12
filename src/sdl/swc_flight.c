@@ -1,6 +1,6 @@
-/* SDL2 first-mission host. Mission state, ship setup, flight dynamics, view
- * selection, navigation and player weapons belong to the existing WC1 core.
- * The Mac object definitions are translated at this SDL-only boundary. */
+/* SDL2 first-mission host. Mission state, ship setup, flight dynamics,
+ * navigation and player weapons belong to the existing WC1 core. Mac
+ * projection, cinematic cameras and object definitions live at this boundary. */
 #include "wc1.h"
 #include "swc.h"
 #include "swc_objects.h"
@@ -11,7 +11,14 @@
 typedef struct SwcFlightImages {
     SwcRasterImage *views;
     uint32_t count;
+    int unavailable;
 } SwcFlightImages;
+
+enum SwcFlightScene {
+    SWC_FLIGHT_TITLE,
+    SWC_FLIGHT_DEATH,
+    SWC_FLIGHT_EJECTION
+};
 
 static int swcFlightActive;
 static int swcMouseAfterburner;
@@ -136,10 +143,11 @@ static int SwcLoadFlightImages(const SwcCmf *cockpit, const SwcCmf *space,
     uint32_t expected = 0;
     uint32_t count;
     uint32_t index;
+    size_t entry;
     SwcFrame frame;
     int result = -1;
 
-    if (images->views != NULL)
+    if (images->views != NULL || images->unavailable)
         return 0;
     cmf = space;
     SDL_strlcpy(chunkType, "OBJT", sizeof(chunkType));
@@ -166,6 +174,32 @@ static int SwcLoadFlightImages(const SwcCmf *cockpit, const SwcCmf *space,
     case OBJECT_TYPE_DEBRIS_PIPE: chunk = 5; expected = 33; break;
     case OBJECT_TYPE_SPACE_MINE:
         cmf = cockpit; chunk = 16; expected = 14; break;
+    case OBJECT_TYPE_EJECTED_PILOT:
+        /* CODE_14 ejection_sequence +0x07d0 requests CKPT/17, which is
+         * absent from the demo's CMFs. Keep the pilot's physics/camera
+         * when that art is missing; never substitute a different shape. */
+        SDL_strlcpy(chunkType, "CKPT", sizeof(chunkType));
+        chunk = 17;
+        expected = 13;
+        for (entry = 0; entry < space->chunkCount; entry++) {
+            if (space->chunks[entry].id == chunk &&
+                memcmp(space->chunks[entry].type, chunkType, 4) == 0)
+                break;
+        }
+        if (entry == space->chunkCount) {
+            cmf = cockpit;
+            for (entry = 0; entry < cockpit->chunkCount; entry++) {
+                if (cockpit->chunks[entry].id == chunk &&
+                    memcmp(cockpit->chunks[entry].type, chunkType, 4) == 0)
+                    break;
+            }
+            if (entry == cockpit->chunkCount) {
+                fprintf(stderr, "SWC ejection pilot artwork CKPT/17 is absent from the demo data\n");
+                images->unavailable = 1;
+                return 0;
+            }
+        }
+        break;
     /* CODE_04 load_ship +0x04d2..+0x054e loads the two asteroid sets;
        CODE_05 set_objects_data +0x02b0 assigns the first set to rock fragments. */
     case OBJECT_TYPE_ASTEROID1:
@@ -567,6 +601,88 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
     nRenderedSpaceFrame++;
 }
 
+/* CODE_04 transform_objects_to_your_view +0x4150. Mac projection keeps
+ * 32-bit depth and scale until clamping and divides the full XY product.
+ * Only the compatibility cache for the shared WC1 targeting code is 16-bit;
+ * the SDL depth sort below uses the original full-distance values. */
+static void SwcTransformObjectsToView(int distances[SPACE_OBJECT_COUNT])
+{
+    FixedVector direction;
+    FixedVector *view;
+    int distance;
+    int eyeRadius = asObjectCollisionRadius[EYE_OBJECT] * 256;
+    int radius;
+    int64_t scale;
+    short dustSize;
+    short object;
+
+    nClosestVisibleObject = -1;
+    draw_nav_pointer();
+    memset(distances, 0, sizeof(int) * SPACE_OBJECT_COUNT);
+    for (object = 0; object <= SPACE_LAST_MOVING_OBJECT; object++) {
+        if (aeObjectClass[object] == OBJECT_CLASS_NULL ||
+            aeObjectClass[object] == OBJECT_CLASS_FIXED_OBJECT || object == nNavPointerObject)
+            continue;
+        asPreviousObjectDistance[object] = asObjectDistance[object];
+        asObjectDistance[object] = 0;
+        asObjectScreenX[object] = (short)0x8001;
+        if (aeObjectClass[object] == OBJECT_CLASS_FUTURION)
+            continue;
+        if (aeObjectClass[object] == OBJECT_CLASS_STAR ||
+            aeObjectClass[object] == OBJECT_CLASS_PLANET)
+            direction = aShipPosition[object];
+        else
+            ComputeVectorDelta(&aShipPosition[EYE_OBJECT], &aShipPosition[object], &direction);
+        distance = Vector_magnitude(&direction);
+        if (distance < eyeRadius || distance == 0 ||
+            (aeObjectClass[object] == OBJECT_CLASS_DUST && distance > 5000 * 256))
+            continue;
+        view = &aObjectViewPosition[object];
+        transform_to_objects_frame(&direction, view, EYE_OBJECT);
+        if (view->z < eyeRadius || view->z == 0 || DivideFixed(view->z, distance) < 0x94)
+            continue;
+        radius = asObjectCollisionRadius[object] * 256;
+        if (distance <= radius)
+            distance = radius + 1;
+        if (aeObjectClass[object] >= OBJECT_CLASS_EXPLOSION) {
+            /* +0x434e divides the positive 64-bit value 0xa00000*256.
+             * Widen before multiplying so nearby sprites cannot wrap. */
+            scale = INT64_C(0xa0000000) / (distance - radius);
+            scale = ((int64_t)asObjectScale[object] * scale) >> 16;
+            asObjectScreenScale[object] = (short)SDL_clamp(scale, 0, 8192);
+            if (asObjectScreenScale[object] <= 4)
+                continue;
+        }
+        distances[object] = distance >> 8;
+        asObjectScreenX[object] = (short)(((int64_t)view->x * 0xa000 / view->z) >> 8);
+        asObjectScreenY[object] = (short)(((int64_t)view->y * 0xa000 / view->z) >> 8);
+        switch (aeObjectClass[object]) {
+        case OBJECT_CLASS_STAR:
+            distances[object] = 0x7ffe;
+            break;
+        case OBJECT_CLASS_PLANET:
+            distances[object] = 0x7ffd;
+            if (asObjectScreenScale[object] == 0xff)
+                set_background_objects_rotation(object, &direction);
+            break;
+        case OBJECT_CLASS_DUST:
+            dustSize = (short)(MultiplyFixed(0x2100, DivideFixed(eyeRadius, distance)) >> 8);
+            dustSize = SDL_min(dustSize, 3);
+            asObjectViewFrame[object] = (short)(((asObjectCounter[object] + nSpaceFrame) & 3) +
+                (asObjectScreenAngle[object] & 0x10) + (3 - dustSize) * 4);
+            break;
+        case OBJECT_CLASS_MISSILE:
+        case OBJECT_CLASS_SHIP:
+        case OBJECT_CLASS_CAPITAL_SHIP:
+            get_right_shape(object, &direction);
+            break;
+        default:
+            break;
+        }
+        asObjectDistance[object] = (short)SDL_min(distances[object], UINT16_MAX);
+    }
+}
+
 static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
                           const SwcCmf *cockpitCmf, const SwcCmf *spaceCmf,
                           const SDL_Color colors[256],
@@ -585,6 +701,7 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     short object;
     short frame;
     short sorted[SPACE_OBJECT_COUNT];
+    int distances[SPACE_OBJECT_COUNT];
     short count = 0;
     short index;
     short prior;
@@ -594,7 +711,7 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     int x;
     int y;
 
-    transform_objects_to_your_view();
+    SwcTransformObjectsToView(distances);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     if (SDL_RenderClear(renderer) != 0)
         return -1;
@@ -615,8 +732,7 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
             asObjectScreenX[object] == (short)0x8001)
             continue;
         index = count++;
-        while (index > 0 && (unsigned short)asObjectDistance[sorted[index - 1]] <
-                               (unsigned short)asObjectDistance[object]) {
+        while (index > 0 && distances[sorted[index - 1]] < distances[object]) {
             sorted[index] = sorted[index - 1];
             index--;
         }
@@ -627,6 +743,8 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
         if (SwcLoadFlightImages(cockpitCmf, spaceCmf,
                                aeObjectType[object], &images[aeObjectType[object]]) != 0)
             return -1;
+        if (images[aeObjectType[object]].unavailable)
+            continue;
         frame = asObjectViewFrame[object];
         if (frame < 0 || (uint32_t)frame >= images[aeObjectType[object]].count)
             return SDL_SetError("Unsupported SWC frame %d for object type %d",
@@ -858,11 +976,12 @@ static void SwcUpdateSceneCamera(void)
         &aShipPosition[EYE_OBJECT]);
 }
 
-/* CODE_07 Title_Sequence +0x1c86 and CODE_14 death_sequence +0x362a
- * share the live space renderer and view 16. The title's return 3 is mapped
- * to SKIPPED (replay IntroFilm); FINISHED starts a fresh Enyo 1 campaign.
+/* CODE_07 Title_Sequence +0x1c86, CODE_14 death_sequence +0x362a and
+ * ejection_sequence +0x07c4 share the live space renderer and view 16.
+ * The title's return 3 maps to SKIPPED (replay IntroFilm); FINISHED starts
+ * a fresh Enyo 1 campaign.
  * Saved-game selection stays disabled until the host has a save loader. */
-static int SwcRunFlightScene(int titleMenu)
+static int SwcRunFlightScene(enum SwcFlightScene scene)
 {
     static const MissionShipRecord titleShips[4] = {
         {.type = OBJECT_TYPE_DRALTHI, .side = SIDE_KILRATHI, .leader = -1,
@@ -904,6 +1023,9 @@ static int SwcRunFlightScene(int titleMenu)
     int mouseDown = 0;
     int activate;
     int configured = 0;
+    int titleMenu = scene == SWC_FLIGHT_TITLE;
+    int savedVulnerable = bPlayerVulnerable;
+    short pilot = -1;
     int cursorVisible = SDL_ShowCursor(SDL_QUERY);
     int object;
     int index;
@@ -959,7 +1081,53 @@ static int SwcRunFlightScene(int titleMenu)
             goto done;
         cViewObject = 0;
         remove_nav_pointer();
-        SdlPlaySwcMusic("FUNERAL.MooV", 50);
+        if (scene == SWC_FLIGHT_EJECTION) {
+            if (SwcLoadFlightImages(swcCinemaCockpitCmf, swcCinemaSpaceCmf,
+                    OBJECT_TYPE_EJECTED_PILOT, &swcCinemaImages[OBJECT_TYPE_EJECTED_PILOT]) != 0)
+                goto done;
+            pilot = find_vacant_3d_object();
+            /* WC1's starfield owns slots 34..48 and repopulates them
+             * on camera changes. Keep the pilot outside that range. */
+            if (pilot >= 34 && pilot < 49) {
+                for (pilot = 49; pilot <= SPACE_LAST_MOVING_OBJECT; pilot++) {
+                    if (aeObjectClass[pilot] == OBJECT_CLASS_NULL)
+                        break;
+                }
+                if (pilot > SPACE_LAST_MOVING_OBJECT)
+                    pilot = -1;
+            }
+            if (pilot == -1) {
+                /* A full effects pool must not prevent escape. Reclaim
+                 * one transient effect, preserving ships and hazards. */
+                for (object = 10; object <= SPACE_LAST_MOVING_OBJECT; object++) {
+                    if ((object < 34 || object >= 49) &&
+                        (aeObjectClass[object] == OBJECT_CLASS_EXPLOSION ||
+                         aeObjectClass[object] == OBJECT_CLASS_DEBRIS ||
+                         aeObjectClass[object] == OBJECT_CLASS_PROJECTILE)) {
+                        pilot = (short)object;
+                        remove_object(pilot);
+                        break;
+                    }
+                }
+            }
+            if (pilot == -1) {
+                SDL_SetError("No free SWC object slot for the ejected pilot");
+                goto done;
+            }
+            set_objects_data(pilot, OBJECT_TYPE_EJECTED_PILOT, -1);
+            asObjectCounter[pilot] = 32000;
+            copy_frame(0, pilot);
+            aShipPosition[pilot] = aShipPosition[0];
+            ScaleFixedVector(&aShipUpVector[pilot], -0x500, &aShipVelocity[pilot]);
+            AddFixedVectors(&aShipVelocity[pilot], &aShipVelocity[0], &aShipVelocity[pilot]);
+            cViewObject = (signed char)pilot;
+            /* The pilot has left the ship; later ship damage must not
+             * change the already-selected ejection into a player death. */
+            bPlayerVulnerable = 0;
+            SdlPlaySwcMusic("EJECT-IM.MooV", 50);
+        } else {
+            SdlPlaySwcMusic("FUNERAL.MooV", 50);
+        }
     }
     nCameraViewMode = 16;
     cCockpitView = 4;
@@ -1092,7 +1260,8 @@ static int SwcRunFlightScene(int titleMenu)
                 goto done;
         } else if (ticks > 40 &&
             SdlDrawSwcProportionalText(swcCinemaRenderer, &font,
-                160 - SdlSwcTextWidth(&font, "Press <sp> to continue") / 2,
+                scene == SWC_FLIGHT_EJECTION ? 10 :
+                    160 - SdlSwcTextWidth(&font, "Press <sp> to continue") / 2,
                 200, swcCinemaColors[129], "Press <sp> to continue") != 0) {
             goto done;
         }
@@ -1104,6 +1273,12 @@ static int SwcRunFlightScene(int titleMenu)
     }
 done:
     SDL_strlcpy(failure, SDL_GetError(), sizeof(failure));
+    if (scene == SWC_FLIGHT_EJECTION) {
+        /* Skipping the presentation still loses the abandoned ship. */
+        if (pilot != -1 && ticks <= 40 && result == SWC_MOVIE_SKIPPED)
+            Explosion(0);
+        bPlayerVulnerable = savedVulnerable;
+    }
     if (configured) {
         memcpy(&aMissionShips[32], savedShips, sizeof(savedShips));
         aMissionNavPoints[16] = savedNav;
@@ -1258,7 +1433,7 @@ title_menu:
     SwcInitCharacters();
     if (SdlLoadSwcMissionData(missionPath, 1, 0) != 0 || SwcStartMissionShips() < 0)
         goto done;
-    movieResult = SwcRunFlightScene(1);
+    movieResult = SwcRunFlightScene(SWC_FLIGHT_TITLE);
     if (movieResult == SWC_MOVIE_ERROR)
         goto done;
     if (movieResult == SWC_MOVIE_SKIPPED) {
@@ -1482,6 +1657,19 @@ title_menu:
                             HandleCommunicationMenuRequest();
                     }
                     break;
+                case SDLK_e:
+                    if (focused && !paused && !bPlayerDestroyed && nArcadeState == 0 &&
+                        (event.key.keysym.mod & KMOD_CTRL) && acPlayerComponentDamage[7] < 4) {
+                        /* CODE_01 process_player_input +0x3cbe: an intact
+                         * ejector succeeds; damaged ejectors use Random3DO
+                         * (0, damage), with its exclusive upper bound. */
+                        if (acPlayerComponentDamage[7] <= 1 ||
+                            RandomBelowOrEqual((short)(acPlayerComponentDamage[7] - 1)) == 0)
+                            nArcadeState = 2;
+                        else
+                            SdlPlaySwcSound(25, 127);
+                    }
+                    break;
                 case SDLK_1:
                 case SDLK_2:
                 case SDLK_3:
@@ -1541,14 +1729,12 @@ title_menu:
         else
             elapsed = 0;
         previous = current;
-        while (elapsed >= tickInterval) {
+        while (elapsed >= tickInterval && nArcadeState == 0 && !bPlayerDestroyed) {
             nTickCount60Hz = (unsigned int)((uint64_t)SDL_GetTicks() * 60 / 1000);
             SwcFlightTick(SDL_GetKeyboardState(NULL), SDL_GetMouseState(NULL, NULL));
             elapsed -= tickInterval;
-            if (nArcadeState == 1 || nArcadeState == 3 || nArcadeState == 4 || bPlayerDestroyed)
-                break;
         }
-        if (nArcadeState == 1 || nArcadeState == 3 || nArcadeState == 4 || bPlayerDestroyed) {
+        if ((nArcadeState >= 1 && nArcadeState <= 4) || bPlayerDestroyed) {
             SdlStopSwcSounds();
             SdlStopSwcMusic();
             SDL_SetWindowMouseGrab(window, SDL_FALSE);
@@ -1556,10 +1742,32 @@ title_menu:
             FlushInputEvents();
             if (IsCommChoiceMenuOpen())
                 CloseCommChoiceMenu();
-            if (nArcadeState == 4 || bPlayerDestroyed) {
+            if (nArcadeState == 2) {
+                movieResult = SwcRunFlightScene(SWC_FLIGHT_EJECTION);
+                if (movieResult == SWC_MOVIE_ERROR)
+                    goto done;
+                if (movieResult == SWC_MOVIE_QUIT) {
+                    result = 0;
+                    goto done;
+                }
+                nArcadeState = 2;
+                check_stranded();
+                if (nArcadeState != 3) {
+                    /* CODE_09 GameFlow +0x1ec0..+0x1ef2: rescue costs one
+                     * promotion point; first ejection queues medal 3. */
+                    nArcadeState = 0;
+                    bPlayerEjectedThisMission = 1;
+                    stCampaignState.promotionScore = MaxShort(0,
+                        (short)(stCampaignState.promotionScore - 1));
+                    stCampaignState.elapsedDate.year++;
+                    if (stCampaignState.elapsedDate.year == 1)
+                        nPendingMedalIndex = 3;
+                    bOfficeVisitPending = 1;
+                }
+            } else if (nArcadeState == 4 || bPlayerDestroyed) {
                 /* CODE_09 GameFlow +0x1b8e: death leads to the player's funeral,
                    without landing or PostMission statistics. */
-                movieResult = SwcRunFlightScene(0);
+                movieResult = SwcRunFlightScene(SWC_FLIGHT_DEATH);
                 if (movieResult == SWC_MOVIE_ERROR)
                     goto done;
                 if (movieResult != SWC_MOVIE_QUIT)
@@ -1582,7 +1790,8 @@ title_menu:
                 goto done;
             }
             cleanup_objectives();
-            movieResult = SdlPlaySwcLanding(window, renderer, evaluate_damage(0));
+            movieResult = bPlayerEjectedThisMission ? SWC_MOVIE_FINISHED :
+                SdlPlaySwcLanding(window, renderer, evaluate_damage(0));
             if (movieResult == SWC_MOVIE_ERROR)
                 goto done;
             if (movieResult != SWC_MOVIE_QUIT) {

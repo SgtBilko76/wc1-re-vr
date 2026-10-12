@@ -34,6 +34,7 @@ enum SwcCockpitInstrument {
     SWC_COCKPIT_SPARKS,
     SWC_PILOT_HAND,
     SWC_SPACE_GLARE,
+    SWC_TARGET_BRACKETS,
     SWC_COCKPIT_INSTRUMENT_COUNT
 };
 
@@ -483,7 +484,8 @@ static int SwcLoadCockpitShape(const SwcCmf *cmf, const char *type,
             continue;
         shape->frames[image].texture =
             SdlCreateSwcTexture(swcCockpitRenderer, &set, image,
-                shape == &swcCockpitShapes[SWC_SPACE_GLARE] ? maskColors : swcCockpitColors);
+                shape == &swcCockpitShapes[SWC_SPACE_GLARE] ||
+                shape == &swcCockpitShapes[SWC_TARGET_BRACKETS] ? maskColors : swcCockpitColors);
         if (shape->frames[image].texture == NULL ||
             SdlLoadSwcRasterImage(&set, image, &shape->frames[image].image) != 0)
             goto done;
@@ -549,8 +551,8 @@ int SdlInitSwcCockpit(SDL_Renderer *renderer, const SwcCmf *cockpit,
 {
     /* DATA/0 +0x433e/+0x43e6 resource lists, and +0x420/+0x786/+0x78c
        frame maxima: energy 10, throttle 13, fuel 13 for the Hornet. */
-    static const uint32_t chunks[] = {10, 15, 16, 17, 18, 31, 9, 1, 12, 13, 14, 7, 6, 6, 19};
-    static const uint32_t counts[] = {7, 11, 14, 14, 1, 13, 2, 14, 1, 1, 2, 3, 8, 16, 1};
+    static const uint32_t chunks[] = {10, 15, 16, 17, 18, 31, 9, 1, 12, 13, 14, 7, 6, 6, 19, 36};
+    static const uint32_t counts[] = {7, 11, 14, 14, 1, 13, 2, 14, 1, 1, 2, 3, 8, 16, 1, 4};
     size_t index;
     int shared;
     int result = -1;
@@ -562,7 +564,7 @@ int SdlInitSwcCockpit(SDL_Renderer *renderer, const SwcCmf *cockpit,
     memcpy(swcCockpitColors, colors, sizeof(swcCockpitColors));
     for (index = 0; index < SDL_arraysize(chunks); index++) {
         shared = index == SWC_SCANNER_CONTACTS || index == SWC_RETICLE ||
-            index == SWC_COCKPIT_SPARKS;
+            index == SWC_COCKPIT_SPARKS || index == SWC_TARGET_BRACKETS;
         if (SwcLoadCockpitShape(shared ? space : cockpit, shared ? "CKPT" : "PC00",
                                chunks[index], counts[index], &swcCockpitShapes[index]) != 0)
             goto done;
@@ -1203,26 +1205,25 @@ int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds)
             100 + asObjectScreenY[object] - bounds->y - bounds->h / 2);
     }
     if (target != -1 && targetBounds != NULL && swcCockpitDrawResult == 0) {
-        SDL_Color color = swcCockpitColors[nTargetLockCountdown == 0 ? 0x81 :
+        int locked = nTargetLockCountdown == 0;
+        SDL_Color color = swcCockpitColors[locked ? 0x81 :
             aeShipSide[target] == aeShipSide[0] ? 0xef : 0xd4];
-        int left = targetBounds->x - 3;
-        int top = targetBounds->y - 3;
-        int right = targetBounds->x + targetBounds->w + 3;
-        int bottom = targetBounds->y + targetBounds->h + 3;
-        SDL_Point corners[4][3] = {
-            {{left, top + 5}, {left, top}, {left + 5, top}},
-            {{right - 5, top}, {right, top}, {right, top + 5}},
-            {{right, bottom - 5}, {right, bottom}, {right - 5, bottom}},
-            {{left + 5, bottom}, {left, bottom}, {left, bottom - 5}}
+        int left = targetBounds->x - (locked ? 5 : 3);
+        int top = targetBounds->y - (locked ? 5 : 3);
+        int right = targetBounds->x + targetBounds->w - (locked ? 1 : 3);
+        int bottom = targetBounds->y + targetBounds->h - (locked ? 1 : 3);
+        SDL_Point corners[4] = {
+            {left, top}, {right, top}, {right, bottom}, {left, bottom}
         };
 
-        /* SDL corners follow the rotated sprite bounds. Original CODE_13
-           draw_target_box uses MacScale1 bounds and CKPT/36 artwork. */
-        swcCockpitDrawResult = SDL_SetRenderDrawColor(swcCockpitRenderer,
-            color.r, color.g, color.b, 255);
-        for (index = 0; index < 4 && swcCockpitDrawResult == 0; index++)
-            swcCockpitDrawResult = SDL_RenderDrawLines(swcCockpitRenderer,
-                                                       corners[index], 3);
+        /* CODE_13 draw_target_box +0x3114 uses get_Mac_boundaries and
+         * four CKPT/36 masks. Locked corners sit two pixels farther out. */
+        for (index = 0; index < 4 && swcCockpitDrawResult == 0; index++) {
+            swcCockpitDrawResult = SDL_SetTextureColorMod(
+                swcCockpitShapes[SWC_TARGET_BRACKETS].frames[index].texture,
+                color.r, color.g, color.b);
+            SwcDrawInstrument(SWC_TARGET_BRACKETS, index, corners[index].x, corners[index].y);
+        }
     }
     return swcCockpitDrawResult;
 }
@@ -1282,10 +1283,26 @@ int SdlDrawSwcHud(void)
         SwcDrawCockpitText(51, baseline, swcCurrentMessage.color, swcCurrentMessage.text);
 
     if (target != -1) {
-        /* CODE_13 digital readouts use the target's surface range, as WC1 does. */
+        /* CODE_13 update_digital_readouts +0x08b0; ace strings are in
+         * DATA/A5+0x2ca4. Named fighters display the pilot, other ships
+         * display their class. Series 6 retains its Valkyrie override. */
+        static const char *const aces[] = {"Bhurak", "Dakhath", "Khajja", "Bakhtosh"};
+        const char *name = aObjectTypeData[aeObjectType[target]].displayName;
+        int rating = acShipRating[target];
+
+        if (aeObjectClass[target] == OBJECT_CLASS_SHIP) {
+            if (rating >= 0 && rating < 8 && apWingmanPilots[rating] != NULL) {
+                name = apWingmanPilots[rating]->callsign;
+                if (rating == 0 && nCampaignDataSet == 0 &&
+                    stCampaignState.currentSeries == 6 && stCampaignState.currentMission == 0)
+                    name = "Valkyrie";
+            } else if (rating >= 9 && rating <= 12) {
+                name = aces[rating - 9];
+            }
+        }
         SwcDrawCockpitText(200, 110, 0x81, "Target: ");
         SwcDrawCockpitText(200 + SdlSwcTextWidth(&swcCockpitFont, "Target: "),
-            110, 0x84, aObjectTypeData[aeObjectType[target]].displayName);
+            110, 0x84, name);
         range = distance_from_object(0, (short)target);
         SwcDrawCockpitText(200, 121, 0x81, "Range:");
         SDL_snprintf(text, sizeof(text), " %d", range);

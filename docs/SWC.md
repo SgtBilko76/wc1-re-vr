@@ -7,7 +7,7 @@ Talk to Shotglass, Paladin and Angel, check pilot rankings or medals, then enter
 the briefing room and launch the experimental Enyo 1 flight with five ships,
 four objectives, and the original 320x240 cockpit and sprites.
 SDL2 handles input and presentation; WC1 supplies mission state, ship setup,
-flight dynamics, movement, projection, ship-view selection, navigation, and
+flight dynamics, movement, ship-view selection, navigation, and
 player weapons, including projectile collisions, damage, and missile guidance.
 Flight now uses the recovered SWC ship/weapon definitions, shared WC1 NPC AI,
 autopilot, encounter spawning and asteroid fields. The targeting lead indicator
@@ -17,6 +17,9 @@ gauges, player/target shield and armor displays, radar contacts, weapon status,
 navigation and hostile-direction markers, warning lamps, and damaged displays.
 Cockpit banking, the pilot's hand, native flight effects, warning sounds,
 computer speech and animated communications portraits are connected.
+Flight projection, target-bracket geometry/artwork and pilot/ace target names
+now follow the Mac instructions. Ctrl+E ejects, with the original external
+camera, abandoned-ship explosion and rescued/stranded mission outcome.
 The original conversations, briefing, debriefing and funeral scenes use the
 demo's text, portraits and AIFF speech. Prologue, opening, Hornet launch, landing and
 funeral movies have embedded audio. QuickTime music sequences now accompany
@@ -94,7 +97,7 @@ The main confirmed differences are:
 | Other pilots' post-mission statistics | CODE_09 `PostMission` +0x1794..+0x17b0 calls CODE_04 `Random3DO` +0x5dea with `(0,2)` and `(0,playerKills)`. Its equal-bound case returns zero. | WC1 `PostMission` uses inclusive `RandomInRange`; it can add two missions rather than at most one. When the player made zero kills, its `(0,0)` call can still award another pilot one kill. Common player/wingman statistics and badge control flow agree, but the whole routine is not equivalent. |
 | Autopilot eligibility | CODE_13 `auto_pilot_valid` +0x178a..+0x1880 checks an escort-wait flag; A5-0x1ff0 contains `Wait for %s`. | Resolved in the SDL-only SWC adapter: hazard/enemy/escort/distance priority and the objective-arrival wait latch now drive both A and the lamp. |
 | Movement timing | CODE_02 `accelerate_and_move_object` +0x43ba clamps elapsed Mac ticks to 0..6, then +0x471e scales velocity before adding it to position. A5-0x377a holds Q8 factors 128,154,205,256,320,384,512. | The host adds velocity once per fixed 50 ms step. That matches the table's factor at three Mac ticks; variable-tick behavior remains different. |
-| Campaign and death flow | CODE_09 `GameFlow` calls `PostMission` at +0x1f46 and `UpdateSeries` at +0x1f4a; its death case calls CODE_14 `death_sequence` at +0x1e1c before the player funeral at +0x1e44. | The death cinematic, funeral, stranded sequence and animated endings are connected. Enyo 1 completion returns to the title menu; New Game resets the campaign. Save/load and later progression remain absent. |
+| Campaign and death flow | CODE_09 `GameFlow` calls `PostMission` at +0x1f46 and `UpdateSeries` at +0x1f4a; its death case calls CODE_14 `death_sequence` at +0x1e1c before the player funeral at +0x1e44. | Ejection, the death cinematic, funeral, stranded sequence and animated endings are connected. The supplied demo omits the CKPT/17 ejected-pilot art. Enyo 1 completion returns to the title menu; New Game resets the campaign. Save/load and later progression remain absent. |
 
 Two apparent rendering/HUD gaps need qualification. CODE_01
 `rotate_Mac_shape2` +0x10ae constructs a centered quad from frame width/height
@@ -334,6 +337,7 @@ Flight uses WC1's DOS/Win32 mouse and keyboard controls through SDL2:
 | A | Autopilot toward the selected objective, stopping for enemies or hazards |
 | N / M | Next objective / nav map |
 | C / 1..7 | Open/close WC1 communications / choose a numbered recipient or command |
+| Ctrl+E | Eject; a damaged ejector can fail, and a destroyed ejector cannot operate |
 | Ctrl+F1 | Toggle cockpit |
 | P / Esc | Toggle pause |
 | Cmd+Enter (macOS), Alt+Enter (other platforms) | Toggle fullscreen in flight, menus, and movies |
@@ -765,6 +769,35 @@ CODE_14 `death_sequence` +0x362a uses that camera on the player, plays
 continues behind the centered, size-10 `Press <sp> to continue` prompt at baseline
 200, palette index 129. Dismissal enters the player funeral without PostMission.
 
+CODE_14 `ejection_sequence` +0x07c4 creates object type 56 with a 32,000-update
+lifetime, copies the player's frame and position, and adds `up * -0x500` to
+its inherited velocity. Camera 16 follows the pilot while `EJECT-IM.MooV`
+plays. After 40 simulation updates the abandoned ship explodes; the prompt is
+left-aligned at (10,200). An unopposed surviving wingman receives the come-home
+order. Escape/Backspace skips the scene on release, still recording the lost ship.
+Space/Enter or a click continues after the explosion. P pauses the scene.
+Pilot allocation avoids WC1's reserved starfield slots 34..48; if the effects
+pool is full, one transient explosion/debris/projectile can be reclaimed.
+
+Ctrl+E maps to CODE_01 `process_player_input` +0x3cbe's eject action. Ejector
+damage 4 disables it; lower damage succeeds when the original exclusive-upper-bound
+`Random3DO(0, damage)` returns zero, otherwise sound 25 plays. SDL checks this
+directly without changing WC1 input or its Win32 executable. Once ejected, damage
+to the abandoned ship cannot redirect the host into the player's funeral.
+
+The original requests `CKPT/17`, but it is absent from all 23 supplied CMFs and
+the executable resource fork. The host keeps the pilot's motion and camera without
+drawing substitute art, and reports the omission once. It loads the thirteen-frame
+set if supplied in either flight CMF; malformed present art remains an error.
+Thus the ejection behavior is implemented, but the visible pilot still needs
+the missing asset. No game data is added to this repository.
+
+CODE_09 `GameFlow` +0x1e62..+0x1ef2 checks for stranding after ejection. A rescued
+pilot bypasses the landing movie, records the ejection, loses one promotion point
+(minimum zero), increments the eject count and queues medal 3 for the first eject.
+PostMission and the existing debriefing then run. The office/medal ceremony and
+further campaign progression remain outside the Enyo 1 host.
+
 CODE_13 `check_stranded` +0x1630 selects arcade state 3 when the carrier record
 has state 3 and no enemy is within 30,000 units. This now enters CODE_14's BUC
 movie with `LASTRITE.MooV`, then `AIFF/Stranded.aif`. Music ducks to 20 during
@@ -875,7 +908,7 @@ rejected because a persisted Mac pointer cannot be used as a host pointer.
 | `draw_nav_pointer`, `auto_pilot_valid`, `missile_on_tail`, `calculate_damage_level` | Shared objective projection and warning queries | SWC navigation activation and stale-marker reset; autopilot dispatches to the recovered SWC eligibility and escort-wait state |
 | `malf`, `your_internal_damage`, `place_damage_on_cockpit` | Shared component damage and impact flow | SDL-only SWC malfunction countdown and three physical damage regions; original Mac static, damage and spark artwork |
 | `SetSpaceFlightFrameTiming` | Initializes the shared flight tick interval, 50 ms at WC1's default 20 Hz | Replaces the host's hard-coded 62 ms; SWC's elapsed-tick translation scaling is not reproduced |
-| `generate_stars`, `update_star_field`, `transform_objects_to_your_view`, `get_right_shape` | Projects the scene and chooses among 37 decoded ship views | Fixed-point ship/VDU rasterization is recovered; WC1 projection and target brackets remain provisional |
+| `generate_stars`, `update_star_field`, `get_right_shape` | Starfield state and selection among 37 decoded ship views | SDL now uses Mac projection and target brackets; star/dust point rendering and complete visual parity still need review |
 
 The SDL version of `nav_getxy` writes coordinates through byte copies because
 the existing packed objective records can place them at odd addresses. Its
@@ -1104,7 +1137,8 @@ X offset only during SWC flight. The Win32 reference branches are preserved.
 | Hull, armor and shields | CODE_13 `show_weapon_disp` +0x0e54 | PC00/10: hull, armor flashing below half strength, fore/aft shield presence |
 | Radar | CODE_13 `draw_3d_scanner` +0x285a; DATA/0 +0x300 / +0x390 | CKPT/31 contact sprites, 30,000-unit cutoff, nav marker, then PC00/18 grid at (139, 151) |
 | Destination / range | CODE_13 `update_digital_readouts`; DATA/0 +0x6f6 | Baseline (200, 94), 11-pixel line spacing, `FAR` at 32,000 or above |
-| Target / range | CODE_13 `update_digital_readouts`; DATA/0 +0x6c6 | Baseline (200, 110), using WC1's object name and surface range |
+| Target / range | CODE_13 `update_digital_readouts` +0x0660; DATA/0 +0x6c6 / +0x2ca4 | Baseline (200, 110), pilot callsigns for ratings 0..7, ace names for 9..12, otherwise SWC ship names; shared surface range |
+| Target brackets | CODE_13 `draw_target_box` +0x3114; CODE_01 `get_Mac_boundaries` +0x0ae2 | Original CKPT/36 corner masks, Q16 bounds, friendly/hostile/locked colors and distinct locked offsets |
 | Target hull / armor / shields | CODE_13 `show_target_disp` +0x1270; DATA/0 +0x756 | STnn/2 or SHnn/38 at (230,136), with PC00/9 shields |
 | Gun / missile selection | CODE_13 `update_status_text` +0x102e; DATA/0 +0x726 | Original short names at (51,84), fifteen-update selection notices, followed by computer messages |
 | Reticle | CODE_13 `overlay_head_up_display` +0x2f56; DATA/0 +0x792 | CKPT/1 frame 0 at (144,96), including frame and cockpit banking offsets |
@@ -1151,11 +1185,12 @@ frames. Cockpit damage, malfunction and communication state reset on a new fligh
 
 This pass supports the Enyo 1 Hornet cockpit. Ship capacities use the recovered
 SWC definitions. Shield, armor and weapon-energy displays now respond to shared
-combat state. Target brackets use SDL corners around the rotated sprite bounds;
-the separate `get_Mac_boundaries` calculation and CKPT/36 corner artwork remain
-unimplemented. Flight sprites and VDU polygons use the recovered rasterizer by
-default; enhanced OpenGL maps the same corners with GPU triangles.
-Target names use SWC object names without the original pilot/ace-name substitutions.
+combat state. Target brackets use the original `get_Mac_boundaries` calculation
+and CKPT/36 corner masks. Flight sprites and VDU polygons use the recovered
+rasterizer by default; enhanced OpenGL maps the same corners with GPU triangles.
+Target names use pilot callsigns or the original Bhurak/Dakhath/Khajja/Bakhtosh
+ace strings for named fighters; other targets retain SWC ship names. Series 6's
+Valkyrie override is retained even though later missions are not connected.
 Shared targeting/missile-lock notices still use WC1 lifetimes at host positions;
 component and native computer messages use the original SWC status area.
 The cockpit toggle retains the spatial HUD, weapon/component status,
@@ -1219,8 +1254,29 @@ CODE_02 `Cos` +0x557c and `Sin` +0x5608 fold angles into DATA/0 +0x4550's
 91-word Q8 quadrant table. Their three-letter MacsBug names were omitted by
 the older symbol extraction, which incorrectly extended `Magnitude` over them;
 the fresh instruction export resolves their actual entry points.
-Target brackets still use host geometry; the projection is still WC1's.
+CODE_01 `get_Mac_boundaries` +0x0ae2 is now separate from the drawing quad:
+it retains the low scale bit, calculates corners in Q16 and floors all extrema.
+CODE_13 `draw_target_box` +0x3114 colors four 6x6 CKPT/36 masks with MacDrawColor2
+semantics. Normal corners start at left/top minus 3 and right/bottom minus 3;
+locked corners use minus 5 and minus 1 respectively. Both renderers use these
+original bounds, including the software rasterizer's deliberate Q8 difference.
+
+The SDL projector follows CODE_04 `transform_objects_to_your_view` +0x4150:
+160-pixel projection divides the full 64-bit XY product; sprite scaling retains
+the wide result until its 0..8192 clamp. Depth sorting preserves 32-bit distances,
+while shared WC1 targeting receives a saturated 16-bit compatibility cache.
+Mac dust cutoff/size constants (5,000 units and 0x2100) and sky-depth sentinels
+are recovered. The shared navigation marker and ship-view selector remain,
+and star/dust pixels still use the host point renderer. Automatic acquisition
+and the separate nearest-ship camera candidate remain deferred with WC2 work.
 Pixel parity has not been checked against a running original.
+
+Ejection and cockpit validation: fresh Ghidra instruction/data inspection,
+read-only CMF/resource-fork inventories, `make -j4 modern modern-gui`, and Clang
+static analysis of the three SDL files. Builds passed with the existing packed-data
+linker alignment warnings; static analysis reported no findings. No tests were
+added or run, and neither the game nor the GUI was launched. All implementation
+changes are in SDL-only files; the Win32 reconstruction is unchanged.
 
 The effect previously described as explosion screen shake is cockpit **glare**.
 CODE_02 `animate_shape` +0x4832 triggers it at animation index 19 of a visible
@@ -1267,10 +1323,10 @@ many WC1 names were already derived from this Mac executable's MacsBug strings.
 1. Continue comparing shared AI/collision behavior with SWC instructions,
    including RNG bounds, elapsed-tick motion and later mission modes. The
    common 58 object definitions are recovered; Mac IDs 58..82 remain unsupported.
-2. Continue SWC projection, target-bracket and remaining 320x240 HUD work.
-   Flight sprites and VDUs now use the recovered fixed-point rasterizer;
-   classic-Mac font pixels, target/ace names and interactive visual parity
-   remain unverified.
+2. Continue remaining 320x240 HUD work. Mac projection, target brackets and
+   pilot/ace names are implemented; classic-Mac font pixels, original star/dust
+   rendering and interactive visual parity remain unverified. Automatic targeting
+   and lock animation stay deferred with further WC2 integration.
 3. Continue later campaign communications, remaining HUD modes and
    post-debriefing progression. Landing and the first debriefing are connected;
    the demo disables its simulator.

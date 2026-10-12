@@ -321,28 +321,43 @@ static int SwcCos(int angle)
     return quadrant[360 - angle];
 }
 
-/* SDL target brackets still use geometric bounds. The Mac's separate
- * get_Mac_boundaries/CKPT corner-art path is deferred. Share the integer
- * corners with the rasterizer so bounds cannot drift with SDL rounding. */
-static SDL_Rect SwcRotatedSpriteBounds(const SDL_Point corners[4])
+/* CODE_01 get_Mac_boundaries +0x0ae2 uses Q16 corners, retaining the
+ * low scale bit that rotate_Mac_shape2 discards. All four extrema are
+ * floored; the right and bottom coordinates are not rounded outward. */
+static SDL_Rect SwcMacSpriteBounds(const SwcRasterImage *image, int x, int y,
+                                    int cosine, int sine, int scale)
 {
     SDL_Rect bounds;
-    int right;
-    int bottom;
+    int64_t halfWidth = (int64_t)image->width * scale * 128;
+    int64_t halfHeight = (int64_t)image->height * scale * 128;
+    int64_t dx;
+    int64_t dy;
+    int px;
+    int py;
+    int right = 0;
+    int bottom = 0;
     int corner;
 
-    bounds.x = right = corners[0].x;
-    bounds.y = bottom = corners[0].y;
-    for (corner = 1; corner < 4; corner++) {
-        bounds.x = SDL_min(bounds.x, corners[corner].x);
-        bounds.y = SDL_min(bounds.y, corners[corner].y);
-        right = SDL_max(right, corners[corner].x);
-        bottom = SDL_max(bottom, corners[corner].y);
+    bounds.x = bounds.y = 0;
+    for (corner = 0; corner < 4; corner++) {
+        dx = corner == 1 || corner == 2 ? halfWidth : -halfWidth;
+        dy = corner >= 2 ? halfHeight : -halfHeight;
+        px = (int)(((int64_t)x * 65536 + ((dx * cosine) >> 8) +
+            ((dy * sine) >> 8)) >> 16);
+        py = (int)(((int64_t)y * 65536 + ((dy * cosine) >> 8) +
+            ((dx * -sine) >> 8)) >> 16);
+        if (corner == 0) {
+            bounds.x = right = px;
+            bounds.y = bottom = py;
+        } else {
+            bounds.x = SDL_min(bounds.x, px);
+            bounds.y = SDL_min(bounds.y, py);
+            right = SDL_max(right, px);
+            bottom = SDL_max(bottom, py);
+        }
     }
-    bounds.x >>= 8;
-    bounds.y >>= 8;
-    bounds.w = ((right + 255) >> 8) - bounds.x;
-    bounds.h = ((bottom + 255) >> 8) - bounds.y;
+    bounds.w = right - bounds.x;
+    bounds.h = bottom - bounds.y;
     return bounds;
 }
 
@@ -377,6 +392,6 @@ int SdlDrawSwcRotatedImage(SDL_Renderer *renderer, SDL_Texture *canvas,
             (int)(((int64_t)dx * -sine) >> 8);
     }
     if (bounds != NULL)
-        *bounds = SwcRotatedSpriteBounds(corners);
+        *bounds = SwcMacSpriteBounds(image, x, y, cosine, sine, scale);
     return SdlDrawSwcPolygon(renderer, canvas, image, colors, corners);
 }
