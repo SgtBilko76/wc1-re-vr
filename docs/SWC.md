@@ -534,6 +534,16 @@ Carrier presentation now includes the following recovered behavior:
   frames 0..6. Previously its position incorrectly held the ranking highlight.
   Barracks door/medal hover sequences use RCRM/13 frames 1..8, 9..16 and
   17..21; the wall display and desk light are also drawn.
+- Bar idle loops, the barracks wall display, simulator and door/medal hover
+  sequences share a 15 Hz room-animation clock, reduced from 30 Hz. Input
+  polling remains independent. CODE_07 `RecRoom` +0x0c98..+0x0d38 counts
+  animation delays in room updates; CODE_03 `BarracksScreen` +0x606e..+0x6140
+  advances hover frames every second update and +0x62d6 chooses the wall frame
+  once per draw. Their frame/delay commands and relative pacing are preserved.
+  The 15 Hz clock is an SDL presentation choice; these Mac loops do not specify
+  a fixed wall-clock rate. Pausing, focus loss, fades and conversations freeze
+  the room clock. Speech, portrait scripts, movies and flight retain their
+  separate timing.
 - Carrier mouths now consume AIFF `MARK` phonemes through the same
   CODE_12 `ParseMarks`/`GetMouthPos` reader used by the intro. Timing comes
   from the audio mixer's consumed sample position, with a one-buffer latency

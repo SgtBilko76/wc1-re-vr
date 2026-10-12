@@ -16,6 +16,10 @@ enum SwcRoomPackId {
     SWC_INTRO_BEFORE_ATTACK, SWC_INTRO_AFTER_ATTACK, SWC_ROOM_PACKS
 };
 
+/* RecRoom and BarracksScreen advance their scripts once per redraw.
+ * Pace those room updates separately from event polling and speech. */
+enum { SWC_ROOM_ANIMATION_HZ = 15 };
+
 typedef struct SwcRoomArt {
     char type[4];
     uint32_t id;
@@ -1796,7 +1800,7 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
             fadeIn = 1;
             previous = SDL_GetTicks();
         }
-        tick = (Uint32)((uint64_t)elapsed * 30 / 1000);
+        tick = (Uint32)((uint64_t)elapsed * SWC_ROOM_ANIMATION_HZ / 1000);
         steps = SDL_min(8U, tick / 2 - animationTick / 2);
         if (room == 1 && tick != animationTick)
             wallFrame = RandomBelowOrEqual(2);
