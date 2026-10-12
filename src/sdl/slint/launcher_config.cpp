@@ -29,6 +29,8 @@ constexpr IntegerSetting integerSettings[] = {
      SDL_LAUNCHER_EXPLICIT_EGA, 1},
     {"cockpitless_view", &SdlLauncherOptions::cockpitlessView,
      SDL_LAUNCHER_EXPLICIT_COCKPITLESS, 1},
+    {"cheat_mode", &SdlLauncherOptions::cheatMode,
+     SDL_LAUNCHER_EXPLICIT_CHEATS, 1},
     {"joystick_rumble", &SdlLauncherOptions::joystickRumble,
      SDL_LAUNCHER_EXPLICIT_RUMBLE, 1},
     {"joystick_mode", &SdlLauncherOptions::joystickMode,

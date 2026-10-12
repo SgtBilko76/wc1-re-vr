@@ -310,7 +310,10 @@ static int SwcStartMissionShips(void)
     nRenderedSpaceFrame = 0;
     nCurrentWave = -1;
     bPlayerDestroyed = 0;
-    bPlayerVulnerable = 1;
+    /* Title combat disables damage; restore the launcher's cheat choice
+     * whenever New Game recreates the mission. */
+    bPlayerVulnerable = nOriginDevUnlock == 0;
+    bPlayerCollisionResponse = nOriginDevUnlock == 0;
     bPlayerCollisionsEnabled = 1;
     bLandingAuthorized = 0;
     nPlayerCollisionObject = -1;

@@ -67,6 +67,9 @@ static int SdlParsePortArguments(int *argumentCount, char **arguments,
         } else if (strcmp(argument, "--enhanced") == 0) {
             options->enhancedRenderer = 1;
             options->explicitOptions |= SDL_LAUNCHER_EXPLICIT_ENHANCED;
+        } else if (strcmp(argument, "--cheats") == 0) {
+            options->cheatMode = 1;
+            options->explicitOptions |= SDL_LAUNCHER_EXPLICIT_CHEATS;
         } else if (strcmp(argument, "--joystick-debug") == 0) {
             SdlEnableJoystickDebug();
         } else if (strcmp(argument, "--joystick-rumble") == 0) {
@@ -139,6 +142,13 @@ static int SdlApplyLauncherOptions(const SdlLauncherOptions *options)
         SdlEnableJoystickRumble();
     if (options->egaDither && !options->swcDemo)
         SdlEnableEgaDither();
+    if (options->cheatMode) {
+        /* CheckLauncherAndConfig (0x401d10) applies this same combination
+         * for Saga's Cheater registry setting. Both SDL data paths share it. */
+        nOriginDevUnlock = 1;
+        bPlayerVulnerable = 0;
+        bPlayerCollisionResponse = 0;
+    }
     return 1;
 }
 

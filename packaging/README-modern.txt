@@ -13,8 +13,9 @@ joystick options, and click Launch WC1. Kilrathi Saga also needs the sibling
 STREAMS directory with PREFLITE.STR, POSFLITE.STR, and MISSION.STR.
 
 The launcher offers enhanced OpenGL rendering, EGA dithering, cockpitless
-campaign flight, joystick modes and axis layouts, and rumble. Clicking Launch
-remembers the directory and options in launcher.ini for the next GUI launch.
+campaign flight, cheat mode, joystick modes and axis layouts, and rumble.
+Clicking Launch remembers the directory and options in launcher.ini for the
+next GUI launch.
 Cancel leaves the saved settings unchanged. The file is stored in:
 
   macOS: ~/Library/Application Support/Origin Systems/WC Kilrathi Saga/
@@ -28,6 +29,11 @@ starting. Explicit arguments override saved settings. Direct launches do not
 read or write the INI file.
 Linux's Browse button uses an installed XDG desktop portal. The directory can
 also be entered directly.
+
+Cheat mode enables player invulnerability and disables player collisions in
+DOS, Kilrathi Saga, and the SWC Mac demo. Use the GUI checkbox or --cheats.
+The checkbox is saved with the other launcher options. Existing legacy cheat
+arguments and configuration settings still work independently.
 
 The DOS data path supports the original compressed packet resources and plays
 OriginFX music and synthesized sound effects through an embedded YM3812

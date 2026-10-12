@@ -66,15 +66,15 @@ With DOS data, compressed packet resources, OriginFX/AdLib music, and
 synthesized sound effects work; other DOS-specific data or behavior may not.
 
 The launcher follows WC2's layout, with WC1's enhanced OpenGL renderer, EGA
-dithering, cockpitless view, joystick modes, axis layouts, and rumble. Kilrathi
-Saga installations also need `STREAMS/PREFLITE.STR`, `POSFLITE.STR`, and
+dithering, cockpitless view, cheat mode, joystick modes, axis layouts, and
+rumble. Kilrathi Saga installations also need `STREAMS/PREFLITE.STR`, `POSFLITE.STR`, and
 `MISSION.STR`. Clicking Launch saves the selected directory and these options
 in a per-user `launcher.ini` for the next GUI launch. See
 [launcher settings](docs/SDL2.md#launcher-settings) for the file location and format.
 
 The [Super Wing Commander Mac demo](docs/SWC.md) also supports OpenGL,
-cockpitless view, the joystick modes and axis layouts, and rumble. Select its
-directory in the launcher or use `--swc-demo DIRECTORY` with the same switches.
+cockpitless view, cheat mode, the joystick modes and axis layouts, and rumble.
+Select its directory in the launcher or use `--swc-demo DIRECTORY` with the same switches.
 EGA dithering applies only to WC1 data.
 
 Providing command-line arguments starts the game directly from the working
@@ -111,6 +111,7 @@ active; the rest need a switch, and switches can be combined.
 | Joystick diagnostics on stderr | `--joystick-debug` |
 | Legacy frame-rate flag (SDL text overlay is not implemented) | `-f` |
 | Cockpitless view | `-c` |
+| Cheat mode: player invulnerability and no player collisions (DOS, Saga, SWC demo) | GUI checkbox or `--cheats` |
 
 ```sh
 ./wc1-modern --enhanced --joystick-rumble

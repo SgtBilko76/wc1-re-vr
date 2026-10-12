@@ -46,6 +46,7 @@ The controls map to:
 | Enhanced OpenGL | `--enhanced` |
 | EGA 16-colour dithering (WC1 only) | `--ega` |
 | Cockpitless view | `-c` (campaign flight; the training simulator keeps its cockpit) |
+| Cheat mode (invulnerability and no collisions) | `--cheats` |
 | Rumble | `--joystick-rumble` |
 | Control mode | `--joystick-mode=original`, `4button-2axis`, or `4button-4axis` |
 | Axis layout | `--joystick-axes=` with a layout listed below |
@@ -107,6 +108,30 @@ before SDL or the game is initialized.
 Release jobs build this integrated executable and package it as `wc1-modern`.
 The MSVC reference executable and comparison flags are unchanged.
 
+### Cheat mode
+
+The GUI's Cheat mode checkbox is available for DOS, Kilrathi Saga, and the SWC
+Mac demo. It enables the original developer unlock, prevents player damage,
+and disables collision response involving the player. `--cheats` enables the
+same combination without the GUI; with `--gui`, it checks the box initially
+and can still be unchecked before launch. SWC reapplies the choice whenever
+the mission is recreated, including New Game after title-screen combat.
+
+The original instruction evidence is `main` at `0x004274e0`, which recognizes
+the case-sensitive `Origin` argument and then accepts `-k` (no damage) and
+`-b` (no player collision response), and `CheckLauncherAndConfig` at
+`0x00401d10`, which sets all three flags when `ReadCheaterFlagFromRegistry`
+(`0x00442600`) reads a nonzero `Cheater` value. The GUI uses this latter
+combination. WC1 keeps its original `CHEATER` callsign behavior when creating
+or loading a pilot with the unlock enabled.
+
+SWC's original CODE_05 `inflict_damage` +`0x0d14` and CODE_02
+`object_collision` +`0x4c48` also guard player damage and collision response
+with separate flags. The SDL demo uses their existing WC1 equivalents.
+Only the SDL launcher and SWC host change; the Win32 reference code is untouched.
+Legacy command-line, `WINGCMDR.CFG`, and registry-emulation cheat settings
+remain independent: unchecking the GUI option does not remove those settings.
+
 ### Launcher settings
 
 Clicking Launch saves the absolute game directory and all graphics, gameplay,
@@ -130,6 +155,7 @@ game_directory="/absolute/path/to/WC1"
 enhanced_renderer=0
 ega_dither=0
 cockpitless_view=0
+cheat_mode=0
 joystick_rumble=0
 joystick_mode=0
 joystick_axes=0

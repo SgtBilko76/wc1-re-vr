@@ -28,9 +28,11 @@ cinematic and funeral to animated THE END. Losing the carrier with no nearby
 enemies plays BUC and the narrated stranded ending. Completed flights/endings
 return to the title menu; New Game always starts fresh Enyo 1.
 The launcher and command line support enhanced OpenGL, joystick modes and axis
-layouts, rumble, and cockpitless view. EGA dithering remains WC1-only because
-its conversion table depends on the DOS palette. See [SDL2.md](SDL2.md) for
-the graphics options and controller layouts.
+layouts, rumble, cockpitless view, and cheat mode (`--cheats`: player
+invulnerability and no player collision response). The cheat choice survives
+title-screen combat and subsequent New Game starts. EGA dithering remains
+WC1-only because its conversion table depends on the DOS palette. See
+[SDL2.md](SDL2.md) for the graphics options and controller layouts.
 Later missions, campaign progression, save/load, remaining HUD modes and
 side/rear views are still pending. These paths have been compiled and inspected
 without interactive execution.

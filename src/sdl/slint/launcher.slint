@@ -21,6 +21,7 @@ export component LauncherWindow inherits Window {
     in-out property <bool> enhanced-renderer;
     in-out property <bool> ega-dither;
     in-out property <bool> cockpitless-view;
+    in-out property <bool> cheat-mode;
     in-out property <bool> joystick-rumble;
     in-out property <int> joystick-mode-index;
     in-out property <int> joystick-axes-index;
@@ -148,6 +149,11 @@ export component LauncherWindow inherits Window {
                         text: "Cockpitless view";
                         checked <=> root.cockpitless-view;
                     }
+                }
+
+                CheckBox {
+                    text: "Cheat mode (invulnerability and no collisions)";
+                    checked <=> root.cheat-mode;
                 }
             }
         }
