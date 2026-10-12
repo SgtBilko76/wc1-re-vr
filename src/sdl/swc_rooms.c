@@ -249,6 +249,7 @@ static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
             case SDLK_RETURN:
             case SDLK_KP_ENTER:
             case SDLK_SPACE:
+            case SDLK_ESCAPE:
             case SDLK_BACKSPACE:
                 carrier->armedKey = event.key.keysym.scancode;
                 break;
@@ -263,7 +264,6 @@ static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
             case SDLK_UP:
                 input.step = -1;
                 break;
-            case SDLK_ESCAPE:
             case SDLK_p:
                 carrier->paused = !carrier->paused;
                 break;
@@ -275,7 +275,8 @@ static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
          * its first line, and launch input must not fire the player's guns. */
         if (event.type == SDL_KEYUP && carrier->armedKey != SDL_SCANCODE_UNKNOWN &&
             event.key.keysym.scancode == carrier->armedKey) {
-            input.back = event.key.keysym.sym == SDLK_BACKSPACE;
+            input.back = event.key.keysym.sym == SDLK_ESCAPE ||
+                         event.key.keysym.sym == SDLK_BACKSPACE;
             input.activate = !input.back;
             carrier->armedKey = SDL_SCANCODE_UNKNOWN;
         }
@@ -1487,8 +1488,8 @@ int SdlShowSwcEnding(SDL_Window *window, SDL_Renderer *renderer,
             result = SWC_MOVIE_QUIT;
             break;
         }
-        if (carrier.focused && !carrier.paused &&
-            (input.back || input.activate || input.clicked)) {
+        if (input.back || (carrier.focused && !carrier.paused &&
+            (input.activate || input.clicked))) {
             result = SWC_MOVIE_FINISHED;
             break;
         }

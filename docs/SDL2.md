@@ -200,7 +200,8 @@ supported feedback. The README documents the common controller bindings.
 These modes also apply to SWC. In its menus and scenes, the D-pad browses,
 A confirms, B/Back goes back or skips, and Start pauses. See
 [the demo controls](SWC.md#run) for its flight bindings.
-Escape and P both toggle pause throughout the demo; Backspace handles menu
+Escape and P toggle pause during demo gameplay. Escape skips cutscenes and
+goes back from carrier panels; P pauses cutscenes. Backspace also handles menu
 back and scene skipping. Its window title stays **Super Wing Commander**.
 
 ## Commands

@@ -686,6 +686,7 @@ border:
 int SdlSwcVisitCinema(int view, int obj, short frames)
 {
     SDL_Event event;
+    SDL_Scancode skipKey = SDL_SCANCODE_UNKNOWN;
     Uint32 previous;
     Uint32 current;
     Uint32 elapsed = 0;
@@ -715,7 +716,7 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
     SdlPlaySwcSound(17, 255); /* CODE_14 visit_the_cinema +0x0028. */
     focused = (SDL_GetWindowFlags(swcCinemaWindow) & SDL_WINDOW_INPUT_FOCUS) != 0;
     previous = SDL_GetTicks();
-    while (frames > 0) {
+    while (frames > 0 || skipKey != SDL_SCANCODE_UNKNOWN) {
         current = SDL_GetTicks();
         if (focused && !paused)
             elapsed += SDL_min(current - previous, 250);
@@ -730,15 +731,24 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
             }
             if (event.type == SDL_WINDOWEVENT) {
                 if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST ||
-                    event.window.event == SDL_WINDOWEVENT_MINIMIZED)
+                    event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
                     focused = 0;
-                else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED ||
+                    skipKey = SDL_SCANCODE_UNKNOWN;
+                } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED ||
                          event.window.event == SDL_WINDOWEVENT_RESTORED)
                     focused = (SDL_GetWindowFlags(swcCinemaWindow) & SDL_WINDOW_INPUT_FOCUS) != 0;
             }
-            if (event.type == SDL_KEYDOWN && !event.key.repeat && focused &&
-                (event.key.keysym.sym == SDLK_p || event.key.keysym.sym == SDLK_ESCAPE))
-                paused = !paused;
+            if (event.type == SDL_KEYDOWN && !event.key.repeat && focused) {
+                if (event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_BACKSPACE)
+                    skipKey = event.key.keysym.scancode;
+                else if (event.key.keysym.sym == SDLK_p)
+                    paused = !paused;
+            }
+            /* Consume the release before returning to flight. A skipped
+             * camera finishes normally so autopilot still completes travel. */
+            if (event.type == SDL_KEYUP && skipKey != SDL_SCANCODE_UNKNOWN &&
+                event.key.keysym.scancode == skipKey)
+                goto done;
         }
         SDL_SetWindowMouseGrab(swcCinemaWindow,
             focused && !paused ? SDL_TRUE : SDL_FALSE);
@@ -746,7 +756,7 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
         if (!focused || paused)
             elapsed = 0;
         SdlPauseSwcSound(!focused || paused);
-        if (elapsed >= interval) {
+        if (frames > 0 && elapsed >= interval) {
             nTickCount60Hz = (unsigned int)((uint64_t)current * 60 / 1000);
             SdlSwcUpdateSpace();
             update_star_field();
@@ -978,14 +988,17 @@ static int SwcRunFlightScene(int titleMenu)
             if (!focused)
                 continue;
             if (event.type == SDL_KEYDOWN && !event.key.repeat) {
-                if (event.key.keysym.sym == SDLK_p || event.key.keysym.sym == SDLK_ESCAPE) {
+                if (event.key.keysym.sym == SDLK_p ||
+                    (titleMenu && event.key.keysym.sym == SDLK_ESCAPE)) {
                     paused = !paused;
                     armedKey = SDL_SCANCODE_UNKNOWN;
                     mouseDown = 0;
+                } else if (!titleMenu && (event.key.keysym.sym == SDLK_ESCAPE ||
+                           event.key.keysym.sym == SDLK_BACKSPACE)) {
+                    armedKey = event.key.keysym.scancode;
                 } else if (!paused && (event.key.keysym.sym == SDLK_SPACE ||
                     event.key.keysym.sym == SDLK_RETURN ||
-                    event.key.keysym.sym == SDLK_KP_ENTER ||
-                    (!titleMenu && event.key.keysym.sym == SDLK_BACKSPACE))) {
+                    event.key.keysym.sym == SDLK_KP_ENTER)) {
                     armedKey = event.key.keysym.scancode;
                 } else if (titleMenu && !paused &&
                     (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_DOWN ||
@@ -994,13 +1007,18 @@ static int SwcRunFlightScene(int titleMenu)
                     SdlPlaySwcSound(30, 255);
                 }
             }
-            if (paused)
-                continue;
             if (event.type == SDL_KEYUP && armedKey != SDL_SCANCODE_UNKNOWN &&
                 event.key.keysym.scancode == armedKey) {
-                activate = 1;
+                if (!titleMenu && (event.key.keysym.sym == SDLK_ESCAPE ||
+                                   event.key.keysym.sym == SDLK_BACKSPACE)) {
+                    result = SWC_MOVIE_SKIPPED;
+                    goto done;
+                }
+                activate = !paused;
                 armedKey = SDL_SCANCODE_UNKNOWN;
             }
+            if (paused)
+                continue;
             if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
                 mouseDown = 1;
             if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
@@ -1409,6 +1427,8 @@ title_menu:
                             goto done;
                         }
                         focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+                        SDL_SetWindowMouseGrab(window, focused ? SDL_TRUE : SDL_FALSE);
+                        SDL_ShowCursor(focused ? SDL_DISABLE : SDL_ENABLE);
                         copy_frame(0, EYE_OBJECT);
                         aShipPosition[EYE_OBJECT] = aShipPosition[0];
                         aShipVelocity[EYE_OBJECT] = aShipVelocity[0];

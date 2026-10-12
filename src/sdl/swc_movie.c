@@ -87,13 +87,13 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
             }
             if (event.type == SDL_KEYDOWN && !event.key.repeat && focused) {
                 switch (event.key.keysym.sym) {
+                case SDLK_ESCAPE:
                 case SDLK_BACKSPACE:
                 case SDLK_SPACE:
                 case SDLK_RETURN:
                 case SDLK_KP_ENTER:
                     skipKey = event.key.keysym.scancode;
                     break;
-                case SDLK_ESCAPE:
                 case SDLK_p:
                     paused = !paused;
                     break;
