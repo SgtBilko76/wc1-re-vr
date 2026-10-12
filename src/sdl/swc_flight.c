@@ -688,6 +688,7 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
         }
         SDL_SetWindowMouseGrab(swcCinemaWindow,
             focused && !paused ? SDL_TRUE : SDL_FALSE);
+        SDL_ShowCursor(focused && !paused ? SDL_DISABLE : SDL_ENABLE);
         if (!focused || paused)
             elapsed = 0;
         SdlPauseSwcSound(!focused || paused);
@@ -815,6 +816,7 @@ static int SwcRunFlightScene(int titleMenu)
     SwcTextFont font = {0};
     SwcFrame frame;
     SDL_Texture *menuTextures[2] = {NULL, NULL};
+    SDL_Cursor *savedCursor = SDL_GetCursor();
     SDL_Rect bounds[2];
     SDL_Event event;
     SDL_Point mouse = {-1, -1};
@@ -839,6 +841,7 @@ static int SwcRunFlightScene(int titleMenu)
     SDL_SetWindowMouseGrab(swcCinemaWindow, SDL_FALSE);
     SDL_ShowCursor(titleMenu ? SDL_ENABLE : SDL_DISABLE);
     if (titleMenu) {
+        SDL_SetCursor(SDL_GetDefaultCursor());
         if (SwcCMGetChunk(swcCinemaSpaceCmf, "RCRM", 47, &menu) != 0)
             goto done;
         for (index = 0; index < 2; index++) {
@@ -1034,6 +1037,8 @@ done:
     SdlStopSwcSounds();
     if (titleMenu && result == SWC_MOVIE_FINISHED)
         SdlPlaySwcSound(31, 255);
+    if (titleMenu && savedCursor != NULL)
+        SDL_SetCursor(savedCursor);
     SDL_ShowCursor(cursorVisible);
     SDL_DestroyTexture(font.texture);
     for (index = 0; index < 2; index++)
@@ -1077,6 +1082,7 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     int showMap = 0;
     int paused = 0;
     int focused = 1;
+    int savedCursorVisible = -1;
     int objectsConfigured = 0;
     int movieResult;
     int choice;
@@ -1107,6 +1113,7 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     SDL_SetMainReady();
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER) != 0)
         goto done;
+    savedCursorVisible = SDL_ShowCursor(SDL_QUERY);
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
     window = SDL_CreateWindow("Super Wing Commander - Enyo 1 (experimental flight)",
                                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 960, 720,
@@ -1253,6 +1260,9 @@ title_menu:
     if (!checkOnly) {
         SDL_ShowWindow(window);
         SDL_RaiseWindow(window);
+        /* Mouse grabbing does not hide the system cursor. The WC1
+           bMouseCursorVisible flag controls steering input, not SDL visibility. */
+        SDL_ShowCursor(focused ? SDL_DISABLE : SDL_ENABLE);
         if (focused) {
             SDL_SetWindowMouseGrab(window, SDL_TRUE);
             SwcCentreFlightMouse();
@@ -1263,15 +1273,21 @@ title_menu:
             if (event.type == SDL_QUIT)
                 done = 1;
             if (event.type == SDL_WINDOWEVENT) {
-                if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+                if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST ||
+                    event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
                     focused = 0;
                     elapsed = 0;
                     SwcResetFlightInput();
                     SDL_SetWindowMouseGrab(window, SDL_FALSE);
-                } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
-                    focused = 1;
+                    if (!checkOnly)
+                        SDL_ShowCursor(SDL_ENABLE);
+                } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED ||
+                           event.window.event == SDL_WINDOWEVENT_RESTORED) {
+                    focused = checkOnly ||
+                        (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
                     previous = SDL_GetTicks();
-                    if (!checkOnly && !paused) {
+                    if (!checkOnly && focused && !paused) {
+                        SDL_ShowCursor(SDL_DISABLE);
                         SDL_SetWindowMouseGrab(window, SDL_TRUE);
                         SwcCentreFlightMouse();
                     }
@@ -1421,6 +1437,8 @@ title_menu:
                     SwcResetFlightInput();
                     SDL_SetWindowMouseGrab(window, !checkOnly && focused && !paused
                                                    ? SDL_TRUE : SDL_FALSE);
+                    if (!checkOnly)
+                        SDL_ShowCursor(focused && !paused ? SDL_DISABLE : SDL_ENABLE);
                     if (!checkOnly && focused && !paused)
                         SwcCentreFlightMouse();
                     break;
@@ -1562,6 +1580,8 @@ done:
         memcpy(aObjectTypeData, savedObjects, sizeof(aObjectTypeData));
     if (window != NULL)
         SDL_SetWindowMouseGrab(window, SDL_FALSE);
+    if (savedCursorVisible >= 0)
+        SDL_ShowCursor(savedCursorVisible);
     for (object = 0; object < OBJECT_TYPE_COUNT; object++) {
         for (view = 0; (uint32_t)view < images[object].count; view++)
             SDL_free(images[object].views[view].pixels);

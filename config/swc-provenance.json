@@ -767,6 +767,7 @@
   },
   "wc1_control_reuse": {
     "source": "src/sdl/swc_flight.c",
+    "host_cursor": "SDL-only: active flight and autopilot hide the system cursor; pause, focus loss and minimization show it while releasing capture. Resuming hides it again. Title/carrier menus enable their cursor, and session cleanup restores prior visibility. The WC1 bMouseCursorVisible steering flag is independent and unchanged.",
     "functions": ["PollKeyboardState", "process_player_input", "player_input", "QueueInputEvent", "WarpMouseTo", "accelerate", "your_afterburner", "SetSpaceFlightFrameTiming"],
     "qualification": "DOS/Win32 controls are intentional. Held keyboard input is sampled per tick, with independent axis release. Mouse motion is passed to WC1 player_input using an initialized SWC viewport, preserving its response tables, signs and right-button roll/throttle. Only motion/modifier events are queued; the SWC host owns SDL event pumping and leaves weapon button states clear. Right double-click/hold uses WC1's timing-only 20/60-second interval and shared afterburner routine. Pointer capture is released on pause/focus loss, and SDL logical coordinates handle resizing and warping. The SDL host calls the shared gun/missile, selection and target routines directly. HandleSpaceFlightControls remains bypassed; unsupported mission/VDU commands are not dispatched. SWC's Mac event/device code differs.",
     "wc1_mouse_evidence": {"source": "src/main.c", "wc1_address": "0x004285d0", "response_tables": ["0x0046a030", "0x0046a040"]},
@@ -935,6 +936,7 @@
     "scope": "SDL2 startup and endings for fresh Enyo 1; all changes remain in SDL/SWC host files. Win32 reference source, flags and calling conventions are unchanged.",
     "title": {
       "art": "Spaceflight.CMF RCRM/47 frames 0/1, clut 251; frame 2 remains unselectable without saves.",
+      "host_mouse": "Every menu visit releases capture and enables the system arrow, restoring cursor shape/visibility afterward. Click events already use SDL logical coordinates, including resize and letterboxing; no second coordinate conversion is applied.",
       "battle": "Expanded DATA/0 +0xa0a + 32*76 through record 35: two Dralthi, two Hornets, nav 16. Respawn an eliminated side; explode fighters past 100,000 units.",
       "camera": "CODE_02 new_view case 16 and set_eye_direction_and_position +0x2a3a; CODE_04 try2point_object_at_object +0x319e. Turn components clamp to +/-3, acceleration halves to components below 0xf00, velocity caps at 0x5000 beyond range 0x138800.",
       "timing": "Highlight visible on renderedFrame % 6 < 4; frame counter > 10000 returns to IntroFilm without splash/Lion. At the host 20 Hz cadence this is about 8 minutes 20 seconds; movement does not reset the original counter.",

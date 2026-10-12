@@ -689,6 +689,9 @@ side respawns, and fighters beyond 100,000 units explode. The selected New Game
 overlay appears on four of every six rendered updates. After 10,001 updates
 (about 8 minutes 20 seconds at 20 Hz), the intro replays and the menu returns.
 This is the original frame counter, which does not reset on mouse movement.
+The title menu releases mouse capture and shows the system arrow on every visit,
+including returns from flight and intro replay. Mouse clicks use SDL's scaled
+logical coordinates, matching the original menu artwork after resizing.
 
 The Mac-only camera mode 16 is recovered from CODE_02 `new_view` +0x3190 and
 `set_eye_direction_and_position` +0x25d8, with CODE_04
@@ -833,6 +836,11 @@ the existing response tables, direction signs, right-button behavior, and
 recentering code without duplicating the mouse algorithm. SDL converts window
 coordinates and pointer warps through its logical renderer, including resize
 and letterboxing; the extra WC1 cockpitless camera offsets are not applied.
+Active flight and autopilot explicitly hide the system cursor. Pause, focus loss
+and minimization release capture and show it; resuming flight hides it again.
+Carrier menus manage their own visible cursor, and session cleanup restores the
+previous visibility. This SDL state is separate from WC1's `bMouseCursorVisible`
+steering flag.
 
 The SWC event loop owns event pumping. Its calls into `player_input` cannot
 consume unfiltered SDL button or window events through WC1's separate loop.
