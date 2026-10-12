@@ -162,6 +162,95 @@ done:
     return result;
 }
 
+/* CODE_12 SetupSWStuff +0x4ad2/+0x4ad6, followed by CODE_09 squadron
+ * +0x5e -> CODE_07 IntroFilm +0x1442. BUC belongs to stranded_sequence,
+ * not startup. MovieDisplay's music index is the high word of its flags. */
+int SdlPlaySwcStartup(SDL_Window *window, SDL_Renderer *renderer, const char *resourceFork)
+{
+    static const char *const names[] = {
+        "Lion", "INTRO00", "INTRO01", "INTRO02", "INTRO03", "INTRO04",
+        "INTRO05", "INTRO06", "INTRO07", "INTRO08", "INTRO09", "INTRO10"
+    };
+    char paths[SDL_arraysize(names)][PATH_MAX];
+    char relative[64];
+    char path[PATH_MAX];
+    SDL_RWops *reader;
+    size_t index;
+    int line;
+    int cursorVisible;
+    int result = SWC_MOVIE_FINISHED;
+
+    /* Preserve the optional-movie contract for minimal flight installations.
+     * Check the entire prologue, including its two live dialogue scenes. */
+    for (index = 0; index < SDL_arraysize(names); index++) {
+        SDL_snprintf(relative, sizeof(relative), "Movies/%s.dcMov", names[index]);
+        if (!SdlResolvePath(relative, paths[index], sizeof(paths[index])))
+            return SDL_SetError("SWC movie path is too long: %s", relative);
+        reader = SDL_RWFromFile(paths[index], "rb");
+        if (reader == NULL)
+            goto unavailable;
+        SDL_RWclose(reader);
+    }
+    for (line = 1; line <= 11; line++) {
+        if (line <= 2)
+            SDL_snprintf(relative, sizeof(relative), "CMFs/IntroFilm%d.CMF", line);
+        else
+            SDL_snprintf(relative, sizeof(relative), "AIFF/intro.%02d", line);
+        if (!SdlResolvePath(relative, path, sizeof(path)))
+            return SDL_SetError("SWC intro path is too long: %s", relative);
+        reader = SDL_RWFromFile(path, "rb");
+        if (reader == NULL)
+            goto unavailable;
+        SDL_RWclose(reader);
+    }
+    cursorVisible = SDL_ShowCursor(SDL_QUERY);
+    SDL_ShowCursor(SDL_DISABLE);
+    result = SdlShowSwcSplash(window, renderer, resourceFork);
+    /* Dismissing ShowSplash advances to Lion. MacIntroFilm clears the skip
+     * latch through CODE_15 movie_dim_screen before squadron's prologue. */
+    if (result == SWC_MOVIE_QUIT || result == SWC_MOVIE_ERROR)
+        goto done;
+    for (index = 0; index < SDL_arraysize(names); index++) {
+        SdlPauseSwcSound(1);
+        if (index == 1)
+            SdlPlaySwcMusic("SUPRWNG1.MooV", 50);
+        else if (index == 3)
+            SdlPlaySwcMusic("SUPRWNG1.MooV", 30);
+        else if (index == 4)
+            SdlPlaySwcMusic("SUPRWNG2.MooV", 30);
+        else if (index == 6) {
+            SdlPlaySwcMusic("SUPRWNG3.MooV", 30);
+            result = SdlPlaySwcIntroSpeech(window, renderer, resourceFork, 0);
+            if (result != SWC_MOVIE_FINISHED)
+                break;
+            SdlPauseSwcSound(1);
+            SdlPlaySwcMusic("SUPRWNG4.MooV", 50);
+        } else if (index == 9) {
+            SdlPlaySwcMusic("SUPRWNG4.MooV", 30);
+            result = SdlPlaySwcIntroSpeech(window, renderer, resourceFork, 1);
+            if (result != SWC_MOVIE_FINISHED)
+                break;
+            SdlPauseSwcSound(1);
+            SdlPlaySwcMusic("SUPRWNG4.MooV", 50);
+        }
+        result = SdlPlaySwcMovie(window, renderer, paths[index], "prologue");
+        if (index == 0 && result == SWC_MOVIE_SKIPPED)
+            continue;
+        if (result != SWC_MOVIE_FINISHED)
+            break;
+    }
+done:
+    SdlClearSwcPcm();
+    SdlStopSwcMusic();
+    SDL_ShowCursor(cursorVisible);
+    SDL_SetWindowTitle(window, "Super Wing Commander - Enyo 1 (experimental flight)");
+    return result;
+unavailable:
+    fprintf(stderr, "Skipping SWC startup: cannot read %s (%s)\n", relative, SDL_GetError());
+    SDL_ClearError();
+    return SWC_MOVIE_FINISHED;
+}
+
 /* Shared SDL presentation for CODE_03 opening_scene, scramble, landing and
  * funeral MovieDisplay calls. Palette fades remain pending. */
 enum SwcMovieSequence {

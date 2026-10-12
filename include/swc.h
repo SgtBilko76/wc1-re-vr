@@ -90,6 +90,8 @@ int SwcGetFrameCount(const SwcBuffer *set, uint32_t *count);
 int SwcGetFramePtr(const SwcBuffer *set, uint32_t index, SwcFrame *frame);
 int SwcDecodeFrame(const SwcFrame *frame, uint8_t *pixels, size_t capacity);
 int SwcReadPalette(const char *resourceFork, int16_t id, SDL_Color colors[256]);
+/* Original startup PICT/129: one indexed 320x240 PackBits rectangle. */
+int SwcReadSplash(const char *resourceFork, SwcBuffer *pixels, SDL_Color colors[256]);
 int SwcReadResource(const char *resourceFork, const char type[4], int16_t id,
                     SwcBuffer *resource);
 int SwcReadSound(const SwcBuffer *resource, SwcSound *sound);
@@ -145,6 +147,11 @@ int SwcMovieOpen(const char *path, SwcMovie *movie);
 void SwcMovieClose(SwcMovie *movie);
 /* Advances the retained indexed image: 1 = frame, 0 = end, -1 = error. */
 int SwcMovieNextFrame(SwcMovie *movie);
+/* Splash, logo and prologue before the new-campaign opening. */
+int SdlPlaySwcStartup(SDL_Window *window, SDL_Renderer *renderer, const char *resourceFork);
+int SdlShowSwcSplash(SDL_Window *window, SDL_Renderer *renderer, const char *resourceFork);
+int SdlPlaySwcIntroSpeech(SDL_Window *window, SDL_Renderer *renderer,
+                           const char *resourceFork, int afterAttack);
 /* New-campaign opening before the carrier; returns a SwcMovieResult. */
 int SdlPlaySwcOpening(SDL_Window *window, SDL_Renderer *renderer);
 /* Hornet launch for the Enyo 1 host; returns a SwcMovieResult. */
@@ -165,6 +172,12 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
                       const char *missionPath, const char *resourceFork, enum SwcCarrierVisit visit);
 /* Demo speech is AIFF, mono signed 16-bit big-endian PCM at 11025 Hz. */
 int SwcReadSpeech(const char *path, SwcBuffer *pcm);
+/* CODE_12 ParseMarks/GetMouthPos: 60 Hz mouth frames from AIFF MARK words. */
+typedef struct SwcSpeechMark {
+    uint32_t tick;
+    int frame;
+} SwcSpeechMark;
+int SwcReadSpeechMarks(const char *path, SwcSpeechMark **marks, size_t *count);
 
 /* Shared SDL text presentation for the cockpit and carrier. */
 SDL_Texture *SdlCreateSwcFont(SDL_Renderer *renderer);

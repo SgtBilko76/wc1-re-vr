@@ -138,6 +138,108 @@ done:
     return result;
 }
 
+/* CODE_12 ShowSplash +0x4bca gets PICT/129. This reads the demo's single
+ * PackBitsRect image, not a general QuickDraw picture interpreter. */
+int SwcReadSplash(const char *resourceFork, SwcBuffer *pixels, SDL_Color colors[256])
+{
+    static const uint8_t rectangle[8] = {0, 0, 0, 0, 0, 240, 1, 64};
+    SwcBuffer picture = {0};
+    SDL_RWops *reader = NULL;
+    size_t cursor = 0x880;
+    size_t end;
+    size_t output;
+    size_t count;
+    unsigned int control;
+    int row;
+    int color;
+    int result = -1;
+
+    memset(pixels, 0, sizeof(*pixels));
+    if (SwcReadResource(resourceFork, "PICT", 129, &picture) != 0)
+        return -1;
+    if (picture.size < cursor ||
+        memcmp(picture.data + 2, rectangle, sizeof(rectangle)) != 0 ||
+        memcmp(picture.data + 0x0a, "\x00\x11\x02\xff\x0c\x00", 6) != 0 ||
+        memcmp(picture.data + 0x28, "\x00\x1e\x00\x01\x00\x0a", 6) != 0 ||
+        memcmp(picture.data + 0x2e, rectangle, sizeof(rectangle)) != 0 ||
+        memcmp(picture.data + 0x36, "\x00\x98\x81\x40", 4) != 0 ||
+        memcmp(picture.data + 0x3a, rectangle, sizeof(rectangle)) != 0 ||
+        memcmp(picture.data + 0x42, "\x00\x00\x00\x00", 4) != 0 ||
+        memcmp(picture.data + 0x52, "\x00\x00\x00\x08\x00\x01\x00\x08", 8) != 0 ||
+        memcmp(picture.data + 0x6a, "\x80\x00\x00\xff", 4) != 0 ||
+        memcmp(picture.data + 0x86e, rectangle, sizeof(rectangle)) != 0 ||
+        memcmp(picture.data + 0x876, rectangle, sizeof(rectangle)) != 0 ||
+        memcmp(picture.data + 0x87e, "\x00\x40", 2) != 0)
+        goto invalid;
+    reader = SDL_RWFromConstMem(picture.data, (int)picture.size);
+    if (reader == NULL)
+        goto done;
+    SDL_RWseek(reader, 0x6e, RW_SEEK_SET);
+    for (color = 0; color < 256; color++) {
+        SDL_ReadBE16(reader); /* ctFlags 0x8000 selects table order. */
+        colors[color].r = (uint8_t)(SDL_ReadBE16(reader) >> 8);
+        colors[color].g = (uint8_t)(SDL_ReadBE16(reader) >> 8);
+        colors[color].b = (uint8_t)(SDL_ReadBE16(reader) >> 8);
+        colors[color].a = SDL_ALPHA_OPAQUE;
+    }
+    pixels->size = SWC_FRAME_WIDTH * SWC_FRAME_HEIGHT;
+    pixels->data = SDL_malloc(pixels->size);
+    if (pixels->data == NULL) {
+        SDL_OutOfMemory();
+        goto done;
+    }
+    for (row = 0; row < SWC_FRAME_HEIGHT; row++) {
+        if (picture.size - cursor < 2)
+            goto invalid;
+        count = (size_t)picture.data[cursor] << 8 | picture.data[cursor + 1];
+        cursor += 2;
+        if (count > picture.size - cursor)
+            goto invalid;
+        end = cursor + count;
+        output = 0;
+        while (cursor < end) {
+            control = picture.data[cursor++];
+            if (control == 128)
+                continue;
+            count = control < 128 ? control + 1 : 257 - control;
+            if (count > SWC_FRAME_WIDTH - output)
+                goto invalid;
+            if (control < 128) {
+                if (count > end - cursor)
+                    goto invalid;
+                memcpy(pixels->data + row * SWC_FRAME_WIDTH + output,
+                       picture.data + cursor, count);
+                cursor += count;
+            } else {
+                if (cursor == end)
+                    goto invalid;
+                memset(pixels->data + row * SWC_FRAME_WIDTH + output,
+                       picture.data[cursor++], count);
+            }
+            output += count;
+        }
+        if (output != SWC_FRAME_WIDTH)
+            goto invalid;
+    }
+    cursor += cursor & 1;
+    if (cursor > picture.size || picture.size - cursor != 2 ||
+        memcmp(picture.data + cursor, "\x00\xff", 2) != 0)
+        goto invalid;
+    result = 0;
+    goto done;
+invalid:
+    SDL_SetError("Unsupported or malformed SWC splash PICT/129");
+done:
+    if (result != 0) {
+        SDL_free(pixels->data);
+        memset(pixels, 0, sizeof(*pixels));
+    }
+    if (reader != NULL)
+        SDL_RWclose(reader);
+    SDL_free(picture.data);
+    return result;
+}
+
 int SwcReadPalette(const char *resourceFork, int16_t id, SDL_Color colors[256])
 {
     SwcBuffer resource = {0};

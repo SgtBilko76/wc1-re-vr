@@ -1,7 +1,7 @@
 # Super Wing Commander Mac demo
 
-The GUI recognizes the SWC Mac demo, plays its four-part new-campaign opening,
-and opens the Tiger's Claw bar and barracks.
+The GUI recognizes the SWC Mac demo, plays its splash, Lion logo, prologue and
+four-part new-campaign opening, and opens the Tiger's Claw bar and barracks.
 Talk to Shotglass, Paladin and Angel, check pilot rankings or medals, then enter
 the briefing room and launch the experimental Enyo 1 flight with five ships,
 four objectives, and the original 320x240 cockpit and sprites.
@@ -17,15 +17,15 @@ navigation and hostile-direction markers, warning lamps, and damaged displays.
 Cockpit banking, the pilot's hand, native flight effects, warning sounds,
 computer speech and animated communications portraits are connected.
 The original conversations, briefing, debriefing and funeral scenes use the
-demo's text, portraits and AIFF speech. Opening, Hornet launch, landing and
+demo's text, portraits and AIFF speech. Prologue, opening, Hornet launch, landing and
 funeral movies have embedded audio. QuickTime music sequences now accompany
-the opening, carrier, briefing/debriefing, launch, flight, landing and funeral.
+the startup, opening, carrier, briefing/debriefing, launch, flight, landing and funeral.
 WC1 communications now provide wingman orders and landing-clearance requests;
 returning to the carrier ends Enyo 1 with the original debriefing branches and
 Spirit's funeral if she was lost. Player destruction leads to the player's
 funeral and an end card.
 Later missions, campaign progression, remaining HUD modes, side/rear views,
-the separate death cinematic and remaining startup scenes are
+the separate death cinematic and original animated title menu are
 still pending. Landing and funeral paths have been compiled and inspected,
 without interactive execution.
 
@@ -48,7 +48,7 @@ supplies a shared stereo SDL mixer for four effect/flight-speech voices,
 foreground movie/dialogue PCM and music. `src/swc/music.c` reads QuickTime
 music sequences; `src/sdl/swc_music.c` selects and synthesizes them.
 `src/swc/movie.c` reads and decodes the Mac movies; `src/sdl/swc_movie.c`
-supplies SDL2 presentation, foreground audio, and the opening/launch/landing/funeral
+supplies SDL2 presentation, foreground audio, and the startup/opening/launch/landing/funeral
 sequences.
 The viewer needs only the host C compiler and SDL2. Flight links the existing
 native core and needs its normal build dependencies, including LZO.
@@ -99,9 +99,10 @@ CODE_13 `show_navigation_disp` +0x121a, `show_damage_disp` +0x123a and
 unavailable message is also original, not a missing implementation to fill in.
 
 Flight effects and voices now use the native Mac sound bank through
-`SdlPlayGameSoundEffect` and the SDL cockpit adapter. Startup
-logos/prologue, death presentation, exact text and palette transitions remain
-incomplete. The new-campaign opening is connected before the carrier visit.
+`SdlPlayGameSoundEffect` and the SDL cockpit adapter. Startup splash/logo/prologue
+and the new-campaign opening are connected before the carrier visit. Death
+presentation, the animated title menu, exact text and palette transitions remain
+incomplete.
 The most useful next work is correcting the demonstrated RNG differences,
 then inspecting a full Enyo 1 route through combat and return before
 expanding campaign support. Other AI/collision paths still need individual
@@ -210,6 +211,8 @@ Selection follows Ghidra exports of CODE_09 `gametrack` (+0x1168),
 
 | Context | Track |
 | --- | --- |
+| Startup splash | `INTRO.MooV` |
+| Prologue | `SUPRWNG1.MooV` through `SUPRWNG4.MooV`, at the original clip/dialogue boundaries |
 | New-campaign opening | `DOCKING.MooV` |
 | Bar and pilot rankings | `RECROOM.MooV` |
 | Barracks and medals | `BARRACKS.MooV` |
@@ -229,7 +232,8 @@ aliased to other tracks. Navigation cues change only when the action sphere
 changes. WC1's same-named music function instead takes attacker/victim arguments
 and uses different rules. Completed tracks loop, and reselecting an active track
 preserves its position. Original scene volume is doubled to a percentage:
-opening 30, flight 25, other connected scenes 50.
+opening 30, flight 25, prologue 30 or 50 at the original speech/movie boundaries,
+other connected scenes 50.
 
 The return cue also follows CODE_05 `triumph` +0x69a2..+0x69ce: a patrol is
 complete only when every flight-path objective was visited. WC1's current
@@ -278,10 +282,11 @@ Esc returns from the barracks, rankings or medals, and exits from the bar.
 Window close exits at any point. The simulator retains the demo's unavailable
 message. Save/load bunks explain that SWC saves are not supported yet.
 
-With the archive's `Movies/` directory present, the four-part opening precedes
-the first carrier visit, and the Hornet launch follows the briefing. Space,
+With the archive's startup assets present, the splash, Lion logo and prologue
+precede the four-part opening and first carrier visit. The Hornet launch follows the briefing. Space,
 Enter, Esc, or a left click skips the entire current sequence on release; P
-pauses it. Losing focus pauses video and audio together. Skipping the opening
+pauses it. Splash and logo dismiss separately; skipping the prologue advances
+to the campaign opening. Losing focus pauses video and audio together. Skipping the opening
 enters the bar; closing the movie window exits the session. Once in flight,
 Esc resumes its normal exit behavior and Space/Enter/mouse buttons resume
 their weapon bindings.
@@ -567,7 +572,7 @@ pending. Validation was original-instruction/data inspection, static review
 and `make -j4 modern modern-gui`; no tests, interactive sessions or playback
 were run. The GUI requires `Funeral.CMF`.
 
-## Opening, launch, landing and funeral movies
+## Startup, opening, launch, landing and funeral movies
 
 The Mac demo stores 38 custom `LMov` files under `Movies/`, with `.dcMov`
 extensions. These are not ordinary QuickTime movies. The new decoder follows
@@ -577,6 +582,52 @@ WC1's `scramble` constructs its launch from sprites, so it cannot play these
 files. Shared WC1 mission state is prepared before the carrier visit; flight
 simulation starts after playback.
 
+Startup follows CODE_12 `SetupSWStuff` +0x4ad2/+0x4ad6: `ShowSplash`
+(+0x4bb6) displays resource `PICT/129` with `INTRO.MooV`, for at most 1500
+Mac ticks (25 seconds), then `MacIntroFilm` (+0x4cdc) plays `Lion` without
+music. The splash reader supports the demo's single indexed 320x240
+PackBits rectangle, with its own 256-color table; it is not a general PICT
+interpreter. No original pictures or recordings are copied into the source tree.
+
+CODE_09 `squadron` +0x5e then calls CODE_07 `IntroFilm` +0x1442:
+
+| Sequence | Music / original level |
+| --- | --- |
+| `INTRO00`, `INTRO01` | `SUPRWNG1`, 50 |
+| `INTRO02` | Continue `SUPRWNG1`, 30 |
+| `INTRO03`, `INTRO04` | `SUPRWNG2`, 30 |
+| `intro_ready_attack` (+0x1906), speech `intro.03` through `intro.09` | `SUPRWNG3`, 30 |
+| `INTRO05`, `INTRO06`, `INTRO07` | `SUPRWNG4`, 50 |
+| `intro_ranger_dead` (+0x1adc), speech `intro.10` and `intro.11` | Continue `SUPRWNG4`, 30 |
+| `INTRO08`, `INTRO09`, `INTRO10` | Continue `SUPRWNG4`, 50 |
+
+The live dialogue scenes use `IntroFilm1.CMF` / `IntroFilm2.CMF`, palettes
+130/131, and `TKHD/13` at (0,10). The first includes two mirrored `ST01/1`
+wingmen. Both show the original `PLNT/1` stars, following the stationary
+180-degree camera case of CODE_05 `init_3d_shards` / `update_3d_shards`.
+Eye frames change every ten host draws. CODE_12 `ParseMarks` (+0x00de) and
+`GetMouthPos` (+0x036a), plus the phoneme table at expanded DATA/0 +0x0908,
+supply mouth frames from the AIFF `MARK` words: five 60 Hz ticks per phoneme,
+including `th`/`ch`, and a closed-mouth event after each word. Recordings
+without markers retain the base mouth. Speech duration remains available if
+the audio device is unavailable.
+
+Space, Enter, Escape or left click dismiss the splash and logo separately;
+during the prologue, they skip the remaining movies and dialogue. This follows
+the movie skip latch and CODE_15 `movie_dim_screen` (+0x046c), which clears it
+after `Lion`. Input completes on release. P and focus loss pause video,
+dialogue animation and the shared audio device. Missing startup movie/dialogue
+files skip the group; malformed present assets report an error. Quit ends the
+session, and music, PCM, textures and temporary buffers are released on exit.
+
+The host continues directly into the fresh campaign opening. The original
+`Title_Sequence` (+0x1c86), its 3D background, saved-game choice and idle intro
+replay are still pending. Palette fades and exact Mac draw/RNG timing are also
+pending; live intro animation uses the host's 20 Hz cadence and shared WC1
+random generator with the recovered exclusive ranges. `intro_shakecockpit`
+is empty in this demo. `BUC` is used by CODE_14 `stranded_sequence` +0x0a3c,
+not startup.
+
 CODE_03 `opening_scene` +0x4374 plays `OPEN0`, `OPEN1`, `OPEN2`, then `OPEN3`.
 The names resolve from A5-0x347c, -0x3468, -0x3462 and -0x345c respectively;
 A5-0x3475 names the separate `DOCKING.MooV` music. CODE_09 `squadron` +0x84
@@ -585,8 +636,7 @@ calls this sequence before `StartNewCampaign(0)` at +0x8a and `GameFlow` at
 the existing movie decoder and sequence player. A missing opening file skips
 the group and preserves carrier entry; malformed present data reports an
 error. Skipping also enters the carrier, while window close ends the session.
-The archive's separate `INTROxx`, `Lion` and `BUC` movies are not part of this
-four-clip sequence and remain unconnected.
+This four-clip group follows the separate startup sequence above.
 
 CODE_03 `scramble` +0x45d0 and its A5-relative strings specify this order:
 `ARMOR`, `HALL`, `LAUNCH01`, `LAUNCH02`, `LAUNCH03`, `LAUNCH04.00`,
@@ -617,7 +667,7 @@ while longer audio finishes. All movie resources are released on finish, skip,
 error, or window close.
 
 The separate `MIDI/DOCKING.MooV`, `ARMOR.MooV`, `LANDING.MooV` and
-`FUNERAL.MooV` soundtracks, palette fades and remaining startup movies are
+`FUNERAL.MooV` soundtracks accompany their groups; palette fades remain
 pending. First briefing, bar, debriefing and funeral scenes use the carrier
 adapter described above. No external video library is needed for this slice.
 
@@ -625,6 +675,13 @@ Opening integration was checked against fresh Ghidra instructions for its
 caller, the original four MovieDisplay calls and expanded A5 strings. Validation
 was static source review and `make modern modern-gui`; no tests, game, GUI,
 playback or audio device were run for this change.
+
+Startup validation used fresh Ghidra CODE_07/04/05/15 exports, the original
+CODE_01/09/12 callers, expanded A5 strings/tables and original asset metadata.
+`make -j4 modern modern-gui modern-swc` passes. No tests, game, GUI or audio
+playback were run. All changes are confined to SDL sources and headers; Win32
+reconstruction and source selection are unchanged. Interactive appearance and
+synchronization remain unverified.
 
 Validation for this pass consists of original-instruction review, offline
 inspection of all 38 original containers and 3,521 encoded frame streams,
@@ -964,8 +1021,8 @@ many WC1 names were already derived from this Mac executable's MacsBug strings.
 3. Continue later campaign communications, remaining HUD modes and
    post-debriefing progression. Landing and the first debriefing are connected;
    the demo disables its simulator.
-4. Connect remaining startup movies, the death cinematic and later scripted scenes;
-   add save/load, audio-marker lip synchronization and palette
+4. Connect the animated title menu, death cinematic and later scripted scenes;
+   add save/load, carrier audio-marker lip synchronization and palette
    transitions. The first bar, barracks and briefing, AIFF speech and Hornet
-   opening/launch/landing playback, first debriefing and player/Spirit funerals are
+   startup/opening/launch/landing playback, first debriefing and player/Spirit funerals are
    present; the animated end background and other scene entry points are pending.

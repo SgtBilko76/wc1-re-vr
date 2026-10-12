@@ -12,7 +12,8 @@
 enum SwcRoomPackId {
     SWC_RECROOM, SWC_BARRACKS, SWC_MEDALS, SWC_SHOTGLASS, SWC_BAR_HEADS,
     SWC_BRIEFING, SWC_COMMANDER, SWC_WINGMEN, SWC_BRIEFING_MAP,
-    SWC_DEBRIEFING, SWC_DEBRIEFING_HEADS, SWC_FUNERAL, SWC_ROOM_PACKS
+    SWC_DEBRIEFING, SWC_DEBRIEFING_HEADS, SWC_FUNERAL,
+    SWC_INTRO_BEFORE_ATTACK, SWC_INTRO_AFTER_ATTACK, SWC_ROOM_PACKS
 };
 
 typedef struct SwcRoomArt {
@@ -96,10 +97,10 @@ static SwcRoomArt *SwcGetRoomArt(SwcCarrier *carrier, enum SwcRoomPackId packId,
         "RecRoomScene.CMF", "Barracks.CMF", "ViewMedals.CMF", "Head10.CMF",
         "RRTalkingHeads.CMF", "Briefing.CMF", "BriefingCommander.CMF",
         "BRTH1.CMF", "BRInterface.CMF", "DeBriefing.CMF", "DeBriefingHeads.CMF",
-        "Funeral.CMF"
+        "Funeral.CMF", "IntroFilm1.CMF", "IntroFilm2.CMF"
     };
     static const short palettes[SWC_ROOM_PACKS] = {
-        135, 150, 151, 137, 136, 170, 171, 173, 172, 190, 191, 193
+        135, 150, 151, 137, 136, 170, 171, 173, 172, 190, 191, 193, 130, 131
     };
     SwcRoomPack *pack = &carrier->packs[packId];
     SwcRoomArt *art;
@@ -262,6 +263,276 @@ static SwcRoomInput SwcPollCarrier(SwcCarrier *carrier)
     }
     SdlPauseSwcSound(!carrier->focused || carrier->paused);
     return input;
+}
+
+/* CODE_12 ShowSplash +0x4bb6: PICT/129 and INTRO.MooV, up to 1500 Mac
+ * ticks. SDL keeps the same 25-second limit and the cinematic skip controls. */
+int SdlShowSwcSplash(SDL_Window *window, SDL_Renderer *renderer, const char *resourceFork)
+{
+    SwcCarrier carrier = {0};
+    SwcRoomInput input;
+    SwcBuffer pixels = {0};
+    SDL_Color colors[256];
+    SDL_Surface *surface = NULL;
+    SDL_Texture *texture = NULL;
+    Uint64 frequency = SDL_GetPerformanceFrequency();
+    Uint64 previous;
+    Uint64 current;
+    Uint64 elapsed = 0;
+    int playing = 0;
+    int result = SWC_MOVIE_ERROR;
+    char failure[256];
+
+    carrier.window = window;
+    carrier.focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+    SdlPauseSwcSound(1);
+    SdlClearSwcPcm();
+    if (SwcReadSplash(resourceFork, &pixels, colors) != 0)
+        goto done;
+    surface = SDL_CreateRGBSurfaceWithFormatFrom(pixels.data, SWC_FRAME_WIDTH,
+        SWC_FRAME_HEIGHT, 8, SWC_FRAME_WIDTH, SDL_PIXELFORMAT_INDEX8);
+    if (surface == NULL || SDL_SetPaletteColors(surface->format->palette, colors, 0, 256) != 0)
+        goto done;
+    texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (texture == NULL)
+        goto done;
+    SdlPlaySwcMusic("INTRO.MooV", 50);
+    previous = SDL_GetPerformanceCounter();
+    while (1) {
+        current = SDL_GetPerformanceCounter();
+        if (playing)
+            elapsed += current - previous;
+        previous = current;
+        input = SwcPollCarrier(&carrier);
+        playing = carrier.focused && !carrier.paused;
+        if (input.quit || input.back || input.activate || input.clicked) {
+            result = input.quit ? SWC_MOVIE_QUIT : SWC_MOVIE_SKIPPED;
+            break;
+        }
+        SDL_SetWindowTitle(window, playing
+            ? "Super Wing Commander - splash | Space/Enter/Esc/click: skip | P: pause"
+            : "Super Wing Commander - splash (paused) | P: resume");
+        if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255) != 0 ||
+            SDL_RenderClear(renderer) != 0 || SDL_RenderCopy(renderer, texture, NULL, NULL) != 0)
+            goto done;
+        SDL_RenderPresent(renderer);
+        if (elapsed >= 25 * frequency &&
+            carrier.armedKey == SDL_SCANCODE_UNKNOWN && !carrier.mouseDown) {
+            result = SWC_MOVIE_FINISHED;
+            break;
+        }
+        SDL_Delay(20);
+    }
+done:
+    SDL_strlcpy(failure, SDL_GetError(), sizeof(failure));
+    SdlStopSwcMusic();
+    SDL_DestroyTexture(texture);
+    SDL_FreeSurface(surface);
+    SDL_free(pixels.data);
+    if (result == SWC_MOVIE_ERROR)
+        SDL_SetError("SWC splash: %s", failure);
+    return result;
+}
+
+/* CODE_07 intro_ready_attack +0x1906 and intro_ranger_dead +0x1adc.
+ * Both draw TKHD/13 at (0,10), with eyes 11..20 and mouth 1..10.
+ * The first also draws ST01/1 frame 13 at (50,50)/(250,50), second flipped.
+ * Host 20 Hz presentation replaces Mac loop timing; speech marks use 60 Hz. */
+int SdlPlaySwcIntroSpeech(SDL_Window *window, SDL_Renderer *renderer,
+                           const char *resourceFork, int afterAttack)
+{
+    /* CODE_05 generate_new_3d_shard, expanded DATA/0 +0x2ede. */
+    static const int shardFrames[15] = {20, 0, 4, 24, 28, 28, 20, 20, 24, 8, 8, 24, 28, 12, 12};
+    SwcCarrier carrier = {0};
+    SwcRoomInput input;
+    enum SwcRoomPackId packId = afterAttack ? SWC_INTRO_AFTER_ATTACK : SWC_INTRO_BEFORE_ATTACK;
+    SwcRoomPack *pack = &carrier.packs[packId];
+    SwcRoomArt *art;
+    SwcRoomArt *ship = NULL;
+    SwcFrame shipFrame;
+    FixedVector shard;
+    SDL_Point stars[63] = {{0, 0}};
+    int starFrames[63];
+    SwcBuffer pcm = {0};
+    SwcSpeechMark *marks = NULL;
+    size_t markCount = 0;
+    size_t mark = 0;
+    SDL_Rect destination;
+    Uint64 frequency = SDL_GetPerformanceFrequency();
+    Uint64 previous;
+    Uint64 current;
+    Uint64 elapsed;
+    Uint64 duration;
+    Uint64 animationTick = 0;
+    Uint64 nextAnimation = 0;
+    Uint64 sequenceTime = 0;
+    uint32_t frame;
+    int shipX[2] = {50, 250};
+    int shipY[2] = {50, 50};
+    int shipStep = 0;
+    int eyes = 0;
+    int mouth = -1;
+    int entry;
+    int line;
+    int index;
+    int distance;
+    int playing = 0;
+    int result = SWC_MOVIE_ERROR;
+    char relative[64];
+    char path[PATH_MAX];
+    char failure[256];
+
+    carrier.window = window;
+    carrier.renderer = renderer;
+    carrier.resourceFork = resourceFork;
+    carrier.focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+    SdlPauseSwcSound(1);
+    SdlClearSwcPcm();
+    if (SwcGetRoomArt(&carrier, packId, "TKHD", 13) == NULL)
+        goto done;
+    if (SwcGetRoomArt(&carrier, packId, "PLNT", 1) == NULL)
+        goto done;
+    if (!afterAttack) {
+        ship = SwcGetRoomArt(&carrier, packId, "ST01", 1);
+        if (ship == NULL || SwcGetFramePtr(&ship->shape, 13, &shipFrame) != 0)
+            goto done;
+        ship->textures[13] = SdlCreateSwcTexture(renderer, &ship->shape, 13, pack->colors);
+        if (ship->textures[13] == NULL)
+            goto done;
+    }
+    for (line = afterAttack ? 10 : 3; line < (afterAttack ? 12 : 10); line++) {
+        SdlPauseSwcSound(1);
+        SDL_snprintf(relative, sizeof(relative), "AIFF/intro.%02d", line);
+        if (!SdlResolvePath(relative, path, sizeof(path))) {
+            SDL_SetError("Cannot resolve SWC intro speech %s", relative);
+            goto done;
+        }
+        if (SwcReadSpeech(path, &pcm) != 0 ||
+            SwcReadSpeechMarks(path, &marks, &markCount) != 0 ||
+            SdlQueueSwcPcm(&pcm, 11025, AUDIO_S16MSB) != 0)
+            goto done;
+        duration = (Uint64)pcm.size * frequency / (11025 * 2);
+        if (swcAudioDevice != 0)
+            duration += 512 * frequency / 48000;
+        SDL_free(pcm.data);
+        memset(&pcm, 0, sizeof(pcm));
+        mark = 0;
+        mouth = -1;
+        elapsed = 0;
+        playing = 0;
+        previous = SDL_GetPerformanceCounter();
+        while (1) {
+            current = SDL_GetPerformanceCounter();
+            if (playing) {
+                elapsed += current - previous;
+                sequenceTime += current - previous;
+            }
+            previous = current;
+            input = SwcPollCarrier(&carrier);
+            playing = carrier.focused && !carrier.paused;
+            if (input.quit || input.back || input.activate || input.clicked) {
+                result = input.quit ? SWC_MOVIE_QUIT : SWC_MOVIE_SKIPPED;
+                goto done;
+            }
+            SDL_SetWindowTitle(window, playing
+                ? "Super Wing Commander - prologue | Space/Enter/Esc/click: skip | P: pause"
+                : "Super Wing Commander - prologue (paused) | P: resume");
+            while (mark < markCount && marks[mark].tick <= elapsed * 60 / frequency)
+                mouth = marks[mark++].frame;
+            /* CODE_07 randomeyes changes every tenth draw. The two ships
+             * move every sixth draw and return toward their initial points
+             * every third update, using the original exclusive RNG bounds. */
+            if (sequenceTime >= nextAnimation) {
+                animationTick++;
+                nextAnimation = sequenceTime + frequency / 20;
+                /* init_3d_shards(180), update_3d_shards(0): a stationary
+                 * camera looking backward, with 63 shards. Out-of-view
+                 * shards regenerate one draw in four. Their zero velocity
+                 * leaves visible positions and sprite frames unchanged. */
+                for (index = 0; index < (int)SDL_arraysize(stars); index++) {
+                    if (animationTick != 1 &&
+                        (stars[index].x != INT_MIN || RandomBelowOrEqual(3) != 0))
+                        continue;
+                    FillFixedVectorWithRandomComponents(4095, &shard);
+                    starFrames[index] = shardFrames[RandomBelowOrEqual(14)];
+                    shard.x = -shard.x;
+                    shard.z = -shard.z;
+                    distance = Vector_magnitude(&shard);
+                    if (shard.z < 0xa00 || distance == 0 ||
+                        (int64_t)shard.z * 256 / distance < 0x94) {
+                        stars[index].x = INT_MIN;
+                        continue;
+                    }
+                    stars[index].x = 160 + (int)(((int64_t)shard.x * 0xa000 / shard.z) >> 8);
+                    stars[index].y = 120 + (int)(((int64_t)shard.y * 0xa000 / shard.z) >> 8);
+                }
+                if (animationTick % 10 == 0)
+                    eyes = RandomBelowOrEqual(9);
+                if (!afterAttack && animationTick % 6 == 0) {
+                    for (index = 0; index < 2; index++) {
+                        shipStep++;
+                        shipX[index] += shipStep % 3 == 0
+                            ? (shipX[index] > (index == 0 ? 50 : 250) ? -1 : 1)
+                            : (RandomBelowOrEqual(1) ? 1 : -1);
+                        shipY[index] += shipStep % 3 == 0
+                            ? (shipY[index] > 50 ? -1 : 1)
+                            : (RandomBelowOrEqual(1) ? 1 : -1);
+                    }
+                }
+            }
+            if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255) != 0 ||
+                SDL_RenderClear(renderer) != 0)
+                goto done;
+            for (index = 0; index < (int)SDL_arraysize(stars); index++) {
+                if (stars[index].x != INT_MIN)
+                    SwcDrawRoomArt(&carrier, packId, "PLNT", 1, starFrames[index],
+                                   stars[index].x, stars[index].y);
+            }
+            if (ship != NULL) {
+                for (index = 0; index < 2; index++) {
+                    destination = (SDL_Rect){shipX[index] - shipFrame.width / 2,
+                        shipY[index] - shipFrame.height / 2, shipFrame.width, shipFrame.height};
+                    if (SDL_RenderCopyEx(renderer, ship->textures[13], NULL, &destination,
+                        0, NULL, index == 0 ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL) != 0)
+                        goto done;
+                }
+            }
+            SwcDrawRoomArt(&carrier, packId, "TKHD", 13, 0, 0, 10);
+            SwcDrawRoomArt(&carrier, packId, "TKHD", 13, 11 + eyes, 0, 10);
+            if (mouth >= 0)
+                SwcDrawRoomArt(&carrier, packId, "TKHD", 13, mouth + 1, 0, 10);
+            if (carrier.drawResult != 0)
+                goto done;
+            SDL_RenderPresent(renderer);
+            if (elapsed >= duration && !SdlSwcPcmPlaying() &&
+                carrier.armedKey == SDL_SCANCODE_UNKNOWN && !carrier.mouseDown)
+                break;
+            SDL_Delay(20);
+        }
+        SdlClearSwcPcm();
+        SDL_free(marks);
+        marks = NULL;
+    }
+    result = SWC_MOVIE_FINISHED;
+done:
+    SDL_strlcpy(failure, SDL_GetError(), sizeof(failure));
+    SdlClearSwcPcm();
+    SDL_free(pcm.data);
+    SDL_free(marks);
+    for (entry = 0; entry < pack->count; entry++) {
+        art = &pack->art[entry];
+        if (art->textures != NULL) {
+            for (frame = 0; frame < art->count; frame++)
+                SDL_DestroyTexture(art->textures[frame]);
+        }
+        SDL_free(art->textures);
+        SDL_free(art->bounds);
+        SDL_free(art->shape.data);
+    }
+    SwcCMClose(&pack->cmf);
+    if (result == SWC_MOVIE_ERROR)
+        SDL_SetError("SWC intro dialogue: %s", failure);
+    return result;
 }
 
 static uint32_t SwcSceneOffset(const uint8_t *bytes)

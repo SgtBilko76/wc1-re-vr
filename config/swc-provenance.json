@@ -200,7 +200,7 @@
       "source": "src/sdl/swc_movie.c",
       "symbol": "SdlPlaySwcOpening",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original OPEN0/OPEN1/OPEN2/OPEN3 order before the initial carrier visit, following CODE_09 squadron +0x84..+0x90. Reuses the existing SDL movie decoder and sequence player. Missing files or skipping leave carrier entry available; quit/error end the session. DOCKING.MooV accompanies the group. Palette transitions and the other startup movies remain pending."
+      "differences": "Original OPEN0/OPEN1/OPEN2/OPEN3 order before the initial carrier visit, following CODE_09 squadron +0x84..+0x90. Reuses the existing SDL movie decoder and sequence player. Missing files or skipping leave carrier entry available; quit/error end the session. DOCKING.MooV accompanies the group. The separate startup splash/logo/prologue now precedes this group; palette transitions remain pending."
     },
     {
       "original_name": "scramble",
@@ -599,7 +599,7 @@
         "resource": "CODE_09.bin",
         "entry_offset": "0x159e",
         "name": "ChangeMusicVolume",
-        "qualification": "Doubles scene level to percent and scales by the user music-volume percentage. Opening level 30; GameFlow +0x1d3a sets flight 25; connected other scenes use 50."
+        "qualification": "Doubles scene level to percent and scales by the user music-volume percentage. Opening level 30; GameFlow +0x1d3a sets flight 25; prologue changes between 30 and 50 at the original boundaries; other connected scenes use 50."
       },
       {
         "resource": "CODE_09.bin",
@@ -628,6 +628,8 @@
       "bounds": "Bounded atoms, resource offsets, sample tables, event counts/parts/notes/durations; each sample rest total matches its stts duration. Fractional extended pitches and other formats outside the supplied corpus are rejected."
     },
     "scene_tracks": {
+      "splash": "INTRO.MooV, level 50, stopped before Lion.",
+      "prologue": "SUPRWNG1 for INTRO00/01 at 50 and INTRO02 at 30; SUPRWNG2 for INTRO03/04 at 30; SUPRWNG3 for speech intro.03..09 at 30; SUPRWNG4 for INTRO05..07 at 50, speech intro.10..11 at 30, INTRO08..10 at 50. Same-track level changes preserve position.",
       "opening": "DOCKING.MooV",
       "bar_and_rankings": "RECROOM.MooV",
       "barracks_and_medals": "BARRACKS.MooV",
@@ -664,7 +666,7 @@
       "lookup": "swc-music.sf2 beside the executable, optionally overridden by WC1_SWC_SOUNDFONT. Build/release packaging copies the bank; source and license notices are bundled.",
       "callback": "48000 Hz interleaved stereo float, 256 preallocated voices and 32 channels; preloaded event arrays, no callback allocation/file I/O or game-state reads."
     },
-    "limits": "Host General MIDI synthesis is not the original QuickTime/Roland sound. Instrument timbres, envelopes and volume curve differ; reverb/chorus sends are not rendered. Supplied modulation-wheel events are zero. Missing or unsupported tracks log once when selected and leave other audio usable. Original hardware resampling, exact mix, loop transitions and interactive timing remain unverified; startup/death/later-scene entry points remain pending.",
+    "limits": "Host General MIDI synthesis is not the original QuickTime/Roland sound. Instrument timbres, envelopes and volume curve differ; reverb/chorus sends are not rendered. Supplied modulation-wheel events are zero. Missing or unsupported tracks log once when selected and leave other audio usable. Original hardware resampling, exact mix, loop transitions and interactive timing remain unverified; title-menu/death/later-scene entry points remain pending.",
     "validation": "Fresh Ghidra CODE_09 and CODE_05 exports with explicit switch-target disassembly, original CODE_03/07/12 instructions and DATA/A5 strings, offline original music-file/header/event inspection, static source review and make modern modern-gui modern-swc. The user reported five rejected tracks during implementation; original-data inspection identified the missing header terminator/padding and fixed-size stsz handling, now corrected. No agent tests, game, GUI, audio device or playback executed. No SWC similarity claim.",
     "format_references": [
       "https://developer.apple.com/documentation/quicktime-file-format/music_media",
@@ -802,7 +804,28 @@
   "movies": {
     "decoder_source": "src/swc/movie.c",
     "presentation_source": "src/sdl/swc_movie.c",
-    "scope": "Version-1 LMov decoder and original new-campaign opening, Hornet launch/landing and player/Spirit funeral clips for Enyo 1 in both SDL launchers. Missing movie groups preserve carrier entry/flight/dialogue; malformed movies fail explicitly. The check-only flight path bypasses movies.",
+    "scope": "Version-1 LMov decoder and original startup splash/logo/prologue, new-campaign opening, Hornet launch/landing and player/Spirit funeral clips for Enyo 1 in both SDL launchers. Missing movie groups preserve carrier entry/flight/dialogue; malformed movies fail explicitly. The check-only flight path bypasses movies.",
+    "startup": {
+      "sources": ["src/sdl/swc_movie.c", "src/sdl/swc_rooms.c", "src/swc/rsrc.c", "src/swc/speech.c"],
+      "entry": "SdlRunSwcMission calls SdlPlaySwcStartup before SdlPlaySwcOpening; check-only bypasses both.",
+      "sequence": ["PICT/129 splash", "Lion", "INTRO00", "INTRO01", "INTRO02", "INTRO03", "INTRO04", "intro.03..09 speech", "INTRO05", "INTRO06", "INTRO07", "intro.10..11 speech", "INTRO08", "INTRO09", "INTRO10"],
+      "evidence": [
+        {"resource": "CODE_01.bin", "entry_offset": "0x68c4", "name": "main", "qualification": "+0x6978 calls SetupSWStuff, then +0x697c calls squadron."},
+        {"resource": "CODE_12.bin", "entry_offset": "0x48f2", "name": "SetupSWStuff", "qualification": "+0x4ad2 calls ShowSplash, +0x4ad6 calls MacIntroFilm."},
+        {"resource": "CODE_12.bin", "entry_offset": "0x4bb6", "name": "ShowSplash", "symbol": "SdlShowSwcSplash", "qualification": "PICT/129, INTRO.MooV at A5-0x21a2, 1500-tick timeout (25 seconds). SwcReadSplash decodes the original single 320x240 indexed PackBitsRect, including its palette; general PICT interpretation is unsupported."},
+        {"resource": "CODE_12.bin", "entry_offset": "0x4cdc", "name": "MacIntroFilm", "qualification": "Lion at A5-0x2197, no separate music; movie_dim_screen clears the skip latch afterward."},
+        {"resource": "CODE_09.bin", "entry_offset": "0x000c", "name": "squadron", "qualification": "+0x5e calls IntroFilm before Title_Sequence and the new-campaign opening."},
+        {"resource": "CODE_07.bin", "entry_offset": "0x1442", "name": "IntroFilm", "symbol": "SdlPlaySwcStartup", "qualification": "INTRO00..10 at A5-0x2a5a through -0x2a0a; SUPRWNG1..4 at -0x2a94, -0x2a86, -0x2a78, -0x2a6a. MovieDisplay's high flag word selects music 0 at INTRO00, 1 at INTRO03 and 3 at INTRO05; intro_ready_attack selects 2."},
+        {"resource": "CODE_07.bin", "entry_offset": "0x1906", "name": "intro_ready_attack", "symbol": "SdlPlaySwcIntroSpeech", "qualification": "IntroFilm1.CMF, clut/130, TKHD/13 at (0,10), eyes 11..20, mouth 1..10; speech intro.03..09. ST01/1 frame 13 at (50,50)/(250,50), second horizontally flipped; original drift and recentering branches retained at host draw cadence."},
+        {"resource": "CODE_07.bin", "entry_offset": "0x1adc", "name": "intro_ranger_dead", "symbol": "SdlPlaySwcIntroSpeech", "qualification": "IntroFilm2.CMF, clut/131, same TKHD/13 layering; speech intro.10..11. intro_shakecockpit +0x18e8 is empty in the demo."},
+        {"resource": "CODE_12.bin", "entry_offset": "0x00de", "name": "ParseMarks", "symbol": "SwcReadSpeechMarks", "qualification": "AIFF MARK words use the phoneme table at DATA/0 +0x0908, five 60 Hz ticks per phoneme, th/ch pairs, h hold, then closed mouth. GetMouthPos +0x036a selects the current frame. Speech without MARK retains the base mouth."},
+        {"resource": "CODE_05.bin", "entry_offset": "0x4480", "name": "init_3d_shards", "qualification": "Intro-only stationary 180-degree camera case; update_3d_shards +0x4598, generate_new_3d_shard +0x4362, 63 PLNT/1 sprites and frame table DATA/0 +0x2ede. Shared WC1 vector/RNG routines use adjusted exclusive ranges; no flight shard state is changed."},
+        {"resource": "CODE_15.bin", "entry_offset": "0x046c", "name": "movie_dim_screen", "qualification": "Clears a830 skip latch after Lion and at the end of IntroFilm; palette dimming remains pending."}
+      ],
+      "controls": "Splash and Lion dismiss separately. A prologue movie or speech skip exits the remaining prologue. Key/mouse releases complete skips; P/focus loss pause the shared audio device and animation clock. Quit/error propagate to session cleanup. Missing startup movies, CMFs or speech skip the group.",
+      "limits": "Original Title_Sequence +0x1c86, its animated background, save/load choice and idle intro replay remain pending. Host proceeds into a fresh Enyo 1 opening. Palette fades and exact original timing remain pending; live intro animation runs at 20 Hz with shared WC1 RNG. BUC belongs to CODE_14 stranded_sequence +0x0a3c, not startup. No original picture/audio assets are embedded in source.",
+      "validation": "Fresh Ghidra CODE_07/04/05/15 exports, original CODE_01/09/12 instructions, expanded A5 strings/tables and original PICT/movie/CMF/AIFF metadata; static source review and make -j4 modern modern-gui modern-swc. No tests, game, GUI, audio device or playback executed. Interactive appearance/synchronization unverified; Win32 sources and source selection unchanged."
+    },
     "opening_sequence": ["OPEN0", "OPEN1", "OPEN2", "OPEN3"],
     "opening_string_evidence": "CODE_03 opening_scene +0x4374; expanded DATA/0 A5-relative strings -0x347c, -0x3468, -0x3462, -0x345c. A5-0x3475 names DOCKING.MooV. CODE_09 squadron +0x84 calls opening_scene before StartNewCampaign(0) at +0x8a and GameFlow at +0x90.",
     "launch_sequence": ["ARMOR", "HALL", "LAUNCH01", "LAUNCH02", "LAUNCH03", "LAUNCH04.00", "LAUNCH06.00", "LAUNCH07.00", "LAUNCH08.00"],
@@ -812,13 +835,13 @@
     "funeral_sequence": ["FUNSERV0", "FUNSERVA", "eulogy dialogue", "FUNSERVB", "farewell dialogue"],
     "funeral_string_evidence": "CODE_03 funeral_sequence +0x4a08; expanded DATA/0 A5-relative strings -0x3397 FUNSERV0, -0x338e FUNERAL.MooV, -0x3381 FUNSERVA, -0x3378 FUNSERVB.",
     "audio": "Embedded unsigned 8-bit mono at 0x56ee8ba3 fixed-point Hz (22254.545...), rounded to 22255 Hz by SDL. Stored blocks are 11128 bytes; header +0xa6 is the valid sample count. The shared SDL mixer resamples trimmed PCM alongside sequence music, pauses with video, and falls back to silent playback if the device is unavailable.",
-    "pending": "Palette transitions, remaining startup movies (INTROxx/Lion/BUC) and later scripted scenes. DOCKING/ARMOR/LANDING cues span their respective movie groups; FUNERAL spans movies and both speeches. First briefing/bar/debriefing/funeral conversations are connected through the carrier adapter.",
+    "pending": "Palette transitions, original animated title menu and later scripted scenes, including stranded_sequence's BUC. DOCKING/ARMOR/LANDING cues span their respective movie groups; FUNERAL spans movies and both speeches. First briefing/bar/debriefing/funeral conversations are connected through the carrier adapter.",
     "opening_validation": "Fresh Ghidra CODE_09 squadron export, original opening_scene instructions and expanded A5 strings; static source review and make modern modern-gui. No tests, game, GUI, playback or audio device executed for this change.",
     "validation": "Original assembly and A5-string inspection; offline parsing of all 38 original files and 3521 encoded frames, including record bounds, scanline commands, exact frame consumption and audio lengths; static source review and make modern modern-gui. No interactive code, game, GUI, playback or audio device executed."
   },
   "carrier": {
     "source": "src/sdl/swc_rooms.c",
-    "scope": "Fresh Enyo 1: opening movies, bar, three conversations, rankings, barracks, medals, briefing, Hornet launch, flight, landing, debriefing and player/Spirit funerals. Player death enters the funeral without landing/PostMission; Spirit's funeral follows debriefing if she was lost. Dismissal ends the session; later campaign progression is not implemented. GUI and CLI play the opening before carrier entry; check-only bypasses rooms and movies. Save bunks explain unsupported saving/loading. Simulator remains disabled as in the original demo.",
+    "scope": "Fresh Enyo 1: startup splash/logo/prologue, opening movies, bar, three conversations, rankings, barracks, medals, briefing, Hornet launch, flight, landing, debriefing and player/Spirit funerals. Player death enters the funeral without landing/PostMission; Spirit's funeral follows debriefing if she was lost. Dismissal ends the session; later campaign progression is not implemented. GUI and CLI play startup and opening before carrier entry; check-only bypasses rooms and movies. Save bunks explain unsupported saving/loading. Simulator remains disabled as in the original demo.",
     "flow_evidence": [
       {"resource": "CODE_09.bin", "entry_offset": "0x000c", "name": "squadron", "qualification": "+0x84..+0x90 calls opening_scene, StartNewCampaign(0), then GameFlow for a new campaign. The SDL host uses this order for its fresh Enyo 1 session."},
       {"resource": "CODE_09.bin", "entry_offset": "0x1a70", "name": "StartNewCampaign", "qualification": "Enables the recreation-room path."},
