@@ -106,7 +106,7 @@ DirectoryStatus validate_game_directory(std::string_view directoryText, bool swc
         }
         if (!palette)
             return {false, "SWC palette missing: preserve the demo's resource fork or add SuperWingCommanderDemo.rsrc.", true};
-        return {true, "Super Wing Commander Mac demo: explore the carrier and fly Enyo 1. Saving and later campaign missions are not implemented.", true};
+        return {true, "Mac demo", true};
     }
     if (swcRequested)
         return {false, "Choose the SWC demo directory containing CMFs.", true};
@@ -129,7 +129,7 @@ DirectoryStatus validate_game_directory(std::string_view directoryText, bool swc
 
     // Match SdlUsingDosData: compressed DOS MODULE.000 has flag 1 in byte 7.
     if (header[7] == 1)
-        return {true, "Wing Commander DOS data found (partial support)."};
+        return {true, "DOS"};
     const auto streams = find_child_case_insensitive(directory, "STREAMS");
     if (!streams || !fs::is_directory(*streams, error))
         return {false, "Kilrathi Saga data needs a sibling STREAMS directory."};
@@ -137,7 +137,7 @@ DirectoryStatus validate_game_directory(std::string_view directoryText, bool swc
         if (!has_readable_file(*streams, name))
             return {false, std::string("STREAMS/") + name + " is missing or unreadable."};
     }
-    return {true, "Wing Commander Kilrathi Saga data found."};
+    return {true, "Kilrathi Saga"};
 }
 
 } // namespace wc1_launcher
