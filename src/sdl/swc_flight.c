@@ -221,6 +221,17 @@ done:
     return result;
 }
 
+static void SwcInitCharacters(void)
+{
+    ResetCampaignData();
+    /* CODE_07 InitCharacters +0x13fc copies ARMSTRONG / MAVERICK from
+     * the ninth pilot record at expanded DATA/0 +0x2a70. */
+    SDL_strlcpy(stCampaignState.currentPilot->name, "ARMSTRONG",
+                sizeof(stCampaignState.currentPilot->name));
+    SDL_strlcpy(stCampaignState.currentPilot->callsign, "MAVERICK",
+                sizeof(stCampaignState.currentPilot->callsign));
+}
+
 static int SwcStartMissionShips(void)
 {
     short records[10];
@@ -1152,7 +1163,7 @@ int SdlRunSwcMission(const char *missionPath, int cockpitless)
     int done = 0;
     int result = -1;
 
-    ResetCampaignData();
+    SwcInitCharacters();
     nCampaignDataSet = 0;
     if (SdlLoadSwcMissionData(missionPath, 1, 0) != 0)
         goto done;
@@ -1244,7 +1255,7 @@ title_menu:
     nSwcCinemaResult = 0;
     /* Title combat can destroy ships and change pilot/objective state.
      * Recreate the campaign on each menu visit and again on New Game. */
-    ResetCampaignData();
+    SwcInitCharacters();
     if (SdlLoadSwcMissionData(missionPath, 1, 0) != 0 || SwcStartMissionShips() < 0)
         goto done;
     movieResult = SwcRunFlightScene(1);
@@ -1261,7 +1272,7 @@ title_menu:
         result = 0;
         goto done;
     }
-    ResetCampaignData();
+    SwcInitCharacters();
     if (SdlLoadSwcMissionData(missionPath, 1, 0) != 0)
         goto done;
     shipCount = SwcStartMissionShips();

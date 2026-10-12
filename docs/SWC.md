@@ -476,6 +476,16 @@ and data types, with separate presentation for SWC's Mac CMFs and palettes.
 The ranking sort retains the same kills/missions rule as WC1 and SWC. No
 reference-build functions were edited for this feature.
 
+SWC initializes the player as `ARMSTRONG` / `MAVERICK` after each shared
+campaign reset. CODE_07 `InitCharacters` +0x13fc copies nine 48-byte pilot
+records from expanded DATA/0 +0x28f0; the player record at +0x2a70 contains
+those two strings. `CorrectPointers` +0x054a selects that ninth record.
+Shotglass's second line in `BRF0/5` section 4 reads `You must be $C`:
+the callsign substitution previously exposed WC1's `PELLEY` / `GOBLIN`
+defaults instead. The SDL initialization now supplies the Mac identity for
+subtitles and pilot displays on startup and subsequent New Game selections.
+WC1's templates and shared text substitution remain unchanged.
+
 `Data.CMF` contains `CMP0/3`, whose first pair selects Paladin and Angel, and
 `BRF0/5`, the Enyo 1 script. Its ten section offsets are little-endian 32-bit
 values; scene records contain three signed bytes followed by five little-endian
