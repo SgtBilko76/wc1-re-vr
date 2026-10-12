@@ -165,7 +165,8 @@ done:
 /* CODE_12 SetupSWStuff +0x4ad2/+0x4ad6, followed by CODE_09 squadron
  * +0x5e -> CODE_07 IntroFilm +0x1442. BUC belongs to stranded_sequence,
  * not startup. MovieDisplay's music index is the high word of its flags. */
-int SdlPlaySwcStartup(SDL_Window *window, SDL_Renderer *renderer, const char *resourceFork)
+int SdlPlaySwcStartup(SDL_Window *window, SDL_Renderer *renderer,
+                        const char *resourceFork, int replayIntro)
 {
     static const char *const names[] = {
         "Lion", "INTRO00", "INTRO01", "INTRO02", "INTRO03", "INTRO04",
@@ -182,7 +183,7 @@ int SdlPlaySwcStartup(SDL_Window *window, SDL_Renderer *renderer, const char *re
 
     /* Preserve the optional-movie contract for minimal flight installations.
      * Check the entire prologue, including its two live dialogue scenes. */
-    for (index = 0; index < SDL_arraysize(names); index++) {
+    for (index = replayIntro ? 1 : 0; index < SDL_arraysize(names); index++) {
         SDL_snprintf(relative, sizeof(relative), "Movies/%s.dcMov", names[index]);
         if (!SdlResolvePath(relative, paths[index], sizeof(paths[index])))
             return SDL_SetError("SWC movie path is too long: %s", relative);
@@ -205,12 +206,15 @@ int SdlPlaySwcStartup(SDL_Window *window, SDL_Renderer *renderer, const char *re
     }
     cursorVisible = SDL_ShowCursor(SDL_QUERY);
     SDL_ShowCursor(SDL_DISABLE);
-    result = SdlShowSwcSplash(window, renderer, resourceFork);
+    if (!replayIntro)
+        result = SdlShowSwcSplash(window, renderer, resourceFork);
     /* Dismissing ShowSplash advances to Lion. MacIntroFilm clears the skip
      * latch through CODE_15 movie_dim_screen before squadron's prologue. */
     if (result == SWC_MOVIE_QUIT || result == SWC_MOVIE_ERROR)
         goto done;
-    for (index = 0; index < SDL_arraysize(names); index++) {
+    /* CODE_09 squadron replays IntroFilm after Title_Sequence returns 3.
+     * SetupSWStuff's splash and Lion run only once, before squadron. */
+    for (index = replayIntro ? 1 : 0; index < SDL_arraysize(names); index++) {
         SdlPauseSwcSound(1);
         if (index == 1)
             SdlPlaySwcMusic("SUPRWNG1.MooV", 50);
@@ -255,7 +259,7 @@ unavailable:
  * funeral MovieDisplay calls. Palette fades remain pending. */
 enum SwcMovieSequence {
     SWC_MOVIES_OPENING, SWC_MOVIES_LAUNCH, SWC_MOVIES_LANDING,
-    SWC_MOVIES_FUNERAL_START, SWC_MOVIES_FUNERAL_FAREWELL
+    SWC_MOVIES_FUNERAL_START, SWC_MOVIES_FUNERAL_FAREWELL, SWC_MOVIES_STRANDED
 };
 
 static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
@@ -272,6 +276,7 @@ static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
     };
     static const char *const funeralStartNames[] = {"FUNSERV0", "FUNSERVA"};
     static const char *const funeralFarewellNames[] = {"FUNSERVB"};
+    static const char *const strandedNames[] = {"BUC"};
     const char *const *names;
     const char *title;
     size_t count;
@@ -313,6 +318,11 @@ static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
         count = SDL_arraysize(funeralFarewellNames);
         title = "funeral";
         break;
+    case SWC_MOVIES_STRANDED:
+        names = strandedNames;
+        count = SDL_arraysize(strandedNames);
+        title = "stranded";
+        break;
     default:
         return SDL_SetError("Unsupported SWC movie sequence");
     }
@@ -341,6 +351,8 @@ static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
         SdlPlaySwcMusic("ARMOR.MooV", 50);
     else if (sequence == SWC_MOVIES_LANDING)
         SdlPlaySwcMusic("LANDING.MooV", 50);
+    else if (sequence == SWC_MOVIES_STRANDED)
+        SdlPlaySwcMusic("LASTRITE.MooV", 50);
     /* Funeral music spans the movies and both room speeches. Its lifetime
      * belongs to SdlRunSwcCarrier, as in CODE_03 funeral_sequence. */
     for (index = 0; index < count; index++) {
@@ -359,6 +371,12 @@ static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
 int SdlPlaySwcOpening(SDL_Window *window, SDL_Renderer *renderer)
 {
     return SdlPlaySwcMovieSequence(window, renderer, SWC_MOVIES_OPENING, 100);
+}
+
+/* CODE_14 stranded_sequence +0x0a06: MovieDisplay("BUC", "LASTRITE.Moov"). */
+int SdlPlaySwcStrandedMovie(SDL_Window *window, SDL_Renderer *renderer)
+{
+    return SdlPlaySwcMovieSequence(window, renderer, SWC_MOVIES_STRANDED, 100);
 }
 
 /* CODE_03 scramble +0x45d0: nine clips, Hornet suffix 00. */

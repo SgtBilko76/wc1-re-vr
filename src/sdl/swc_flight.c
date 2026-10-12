@@ -44,7 +44,8 @@ void SdlSwcUpdateSpace(void)
     house_keep_objects();
     update_objects_in_space();
     set_eye_direction_and_position();
-    SdlUpdateSwcFlightMusic();
+    if (nCameraViewMode != 16)
+        SdlUpdateSwcFlightMusic();
     nSpaceFrame++;
 }
 
@@ -297,7 +298,11 @@ static int SwcStartMissionShips(void)
     initialize_direction_view_frames();
     nNavPointerObject = -1;
     nCameraViewMode = 0;
+    cViewObject = 0;
+    cCockpitView = 0;
     nCannedSceneMode = 0;
+    nSpaceFrame = 0;
+    nRenderedSpaceFrame = 0;
     nCurrentWave = -1;
     bPlayerDestroyed = 0;
     bPlayerVulnerable = 1;
@@ -447,6 +452,12 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
         return;
     }
     update_objects_in_space();
+    /* CODE_13 check_stranded +0x1630: losing the carrier ends flight once
+       there are no enemies within 30,000 units. Death takes precedence. */
+    if (!bPlayerDestroyed && nArcadeState == 0 && nCannedSceneMode == 0 &&
+        nCarrierMissionShipIndex >= 0 &&
+        nCarrierMissionShipIndex < ACTIVE_MISSION_SHIP_COUNT)
+        check_stranded();
     if (aeSpecialManeuver[0] == SPECIAL_MANEUVER_AFTERBURNER)
         SdlPlaySwcSound(12, 127);
     else
@@ -533,7 +544,8 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     }
     if (SdlDrawSwcSpaceGlare() != 0)
         return -1;
-    for (object = nCameraViewMode == 12 ? 0 : 1; object <= SPACE_LAST_MOVING_OBJECT; object++) {
+    for (object = nCameraViewMode == 12 || nCameraViewMode == 16 ? 0 : 1;
+         object <= SPACE_LAST_MOVING_OBJECT; object++) {
         if (aeObjectClass[object] < OBJECT_CLASS_EXPLOSION ||
             aeObjectClass[object] == OBJECT_CLASS_FIXED_OBJECT ||
             asObjectScreenX[object] == (short)0x8001)
@@ -564,7 +576,7 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     }
     /* CODE_13 update_cockpit draws the HUD and instruments only in
        cockpit views. External autopilot includes the player's own ship. */
-    if (nCameraViewMode == 12)
+    if (nCameraViewMode == 12 || nCameraViewMode == 16)
         goto border;
     if (SdlDrawSwcSpaceHud(targetBounds.w > 0 ? &targetBounds : NULL) != 0)
         return -1;
@@ -718,6 +730,321 @@ done:
     return result;
 }
 
+/* CODE_02 set_eye_direction_and_position's Mac-only case 16 +0x2a3a.
+ * CODE_04 try2point_object_at_object +0x319e limits each Q8 direction
+ * component to three units per update. WC1's camera switch ends at 15. */
+static void SwcUpdateSceneCamera(void)
+{
+    FixedVector delta;
+    FixedVector adjustment;
+    int object;
+
+    if (aeObjectClass[(int)cViewObject] == OBJECT_CLASS_NULL) {
+        for (object = 1; object < 10; object++) {
+            if (aeObjectClass[object] >= OBJECT_CLASS_SHIP) {
+                cViewObject = (signed char)object;
+                break;
+            }
+        }
+        return;
+    }
+    ComputeVectorDelta(&aShipPosition[EYE_OBJECT],
+        &aShipPosition[(int)cViewObject], &delta);
+    adjustment = delta;
+    NormalizeFixedVector(&adjustment);
+    ComputeVectorDelta(&aShipForwardVector[EYE_OBJECT], &adjustment, &adjustment);
+    adjustment.x = SDL_clamp(adjustment.x, -3, 3);
+    adjustment.y = SDL_clamp(adjustment.y, -3, 3);
+    adjustment.z = SDL_clamp(adjustment.z, -3, 3);
+    AddFixedVectors(&aShipForwardVector[EYE_OBJECT], &adjustment,
+        &aShipForwardVector[EYE_OBJECT]);
+    fix_objects_ijk(EYE_OBJECT);
+    if (Vector_magnitude(&delta) > 0x138800) {
+        /* Mac shrink_vector +0x57c8 halves all components until each is
+         * below 0xf00. WC1's same-named helper has a different limit. */
+        do {
+            delta.x >>= 1;
+            delta.y >>= 1;
+            delta.z >>= 1;
+        } while (delta.x <= -0xf00 || delta.x >= 0xf00 ||
+                 delta.y <= -0xf00 || delta.y >= 0xf00 ||
+                 delta.z <= -0xf00 || delta.z >= 0xf00);
+        AddFixedVectors(&aShipVelocity[EYE_OBJECT], &delta,
+            &aShipVelocity[EYE_OBJECT]);
+        if (Vector_magnitude(&aShipVelocity[EYE_OBJECT]) > 0x5000) {
+            NormalizeFixedVector(&aShipVelocity[EYE_OBJECT]);
+            ScaleFixedVector(&aShipVelocity[EYE_OBJECT], 0x5000,
+                &aShipVelocity[EYE_OBJECT]);
+        }
+    } else {
+        ScaleFixedVector(&aShipVelocity[EYE_OBJECT], -12, &adjustment);
+        AddFixedVectors(&aShipVelocity[EYE_OBJECT], &adjustment,
+            &aShipVelocity[EYE_OBJECT]);
+    }
+    AddFixedVectors(&aShipPosition[EYE_OBJECT], &aShipVelocity[EYE_OBJECT],
+        &aShipPosition[EYE_OBJECT]);
+}
+
+/* CODE_07 Title_Sequence +0x1c86 and CODE_14 death_sequence +0x362a
+ * share the live space renderer and view 16. The title's return 3 is mapped
+ * to SKIPPED (replay IntroFilm); FINISHED starts a fresh Enyo 1 campaign.
+ * Saved-game selection stays disabled until the host has a save loader. */
+static int SwcRunFlightScene(int titleMenu)
+{
+    static const MissionShipRecord titleShips[4] = {
+        {.type = OBJECT_TYPE_DRALTHI, .side = SIDE_KILRATHI, .leader = -1,
+         .field_9 = -1, .missionType = MISSION_TYPE_PATROL, .navPoint = 16,
+         .position = {0, 0, 0}, .pitch = -155, .speed = 40,
+         .rating = 4, .behaviour = {.pilot = 4}, .leaderMissionIndex = -1},
+        {.type = OBJECT_TYPE_DRALTHI, .side = SIDE_KILRATHI, .leader = -1,
+         .field_9 = -1, .missionType = MISSION_TYPE_PATROL, .navPoint = 16,
+         .position = {256000, 0, 0}, .pitch = -155, .speed = 40,
+         .rating = 4, .behaviour = {.pilot = 4}, .leaderMissionIndex = 32},
+        {.type = OBJECT_TYPE_HORNET, .side = SIDE_IMPERIAL, .leader = -1,
+         .field_9 = -1, .missionType = MISSION_TYPE_PATROL, .navPoint = 16,
+         .position = {768000, 0, 512000}, .pitch = -155, .speed = 40,
+         .rating = 4, .behaviour = {.pilot = 4}, .leaderMissionIndex = -1},
+        {.type = OBJECT_TYPE_HORNET, .side = SIDE_IMPERIAL, .leader = -1,
+         .field_9 = -1, .missionType = MISSION_TYPE_PATROL, .navPoint = 16,
+         .position = {1024000, 0, 512000}, .pitch = -155, .speed = 40,
+         .rating = 4, .behaviour = {.pilot = 4}, .leaderMissionIndex = 34}
+    };
+    MissionShipRecord savedShips[4];
+    MissionNavPoint savedNav = aMissionNavPoints[16];
+    SwcBuffer menu = {0};
+    SwcTextFont font = {0};
+    SwcFrame frame;
+    SDL_Texture *menuTextures[2] = {NULL, NULL};
+    SDL_Rect bounds[2];
+    SDL_Event event;
+    SDL_Point mouse = {-1, -1};
+    char failure[256];
+    SDL_Scancode armedKey = SDL_SCANCODE_UNKNOWN;
+    Uint32 previous;
+    Uint32 now;
+    Uint32 elapsed = 50;
+    unsigned int ticks = 0;
+    int sides[2];
+    int focused;
+    int paused = 0;
+    int mouseDown = 0;
+    int activate;
+    int configured = 0;
+    int cursorVisible = SDL_ShowCursor(SDL_QUERY);
+    int object;
+    int index;
+    int result = SWC_MOVIE_ERROR;
+
+    SwcResetFlightInput();
+    SDL_SetWindowMouseGrab(swcCinemaWindow, SDL_FALSE);
+    SDL_ShowCursor(titleMenu ? SDL_ENABLE : SDL_DISABLE);
+    if (titleMenu) {
+        if (SwcCMGetChunk(swcCinemaSpaceCmf, "RCRM", 47, &menu) != 0)
+            goto done;
+        for (index = 0; index < 2; index++) {
+            if (SwcGetFramePtr(&menu, (uint32_t)index, &frame) != 0)
+                goto done;
+            bounds[index] = (SDL_Rect){frame.x, frame.y, frame.width, frame.height};
+            menuTextures[index] = SdlCreateSwcTexture(swcCinemaRenderer,
+                &menu, (uint32_t)index, swcCinemaColors);
+            if (menuTextures[index] == NULL)
+                goto done;
+        }
+        /* Expanded DATA/0 mission records 32..35 (+0xa0a + index*76),
+         * nav 16 (+0x14ba + 16*88). No campaign mission is borrowed. */
+        memcpy(savedShips, &aMissionShips[32], sizeof(savedShips));
+        memcpy(&aMissionShips[32], titleShips, sizeof(titleShips));
+        memset(&aMissionNavPoints[16], 0, sizeof(aMissionNavPoints[16]));
+        aMissionNavPoints[16].type = 1;
+        configured = 1;
+        memset(aeObjectClass, 0, sizeof(aeObjectClass));
+        memset(nShipMissionIndices, 0xff, sizeof(nShipMissionIndices));
+        memset(acShipTarget, 0xff, sizeof(acShipTarget));
+        zero_vector(&aShipPosition[0]);
+        zero_vector(&aShipVelocity[0]);
+        nCurrentNavPoint = 16;
+        nCurrentWave = -1;
+        cMissionObjectiveCount = 0;
+        nYourWingman = -1;
+        nCannedSceneMode = 1;
+        bPlayerDestroyed = 0;
+        bPlayerVulnerable = 0;
+        nArcadeState = 0;
+        bInitialFormationSetup = 1;
+        for (index = 0; index < 4; index++) {
+            set_objects_data((short)(index + 1), titleShips[index].type, -1);
+            Set_up_ship_info((short)(index + 1), (short)(index + 32), 16);
+            find_next_ship_turn_slot((short)(index + 1));
+        }
+        bInitialFormationSetup = 0;
+        cViewObject = 1;
+        SdlPlaySwcMusic("VICTORY.MooV", 50);
+    } else {
+        if (SdlCreateSwcTextFont(swcCinemaRenderer, &font, 10) != 0)
+            goto done;
+        cViewObject = 0;
+        remove_nav_pointer();
+        SdlPlaySwcMusic("FUNERAL.MooV", 50);
+    }
+    nCameraViewMode = 16;
+    cCockpitView = 4;
+    asObjectCollisionRadius[EYE_OBJECT] = MaxShort(10,
+        asObjectCollisionRadius[(int)cViewObject]);
+    copy_frame(cViewObject, EYE_OBJECT);
+    position_relative_ijk(&aShipPosition[EYE_OBJECT], cViewObject, 500, 0, 2000);
+    zero_vector(&aShipVelocity[EYE_OBJECT]);
+    look_at(cViewObject);
+    SwcUpdateSceneCamera();
+    generate_stars();
+    nRenderedSpaceFrame = 0;
+    focused = (SDL_GetWindowFlags(swcCinemaWindow) & SDL_WINDOW_INPUT_FOCUS) != 0;
+    previous = SDL_GetTicks();
+    SDL_SetWindowTitle(swcCinemaWindow, titleMenu ?
+        "Super Wing Commander | Click/Space/Enter: new game | P: pause | Esc: exit" :
+        "Super Wing Commander | P: pause | Space/Enter: continue");
+    for (;;) {
+        now = SDL_GetTicks();
+        activate = 0;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT || (event.type == SDL_WINDOWEVENT &&
+                event.window.event == SDL_WINDOWEVENT_CLOSE)) {
+                result = SWC_MOVIE_QUIT;
+                goto done;
+            }
+            if (event.type == SDL_WINDOWEVENT) {
+                if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST ||
+                    event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
+                    focused = 0;
+                    armedKey = SDL_SCANCODE_UNKNOWN;
+                    mouseDown = 0;
+                } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED ||
+                           event.window.event == SDL_WINDOWEVENT_RESTORED) {
+                    focused = (SDL_GetWindowFlags(swcCinemaWindow) & SDL_WINDOW_INPUT_FOCUS) != 0;
+                }
+            }
+            if (!focused)
+                continue;
+            if (event.type == SDL_KEYDOWN && !event.key.repeat) {
+                if (titleMenu && event.key.keysym.sym == SDLK_ESCAPE) {
+                    result = SWC_MOVIE_QUIT;
+                    goto done;
+                } else if (event.key.keysym.sym == SDLK_p) {
+                    paused = !paused;
+                    armedKey = SDL_SCANCODE_UNKNOWN;
+                    mouseDown = 0;
+                } else if (!paused && (event.key.keysym.sym == SDLK_SPACE ||
+                    event.key.keysym.sym == SDLK_RETURN ||
+                    event.key.keysym.sym == SDLK_KP_ENTER ||
+                    event.key.keysym.sym == SDLK_ESCAPE)) {
+                    armedKey = event.key.keysym.scancode;
+                } else if (titleMenu && !paused &&
+                    (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_DOWN ||
+                     event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_RIGHT ||
+                     event.key.keysym.sym == SDLK_TAB)) {
+                    SdlPlaySwcSound(30, 255);
+                }
+            }
+            if (paused)
+                continue;
+            if (event.type == SDL_KEYUP && armedKey != SDL_SCANCODE_UNKNOWN &&
+                event.key.keysym.scancode == armedKey) {
+                activate = 1;
+                armedKey = SDL_SCANCODE_UNKNOWN;
+            }
+            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
+                mouseDown = 1;
+            if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
+                mouse = (SDL_Point){event.button.x, event.button.y};
+                if (mouseDown && (!titleMenu || SDL_PointInRect(&mouse, &bounds[1])))
+                    activate = 1;
+                mouseDown = 0;
+            }
+        }
+        SdlPauseSwcSound(!focused || paused);
+        if (activate && focused && !paused && (titleMenu || ticks > 40)) {
+            result = SWC_MOVIE_FINISHED;
+            break;
+        }
+        if (focused && !paused)
+            elapsed += SDL_min(now - previous, 250);
+        else
+            elapsed = 0;
+        previous = now;
+        if (elapsed < 50) {
+            SDL_Delay(8);
+            continue;
+        }
+        elapsed %= 50;
+        if (titleMenu) {
+            sides[0] = sides[1] = 0;
+            for (object = 1; object < 10; object++) {
+                if (aeObjectClass[object] < OBJECT_CLASS_SHIP)
+                    continue;
+                sides[aeShipSide[object] != SIDE_IMPERIAL]++;
+                if (aeObjectClass[object] == OBJECT_CLASS_SHIP &&
+                    (Vector_magnitude(&aShipPosition[object]) >> 8) > 100000 &&
+                    aeSpecialManeuver[object] != SPECIAL_MANEUVER_UNKNOWN_9)
+                    Explosion((short)object);
+            }
+            for (index = 0; index < 4; index++) {
+                if (sides[titleShips[index].side != SIDE_IMPERIAL] == 0) {
+                    aMissionShips[index + 32].state = 0;
+                    init_ship((short)(index + 32), 16);
+                }
+            }
+        } else if (ticks == 40) {
+            Explosion(0);
+        } else if (ticks > 40 && !wingman_dead() && !any_enemy(nYourWingman, 14000)) {
+            aeShipMissionType[nYourWingman] = MISSION_TYPE_COME_HOME;
+        }
+        nTickCount60Hz = (unsigned int)((uint64_t)now * 60 / 1000);
+        SdlSwcUpdateSpace();
+        SwcUpdateSceneCamera();
+        update_star_field();
+        nRenderedSpaceFrame++;
+        ticks++;
+        if (SwcDrawFlight(swcCinemaRenderer, NULL, swcCinemaCockpitCmf,
+                swcCinemaSpaceCmf, swcCinemaColors, swcCinemaImages, 1, 0) != 0)
+            goto done;
+        if (titleMenu) {
+            if (SDL_RenderCopy(swcCinemaRenderer, menuTextures[0], NULL, &bounds[0]) != 0 ||
+                (nRenderedSpaceFrame % 6 < 4 &&
+                 SDL_RenderCopy(swcCinemaRenderer, menuTextures[1], NULL, &bounds[1]) != 0))
+                goto done;
+        } else if (ticks > 40 &&
+            SdlDrawSwcProportionalText(swcCinemaRenderer, &font,
+                160 - SdlSwcTextWidth(&font, "Press <sp> to continue") / 2,
+                200, swcCinemaColors[129], "Press <sp> to continue") != 0) {
+            goto done;
+        }
+        SDL_RenderPresent(swcCinemaRenderer);
+        if (titleMenu && ticks > 10000) {
+            result = SWC_MOVIE_SKIPPED;
+            break;
+        }
+    }
+done:
+    SDL_strlcpy(failure, SDL_GetError(), sizeof(failure));
+    if (configured) {
+        memcpy(&aMissionShips[32], savedShips, sizeof(savedShips));
+        aMissionNavPoints[16] = savedNav;
+    }
+    if (titleMenu)
+        SdlStopSwcMusic();
+    SdlStopSwcSounds();
+    if (titleMenu && result == SWC_MOVIE_FINISHED)
+        SdlPlaySwcSound(31, 255);
+    SDL_ShowCursor(cursorVisible);
+    SDL_DestroyTexture(font.texture);
+    for (index = 0; index < 2; index++)
+        SDL_DestroyTexture(menuTextures[index]);
+    SDL_free(menu.data);
+    SwcResetFlightInput();
+    if (result == SWC_MOVIE_ERROR)
+        SDL_SetError("%s", failure);
+    return result;
+}
+
 int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
 {
     SwcCmf cockpitCmf = {0};
@@ -820,19 +1147,60 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
         goto done;
     if (SdlInitSwcSound(path) != 0)
         goto done;
+    SetEventManagerPump(NULL);
+    stMouseCursorState.viewport = &stSpaceBuffer;
+    bCockpitlessView = 0;
+    SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
     if (!checkOnly) {
         if (SdlInitSwcMusic() != 0)
             goto done;
         SDL_ShowWindow(window);
         SDL_RaiseWindow(window);
         SDL_PumpEvents();
-        movieResult = SdlPlaySwcStartup(window, renderer, path);
+        movieResult = SdlPlaySwcStartup(window, renderer, path, 0);
         if (movieResult == SWC_MOVIE_ERROR)
             goto done;
         if (movieResult == SWC_MOVIE_QUIT) {
             result = 0;
             goto done;
         }
+title_menu:
+        SdlStopSwcSounds();
+        SdlStopSwcMusic();
+        SwcResetFlightInput();
+        FlushInputEvents();
+        paused = 0;
+        showMap = 0;
+        ticks = 0;
+        elapsed = 0;
+        bSwcWaitingForEscort = 0;
+        nSwcCinemaResult = 0;
+        /* Title combat can destroy ships and change pilot/objective state.
+         * Recreate the campaign on each menu visit and again on New Game. */
+        ResetCampaignData();
+        if (SdlLoadSwcMissionData(missionPath, 1, 0) != 0 || SwcStartMissionShips() < 0)
+            goto done;
+        movieResult = SwcRunFlightScene(1);
+        if (movieResult == SWC_MOVIE_ERROR)
+            goto done;
+        if (movieResult == SWC_MOVIE_SKIPPED) {
+            movieResult = SdlPlaySwcStartup(window, renderer, path, 1);
+            if (movieResult == SWC_MOVIE_ERROR)
+                goto done;
+            if (movieResult != SWC_MOVIE_QUIT)
+                goto title_menu;
+        }
+        if (movieResult == SWC_MOVIE_QUIT) {
+            result = 0;
+            goto done;
+        }
+        ResetCampaignData();
+        if (SdlLoadSwcMissionData(missionPath, 1, 0) != 0)
+            goto done;
+        shipCount = SwcStartMissionShips();
+        if (shipCount < 0 || SdlInitSwcCockpit(renderer, &cockpitCmf, &spaceCmf,
+                colors, swcRasterCanvas) != 0)
+            goto done;
         /* CODE_09 squadron +0x84 calls opening_scene before StartNewCampaign
            and GameFlow. Each host session starts a fresh Enyo 1 campaign. */
         movieResult = SdlPlaySwcOpening(window, renderer);
@@ -1082,10 +1450,11 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
                           checkOnly ? 0 : SDL_GetMouseState(NULL, NULL));
             elapsed -= tickInterval;
             ticks++;
-            if (nArcadeState == 1 || nArcadeState == 4 || bPlayerDestroyed)
+            if (nArcadeState == 1 || nArcadeState == 3 || nArcadeState == 4 || bPlayerDestroyed)
                 break;
         }
-        if (!checkOnly && (nArcadeState == 1 || nArcadeState == 4 || bPlayerDestroyed)) {
+        if (!checkOnly && (nArcadeState == 1 || nArcadeState == 3 ||
+            nArcadeState == 4 || bPlayerDestroyed)) {
             SdlStopSwcSounds();
             SdlStopSwcMusic();
             SDL_SetWindowMouseGrab(window, SDL_FALSE);
@@ -1096,10 +1465,25 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
             if (nArcadeState == 4 || bPlayerDestroyed) {
                 /* CODE_09 GameFlow +0x1b8e: death leads to the player's funeral,
                    without landing or PostMission statistics. */
-                movieResult = SdlRunSwcCarrier(window, renderer, missionPath, path,
-                                                SWC_CARRIER_PLAYER_FUNERAL);
+                movieResult = SwcRunFlightScene(0);
                 if (movieResult == SWC_MOVIE_ERROR)
                     goto done;
+                if (movieResult != SWC_MOVIE_QUIT)
+                    movieResult = SdlRunSwcCarrier(window, renderer, missionPath, path,
+                                                    SWC_CARRIER_PLAYER_FUNERAL);
+                if (movieResult == SWC_MOVIE_ERROR)
+                    goto done;
+                if (movieResult != SWC_MOVIE_QUIT)
+                    goto title_menu;
+                result = 0;
+                goto done;
+            }
+            if (nArcadeState == 3) {
+                movieResult = SdlShowSwcEnding(window, renderer, path, 1);
+                if (movieResult == SWC_MOVIE_ERROR)
+                    goto done;
+                if (movieResult != SWC_MOVIE_QUIT)
+                    goto title_menu;
                 result = 0;
                 goto done;
             }
@@ -1123,6 +1507,8 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
                         goto done;
                 }
             }
+            if (movieResult != SWC_MOVIE_QUIT)
+                goto title_menu;
             result = 0;
             goto done;
         }

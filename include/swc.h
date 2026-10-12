@@ -148,8 +148,9 @@ int SwcMovieOpen(const char *path, SwcMovie *movie);
 void SwcMovieClose(SwcMovie *movie);
 /* Advances the retained indexed image: 1 = frame, 0 = end, -1 = error. */
 int SwcMovieNextFrame(SwcMovie *movie);
-/* Splash, logo and prologue before the new-campaign opening. */
-int SdlPlaySwcStartup(SDL_Window *window, SDL_Renderer *renderer, const char *resourceFork);
+/* Splash, logo and prologue before the title menu; replayIntro omits splash/logo. */
+int SdlPlaySwcStartup(SDL_Window *window, SDL_Renderer *renderer,
+                        const char *resourceFork, int replayIntro);
 int SdlShowSwcSplash(SDL_Window *window, SDL_Renderer *renderer, const char *resourceFork);
 int SdlPlaySwcIntroSpeech(SDL_Window *window, SDL_Renderer *renderer,
                            const char *resourceFork, int afterAttack);
@@ -160,6 +161,9 @@ int SdlPlaySwcLaunch(SDL_Window *window, SDL_Renderer *renderer);
 int SdlPlaySwcLanding(SDL_Window *window, SDL_Renderer *renderer, int health);
 /* Original funeral clips, before the eulogy (0) or before the farewell (1). */
 int SdlPlaySwcFuneralMovies(SDL_Window *window, SDL_Renderer *renderer, int farewell);
+int SdlPlaySwcStrandedMovie(SDL_Window *window, SDL_Renderer *renderer);
+int SdlShowSwcEnding(SDL_Window *window, SDL_Renderer *renderer,
+                       const char *resourceFork, int stranded);
 
 enum SwcCarrierVisit {
     SWC_CARRIER_PREFLIGHT,

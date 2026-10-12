@@ -20,7 +20,7 @@
       "CODE_09 PostMission +0x1794..+0x17b0 uses Random3DO(0,2)/(0,playerKills); CODE_04 +0x5dea excludes the upper bound for these ranges and returns zero for equal bounds. WC1 RandomInRange permits two missions and can award one kill for a zero-kill player mission.",
       "CODE_13 auto_pilot_valid +0x178a..+0x1880 includes an escort-wait gate; A5-0x1ff0 is Wait for %s. This gap is now resolved by the SDL-only autopilot integration.",
       "CODE_02 accelerate_and_move_object +0x43ba/+0x471e scales translation by elapsed ticks; A5-0x377a Q8 factors are 128,154,205,256,320,384,512. The fixed 50 ms host step matches only the nominal three-tick factor.",
-      "CODE_09 GameFlow +0x1f4a calls UpdateSeries; the host ends after Enyo 1. Original +0x1e1c calls CODE_14 death_sequence +0x362a before the player funeral; the host enters the funeral directly."
+      "CODE_09 GameFlow +0x1f4a calls UpdateSeries; the host still supports only Enyo 1. Death now enters CODE_14 death_sequence before the funeral, and death/stranded/completed Enyo 1 paths return to the title menu. Save/load and later progression remain absent."
     ],
     "qualified_gaps": [
       "CODE_01 rotate_Mac_shape2 +0x10ae centers width/height-derived quads without frame x/y offsets. The SDL renderer now adapts its fixed-point corners and the original edge/span sampler; interactive pixel parity remains unverified. MacDraw2 +0x0ef4 separately applies frame offsets.",
@@ -188,9 +188,69 @@
       "entry_offset": "0x4b1e",
       "end_offset": "0x4bbe",
       "source": "src/sdl/swc_rooms.c",
-      "symbol": "SdlRunSwcCarrier",
+      "symbol": "SdlShowSwcEnding",
       "relationship": "partial-presentation-adaptation",
-      "differences": "After the player's completed farewell, SDL presents THE END and waits for input. Uses the existing bitmap font and a static black background; original QuickDraw typography and animated background remain pending. Skipping the funeral bypasses the end card."
+      "differences": "Original RecRoomScene.CMF PLNT/1 particle background, palette 135, Helvetica 14 THE END at baseline 110 and palette index 4, with the original input wait. FUNERAL.MooV continues through this screen. Host animation runs at 20 Hz and uses WC1 RNG; classic Mac font pixels and variable frame pacing differ. Skipping the funeral bypasses the end card, matching its skip-latch branch."
+    },
+    {
+      "original_name": "Title_Sequence",
+      "resource": "CODE_07.bin",
+      "entry_offset": "0x1c86",
+      "end_offset": "0x2138",
+      "source": "src/sdl/swc_flight.c",
+      "symbol": "SwcRunFlightScene",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "Original title art and four-ship combat background with view 16, eliminated-side respawn, six-update highlight cycle and 10,001-update intro replay. The disabled saved-game choice reflects the absent host save loader; New Game resets Enyo 1."
+    },
+    {
+      "original_name": "death_sequence",
+      "resource": "CODE_14.bin",
+      "entry_offset": "0x362a",
+      "end_offset": "0x379a",
+      "source": "src/sdl/swc_flight.c",
+      "symbol": "SwcRunFlightScene",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "View 16 follows the player for 40 updates before Explosion(0); simulation continues behind the size-10 continuation prompt. Shared WC1 flight simulation and 20 Hz SDL pacing replace Mac event/presentation timing."
+    },
+    {
+      "original_name": "stranded_sequence",
+      "resource": "CODE_14.bin",
+      "entry_offset": "0x0a06",
+      "end_offset": "0x0c4a",
+      "source": "src/sdl/swc_rooms.c",
+      "symbol": "SdlShowSwcEnding",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "Arcade state 3 plays BUC with LASTRITE, then Stranded.aif and original captions over PLNT/1 particles. Caption replacement occurs after 127 host updates. Shared SDL audio replaces Sound Manager channels."
+    },
+    {
+      "original_name": "generate_new_3d_shard",
+      "resource": "CODE_05.bin",
+      "entry_offset": "0x4362",
+      "end_offset": "0x4468",
+      "source": "src/sdl/swc_rooms.c",
+      "symbol": "SwcGenerateEndShard",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "Original Q8 spawn bias and DATA/0 +0x2ede byte frame table; WC1 RNG uses the recovered exclusive ranges."
+    },
+    {
+      "original_name": "init_3d_shards",
+      "resource": "CODE_05.bin",
+      "entry_offset": "0x4480",
+      "end_offset": "0x4586",
+      "source": "src/sdl/swc_rooms.c",
+      "symbol": "SdlShowSwcEnding",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "Endings use the angle-zero identity basis, velocity (0,0,0x9000), 63 particles, RecRoomScene PLNT/1 and clut 135. SDL owns textures and instance state."
+    },
+    {
+      "original_name": "update_3d_shards",
+      "resource": "CODE_05.bin",
+      "entry_offset": "0x4598",
+      "end_offset": "0x481a",
+      "source": "src/sdl/swc_rooms.c",
+      "symbol": "SwcUpdateEndShards",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "Original angle-one rotation, basis normalization, Q8 projection, age retirement, forward-cone rejection and one-in-four respawn. SDL draws at retained frame offsets. Equivalent origin rebasing prevents signed overflow while an end screen is left idle."
     },
     {
       "original_name": "opening_scene",
@@ -676,7 +736,7 @@
       "lookup": "swc-music.sf2 beside the executable, optionally overridden by WC1_SWC_SOUNDFONT. Build/release packaging copies the bank; source and license notices are bundled.",
       "callback": "48000 Hz interleaved stereo float, 256 preallocated voices and 32 channels; preloaded event arrays, no callback allocation/file I/O or game-state reads."
     },
-    "limits": "Host General MIDI synthesis is not the original QuickTime/Roland sound. Instrument timbres, envelopes and volume curve differ; reverb/chorus sends are not rendered. Supplied modulation-wheel events are zero. Missing or unsupported tracks log once when selected and leave other audio usable. Original hardware resampling, exact mix, loop transitions and interactive timing remain unverified; title-menu/death/later-scene entry points remain pending.",
+    "limits": "Host General MIDI synthesis is not the original QuickTime/Roland sound. Instrument timbres, envelopes and volume curve differ; reverb/chorus sends are not rendered. Supplied modulation-wheel events are zero. Missing or unsupported tracks log once when selected and leave other audio usable. Original hardware resampling, exact mix, loop transitions and interactive timing remain unverified; title-menu/death/stranded entry points are connected; later scenes remain pending.",
     "validation": "Fresh Ghidra CODE_09 and CODE_05 exports with explicit switch-target disassembly, original CODE_03/07/12 instructions and DATA/A5 strings, offline original music-file/header/event inspection, static source review and make modern modern-gui modern-swc. The user reported five rejected tracks during implementation; original-data inspection identified the missing header terminator/padding and fixed-size stsz handling, now corrected. No agent tests, game, GUI, audio device or playback executed. No SWC similarity claim.",
     "format_references": [
       "https://developer.apple.com/documentation/quicktime-file-format/music_media",
@@ -871,10 +931,44 @@
     "qualification": "Rendering uses the original (160,100) plus projected XY, with horizontal/vertical flip bits retained. Object scale/definitions now come from SWC. CODE_01 rotate_Mac_shape2 and edge/span rules now draw sprites into an SDL streaming texture. WC1 projection and SDL target brackets remain provisional. Original hit/explosion glare and fighter/capital explosion types are connected; Mac handle management is not reproduced. Native SWC weapon audio and NPC ship AI are connected.",
     "validation": "Original-instruction and offline resource inspection; static source review; make modern modern-gui only. No interactive execution or tests."
   },
+  "startup_endings": {
+    "scope": "SDL2 startup and endings for fresh Enyo 1; all changes remain in SDL/SWC host files. Win32 reference source, flags and calling conventions are unchanged.",
+    "title": {
+      "art": "Spaceflight.CMF RCRM/47 frames 0/1, clut 251; frame 2 remains unselectable without saves.",
+      "battle": "Expanded DATA/0 +0xa0a + 32*76 through record 35: two Dralthi, two Hornets, nav 16. Respawn an eliminated side; explode fighters past 100,000 units.",
+      "camera": "CODE_02 new_view case 16 and set_eye_direction_and_position +0x2a3a; CODE_04 try2point_object_at_object +0x319e. Turn components clamp to +/-3, acceleration halves to components below 0xf00, velocity caps at 0x5000 beyond range 0x138800.",
+      "timing": "Highlight visible on renderedFrame % 6 < 4; frame counter > 10000 returns to IntroFilm without splash/Lion. At the host 20 Hz cadence this is about 8 minutes 20 seconds; movement does not reset the original counter.",
+      "state": "Restore borrowed built-in mission records/nav data. Reset campaign, active objects, camera/cockpit, objectives, inputs and audio on each New Game."
+    },
+    "death": {
+      "source": "CODE_14 +0x362a",
+      "sequence": "Remove nav pointer, view 16 on object 0, FUNERAL music, 40 simulation/render updates, Explosion(0), continuation prompt at (center,200), font size 10 and clut index 129. A surviving wingman with no enemies inside 14,000 units receives COME_HOME.",
+      "routing": "After dismissal, player funeral; no landing or PostMission."
+    },
+    "stranded": {
+      "trigger": "CODE_13 check_stranded +0x1630: non-canned flight, carrier mission state 3, no enemy within 30,000 units; player death takes priority.",
+      "assets": [
+        "Movies/BUC.dcMov",
+        "MIDI/LASTRITE.MooV",
+        "AIFF/Stranded.aif",
+        "CMFs/RecRoomScene.CMF PLNT/1",
+        "clut/135"
+      ],
+      "speech": "LASTRITE volume 50 for BUC, 20 for narration, back to 50 when foreground speech finishes. Missing speech leaves the captions available.",
+      "text": "With your carrier destroyed... then You drift aimlessly through the void... at baselines 102/134. THE END replaces them after 127 updates. Font size 14, color 4; particles draw after text."
+    },
+    "the_end": {
+      "source": "CODE_03 +0x4b1e",
+      "presentation": "63 moving PLNT/1 particles, then centered Helvetica 14 THE END at baseline 110, color 4. Funeral music continues until dismissal. The original funeral skip latch bypasses this screen.",
+      "routing": "Death, stranded and completed Enyo 1 paths return to the title menu. Window close exits. P/focus loss pause scenes/audio; activation completes on release."
+    },
+    "limits": "No save/load or campaign progression. Fixed 20 Hz pacing, shared WC1 RNG/AI and modern Helvetica metrics prevent a claim of original interactive parity. Movie fades and classic-Mac font rasterization remain pending.",
+    "validation": "Fresh Ghidra CODE_02/04/14 exports plus original CODE_03/05/07/09/13 instructions; A5 calls/strings and expanded DATA inspected; title frame dimensions, palettes and original artwork inspected offline. All three SDL targets built and changed units checked with Clang static analysis. No tests added/run, no game/GUI execution, playback or audio device. No original Win32 source or flags changed."
+  },
   "movies": {
     "decoder_source": "src/swc/movie.c",
     "presentation_source": "src/sdl/swc_movie.c",
-    "scope": "Version-1 LMov decoder and original startup splash/logo/prologue, new-campaign opening, Hornet launch/landing and player/Spirit funeral clips for Enyo 1 in both SDL launchers. Missing movie groups preserve carrier entry/flight/dialogue; malformed movies fail explicitly. The check-only flight path bypasses movies.",
+    "scope": "Version-1 LMov decoder and original startup splash/logo/prologue, new-campaign opening, Hornet launch/landing, player/Spirit funeral clips and stranded BUC for Enyo 1 in both SDL launchers. Missing movie groups preserve their following presentation; malformed movies fail explicitly. The check-only flight path bypasses movies.",
     "startup": {
       "sources": ["src/sdl/swc_movie.c", "src/sdl/swc_rooms.c", "src/swc/rsrc.c", "src/swc/speech.c"],
       "entry": "SdlRunSwcMission calls SdlPlaySwcStartup before SdlPlaySwcOpening; check-only bypasses both.",
@@ -893,7 +987,7 @@
         {"resource": "CODE_15.bin", "entry_offset": "0x046c", "name": "movie_dim_screen", "qualification": "Clears a830 skip latch after Lion and at the end of IntroFilm; palette dimming remains pending."}
       ],
       "controls": "Splash and Lion dismiss separately. A prologue movie or speech skip exits the remaining prologue. Key/mouse releases complete skips; P/focus loss pause the shared audio device and animation clock. Quit/error propagate to session cleanup. Missing startup movies, CMFs or speech skip the group.",
-      "limits": "Original Title_Sequence +0x1c86, its animated background, save/load choice and idle intro replay remain pending. Host proceeds into a fresh Enyo 1 opening. Palette fades and exact original timing remain pending; live intro animation runs at 20 Hz with shared WC1 RNG. BUC belongs to CODE_14 stranded_sequence +0x0a3c, not startup. No original picture/audio assets are embedded in source.",
+      "limits": "The title battle and idle IntroFilm replay are connected; saved-game selection remains disabled until a save loader exists. Palette fades and exact original frame/RNG timing remain pending. BUC belongs to stranded_sequence +0x0a06, now connected from arcade state 3. No original picture/audio assets are embedded in source.",
       "validation": "Fresh Ghidra CODE_07/04/05/15 exports, original CODE_01/09/12 instructions, expanded A5 strings/tables and original PICT/movie/CMF/AIFF metadata; static source review and make -j4 modern modern-gui modern-swc. No tests, game, GUI, audio device or playback executed. Interactive appearance/synchronization unverified; Win32 sources and source selection unchanged."
     },
     "opening_sequence": ["OPEN0", "OPEN1", "OPEN2", "OPEN3"],
@@ -905,17 +999,17 @@
     "funeral_sequence": ["FUNSERV0", "FUNSERVA", "eulogy dialogue", "FUNSERVB", "farewell dialogue"],
     "funeral_string_evidence": "CODE_03 funeral_sequence +0x4a08; expanded DATA/0 A5-relative strings -0x3397 FUNSERV0, -0x338e FUNERAL.MooV, -0x3381 FUNSERVA, -0x3378 FUNSERVB.",
     "audio": "Embedded unsigned 8-bit mono at 0x56ee8ba3 fixed-point Hz (22254.545...), rounded to 22255 Hz by SDL. Stored blocks are 11128 bytes; header +0xa6 is the valid sample count. The shared SDL mixer resamples trimmed PCM alongside sequence music, pauses with video, and falls back to silent playback if the device is unavailable.",
-    "pending": "Palette transitions, original animated title menu and later scripted scenes, including stranded_sequence's BUC. DOCKING/ARMOR/LANDING cues span their respective movie groups; FUNERAL spans movies and both speeches. First briefing/bar/debriefing/funeral conversations are connected through the carrier adapter.",
+    "pending": "Movie palette transitions and later scripted scenes. DOCKING/ARMOR/LANDING cues span their movie groups; FUNERAL spans death, funeral movies/speeches and THE END; LASTRITE spans BUC and the stranded presentation. Title battle and idle IntroFilm replay are connected.",
     "opening_validation": "Fresh Ghidra CODE_09 squadron export, original opening_scene instructions and expanded A5 strings; static source review and make modern modern-gui. No tests, game, GUI, playback or audio device executed for this change.",
     "validation": "Original assembly and A5-string inspection; offline parsing of all 38 original files and 3521 encoded frames, including record bounds, scanline commands, exact frame consumption and audio lengths; static source review and make modern modern-gui. No interactive code, game, GUI, playback or audio device executed."
   },
   "carrier": {
     "source": "src/sdl/swc_rooms.c",
-    "scope": "Fresh Enyo 1: startup splash/logo/prologue, opening movies, bar, three conversations, rankings, barracks, medals, briefing, Hornet launch, flight, landing, debriefing and player/Spirit funerals. Player death enters the funeral without landing/PostMission; Spirit's funeral follows debriefing if she was lost. Dismissal ends the session; later campaign progression is not implemented. GUI and CLI play startup and opening before carrier entry; check-only bypasses rooms and movies. Save bunks explain unsupported saving/loading. Simulator remains disabled as in the original demo.",
+    "scope": "Fresh Enyo 1: splash/logo/prologue, animated title battle and idle intro replay, opening movies, bar, conversations, rankings, barracks, medals, briefing, Hornet launch, flight, landing, debriefing, death cinematic, player/Spirit funerals and stranded BUC. Completed flights and endings return to the title menu; New Game resets Enyo 1. Later campaign progression and save/load remain unsupported. Check-only bypasses presentation. Simulator remains disabled as in the original demo.",
     "flow_evidence": [
       {"resource": "CODE_09.bin", "entry_offset": "0x000c", "name": "squadron", "qualification": "+0x84..+0x90 calls opening_scene, StartNewCampaign(0), then GameFlow for a new campaign. The SDL host uses this order for its fresh Enyo 1 session."},
       {"resource": "CODE_09.bin", "entry_offset": "0x1a70", "name": "StartNewCampaign", "qualification": "Enables the recreation-room path."},
-      {"resource": "CODE_09.bin", "entry_offset": "0x1b8e", "name": "GameFlow", "qualification": "RecRoom, BarracksScreen, Briefing, scramble, landing, PostMission and DeBriefing; simulator selection shows the demo restriction. Player funeral call at +0x1e44 passes 1; wingman-loss check +0x218c calls the funeral with 0 at +0x2196. Full UpdateSeries and later scenes are not connected; the separate death_sequence cinematic is still pending."},
+      {"resource": "CODE_09.bin", "entry_offset": "0x1b8e", "name": "GameFlow", "qualification": "RecRoom, BarracksScreen, Briefing, scramble, landing, PostMission and DeBriefing; simulator selection shows the demo restriction. Death cinematic precedes the player funeral at +0x1e44. Wingman-loss check +0x218c calls the funeral with 0 at +0x2196. Stranded dispatch and return to the title menu are connected; UpdateSeries and later campaign scenes remain unsupported."},
       {"resource": "CODE_03.bin", "entry_offset": "0x137c", "name": "DeBriefing"},
       {"resource": "CODE_03.bin", "entry_offset": "0x1b8c", "name": "DrawDebriefingLongShot"},
       {"resource": "CODE_03.bin", "entry_offset": "0x1556", "name": "LoadBriefingData"},
@@ -943,7 +1037,7 @@
       "script": "Data.CMF BRF0/1: 14 LE32 offsets, same 13-byte records. Enyo player eulogy/farewell sections 2/0, Spirit sections 12/10. DATA/0 +0x42be selects player story 0 for series 1. Wingman dialogue uses shared ParseTests command 30 and wing_status.",
       "art": "Funeral.CMF palette 193: BRFG/19 long shot, BRFG/20 background frame 0 for textColour 0 otherwise 1, TKHD/1 and TKHD/10 with base frame 0. Original MountGraphics +0x2484/+0x2498 and SceneDirector +0x29b0 identify these assets. GUI requires this CMF.",
       "speech": "AIFF/camp.0/00/00SSLL00.AIF; 11 supplied recordings for the player/Spirit sequences. Fresh pilot rank 0 is validated for the $R voice variant. Missing speech keeps subtitles usable.",
-      "limits": "Fresh Enyo 1 only. Movie/dialogue ordering and terminal input wait are connected, but the separate death cinematic, animated end background, movie fades and exact timing remain pending. FUNERAL.MooV continues across the movies and both speeches, then stops. End card uses existing SDL bitmap text on black."
+      "limits": "Fresh Enyo 1 only. Death cinematic precedes the player funeral; the completed farewell leads to animated THE END with Helvetica 14 on macOS and the portable bitmap fallback elsewhere. FUNERAL.MooV continues through the end screen. Movie fades and exact timing remain pending."
     },
     "data_offsets": {"palettes": "0x3fd2", "filenames": "0x4046", "ranking_rows": "0x2690", "idle_sequences": ["0x27ae", "0x2816", "0x27da"], "medal_frames": "0x42f2", "briefing_origin": ["0x4306", "0x430a"]},
     "speech": {

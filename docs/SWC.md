@@ -1,7 +1,8 @@
 # Super Wing Commander Mac demo
 
-The GUI recognizes the SWC Mac demo, plays its splash, Lion logo, prologue and
-four-part new-campaign opening, and opens the Tiger's Claw bar and barracks.
+The GUI recognizes the SWC Mac demo, plays its splash, Lion logo and prologue,
+then shows the original title artwork over an animated battle. New Game plays
+the four-part campaign opening and opens the Tiger's Claw bar and barracks.
 Talk to Shotglass, Paladin and Angel, check pilot rankings or medals, then enter
 the briefing room and launch the experimental Enyo 1 flight with five ships,
 four objectives, and the original 320x240 cockpit and sprites.
@@ -22,11 +23,12 @@ funeral movies have embedded audio. QuickTime music sequences now accompany
 the startup, opening, carrier, briefing/debriefing, launch, flight, landing and funeral.
 WC1 communications now provide wingman orders and landing-clearance requests;
 returning to the carrier ends Enyo 1 with the original debriefing branches and
-Spirit's funeral if she was lost. Player destruction leads to the player's
-funeral and an end card.
-Later missions, campaign progression, remaining HUD modes, side/rear views,
-the separate death cinematic and original animated title menu are
-still pending. Landing and funeral paths have been compiled and inspected,
+Spirit's funeral if she was lost. Player destruction leads through the death
+cinematic and funeral to animated THE END. Losing the carrier with no nearby
+enemies plays BUC and the narrated stranded ending. Completed flights/endings
+return to the title menu; New Game always starts fresh Enyo 1.
+Later missions, campaign progression, save/load, remaining HUD modes and
+side/rear views are still pending. These paths have been compiled and inspected
 without interactive execution.
 
 `make modern-swc` builds the asset viewer. It loads the demo's CMF files,
@@ -41,7 +43,7 @@ entry point in SDL builds. The CMF reader and mission adapter are linked into
 `src/sdl/swc_demo.c` remains a separate presentation/inspection entry point.
 `src/sdl/swc_flight.c` hosts the experimental flight using the shared core.
 `src/sdl/swc_cockpit.c` presents the Hornet instruments. `src/sdl/swc_text.c`
-shares bitmap text between the cockpit and carrier. `src/sdl/swc_rooms.c`
+shares Helvetica text on macOS and portable bitmap fallback text. `src/sdl/swc_rooms.c`
 adapts carrier presentation and scenes; `src/swc/speech.c` reads AIFF speech.
 `src/swc/sound.c` decodes the flight `snd ` bank; `src/sdl/swc_sound.c`
 supplies a shared stereo SDL mixer for four effect/flight-speech voices,
@@ -85,7 +87,7 @@ The main confirmed differences are:
 | Other pilots' post-mission statistics | CODE_09 `PostMission` +0x1794..+0x17b0 calls CODE_04 `Random3DO` +0x5dea with `(0,2)` and `(0,playerKills)`. Its equal-bound case returns zero. | WC1 `PostMission` uses inclusive `RandomInRange`; it can add two missions rather than at most one. When the player made zero kills, its `(0,0)` call can still award another pilot one kill. Common player/wingman statistics and badge control flow agree, but the whole routine is not equivalent. |
 | Autopilot eligibility | CODE_13 `auto_pilot_valid` +0x178a..+0x1880 checks an escort-wait flag; A5-0x1ff0 contains `Wait for %s`. | Resolved in the SDL-only SWC adapter: hazard/enemy/escort/distance priority and the objective-arrival wait latch now drive both A and the lamp. |
 | Movement timing | CODE_02 `accelerate_and_move_object` +0x43ba clamps elapsed Mac ticks to 0..6, then +0x471e scales velocity before adding it to position. A5-0x377a holds Q8 factors 128,154,205,256,320,384,512. | The host adds velocity once per fixed 50 ms step. That matches the table's factor at three Mac ticks; variable-tick behavior remains different. |
-| Campaign and death flow | CODE_09 `GameFlow` calls `PostMission` at +0x1f46 and `UpdateSeries` at +0x1f4a; its death case calls CODE_14 `death_sequence` at +0x1e1c before the player funeral at +0x1e44. | The host always starts series 1 / mission 0, ends after debriefing/funeral, and enters the player's funeral directly on destruction. Save/load, later progression and the separate death presentation remain absent. |
+| Campaign and death flow | CODE_09 `GameFlow` calls `PostMission` at +0x1f46 and `UpdateSeries` at +0x1f4a; its death case calls CODE_14 `death_sequence` at +0x1e1c before the player funeral at +0x1e44. | The death cinematic, funeral, stranded sequence and animated endings are connected. Enyo 1 completion returns to the title menu; New Game resets the campaign. Save/load and later progression remain absent. |
 
 Two apparent rendering/HUD gaps need qualification. CODE_01
 `rotate_Mac_shape2` +0x10ae constructs a centered quad from frame width/height
@@ -100,9 +102,9 @@ unavailable message is also original, not a missing implementation to fill in.
 
 Flight effects and voices now use the native Mac sound bank through
 `SdlPlayGameSoundEffect` and the SDL cockpit adapter. Startup splash/logo/prologue
-and the new-campaign opening are connected before the carrier visit. Death
-presentation, the animated title menu, exact text and palette transitions remain
-incomplete.
+and the new-campaign opening are connected before the carrier visit. The title
+battle, idle intro replay, death cinematic and animated endings are connected.
+Classic font pixels, movie palette transitions and exact pacing remain incomplete.
 The most useful next work is correcting the demonstrated RNG differences,
 then inspecting a full Enyo 1 route through combat and return before
 expanding campaign support. Other AI/collision paths still need individual
@@ -289,10 +291,11 @@ Window close exits at any point. The simulator retains the demo's unavailable
 message. Save/load bunks explain that SWC saves are not supported yet.
 
 With the archive's startup assets present, the splash, Lion logo and prologue
-precede the four-part opening and first carrier visit. The Hornet launch follows the briefing. Space,
+precede the title menu. New Game plays the four-part opening and first carrier visit.
+The Hornet launch follows the briefing. Space,
 Enter, Esc, or a left click skips the entire current sequence on release; P
 pauses it. Splash and logo dismiss separately; skipping the prologue advances
-to the campaign opening. Losing focus pauses video and audio together. Skipping the opening
+to the title menu. Losing focus pauses video and audio together. Skipping the opening
 enters the bar; closing the movie window exits the session. Once in flight,
 Esc resumes its normal exit behavior and Space/Enter/mouse buttons resume
 their weapon bindings.
@@ -341,9 +344,9 @@ landing movies continues into debriefing; closing the window exits. If Spirit
 was lost, her funeral follows debriefing. Player destruction instead starts the
 player's funeral without landing or mission-stat updates. Click, Space or Enter
 advances funeral dialogue; Esc skips the rest of the funeral. Skipping a funeral
-movie also ends the sequence. The player's completed farewell leads to a static
-THE END card that waits for input. These paths end the current demo session,
-returning to the launcher when started there.
+movie also ends the sequence. The player's completed farewell leads to animated
+THE END, which waits for input. Death, stranded and completed Enyo 1 paths return
+to the title menu. Escape at the title menu exits to the launcher when started there.
 
 Point `SWC_DATA_DIR` at the extracted **SuperWing DEMO** directory containing
 `CMFs/`. For example, from the repository root on macOS:
@@ -577,7 +580,7 @@ frame 0 base used in other conversations.
 Early returns and Spirit's loss select the original dialogue instead of a
 fixed success outcome. Spirit's funeral follows if she died on this mission.
 Office/award ceremonies, save persistence and advancing to Enyo 2 remain
-pending; dismissal ends this first-mission host after any funeral.
+pending; dismissal returns to the title menu after any funeral.
 
 Validation: original Ghidra instructions and offline demo-data inspection,
 static review, and `make -j4 modern modern-gui`. No tests, interactive code,
@@ -614,12 +617,11 @@ and `SceneDirector` +0x29b0. Speech uses `AIFF/camp.0/00/00SSLL00.AIF`; the
 demo includes eleven recordings for these player/Spirit scenes. The fresh
 pilot's rank is zero, matching the supplied `$R` speech variant.
 
-The host presents a static THE END card after the player's farewell, retaining
-`the_end` +0x4b1e's input wait. The original animated end background, separate
-death cinematic, movie fades and exact scene timing remain
-pending. Validation was original-instruction/data inspection, static review
-and `make -j4 modern modern-gui`; no tests, interactive sessions or playback
-were run. The GUI requires `Funeral.CMF`.
+The host presents the original moving `PLNT/1` background and Helvetica 14
+THE END after the player's farewell, retaining `the_end` +0x4b1e's input wait.
+Funeral music continues through this screen. Skipping the funeral still bypasses
+THE END, as the original skip-latch branch does. Movie fades and exact scene
+timing remain pending. The GUI requires `Funeral.CMF`.
 
 ## Startup, opening, launch, landing and funeral movies
 
@@ -670,13 +672,57 @@ dialogue animation and the shared audio device. Missing startup movie/dialogue
 files skip the group; malformed present assets report an error. Quit ends the
 session, and music, PCM, textures and temporary buffers are released on exit.
 
-The host continues directly into the fresh campaign opening. The original
-`Title_Sequence` (+0x1c86), its 3D background, saved-game choice and idle intro
-replay are still pending. Palette fades and exact Mac draw/RNG timing are also
-pending; live intro animation uses the host's 20 Hz cadence and shared WC1
-random generator with the recovered exclusive ranges. `intro_shakecockpit`
-is empty in this demo. `BUC` is used by CODE_14 `stranded_sequence` +0x0a3c,
-not startup.
+The host continues into `Title_Sequence` (+0x1c86). Idle replay calls IntroFilm
+without repeating the splash or Lion. Saved-game selection remains disabled
+because the host has no save loader. Palette fades and exact Mac draw/RNG timing
+remain pending; live animation uses a 20 Hz host cadence and shared WC1 RNG.
+`intro_shakecockpit` is empty in this demo. `BUC` belongs to CODE_14
+`stranded_sequence` +0x0a06 (MovieDisplay call +0x0a40), not startup.
+
+### Title battle, death and stranded endings
+
+`SwcRunFlightScene` presents CODE_07 `Title_Sequence` +0x1c86 using
+`Spaceflight.CMF` `RCRM/47`, flight palette 251 and `VICTORY.MooV`. The background
+uses the four original DATA/0 mission records 32..35: two Dralthi and two Hornets
+at nav 16. The shared simulation supplies combat, damage and debris; an eliminated
+side respawns, and fighters beyond 100,000 units explode. The selected New Game
+overlay appears on four of every six rendered updates. After 10,001 updates
+(about 8 minutes 20 seconds at 20 Hz), the intro replays and the menu returns.
+This is the original frame counter, which does not reset on mouse movement.
+
+The Mac-only camera mode 16 is recovered from CODE_02 `new_view` +0x3190 and
+`set_eye_direction_and_position` +0x25d8, with CODE_04
+`try2point_object_at_object` +0x319e. It turns gradually toward its subject,
+follows beyond 5,000 units and selects another ship if the subject disappears.
+Its Q8 acceleration uses the Mac shrink limit of 0xf00. The Win32 camera switch
+is unchanged. Title combat is discarded before starting a campaign; cockpit,
+pilot, mission, input and audio state are reset on each visit.
+
+CODE_14 `death_sequence` +0x362a uses that camera on the player, plays
+`FUNERAL.MooV`, advances 40 updates, then calls `Explosion(0)`. Simulation
+continues behind the centered, size-10 `Press <sp> to continue` prompt at baseline
+200, palette index 129. Dismissal enters the player funeral without PostMission.
+
+CODE_13 `check_stranded` +0x1630 selects arcade state 3 when the carrier record
+has state 3 and no enemy is within 30,000 units. This now enters CODE_14's BUC
+movie with `LASTRITE.MooV`, then `AIFF/Stranded.aif`. Music ducks to 20 during
+narration and returns to 50 afterward. The original two captions use baselines
+102/134; THE END replaces them after 127 updates.
+
+`SdlShowSwcEnding` adapts CODE_05 `init_3d_shards` +0x4480,
+`generate_new_3d_shard` +0x4362 and `update_3d_shards` +0x4598. Both endings
+use 63 particles from `RecRoomScene.CMF` `PLNT/1`, palette 135, the original
+15-entry frame table, Q8 yaw/projection and retirement/respawn conditions.
+Stranded draws text before the particles; the funeral's THE END draws after them
+at baseline 110. Both use Helvetica 14 and palette index 4. Input is consumed on
+release, and P/focus loss pause animation and audio. Completed endings return to
+the menu; window close exits throughout.
+
+Validation: fresh Ghidra instruction exports, original DATA/CMF/clut inspection,
+`make -j4 modern modern-gui modern-swc` and Clang static analysis. No tests,
+game/GUI execution, playback or audio device were run. Original artwork was
+extracted for inspection only. Shared AI/RNG differences, exact classic font
+pixels, variable Mac frame pacing and movie fades remain outside this change.
 
 CODE_03 `opening_scene` +0x4374 plays `OPEN0`, `OPEN1`, `OPEN2`, then `OPEN3`.
 The names resolve from A5-0x347c, -0x3468, -0x3462 and -0x345c respectively;
@@ -845,8 +891,7 @@ initial ships. Guns use the shared energy gate, hardpoints, projectile creation,
 convergence, collision/damage, and recharge code. Missiles use the shared loadout,
 lock gate, launch timer, guidance, collision grace, expiration, and explosion code.
 WC1 handles shield/armor damage, debris, and ammunition removal. Player destruction
-stops simulation/input and enters the player funeral; the preceding death
-cinematic is pending.
+stops player input, runs the live death cinematic, and enters the player funeral.
 
 Original instructions support this reuse:
 
@@ -1121,8 +1166,9 @@ many WC1 names were already derived from this Mac executable's MacsBug strings.
 3. Continue later campaign communications, remaining HUD modes and
    post-debriefing progression. Landing and the first debriefing are connected;
    the demo disables its simulator.
-4. Connect the animated title menu, death cinematic and later scripted scenes;
-   add save/load, movie palette transitions, remaining room animations and the
+4. Connect later scripted scenes; add save/load, movie palette transitions,
+   remaining room animations and the
    complete Mac map renderer. The first bar, barracks and briefing, AIFF speech and Hornet
    startup/opening/launch/landing playback, first debriefing and player/Spirit funerals are
-   present; the animated end background and other scene entry points are pending.
+   present, along with the title battle, idle replay, death cinematic, stranded
+   BUC sequence and animated end background. Other scene entry points remain pending.
