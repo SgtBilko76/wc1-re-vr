@@ -86,7 +86,6 @@ int main(int argc, char **argv)
     size_t pathSize;
     char title[192];
     int argument;
-    int checkOnly;
     int shipIndex;
     int previousShip;
     int showCockpit;
@@ -96,7 +95,7 @@ int main(int argc, char **argv)
 
     if (argc < 2 || strcmp(argv[1], "--help") == 0) {
         printf("Usage: %s DEMO_DIRECTORY [--rsrc RAW_RESOURCE_FORK] "
-               "[--check] [--snapshot FILE.bmp]\n"
+               "[--snapshot FILE.bmp]\n"
                "Left/right: ship view. Up/down: ship. C: cockpit. Esc: quit.\n"
                "This SDL2 asset preview does not run missions yet.\n", argv[0]);
         return argc < 2 ? 1 : 0;
@@ -104,15 +103,11 @@ int main(int argc, char **argv)
     dataDirectory = argv[1];
     resourceFork = NULL;
     snapshotPath = NULL;
-    checkOnly = 0;
     for (argument = 2; argument < argc; argument++) {
-        if (strcmp(argv[argument], "--check") == 0) {
-            checkOnly = 1;
-        } else if (strcmp(argv[argument], "--rsrc") == 0 && argument + 1 < argc) {
+        if (strcmp(argv[argument], "--rsrc") == 0 && argument + 1 < argc) {
             resourceFork = argv[++argument];
         } else if (strcmp(argv[argument], "--snapshot") == 0 && argument + 1 < argc) {
             snapshotPath = argv[++argument];
-            checkOnly = 1;
         } else {
             fprintf(stderr, "Unknown or incomplete option: %s\n", argv[argument]);
             return 1;
@@ -158,7 +153,7 @@ int main(int argc, char **argv)
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
     window = SDL_CreateWindow("Super Wing Commander Mac demo - asset preview",
                               SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              960, 720, checkOnly ? SDL_WINDOW_HIDDEN : SDL_WINDOW_RESIZABLE);
+                              960, 720, snapshotPath != NULL ? SDL_WINDOW_HIDDEN : SDL_WINDOW_RESIZABLE);
     if (window == NULL)
         goto done;
     renderer = SDL_CreateRenderer(window, -1, 0);
@@ -213,16 +208,12 @@ int main(int argc, char **argv)
         if (SDL_RenderClear(renderer) != 0 || SDL_RenderCopy(renderer, texture, NULL, NULL) != 0)
             goto done;
         SDL_RenderPresent(renderer);
-        if (checkOnly) {
-            if (snapshotPath != NULL) {
-                snapshot = SDL_CreateRGBSurfaceWithFormatFrom(screen,
-                    SWC_FRAME_WIDTH, SWC_FRAME_HEIGHT, 32, SWC_FRAME_WIDTH * 4,
-                    SDL_PIXELFORMAT_ARGB8888);
-                if (snapshot == NULL || SDL_SaveBMP(snapshot, snapshotPath) != 0)
-                    goto done;
-            }
-            printf("SWC Mac demo: cockpit PC00/1, clut/251, %s/1 (%u views), 320x240 SDL2: OK\n",
-                   shipTypes[shipIndex], frameCount);
+        if (snapshotPath != NULL) {
+            snapshot = SDL_CreateRGBSurfaceWithFormatFrom(screen,
+                SWC_FRAME_WIDTH, SWC_FRAME_HEIGHT, 32, SWC_FRAME_WIDTH * 4,
+                SDL_PIXELFORMAT_ARGB8888);
+            if (snapshot == NULL || SDL_SaveBMP(snapshot, snapshotPath) != 0)
+                goto done;
             break;
         }
         if (SDL_WaitEventTimeout(&event, 50)) {

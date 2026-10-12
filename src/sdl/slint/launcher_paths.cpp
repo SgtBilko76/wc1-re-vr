@@ -66,7 +66,7 @@ static bool has_readable_file(const fs::path &directory, std::string_view name)
         std::ifstream(*path, std::ios::binary).peek() != std::ifstream::traits_type::eof();
 }
 
-DirectoryStatus validate_game_directory(std::string_view directoryText)
+DirectoryStatus validate_game_directory(std::string_view directoryText, bool swcRequested)
 {
     if (directoryText.empty())
         return {false, "Choose a Wing Commander directory."};
@@ -78,8 +78,11 @@ DirectoryStatus validate_game_directory(std::string_view directoryText)
 
     if (!fs::is_directory(directory, error))
         return {false, "The selected path is not a directory."};
+    const auto gameData = find_child_case_insensitive(directory, "GAMEDAT");
     const auto cmfs = find_child_case_insensitive(directory, "CMFs");
-    if (cmfs && fs::is_directory(*cmfs, error)) {
+    // Preserve WC1 selection in mixed directories unless SWC was requested.
+    if ((swcRequested || !gameData || !fs::is_directory(*gameData, error)) &&
+        cmfs && fs::is_directory(*cmfs, error)) {
         for (const auto name : {"Data.CMF", "Spaceflight.CMF", "PCShipV00.CMF",
                                 "RecRoomScene.CMF", "Barracks.CMF", "ViewMedals.CMF",
                                 "Head10.CMF", "RRTalkingHeads.CMF", "Briefing.CMF",
@@ -103,9 +106,10 @@ DirectoryStatus validate_game_directory(std::string_view directoryText)
         }
         if (!palette)
             return {false, "SWC palette missing: preserve the demo's resource fork or add SuperWingCommanderDemo.rsrc.", true};
-        return {true, "Super Wing Commander Mac demo: explore the bar and barracks, attend the briefing, then launch Enyo 1. Saving, enemy AI and mission completion are not implemented.", true};
+        return {true, "Super Wing Commander Mac demo: explore the carrier and fly Enyo 1. Saving and later campaign missions are not implemented.", true};
     }
-    const auto gameData = find_child_case_insensitive(directory, "GAMEDAT");
+    if (swcRequested)
+        return {false, "Choose the SWC demo directory containing CMFs.", true};
     if (!gameData || !fs::is_directory(*gameData, error))
         return {false, "Choose a WC1 directory containing GAMEDAT or the SWC demo directory containing CMFs."};
 

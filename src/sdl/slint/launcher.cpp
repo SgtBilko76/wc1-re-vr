@@ -6,11 +6,8 @@
 #include <slint.h>
 
 #include <algorithm>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <string>
 #include <system_error>
 
@@ -20,10 +17,10 @@ namespace fs = std::filesystem;
 
 using namespace wc1_launcher;
 
-void refresh_window(LauncherWindow &window)
+void refresh_window(LauncherWindow &window, bool swcRequested)
 {
     const std::string directory(window.get_game_directory());
-    const DirectoryStatus status = validate_game_directory(directory);
+    const DirectoryStatus status = validate_game_directory(directory, swcRequested);
 
     window.set_picker_error(false);
     window.set_path_valid(status.valid);
@@ -42,7 +39,7 @@ void report_picker_error(LauncherWindow &window, std::string message,
     window.set_status_text(slint::SharedString(message));
 }
 
-void browse_for_game_directory(LauncherWindow &window)
+void browse_for_game_directory(LauncherWindow &window, bool swcRequested)
 {
     const std::string currentDirectory(window.get_game_directory());
     std::string defaultDirectory;
@@ -72,7 +69,7 @@ void browse_for_game_directory(LauncherWindow &window)
     const std::string selection(selectedDirectory);
     NFD_FreePathU8(selectedDirectory);
     window.set_game_directory(slint::SharedString(selection));
-    refresh_window(window);
+    refresh_window(window, swcRequested);
 }
 
 } // namespace
@@ -81,10 +78,10 @@ int SdlRunLauncherGui(SdlLauncherOptions *options)
 {
     bool accepted;
     bool pickerInitialized;
-    bool checkFailed = false;
 
     if (options == nullptr)
         return SDL_LAUNCHER_ERROR;
+    const bool swcRequested = options->swcDemo != 0;
 
     if (options->gameDirectory[0] == '\0') {
         std::error_code error;
@@ -107,13 +104,13 @@ int SdlRunLauncherGui(SdlLauncherOptions *options)
     window->set_joystick_rumble(options->joystickRumble != 0);
     window->set_joystick_mode_index(options->joystickMode);
     window->set_joystick_axes_index(options->joystickAxes);
-    refresh_window(*window);
+    refresh_window(*window, swcRequested);
 
-    window->on_configuration_changed([&window]() {
-        refresh_window(*window);
+    window->on_configuration_changed([&window, swcRequested]() {
+        refresh_window(*window, swcRequested);
     });
-    window->on_launch_requested([&window, &accepted]() {
-        refresh_window(*window);
+    window->on_launch_requested([&window, &accepted, swcRequested]() {
+        refresh_window(*window, swcRequested);
         if (!window->get_path_valid())
             return;
         std::error_code error;
@@ -135,7 +132,7 @@ int SdlRunLauncherGui(SdlLauncherOptions *options)
     /* NFD_Init records Cocoa's activation policy. Initialize it from the
      * callback, after winit launches NSApplication, so NFD_Quit cannot restore
      * the temporary pre-launch Prohibited policy before SDL takes over. */
-    window->on_browse_requested([&window, &pickerInitialized]() {
+    window->on_browse_requested([&window, &pickerInitialized, swcRequested]() {
         if (!pickerInitialized) {
             if (NFD_Init() != NFD_OKAY) {
                 report_picker_error(
@@ -145,43 +142,12 @@ int SdlRunLauncherGui(SdlLauncherOptions *options)
             }
             pickerInitialized = true;
         }
-        browse_for_game_directory(*window);
+        browse_for_game_directory(*window, swcRequested);
     });
-    slint::Timer checkTimer;
-    if (options->checkOnly) {
-        // Exercise the real window and launch callback without manual input.
-        checkTimer.start(slint::TimerMode::SingleShot, std::chrono::milliseconds(250), [&]() {
-            if (const char *path = std::getenv("WC1_GUI_CHECK_SNAPSHOT")) {
-                const auto pixels = window->window().take_snapshot();
-                if (!pixels) {
-                    checkFailed = true;
-                } else {
-                    std::ofstream file(path_from_utf8(path), std::ios::binary);
-                    file << "P6\n" << pixels->width() << ' ' << pixels->height() << "\n255\n";
-                    for (const auto &pixel : *pixels) {
-                        const char rgb[] = {static_cast<char>(pixel.r),
-                                            static_cast<char>(pixel.g),
-                                            static_cast<char>(pixel.b)};
-                        file.write(rgb, sizeof(rgb));
-                    }
-                    checkFailed = !file.good();
-                }
-            }
-            if (!window->get_path_valid() || checkFailed) {
-                std::fprintf(stderr, "Launcher check failed: %s\n", window->get_status_text().data());
-                checkFailed = true;
-                slint::quit_event_loop();
-            } else {
-                window->invoke_launch_requested();
-            }
-        });
-    }
     slint::run_event_loop();
     if (pickerInitialized)
         NFD_Quit();
     window->hide();
-    if (checkFailed)
-        return SDL_LAUNCHER_ERROR;
     if (!accepted)
         return SDL_LAUNCHER_CANCELLED;
 

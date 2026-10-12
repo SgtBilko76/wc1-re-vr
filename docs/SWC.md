@@ -37,8 +37,9 @@ decodes sprites, reads the resource-fork palette, and displays the cockpit and
 ship, C toggles the cockpit, and Esc exits.
 
 `src/swc/` contains the resource readers. `src/sdl/swc_mission.c` translates
-Mac mission records into WC1 state through the existing `LoadMissionData`
-entry point in SDL builds. The CMF reader and mission adapter are linked into
+Mac mission records into WC1 state through `SdlLoadSwcMissionData`, called
+directly by the SWC flight host. WC1's `LoadMissionData` retains its WC1-only
+path. The CMF reader and mission adapter are linked into
 `wc1-modern`; the original Win32 reference build does not include them.
 `src/sdl/swc_demo.c` remains a separate presentation/inspection entry point.
 `src/sdl/swc_flight.c` hosts the experimental flight using the shared core.
@@ -373,8 +374,8 @@ not raw resource forks, and are not currently supported. On macOS, `unar`'s
 default fork-preserving extraction works directly. Paths and filenames currently
 use the spelling in the demo archive. Game assets stay outside version control.
 
-The asset viewer's `--check` presents one frame and exits. `--snapshot FILE.bmp` also saves that
-320x240 frame and exits. The check runs with SDL's dummy video driver:
+The asset viewer's `--snapshot FILE.bmp` saves the decoded 320x240 frame and
+exits. This artwork export can use SDL's dummy video driver:
 
 ```sh
 SDL_VIDEODRIVER=dummy out-modern/swc-demo "/path/to/SuperWing DEMO" \
@@ -533,8 +534,8 @@ Movie palette transitions remain separate work.
 
 Mission state is prepared before the carrier for the briefing map; simulation
 starts only after launch. Actions complete on release, focus loss pauses
-speech and scene time, and textures/audio are released on every exit. The
-finite `--check` path bypasses both rooms and movies. Validation for this change
+speech and scene time, and textures/audio are released on every exit. Runtime
+check automation has been removed. Validation for this change
 was original-instruction/data inspection, static review and compilation with
 `make modern modern-gui modern-swc`, plus compiler static analysis; no tests,
 interactive code, game, GUI or audio playback were run. Visual behavior and
@@ -742,8 +743,7 @@ CODE_03 `scramble` +0x45d0 and its A5-relative strings specify this order:
 `LAUNCH06.00`, `LAUNCH07.00`, `LAUNCH08.00`. The `.00` suffix selects the
 Hornet. The host checks that all nine files can be opened before playback;
 missing/unreadable movies produce a stderr message and leave the existing
-direct-flight path available. Invalid movie data reports an error. The finite
-`--check` flight path bypasses movies.
+direct-flight path available. Invalid movie data reports an error.
 
 | Movie data | Recovered contract |
 | --- | --- |
@@ -800,7 +800,7 @@ rejected because a persisted Mac pointer cannot be used as a host pointer.
 
 | Existing WC1 code | Current SWC use | Remaining qualification |
 | --- | --- | --- |
-| `LoadMissionData` in `src/cmpgn.c` | Detects `CMFs/Data.CMF` and invokes the SDL adapter | The direct SDL flight host also calls this adapter; later campaign scenes are not connected |
+| `LoadMissionData` in `src/cmpgn.c` | Unchanged WC1 path; SWC calls its SDL mission adapter directly | The launcher selects the game; later SWC campaign scenes are not connected |
 | `set_sphere_point` in `src/brains.c` | Adds the existing nav position and ship-relative position | Validated with synthetic data and Enyo 1 |
 | `Set_up_ship_info` / `init_intelligence_data` | Sets the Enyo player's position, orientation, speed, pilot, and mission state | Other mission modes and SWC AI differences need review |
 | `Build_objective_list` | Builds Enyo's three nav objectives and carrier-return objective | Other SWC objective behavior is not established |

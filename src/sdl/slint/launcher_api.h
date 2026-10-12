@@ -35,7 +35,6 @@ typedef struct SdlLauncherOptions {
     int joystickMode;
     int joystickAxes;
     int swcDemo;
-    int checkOnly;
 } SdlLauncherOptions;
 
 #ifdef __cplusplus

@@ -68,12 +68,15 @@ For SWC, select the **SuperWing DEMO** directory containing `CMFs/Data.CMF`,
 `Spaceflight.CMF`, and `PCShipV00.CMF`. Keep the executable's native resource fork
 or place its extracted raw fork at `SuperWingCommanderDemo.rsrc` in that directory.
 The GUI checks archive headers and palette availability, identifies the Mac demo,
-and starts the Hornet launch sequence followed by Enyo 1. Unsupported graphics
+and starts its title menu, carrier visit and Enyo 1 flight. Unsupported graphics
 and joystick options are disabled; cockpitless view is available.
-`--swc-demo DIRECTORY` selects the same
-flight from the command line, and also preselects the directory with `--gui`.
-Adding `--check` skips movies and runs a finite flight check; with `--gui`, it
-also opens the launcher and invokes its normal launch callback automatically.
+`--swc-demo DIRECTORY` selects SWC from the command line, including when the
+directory also contains WC1 data. With `--gui`, it preselects that directory and
+keeps SWC selected. Otherwise the GUI gives `GAMEDAT` priority over `CMFs` in
+mixed directories, and the command-line launcher defaults to WC1. Game selection
+belongs to the launcher; shared WC1 mission loading never probes SWC archives.
+The runtime `--check` modes and GUI auto-launch/snapshot automation have been
+removed. Passing `--check` reports an error before opening a window.
 
 `src/sdl/slint/` is a separate CMake project using C++20, CMake 3.21+, and Rust
 1.88+. It pins Slint 1.16.1 and Native File Dialog Extended 1.3.0 and links them

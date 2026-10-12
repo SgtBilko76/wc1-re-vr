@@ -370,7 +370,7 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
     }
     /* Retain WC1's key priority, diagonal keys, ramp and direction reversal.
        Its Win32 key polling is supplied by the same SDL sample for the whole
-       tick, including modifiers and the existing deterministic check path. */
+       tick, including modifiers. */
     SdlSetKeyboardSnapshot(keys);
     cPreviousKey = (signed char)bCurrentKey;
     bCurrentKey = (unsigned char)PollKeyboardState();
@@ -1050,7 +1050,7 @@ done:
     return result;
 }
 
-int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
+int SdlRunSwcMission(const char *missionPath, int cockpitless)
 {
     SwcCmf cockpitCmf = {0};
     SwcCmf spaceCmf = {0};
@@ -1066,8 +1066,6 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     void (*savedInputPump)(void) = pEventManagerPump;
     int savedCockpitlessView = bCockpitlessView;
     SDL_Event event;
-    FixedVector start;
-    Uint8 checkKeys[SDL_NUM_SCANCODES] = {0};
     Uint32 previous;
     Uint32 current;
     Uint32 tickInterval;
@@ -1078,7 +1076,6 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     int shipCount;
     int object;
     int view;
-    int ticks = 0;
     int showMap = 0;
     int paused = 0;
     int focused = 1;
@@ -1117,7 +1114,7 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
     window = SDL_CreateWindow("Super Wing Commander - Enyo 1 (experimental flight)",
                                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 960, 720,
-                               checkOnly ? SDL_WINDOW_HIDDEN : SDL_WINDOW_RESIZABLE);
+                               SDL_WINDOW_RESIZABLE);
     if (window == NULL)
         goto done;
     renderer = SDL_CreateRenderer(window, -1, 0);
@@ -1158,84 +1155,81 @@ int SdlRunSwcMission(const char *missionPath, int checkOnly, int cockpitless)
     stMouseCursorState.viewport = &stSpaceBuffer;
     bCockpitlessView = 0;
     SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
-    if (!checkOnly) {
-        if (SdlInitSwcMusic() != 0)
-            goto done;
-        SDL_ShowWindow(window);
-        SDL_RaiseWindow(window);
-        SDL_PumpEvents();
-        movieResult = SdlPlaySwcStartup(window, renderer, path, 0);
-        if (movieResult == SWC_MOVIE_ERROR)
-            goto done;
-        if (movieResult == SWC_MOVIE_QUIT) {
-            result = 0;
-            goto done;
-        }
-title_menu:
-        SdlStopSwcSounds();
-        SdlStopSwcMusic();
-        SwcResetFlightInput();
-        FlushInputEvents();
-        paused = 0;
-        showMap = 0;
-        ticks = 0;
-        elapsed = 0;
-        bSwcWaitingForEscort = 0;
-        nSwcCinemaResult = 0;
-        /* Title combat can destroy ships and change pilot/objective state.
-         * Recreate the campaign on each menu visit and again on New Game. */
-        ResetCampaignData();
-        if (SdlLoadSwcMissionData(missionPath, 1, 0) != 0 || SwcStartMissionShips() < 0)
-            goto done;
-        movieResult = SwcRunFlightScene(1);
-        if (movieResult == SWC_MOVIE_ERROR)
-            goto done;
-        if (movieResult == SWC_MOVIE_SKIPPED) {
-            movieResult = SdlPlaySwcStartup(window, renderer, path, 1);
-            if (movieResult == SWC_MOVIE_ERROR)
-                goto done;
-            if (movieResult != SWC_MOVIE_QUIT)
-                goto title_menu;
-        }
-        if (movieResult == SWC_MOVIE_QUIT) {
-            result = 0;
-            goto done;
-        }
-        ResetCampaignData();
-        if (SdlLoadSwcMissionData(missionPath, 1, 0) != 0)
-            goto done;
-        shipCount = SwcStartMissionShips();
-        if (shipCount < 0 || SdlInitSwcCockpit(renderer, &cockpitCmf, &spaceCmf,
-                colors, swcRasterCanvas) != 0)
-            goto done;
-        /* CODE_09 squadron +0x84 calls opening_scene before StartNewCampaign
-           and GameFlow. Each host session starts a fresh Enyo 1 campaign. */
-        movieResult = SdlPlaySwcOpening(window, renderer);
-        if (movieResult == SWC_MOVIE_ERROR)
-            goto done;
-        if (movieResult == SWC_MOVIE_QUIT) {
-            result = 0;
-            goto done;
-        }
-        movieResult = SdlRunSwcCarrier(window, renderer, missionPath, path, SWC_CARRIER_PREFLIGHT);
-        if (movieResult == -1)
-            goto done;
-        if (movieResult == SWC_MOVIE_QUIT) {
-            result = 0;
-            goto done;
-        }
-        movieResult = SdlPlaySwcLaunch(window, renderer);
-        if (movieResult == SWC_MOVIE_ERROR)
-            goto done;
-        if (movieResult == SWC_MOVIE_QUIT) {
-            result = 0;
-            goto done;
-        }
-        /* Carrier/movie input never advances shared WC1 flight state. */
-        focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
-        SdlUpdateSwcFlightMusic();
-        SdlPauseSwcSound(!focused);
+    if (SdlInitSwcMusic() != 0)
+        goto done;
+    SDL_ShowWindow(window);
+    SDL_RaiseWindow(window);
+    SDL_PumpEvents();
+    movieResult = SdlPlaySwcStartup(window, renderer, path, 0);
+    if (movieResult == SWC_MOVIE_ERROR)
+        goto done;
+    if (movieResult == SWC_MOVIE_QUIT) {
+        result = 0;
+        goto done;
     }
+title_menu:
+    SdlStopSwcSounds();
+    SdlStopSwcMusic();
+    SwcResetFlightInput();
+    FlushInputEvents();
+    paused = 0;
+    showMap = 0;
+    elapsed = 0;
+    bSwcWaitingForEscort = 0;
+    nSwcCinemaResult = 0;
+    /* Title combat can destroy ships and change pilot/objective state.
+     * Recreate the campaign on each menu visit and again on New Game. */
+    ResetCampaignData();
+    if (SdlLoadSwcMissionData(missionPath, 1, 0) != 0 || SwcStartMissionShips() < 0)
+        goto done;
+    movieResult = SwcRunFlightScene(1);
+    if (movieResult == SWC_MOVIE_ERROR)
+        goto done;
+    if (movieResult == SWC_MOVIE_SKIPPED) {
+        movieResult = SdlPlaySwcStartup(window, renderer, path, 1);
+        if (movieResult == SWC_MOVIE_ERROR)
+            goto done;
+        if (movieResult != SWC_MOVIE_QUIT)
+            goto title_menu;
+    }
+    if (movieResult == SWC_MOVIE_QUIT) {
+        result = 0;
+        goto done;
+    }
+    ResetCampaignData();
+    if (SdlLoadSwcMissionData(missionPath, 1, 0) != 0)
+        goto done;
+    shipCount = SwcStartMissionShips();
+    if (shipCount < 0 || SdlInitSwcCockpit(renderer, &cockpitCmf, &spaceCmf,
+            colors, swcRasterCanvas) != 0)
+        goto done;
+    /* CODE_09 squadron +0x84 calls opening_scene before StartNewCampaign
+       and GameFlow. Each host session starts a fresh Enyo 1 campaign. */
+    movieResult = SdlPlaySwcOpening(window, renderer);
+    if (movieResult == SWC_MOVIE_ERROR)
+        goto done;
+    if (movieResult == SWC_MOVIE_QUIT) {
+        result = 0;
+        goto done;
+    }
+    movieResult = SdlRunSwcCarrier(window, renderer, missionPath, path, SWC_CARRIER_PREFLIGHT);
+    if (movieResult == -1)
+        goto done;
+    if (movieResult == SWC_MOVIE_QUIT) {
+        result = 0;
+        goto done;
+    }
+    movieResult = SdlPlaySwcLaunch(window, renderer);
+    if (movieResult == SWC_MOVIE_ERROR)
+        goto done;
+    if (movieResult == SWC_MOVIE_QUIT) {
+        result = 0;
+        goto done;
+    }
+    /* Carrier/movie input never advances shared WC1 flight state. */
+    focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+    SdlUpdateSwcFlightMusic();
+    SdlPauseSwcSound(!focused);
     SwcResetFlightInput();
     FlushInputEvents();
     SetEventManagerPump(NULL);
@@ -1255,18 +1249,15 @@ title_menu:
                                 aeObjectType[object], &images[aeObjectType[object]]) != 0)
             goto done;
     }
-    start = aShipPosition[0];
     previous = SDL_GetTicks();
-    if (!checkOnly) {
-        SDL_ShowWindow(window);
-        SDL_RaiseWindow(window);
-        /* Mouse grabbing does not hide the system cursor. The WC1
-           bMouseCursorVisible flag controls steering input, not SDL visibility. */
-        SDL_ShowCursor(focused ? SDL_DISABLE : SDL_ENABLE);
-        if (focused) {
-            SDL_SetWindowMouseGrab(window, SDL_TRUE);
-            SwcCentreFlightMouse();
-        }
+    SDL_ShowWindow(window);
+    SDL_RaiseWindow(window);
+    /* Mouse grabbing does not hide the system cursor. The WC1
+       bMouseCursorVisible flag controls steering input, not SDL visibility. */
+    SDL_ShowCursor(focused ? SDL_DISABLE : SDL_ENABLE);
+    if (focused) {
+        SDL_SetWindowMouseGrab(window, SDL_TRUE);
+        SwcCentreFlightMouse();
     }
     while (!done) {
         while (SDL_PollEvent(&event)) {
@@ -1279,26 +1270,24 @@ title_menu:
                     elapsed = 0;
                     SwcResetFlightInput();
                     SDL_SetWindowMouseGrab(window, SDL_FALSE);
-                    if (!checkOnly)
-                        SDL_ShowCursor(SDL_ENABLE);
+                    SDL_ShowCursor(SDL_ENABLE);
                 } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED ||
                            event.window.event == SDL_WINDOWEVENT_RESTORED) {
-                    focused = checkOnly ||
-                        (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+                    focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
                     previous = SDL_GetTicks();
-                    if (!checkOnly && focused && !paused) {
+                    if (focused && !paused) {
                         SDL_ShowCursor(SDL_DISABLE);
                         SDL_SetWindowMouseGrab(window, SDL_TRUE);
                         SwcCentreFlightMouse();
                     }
                 } else if ((event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
                             event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED) &&
-                           !checkOnly && focused && !paused) {
+                           focused && !paused) {
                     SDL_SetWindowMouseGrab(window, SDL_FALSE);
                     SDL_SetWindowMouseGrab(window, SDL_TRUE);
                 }
             }
-            if (!checkOnly && focused && !paused) {
+            if (focused && !paused) {
                 /* SDL_RenderSetLogicalSize already converts these positions
                    to 320x240, including window scaling and letterboxing. */
                 if (event.type == SDL_MOUSEMOTION) {
@@ -1353,8 +1342,7 @@ title_menu:
                             result = 0;
                             goto done;
                         }
-                        focused = checkOnly ||
-                            (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+                        focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
                         copy_frame(0, EYE_OBJECT);
                         aShipPosition[EYE_OBJECT] = aShipPosition[0];
                         aShipVelocity[EYE_OBJECT] = aShipVelocity[0];
@@ -1423,7 +1411,7 @@ title_menu:
                 case SDLK_F1:
                     if (event.key.keysym.mod & KMOD_CTRL) {
                         cockpitless = !cockpitless;
-                        if (!checkOnly && focused && !paused)
+                        if (focused && !paused)
                             SwcCentreFlightMouse();
                     }
                     break;
@@ -1435,11 +1423,10 @@ title_menu:
                     elapsed = 0;
                     previous = SDL_GetTicks();
                     SwcResetFlightInput();
-                    SDL_SetWindowMouseGrab(window, !checkOnly && focused && !paused
-                                                   ? SDL_TRUE : SDL_FALSE);
-                    if (!checkOnly)
-                        SDL_ShowCursor(focused && !paused ? SDL_DISABLE : SDL_ENABLE);
-                    if (!checkOnly && focused && !paused)
+                    SDL_SetWindowMouseGrab(window,
+                        focused && !paused ? SDL_TRUE : SDL_FALSE);
+                    SDL_ShowCursor(focused && !paused ? SDL_DISABLE : SDL_ENABLE);
+                    if (focused && !paused)
                         SwcCentreFlightMouse();
                     break;
                 default:
@@ -1456,23 +1443,14 @@ title_menu:
         else
             elapsed = 0;
         previous = current;
-        if (checkOnly) {
-            /* Deterministic exercise of the same input/dynamics/render path. */
-            checkKeys[SDL_SCANCODE_RIGHT] = ticks < 100;
-            checkKeys[SDL_SCANCODE_EQUALS] = 1;
-            elapsed = tickInterval;
-        }
         while (elapsed >= tickInterval) {
             nTickCount60Hz = (unsigned int)((uint64_t)SDL_GetTicks() * 60 / 1000);
-            SwcFlightTick(checkOnly ? checkKeys : SDL_GetKeyboardState(NULL),
-                          checkOnly ? 0 : SDL_GetMouseState(NULL, NULL));
+            SwcFlightTick(SDL_GetKeyboardState(NULL), SDL_GetMouseState(NULL, NULL));
             elapsed -= tickInterval;
-            ticks++;
             if (nArcadeState == 1 || nArcadeState == 3 || nArcadeState == 4 || bPlayerDestroyed)
                 break;
         }
-        if (!checkOnly && (nArcadeState == 1 || nArcadeState == 3 ||
-            nArcadeState == 4 || bPlayerDestroyed)) {
+        if (nArcadeState == 1 || nArcadeState == 3 || nArcadeState == 4 || bPlayerDestroyed) {
             SdlStopSwcSounds();
             SdlStopSwcMusic();
             SDL_SetWindowMouseGrab(window, SDL_FALSE);
@@ -1542,17 +1520,7 @@ title_menu:
                      (anShipSpeed[0] >> 8) * 10,
                      aeSpecialManeuver[0] == SPECIAL_MANEUVER_AFTERBURNER ? " afterburner" : "");
         SDL_SetWindowTitle(window, title);
-        if (checkOnly && ticks == 120) {
-            if (memcmp(&start, &aShipPosition[0], sizeof(start)) == 0 || cMissionObjectiveCount != 4) {
-                SDL_SetError("SWC first mission did not advance the shared WC1 flight state");
-                goto done;
-            }
-            printf("SWC Enyo 1 flight: %d ships, %d objectives, %d WC1 simulation ticks, SDL2 rendering: OK\n",
-                   shipCount, cMissionObjectiveCount, ticks);
-            done = 1;
-        }
-        if (!checkOnly)
-            SDL_Delay(8);
+        SDL_Delay(8);
     }
     result = 0;
 done:

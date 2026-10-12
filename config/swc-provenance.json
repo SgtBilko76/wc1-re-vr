@@ -3,6 +3,7 @@
   "reference": "Super Wing Commander Mac demo 1.0.2, extracted 68000 CODE resources",
   "address_convention": "Byte offsets from the start of each CODE resource, including its segment header; end offsets are exclusive.",
   "validation_strategy": "Original instructions, original-data inspection and native compilation. Win32 changes are checked with binary-comp. The earlier automated checks recorded in status_review have been removed at user request; historical results do not establish interactive parity or SWC binary similarity.",
+  "host_selection": "SWC is selected by --swc-demo DIRECTORY or GUI validation. GAMEDAT takes priority over CMFs in mixed GUI directories unless --swc-demo was explicit; command-line startup defaults to WC1. Shared LoadMissionData never detects SWC. The SWC host calls SdlLoadSwcMissionData directly. Runtime --check modes and GUI snapshot/auto-launch automation are removed; the asset viewer retains BMP export. SWC and its music bank remain included in SDL builds/packages, never in the original Win32 target.",
   "status_review": {
     "date": "2026-10-12",
     "scope": "Initial Enyo 1 documentation review, preceding the SDL-only autopilot integration recorded in flight_gameplay.",
@@ -970,10 +971,10 @@
   "movies": {
     "decoder_source": "src/swc/movie.c",
     "presentation_source": "src/sdl/swc_movie.c",
-    "scope": "Version-1 LMov decoder and original startup splash/logo/prologue, new-campaign opening, Hornet launch/landing, player/Spirit funeral clips and stranded BUC for Enyo 1 in both SDL launchers. Missing movie groups preserve their following presentation; malformed movies fail explicitly. The check-only flight path bypasses movies.",
+    "scope": "Version-1 LMov decoder and original startup splash/logo/prologue, new-campaign opening, Hornet launch/landing, player/Spirit funeral clips and stranded BUC for Enyo 1 in both SDL launchers. Missing movie groups preserve their following presentation; malformed movies fail explicitly.",
     "startup": {
       "sources": ["src/sdl/swc_movie.c", "src/sdl/swc_rooms.c", "src/swc/rsrc.c", "src/swc/speech.c"],
-      "entry": "SdlRunSwcMission calls SdlPlaySwcStartup before SdlPlaySwcOpening; check-only bypasses both.",
+      "entry": "SdlRunSwcMission calls SdlPlaySwcStartup before SdlPlaySwcOpening.",
       "sequence": ["PICT/129 splash", "Lion", "INTRO00", "INTRO01", "INTRO02", "INTRO03", "INTRO04", "intro.03..09 speech", "INTRO05", "INTRO06", "INTRO07", "intro.10..11 speech", "INTRO08", "INTRO09", "INTRO10"],
       "evidence": [
         {"resource": "CODE_01.bin", "entry_offset": "0x68c4", "name": "main", "qualification": "+0x6978 calls SetupSWStuff, then +0x697c calls squadron."},
@@ -1007,7 +1008,7 @@
   },
   "carrier": {
     "source": "src/sdl/swc_rooms.c",
-    "scope": "Fresh Enyo 1: splash/logo/prologue, animated title battle and idle intro replay, opening movies, bar, conversations, rankings, barracks, medals, briefing, Hornet launch, flight, landing, debriefing, death cinematic, player/Spirit funerals and stranded BUC. Completed flights and endings return to the title menu; New Game resets Enyo 1. Later campaign progression and save/load remain unsupported. Check-only bypasses presentation. Simulator remains disabled as in the original demo.",
+    "scope": "Fresh Enyo 1: splash/logo/prologue, animated title battle and idle intro replay, opening movies, bar, conversations, rankings, barracks, medals, briefing, Hornet launch, flight, landing, debriefing, death cinematic, player/Spirit funerals and stranded BUC. Completed flights and endings return to the title menu; New Game resets Enyo 1. Later campaign progression and save/load remain unsupported. Simulator remains disabled as in the original demo.",
     "flow_evidence": [
       {"resource": "CODE_09.bin", "entry_offset": "0x000c", "name": "squadron", "qualification": "+0x84..+0x90 calls opening_scene, StartNewCampaign(0), then GameFlow for a new campaign. The SDL host uses this order for its fresh Enyo 1 session."},
       {"resource": "CODE_09.bin", "entry_offset": "0x1a70", "name": "StartNewCampaign", "qualification": "Enables the recreation-room path."},
