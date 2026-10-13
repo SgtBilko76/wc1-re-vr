@@ -42,6 +42,7 @@ static const SwcCmf *swcCinemaSpaceCmf;
 static const SDL_Color *swcCinemaColors;
 static SwcFlightImages *swcCinemaImages;
 static SDL_Texture *swcRasterCanvas;
+static SwcTextFont swcPauseFont;
 int nSwcCinemaResult;
 
 /* CODE_02 shrink_vector +0x57c8 and shrink +0x5828. The Mac always
@@ -934,6 +935,28 @@ border:
     return 0;
 }
 
+/* CODE_09 FlyingLoop +0x0ad2..+0x0b60 restores its pause prompt after a
+ * cancelled quit dialog: Helvetica 10, color 0x81, x=10, y=180/200/220.
+ * Use that layout with SDL's resume keys and WC1's explicit pause heading.
+ * The opaque panel keeps it legible over the retained flight/title picture. */
+static int SwcDrawPauseMessage(SDL_Renderer *renderer, const SDL_Color colors[256],
+                                 int flightControls, int paused)
+{
+    const SDL_Rect panel = {8, 166, 304, 62};
+
+    if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255) != 0 ||
+        SDL_RenderFillRect(renderer, &panel) != 0 ||
+        SdlDrawSwcProportionalText(renderer, &swcPauseFont, 10, 180,
+            colors[0x81], "GAME PAUSED") != 0 ||
+        SdlDrawSwcProportionalText(renderer, &swcPauseFont, 10, 200,
+            colors[0x81], !paused ? "Return to the game to continue" :
+                flightControls ? "Press Esc or P to continue" : "Press P to continue") != 0 ||
+        SdlDrawSwcProportionalText(renderer, &swcPauseFont, 10, 220,
+            colors[0x81], "playing Super Wing Commander.") != 0)
+        return -1;
+    return 0;
+}
+
 /* SWC CODE_14 +0x000c: visit_the_cinema. CODE_02 new_view's case 12
  * (+0x3474) supplies the camera setup; the shared case-12 camera update
  * matches CODE_02 +0x29f0. SDL owns pacing, window events and presentation. */
@@ -1010,6 +1033,15 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
         if (!focused || paused)
             elapsed = 0;
         SdlPauseSwcSound(!focused || paused);
+        if (!focused || paused) {
+            if (SwcDrawFlight(swcCinemaRenderer, NULL, swcCinemaCockpitCmf,
+                    swcCinemaSpaceCmf, swcCinemaColors, swcCinemaImages, 1) != 0 ||
+                SwcDrawPauseMessage(swcCinemaRenderer, swcCinemaColors, 0, paused) != 0) {
+                result = -1;
+                goto done;
+            }
+            SDL_RenderPresent(swcCinemaRenderer);
+        }
         if (frames > 0 && elapsed >= interval) {
             nTickCount60Hz = (unsigned int)((uint64_t)current * 60 / 1000);
             SdlSwcUpdateSpace();
@@ -1032,7 +1064,7 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
             frames--;
             elapsed -= interval;
         }
-        SDL_Delay(1);
+        SDL_Delay(!focused || paused ? 8 : 1);
     }
 done:
     SdlStopSwcSound(17);
@@ -1336,6 +1368,10 @@ static int SwcRunFlightScene(enum SwcFlightScene scene)
         else
             elapsed = 0;
         previous = now;
+        /* Paused scenes still redraw the frozen picture and pause prompt,
+         * including after window exposure, resize or fullscreen changes. */
+        if (!focused || paused)
+            goto draw_scene;
         if (elapsed < 50) {
             SDL_Delay(8);
             continue;
@@ -1369,6 +1405,7 @@ static int SwcRunFlightScene(enum SwcFlightScene scene)
         update_star_field();
         nRenderedSpaceFrame++;
         ticks++;
+draw_scene:
         if (SwcDrawFlight(swcCinemaRenderer, NULL, swcCinemaCockpitCmf,
                 swcCinemaSpaceCmf, swcCinemaColors, swcCinemaImages, 1) != 0)
             goto done;
@@ -1384,11 +1421,15 @@ static int SwcRunFlightScene(enum SwcFlightScene scene)
                 200, swcCinemaColors[129], "Press <sp> to continue") != 0) {
             goto done;
         }
+        if ((!focused || paused) &&
+            SwcDrawPauseMessage(swcCinemaRenderer, swcCinemaColors, titleMenu, paused) != 0)
+            goto done;
         SDL_RenderPresent(swcCinemaRenderer);
         if (titleMenu && ticks > 10000) {
             result = SWC_MOVIE_SKIPPED;
             break;
         }
+        SDL_Delay(8);
     }
 done:
     SDL_strlcpy(failure, SDL_GetError(), sizeof(failure));
@@ -1499,7 +1540,8 @@ int SdlRunSwcMission(const char *missionPath, int cockpitless)
     if (swcRasterCanvas == NULL ||
         SDL_SetTextureBlendMode(swcRasterCanvas, SDL_BLENDMODE_BLEND) != 0)
         goto done;
-    if (SdlInitSwcCockpit(renderer, &cockpitCmf, &spaceCmf, colors, swcRasterCanvas) != 0)
+    if (SdlInitSwcCockpit(renderer, &cockpitCmf, &spaceCmf, colors, swcRasterCanvas) != 0 ||
+        SdlCreateSwcTextFont(renderer, &swcPauseFont, 10) != 0)
         goto done;
     /* Prepare shared mission state for the briefing map. No flight ticks or
        player input run while visiting the carrier or watching launch. */
@@ -1974,6 +2016,8 @@ title_menu:
         if (SwcDrawFlight(renderer, cockpit, &cockpitCmf, &spaceCmf, colors,
                           images, cockpitless) != 0)
             goto done;
+        if ((!focused || paused) && SwcDrawPauseMessage(renderer, colors, 1, paused) != 0)
+            goto done;
         SDL_RenderPresent(renderer);
         SDL_Delay(8);
     }
@@ -2014,6 +2058,8 @@ done:
     SDL_DestroyTexture(cockpit);
     SDL_DestroyTexture(swcRasterCanvas);
     swcRasterCanvas = NULL;
+    SDL_DestroyTexture(swcPauseFont.texture);
+    SDL_zero(swcPauseFont);
     SDL_DestroyRenderer(renderer);
     SdlShutdownJoysticks();
     SDL_DestroyWindow(window);

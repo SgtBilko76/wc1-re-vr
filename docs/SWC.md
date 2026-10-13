@@ -342,7 +342,7 @@ Flight uses WC1's DOS/Win32 mouse and keyboard controls through SDL2:
 | C / 1..7 | Open/close WC1 communications / choose a numbered recipient or command |
 | Ctrl+E | Eject; a damaged ejector can fail, and a destroyed ejector cannot operate |
 | Ctrl+F1 | Toggle cockpit |
-| P / Esc | Toggle pause |
+| P / Esc | Toggle pause with a visible pause/resume message |
 | Cmd+Enter (macOS), Alt+Enter (other platforms) | Toggle fullscreen in flight, menus, and movies |
 
 M opens the original five-page in-flight computer and suspends flight. Up/Down
@@ -363,6 +363,9 @@ close actions complete on release so the same press cannot fire on return.
 The window title remains **Super Wing Commander** throughout the demo, without
 control hints or flight telemetry. The pointer is confined to the flight window;
 Escape/P releases it while paused. Losing focus also pauses movement and releases the pointer.
+Flight, title, autopilot and death/ejection camera pauses show **GAME PAUSED**
+over the frozen picture, with the appropriate resume key. The message also
+appears during focus loss and disappears when play resumes.
 Keyboard steering takes priority while held; moving the mouse or joystick
 selects that steering device. Releasing the
 right-button roll/throttle mode recentres the pointer, as in WC1. Holding both
@@ -1048,6 +1051,22 @@ retains the same back/skip actions, as does controller B/Back outside flight.
 P pauses all these presentations. C or communications
 D-pad Left closes the communications menu. Window close and the host quit
 shortcut remain separate exit actions.
+
+The pause message uses the Mac `FlyingLoop` text layout at CODE_09
++0x0ad2..+0x0b60: Helvetica 10, palette color 0x81, x=10 and baselines
+180/200/220. That block redraws the native resume instructions after cancelling
+a quit dialog while paused. A5-0x2845/-0x2822/-0x2800 contain the original
+Cmd-P / Actions-menu instructions. SDL substitutes its actual resume keys,
+adds WC1's `GAME PAUSED` heading (`ShowGamePausedBanner`, 0x4290a0), and draws
+an opaque panel over the frozen scene for readability. Title and camera scenes
+continue to redraw while paused without advancing their simulation or timers,
+so resizing/fullscreen changes retain the message. Escape still skips camera
+cutscenes; their pause prompt names P only. Movie and carrier presentation are
+unchanged by this flight-host overlay.
+
+Validation: fresh Ghidra CODE_09 export, original instructions/A5 strings,
+native and GUI builds, and Clang static analysis. No tests, game or GUI were run;
+the Win32 source and build paths are unchanged.
 
 ### Movement comparison
 
