@@ -21,6 +21,7 @@ enum SwcFlightScene {
 };
 
 static int swcFlightActive;
+unsigned char aSwcWeaponAmmo[10][10]; /* Mac loadout byte +9 per slot. */
 static int swcMouseAfterburner;
 static int swcRightClickPending;
 static Uint32 swcLastRightClick;
@@ -1834,7 +1835,9 @@ title_menu:
                 case SDLK_m:
                     if (focused && !paused && !bPlayerDestroyed && nArcadeState == 0) {
                         SwcResetFlightInput();
-                        movieResult = SdlShowSwcNavigation(window, renderer, path);
+                        if (IsCommChoiceMenuOpen())
+                            CloseCommChoiceMenu();
+                        movieResult = SdlShowSwcComputer(window, renderer, path);
                         if (movieResult == SWC_MOVIE_ERROR)
                             goto done;
                         if (movieResult == SWC_MOVIE_QUIT) {

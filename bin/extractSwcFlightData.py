@@ -153,6 +153,20 @@ def generate(code, data, negative):
             slots.append(f"{{{kind}, {hardpoint}, {disabled}}}")
         lines.append("    {" + ", ".join(slots or ["{0}"]) + f"}}, /* {name} */")
     lines.append("};\n")
+    lines.append("/* Native loadout byte +9, omitted by WC1's seven-byte slots. */")
+    lines.append("const unsigned char aSwcInitialWeaponAmmo[22][10] = {")
+    for name, _, _, _, record in records[:22]:
+        amounts = [str(record[79 + index * 10]) for index in range(record[68])]
+        lines.append("    {" + ", ".join(amounts or ["0"]) + f"}}, /* {name} */")
+    lines.append("};\n")
+    lines.append("/* CODE_14 InflightComputer: DATA/0 +0x0030, x/y/Q8 scale. */")
+    lines.append("const short aSwcComputerWeaponLayout[40][3] = {")
+    for index in range(40):
+        placement = struct.unpack_from(">3i", data, 0x30 + index * 12)
+        if any(not -32768 <= value <= 32767 for value in placement):
+            raise ValueError("Computer weapon placement exceeds short storage")
+        lines.append("    {" + ", ".join(str(value) for value in placement) + "},")
+    lines.append("};\n")
     lines.append("/* CODE_04 position_child +0x367a indexes DATA/0 +0x2efe. */")
     lines.append("const ShortVector aSwcChildOffsets[63] = {")
     for index in range(63):

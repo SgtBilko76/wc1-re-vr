@@ -24,7 +24,8 @@ The original conversations, briefing, debriefing and funeral scenes use the
 demo's text, portraits and AIFF speech. Prologue, opening, Hornet launch, landing and
 funeral movies have embedded audio. QuickTime music sequences now accompany
 the startup, opening, carrier, briefing/debriefing, launch, flight, landing and funeral.
-WC1 communications now provide wingman orders and landing-clearance requests;
+The M-key computer has navigation, communications, guns, weapons and eject tabs.
+Communications provide wingman orders, taunts and landing-clearance requests;
 returning to the carrier ends Enyo 1 with the original debriefing branches and
 Spirit's funeral if she was lost. Player destruction leads through the death
 cinematic and funeral to animated THE END. Losing the carrier with no nearby
@@ -53,7 +54,8 @@ path. The CMF reader and mission adapter are linked into
 `src/sdl/swc_demo.c` remains a separate presentation/inspection entry point.
 `src/sdl/swc_flight.c` hosts the experimental flight using the shared core.
 `src/sdl/swc_cockpit.c` presents the Hornet instruments. `src/sdl/swc_text.c`
-shares Helvetica text on macOS and portable bitmap fallback text. `src/sdl/swc_rooms.c`
+shares Helvetica text on macOS and portable bitmap fallback text. `src/sdl/swc_nav.c`
+presents the five-page in-flight computer. `src/sdl/swc_rooms.c`
 adapts carrier presentation and scenes; `src/swc/speech.c` reads AIFF speech.
 `src/swc/sound.c` decodes the flight `snd ` bank; `src/sdl/swc_sound.c`
 supplies a shared stereo SDL mixer for four effect/flight-speech voices,
@@ -335,7 +337,7 @@ Flight uses WC1's DOS/Win32 mouse and keyboard controls through SDL2:
 | T | Cycle visible targets using WC1's range ordering and enemy preference |
 | L | Toggle target-lock mode; ITTS leads a hostile fighter when guns are in range |
 | A | Autopilot toward the selected objective, stopping for enemies or hazards |
-| N / M | Next objective / nav map |
+| N / M | Next objective / in-flight computer |
 | Y / D / F | Cockpit / battle / chase view; D or F again returns to the cockpit |
 | C / 1..7 | Open/close WC1 communications / choose a numbered recipient or command |
 | Ctrl+E | Eject; a damaged ejector can fail, and a destroyed ejector cannot operate |
@@ -343,11 +345,20 @@ Flight uses WC1's DOS/Win32 mouse and keyboard controls through SDL2:
 | P / Esc | Toggle pause |
 | Cmd+Enter (macOS), Alt+Enter (other platforms) | Toggle fullscreen in flight, menus, and movies |
 
-M opens the original in-flight navigation page and suspends flight. Arrow keys
-or N select an objective; clicking its marker or label selects it directly.
-M, Escape, Backspace, Enter, Space, or clicking the highlighted Nav button
-returns to flight. Controller D-pad selects objectives, A accepts, and B/Back
-closes the map. Closing it preserves the camera and recentres the flight mouse.
+M opens the original five-page in-flight computer and suspends flight. Up/Down
+or clicking a tab changes pages; the last page is remembered. Left/Right select
+an objective or communication entry. Tab also cycles the selection; on Guns
+and Weapons, Tab/Right or clicking the loadout cycles the installed guns or
+missile type. Communications use Enter, a numbered key or a clicked row to
+choose a recipient and then send an order. On Eject, Enter or the eject button
+attempts ejection with the same damage check as Ctrl+E.
+
+M, Escape or Space returns to flight. Backspace returns from communication
+orders to recipients, or closes the computer elsewhere. Enter also closes the
+navigation page, where N and clicking a marker/label select an objective.
+Controller D-pad navigates tabs/selections, A activates, and B/Back goes back.
+Closing preserves the camera and recentres the flight mouse; send, eject and
+close actions complete on release so the same press cannot fire on return.
 
 The window title remains **Super Wing Commander** throughout the demo, without
 control hints or flight telemetry. The pointer is confined to the flight window;
@@ -1128,7 +1139,8 @@ images. The generated header records all three input hashes. It translates the
 58 object IDs shared with WC1 into host fields: ship motion, fuel, shields,
 armor, weapons, projectile damage/lifetime and animation commands. The native
 83-record, 204-byte table is never copied directly into WC1's packed records.
-Ten-byte Mac weapon slots become seven-byte WC1 slots; 32-bit ship fuel is
+Ten-byte Mac weapon slots become seven-byte WC1 slots, with the quantity byte
+preserved in SDL-only arrays alongside them; 32-bit ship fuel is
 preserved across WC1's combined lifetime/weaponDamage storage. Mac pointers
 are replaced by host strings/animation arrays or SDL-owned resources. Definitions
 are installed for SWC flight and restored on exit. IDs 58..82 remain unsupported.
@@ -1375,7 +1387,7 @@ resource-fork, allocation, and input plumbing have no one-to-one original game
 function mapping. Do not infer code reuse percentages from matching names;
 many WC1 names were already derived from this Mac executable's MacsBug strings.
 
-## In-flight navigation and selectable cameras
+## In-flight computer and selectable cameras
 
 The SDL flight host exposes the original MENU/206 bindings: Y returns to the
 cockpit, D toggles battle view (14), and F toggles chase view (4).
@@ -1389,10 +1401,11 @@ when ships are widely separated. Both render the player's ship without cockpit
 layers. Map visits preserve the view, and autopilot repositions it on arrival.
 The shared WC1 camera and Win32 reconstruction are unchanged.
 
-`src/sdl/swc_nav.c` replaces the M-key overlay with navigation page 0 of
-CODE_14 `InflightComputer` +0x2dd2. It loads `ComputerInflight.CMF` CKPT/2
-(frame), /3 (map background), /4 (selected tab), /10 (markers), and /13
-(eject guard), using GameMode(11)'s clut/250. Mac `BuildMap`
+`src/sdl/swc_nav.c` presents all five pages of CODE_14 `InflightComputer`
++0x2dd2. It loads `ComputerInflight.CMF` CKPT/2 (frame), /3 (backgrounds),
+/4 (selected tabs), /9 (weapons), /10 (markers), /12 (ship silhouettes) and
+/13 (eject guard), using GameMode(11)'s clut/250. The comm/guns/weapons
+background frames are intentionally empty. Mac `BuildMap`
 +0x14f8, `FindTextPos` +0x142c and `SetScale` +0x1c8a supply the 137x138
 map at (41,43), 10,000-unit margin, marker types/colors, objective visibility,
 visited state, player position, hazard fields and label placement.
@@ -1401,17 +1414,41 @@ role and selected-objective note, with size-9 text coordinates and 11-pixel
 line spacing. Map labels use size 10. Original classic-Mac font pixels remain
 subject to the existing Helvetica/fallback limitation.
 
-Flight and audio pause while the map is open; input closes it on release to
-avoid firing or toggling pause on return. SDL adds mouse marker/label selection,
-controller navigation and a bounded selection search when objectives are hidden.
-Marker blinking uses a 50 ms host clock. The briefing map and the computer's
-communications, gun, weapon and eject tabs remain separate presentation work;
-their existing flight controls remain available.
+CODE_14 `UpdateCommStatus` +0x290e and `print_message_text` +0x289a supply
+recipient/order lists, conditions, numbering, colors and text positions.
+Recipients include the wingman, friendly carrier and targeted enemy fighter.
+Orders include formation/attack, radio silence, assistance, taunts and landing
+clearance. The computer queues the native player voice and calls shared
+`request` with the command ID directly; WC1's separate C-key menu remains usable.
+
+The gun and weapon pages draw the installed mounts over the ship silhouette,
+using the forty x/y/Q8-scale triples at DATA/0 +0x0030. Selected mounts blink,
+and original short names and ammunition quantities appear alongside them.
+Tab/Right calls the existing gun/missile selectors. CODE_14 +0x2ef2 supplies
+the eject guard's five-update animation; the warning background alternates
+every ten updates. Activation uses +0x34e6's ejector damage/random check and
+failure sound 25 before the existing ejection cinematic.
+
+The Mac's slot quantity at byte +9 is now retained by the flight-data generator
+and copied during SWC ship setup. CODE_05 `remove_weapon` +0x019a decrements
+quantities above one before removing/compacting a mount. The Hornet therefore
+starts with four Dumbfires and two Heatseekers, rather than losing each entire
+mount after one shot. The native full-loadout bound also protects the spare-slot
+write. These additions are guarded by SDL_PORT and SWC flight state; WC1 slot
+layout and the original Win32 function bodies are preserved.
+
+Flight and audio pause while the computer is open. SDL supplies mouse input,
+controller navigation, release-to-activate actions, focus/cursor restoration
+and a bounded objective search. Animations use a 50 ms host clock. Original
+classic-Mac font rasterization and the briefing map remain separate work.
 
 Validation uses fresh Ghidra instruction exports, offline CMF/resource-fork
-inspection, native and GUI builds, and Clang static analysis. No tests were
-added or run, and neither the game nor the GUI was launched. Interactive
-appearance and camera feel still need user review.
+inspection, native and GUI builds, and Clang static analysis. The computer and
+flight units have no analyzer findings; `disk.c` retains an existing unrelated
+uninitialized error-report argument. binary-comp's Win32 scores are unchanged:
+`remove_weapon` 90.79%, `set_objects_data` 93.94%. No tests were added or run,
+and neither the game nor the GUI was launched. Interactive appearance and
+controls still need user review.
 
 ## Next support slices
 

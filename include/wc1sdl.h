@@ -259,6 +259,9 @@ extern int nSwcCinemaResult; /* SDL presentation: 0 complete, 1 quit, -1 error. 
 short SdlSwcComponentMalfunction(char component);
 void SdlSwcCockpitDamage(short region);
 extern int anSwcWeaponNoticeTicks[2]; /* SWC DATA/A5+0x4848/+0x484c. */
+/* Mac loadout quantities live beside WC1's unchanged seven-byte slots. */
+extern const unsigned char aSwcInitialWeaponAmmo[22][10];
+extern unsigned char aSwcWeaponAmmo[10][10];
 extern int nSwcSpaceGlareTicks; /* SWC DATA/A5+0x8c62. */
 extern int bSwcExplosionGlare; /* SWC DATA/A5+0x8c6a. */
 void SdlDrawSwcCockpitReadout(signed char slot, const char *text);

@@ -694,6 +694,23 @@ unsigned int remove_weapon(short obj, short weapon)
     enum ObjectClass objectClass;
     unsigned char *loadout;
 
+#ifdef SDL_PORT
+    if (SdlSwcFlightActive()) {
+        /* CODE_05 remove_weapon +0x019a consumes the native slot's
+           quantity before removing it. WC1 has no quantity byte. */
+        if (obj < 0 || obj >= 10 || weapon < 0 ||
+            (signed char)aShipWeapons[obj][0] > 10 ||
+            weapon >= (signed char)aShipWeapons[obj][0])
+            return 0;
+        if (aSwcWeaponAmmo[obj][weapon] > 1) {
+            aSwcWeaponAmmo[obj][weapon]--;
+            return 0;
+        }
+        memmove(&aSwcWeaponAmmo[obj][weapon], &aSwcWeaponAmmo[obj][weapon + 1],
+                (signed char)aShipWeapons[obj][0] - weapon - 1);
+        aSwcWeaponAmmo[obj][(signed char)aShipWeapons[obj][0] - 1] = 0;
+    }
+#endif
     ship = obj;
     currentWeapon = weapon;
     weaponOffset = (int)currentWeapon * sizeof(ShipWeaponSlot);
@@ -714,7 +731,11 @@ unsigned int remove_weapon(short obj, short weapon)
         entry[7] = entry[14];
 #endif
     }
-    loadout[(signed char)loadout[0] * 7 + 7] = 1;
+#ifdef SDL_PORT
+    /* Mac +0x0250 guards this spare-slot write for full ten-slot loadouts. */
+    if (!SdlSwcFlightActive() || (signed char)loadout[0] < 10)
+#endif
+        loadout[(signed char)loadout[0] * 7 + 7] = 1;
     loadout[0]--;
     if (ship == 0) {
         if (any_selected(loadout, objectClass) == 0) {
@@ -818,6 +839,11 @@ void set_objects_data(short obj, enum ObjectType type, short owner)
             loadout = aShipWeapons[obj];
             memcpy(loadout, typeData->weaponLoadout,
                    sizeof(typeData->weaponLoadout));
+#ifdef SDL_PORT
+            if (SdlSwcFlightActive() && obj >= 0 && obj < 10 && type >= 0 && type < 22)
+                memcpy(aSwcWeaponAmmo[obj], aSwcInitialWeaponAmmo[type],
+                        sizeof(aSwcWeaponAmmo[obj]));
+#endif
 
             if (obj == 0) {
                 nSelectedReleaseWeaponIndex = -1;

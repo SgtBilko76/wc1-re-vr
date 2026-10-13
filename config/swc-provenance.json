@@ -129,9 +129,29 @@
       "entry_offset": "0x2dd2",
       "end_offset": "0x3616",
       "source": "src/sdl/swc_nav.c",
-      "symbol": "SdlShowSwcNavigation",
-      "relationship": "partial-presentation-adaptation",
-      "differences": "Navigation page 0 uses ComputerInflight.CMF CKPT/2,3,4,10,13 and GameMode(11)'s clut/250. UpdateInflightNavText +0x273a supplies size-9 text positions, mission information and objective note. Simulation/audio suspend while open; blink uses a host 50 ms clock. Selection uses set_new_objective with a bounded flight-path search. Mouse selection, controller input, fullscreen and release-to-close are SDL adaptations. Other computer tabs remain separate presentation work."
+      "symbol": "SdlShowSwcComputer",
+      "relationship": "algorithm-and-presentation-adaptation",
+      "differences": "All five pages use ComputerInflight.CMF CKPT/2,3,4,9,10,12,13 and clut/250; comm/guns/weapons backgrounds are intentionally empty. DATA+0x466e retains the selected tab, DATA+0x210 supplies tab coordinates. Navigation uses UpdateInflightNavText +0x273a and a bounded set_new_objective search. Gun/weapon selection uses shared selectors; CKPT/9 mount icons use DATA+0x30 x/y/Q8 scales and blink ten of twenty updates. Native quantities appear with weapon names. Guard frames advance every five updates and alternate 13/14 while open; eject background alternates every ten. Ejection follows +0x34e6..+0x351c damage/exclusive-random/failure-sound logic. SDL owns frozen simulation/audio, 50 ms animation pacing, mouse/controller input, fullscreen, focus/cursor restoration and release-to-activate. Classic-Mac font pixels remain approximate."
+    },
+    {
+      "original_name": "UpdateCommStatus",
+      "resource": "CODE_14.bin",
+      "entry_offset": "0x290e",
+      "end_offset": "0x2dbe",
+      "source": "src/sdl/swc_nav.c",
+      "symbol": "SwcBuildComputerComms",
+      "relationship": "algorithm-and-presentation-adaptation",
+      "differences": "Wingman/carrier/current hostile-fighter recipients, original conditional order list and DATA+0x2c70 strings. SwcDrawComputerComms also adapts print_message_text +0x289a: size-10 text, twelve-pixel rows, selected color 1/unselected 0xb0, size-9 prompts at (42,179). Sending queues Vocalize_Message then calls request(0,recipient,command) directly rather than WC1's quick-menu index handler. SDL bounds active objects and adds mouse, numbered-key and Backspace input."
+    },
+    {
+      "original_name": "remove_weapon",
+      "resource": "CODE_05.bin",
+      "entry_offset": "0x019a",
+      "end_offset": "0x02a0",
+      "source": "src/disk.c",
+      "symbol": "remove_weapon",
+      "relationship": "guarded-data-layout-adaptation",
+      "differences": "SDL SWC path retains native slot byte +9 in aSwcWeaponAmmo[10][10]. Quantities above one decrement without removing the mount (+0x01be..+0x01d4); final consumption compacts quantities with WC1 slots. The native count<10 spare-slot bound at +0x0250 is retained. set_objects_data initializes quantities from generated CODE_08 records. The Win32 preprocessed bodies and seven-byte slot layout remain unchanged; binary-comp scores before/after are remove_weapon 90.79% and set_objects_data 93.94%."
     },
     {
       "original_name": "init_data_struct1",
@@ -141,7 +161,7 @@
       "source": "src/sdl/swc_flight.c",
       "symbol": "SwcSetObjectData",
       "relationship": "data-layout-adaptation",
-      "differences": "bin/extractSwcFlightData.py evaluates original constant stores and emits src/sdl/swc_objects.h. Only IDs 0..57 of the 83 native 204-byte records are adapted. Mac pointers become host strings/animation words or SDL textures; ten-byte slots become seven-byte slots. Full-width fuel is retained in WC1's combined lifetime/weaponDamage storage. Definitions are restored on exit."
+      "differences": "bin/extractSwcFlightData.py evaluates original constant stores and emits src/sdl/swc_objects.h. Only IDs 0..57 of the 83 native 204-byte records are adapted. Mac pointers become host strings/animation words or SDL textures; ten-byte slots become seven-byte slots with byte +9 quantities retained separately in SDL. Full-width fuel is retained in WC1's combined lifetime/weaponDamage storage. Definitions are restored on exit."
     },
     {
       "original_name": "init_data_struct2",
@@ -1124,6 +1144,6 @@
     "pending": "Save/load and name entry, later rooms/scenes, campaign progression, classic-Mac font rasterization and portable Helvetica provider, complete Mac map renderer, dismissal walk-out, bunk occupants, incidental bar animations and exact frame pacing. Movie palette transitions remain separate.",
     "validation": "Fresh Ghidra original-instruction exports, A5 call/string resolution and offline original CMF/clut inspection. Native, GUI and viewer compilation, compiler static analysis and portable-font syntax compilation. No tests, game, GUI, interactive checks, playback or audio device executed. Visual appearance and timing require user review; no Win32 reference source or flags changed."
   },
-  "host_only_sources": ["src/swc/rsrc.c", "src/swc/speech.c", "src/swc/sound.c", "src/swc/music.c", "src/sdl/swc_sound.c", "src/sdl/swc_music.c", "src/sdl/swc_demo.c", "src/sdl/swc_flight.c", "src/sdl/swc_raster.c", "src/sdl/swc_cockpit.c", "src/sdl/swc_text.c", "src/sdl/swc_rooms.c", "src/sdl/swc_movie.c"],
+  "host_only_sources": ["src/swc/rsrc.c", "src/swc/speech.c", "src/swc/sound.c", "src/swc/music.c", "src/sdl/swc_sound.c", "src/sdl/swc_music.c", "src/sdl/swc_demo.c", "src/sdl/swc_flight.c", "src/sdl/swc_raster.c", "src/sdl/swc_cockpit.c", "src/sdl/swc_nav.c", "src/sdl/swc_text.c", "src/sdl/swc_rooms.c", "src/sdl/swc_movie.c"],
   "palette_resource_fork_sha256": "24b707f9e024d86bf8ce996e2bc45521f36f75582b7e7410bef6467c49cb7c2b"
 }
