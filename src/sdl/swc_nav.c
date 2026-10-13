@@ -692,7 +692,7 @@ int SdlShowSwcComputer(SDL_Window *window, SDL_Renderer *renderer, const char *r
                     select_new_gun();
                 else if (page == SWC_COMPUTER_WEAPONS) {
                     select_new_release_weapon((enum ObjectType)-1);
-                    lock_off();
+                    SdlSwcLockOff();
                 }
             }
             if (activate && page == SWC_COMPUTER_COMM && selected >= 0 && selected < count) {

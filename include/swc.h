@@ -228,9 +228,10 @@ SDL_Texture *SdlCreateSwcTexture(SDL_Renderer *renderer, const SwcBuffer *set,
 int SdlInitSwcCockpit(SDL_Renderer *renderer, const SwcCmf *cockpit,
                        const SwcCmf *space, const SDL_Color colors[256], SDL_Texture *canvas);
 void SdlUpdateSwcCockpit(void);
+void SdlSwcLockOff(void);
 int SdlDrawSwcCockpit(void);
 int SdlDrawSwcCockpitDamage(void);
-int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds);
+int SdlDrawSwcSpaceHud(const SDL_Rect objectBounds[10]);
 int SdlDrawSwcSpaceGlare(void);
 int SdlDrawSwcHud(void);
 extern SDL_Point swcCockpitOffset; /* SWC DATA/A5+0x47d4/+0x47d8. */

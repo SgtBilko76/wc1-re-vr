@@ -513,7 +513,47 @@
       "source": "src/sdl/swc_cockpit.c",
       "symbol": "SdlDrawSwcSpaceHud",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Normal CKPT/1 reticle at its original position plus cockpit banking, ITTS frame 5 and overlapping reticle frame 4; lock-marker animation remains pending. Target brackets use SDL corners around rotated sprite bounds rather than MacScale1 bounds and CKPT/36. Spatial HUD precedes the cockpit artwork; text remains a separate overlay."
+      "differences": "Normal CKPT/1 reticle at its original position plus cockpit banking, ITTS frame 5 and overlapping reticle frame 4. SwcDrawTargetBox uses original Q16 boundaries, CKPT/36 target/speaker corners and converging/blinking CKPT/5 missile-lock markers. The transmitting ship has a separate blue highlight. Spatial HUD precedes the cockpit artwork; text remains a separate overlay."
+    },
+    {
+      "original_name": "draw_target_box",
+      "resource": "CODE_13.bin",
+      "entry_offset": "0x3114",
+      "end_offset": "0x341a",
+      "source": "src/sdl/swc_cockpit.c",
+      "symbol": "SwcDrawTargetBox",
+      "relationship": "host-adaptation",
+      "differences": "Uses shared projected coordinates and original get_Mac_boundaries bounds. CKPT/36 ink 0xd4/0xef identifies hostile/friendly targets; 0x81 and wider offsets identify the current speaker, not a missile lock. Four CKPT/5 frames draw around center minus (14,14), displaced outward by the countdown, then blink on odd simulation frames when acquired. Object/frame accesses are bounded."
+    },
+    {
+      "original_name": "lock_off",
+      "resource": "CODE_13.bin",
+      "entry_offset": "0x3708",
+      "end_offset": "0x3746",
+      "source": "src/sdl/swc_cockpit.c",
+      "symbol": "SdlSwcLockOff",
+      "relationship": "host-adaptation",
+      "differences": "Preserves the countdown-dependent snd/21 or snd/22 stop, readout dirty flag and acquired/countdown reset. Uses the SDL mixer; no WC1 MISSILE LOCKED text. Keyboard and computer weapon selection call this native reset."
+    },
+    {
+      "original_name": "target_locking",
+      "resource": "CODE_13.bin",
+      "entry_offset": "0x37c0",
+      "end_offset": "0x38de",
+      "source": "src/sdl/swc_cockpit.c",
+      "symbol": "SwcUpdateTargetLock",
+      "relationship": "host-adaptation",
+      "differences": "Includes start_lock +0x36b2, starting_lock +0x36d6 and decrement_lock_time +0x3752. Hostile target, component-five damage <4 and projected radius <=60; HS facing <=-65 and 18 updates, IR 32. Offscreen targets retain progress, malfunction stalls decrement, recovery values below -1 advance toward -1. snd/21 restarts with signed projected X*2/5 volume, clamped by SDL; acquired state requests snd/22 at 255. Weapon and target indices are bounded. Runs on forward-view simulation updates, not display refreshes. No WC2 torpedo/target-camera branches or WC1 random-angle/extra malfunction/message handling."
+    },
+    {
+      "original_name": "check_target",
+      "resource": "CODE_13.bin",
+      "entry_offset": "0x3aa4",
+      "end_offset": "0x3c3e",
+      "source": "src/sdl/swc_cockpit.c",
+      "symbol": "SwcCheckTarget",
+      "relationship": "host-adaptation",
+      "differences": "Adapts the WC2 control structure to the original Mac selection loop: retain a listed target or use the nearest visible entry, automatically enable hostile lock, preserve locked offscreen targets, clear friendly/missing lock and ITTS. Native check_target has no WC2 target-camera branch or periodic malfunction check. Reuses the matching WC1 target list/sort; removed or invalid object indices are explicitly rejected. Flight projection runs before each update, including catch-up ticks."
     },
     {
       "original_name": "update_cockpit",
@@ -740,14 +780,19 @@
     {"name": "update_digital_readouts", "resource": "CODE_13.bin", "entry_offset": "0x0660", "source": "src/cockpt.c", "wc1_address": "0x00414a50", "qualification": "Shares the actual and commanded speed calculations. DrawCockpitReadout routes only the speed slots to the SWC SDL text adapter, which applies original positions and four-digit zero padding. Other SWC text layers are not implementations of the full original routine."},
     {"name": "rotational_pos_to_scanner_pos", "resource": "CODE_13.bin", "entry_offset": "0x253c", "source": "src/cockpt.c", "wc1_address": "0x004158f0", "qualification": "Same yaw threshold/divisors and pitch divisor. SDL-only selection supplies Hornet bounds and the SWC +1 X adjustment before clamping (CODE_13 +0x25cc). WC1's reference branch is preserved."},
     {"name": "set_objective_range", "resource": "CODE_13.bin", "entry_offset": "0x271c", "source": "src/cockpt.c", "wc1_address": "0x00415b70", "qualification": "Shares mobile-objective update, player-relative transform, spherical conversion, optional scanner placement and distance shifted by eight."},
-    {"name": "get_color", "resource": "CODE_13.bin", "entry_offset": "0x27ac", "source": "src/cockpt.c", "wc1_address": "0x00415c00", "qualification": "Same contact class/side/target classification. The SDL adapter maps WC1 color values to SWC CKPT/31 sprite indices: hostile fighter 11, Imperial fighter 9, other fighter/Tiger's Claw 3, hostile capital 5, other capital 1, player-targeting missile 7."}
+    {"name": "get_color", "resource": "CODE_13.bin", "entry_offset": "0x27ac", "source": "src/cockpt.c", "wc1_address": "0x00415c00", "qualification": "Same contact class/side/target classification. The SDL adapter maps WC1 color values to SWC CKPT/31 sprite indices: hostile fighter 11, Imperial fighter 9, other fighter/Tiger's Claw 3, hostile capital 5, other capital 1, player-targeting missile 7."},
+    {"name": "build_your_target_list", "resource": "CODE_13.bin", "entry_offset": "0x38f0", "source": "src/cockpt.c", "wc1_address": "0x00416e90", "qualification": "Same objects 1..9, ship class, neutralized/visibility gates, distance <12000 and enemy flag. The projector saturates wider Mac distances to unsigned 16-bit for this cache, so eligible ranges and sorting remain exact."},
+    {"name": "sort_viable_target_list", "resource": "CODE_05.bin", "entry_offset": "0x0b52", "source": "src/disk.c", "wc1_address": "0x0041e860", "qualification": "Same nested comparisons and swaps as the Mac and WC2 SortViableTargetsByDistance (0x0041195f). All player-list distances fit signed 16-bit."},
+    {"name": "cycle_onscreen_targets", "resource": "CODE_13.bin", "entry_offset": "0x39c6", "source": "src/cockpt.c", "wc1_address": "0x00416f30", "qualification": "Same distance-ordered cycling, friendly skip while an enemy is listed and changed-target countdown reset. Cycling no longer overwrites the right VDU mode/communication portrait; native init_vdus starts it in target mode."}
   ],
   "shared_wc2_evidence": [
     {"source_from_repo_root": "../wc2-re/src/cockpt.c", "symbol": "HasInRangeGunForTargetLead", "wc2_address": "0x0043ce8f", "swc_symbol": "SwcIttsRangeCheck", "qualification": "Matching range predicate; the donor is the reconstructed Kilrathi Saga Win32 WC2, not a claim that SWC's original fork used this exact build."},
-    {"source_from_repo_root": "../wc2-re/src/cockpt.c", "symbol": "UpdateTargetLeadIndicator", "wc2_address": "0x0043cf5a", "swc_symbol": "SwcUpdateItts", "qualification": "Matching velocity prediction. SWC's original assembly supplies activation, projection, clipping and sprite differences; no WC2 turret-view branch or display globals are transplanted."}
+    {"source_from_repo_root": "../wc2-re/src/cockpt.c", "symbol": "UpdateTargetLeadIndicator", "wc2_address": "0x0043cf5a", "swc_symbol": "SwcUpdateItts", "qualification": "Matching velocity prediction. SWC's original assembly supplies activation, projection, clipping and sprite differences; no WC2 turret-view branch or display globals are transplanted."},
+    {"source_from_repo_root": "../wc2-re/src/cockpt.c", "symbol": "check_target", "wc2_address": "0x0043ddfc", "swc_symbol": "SwcCheckTarget", "qualification": "Control structure adapted against Mac CODE_13 +0x3aa4. The Mac retains a listed target or takes the first sorted entry and enables lock automatically; WC2's enemy-first acquisition, periodic malfunction and target-camera branches are not used. Original WC2 disassembly inspected alongside the donor source."},
+    {"source_from_repo_root": "../wc2-re/src/cockpt.c", "symbol": "target_locking", "wc2_address": "0x0043c048", "swc_symbol": "SwcUpdateTargetLock", "qualification": "Common hostile/component/visibility/cone and weapon structure. Mac assembly supplies 18/32 countdowns, the facing gate and native sound/malfunction behavior. WC2's torpedo and weapon-damage eligibility logic do not apply. CKPT/5 convergence comes from Mac draw_target_box, not WC2's HUD."}
   ],
   "flight_gameplay": {
-    "scope": "Enyo 1 patrol encounters, NPC AI/firing, hazards, autopilot and ITTS. Carrier landing, first debriefing and player/wingman funerals are connected; the host ends after this mission and does not advance the campaign.",
+    "scope": "Enyo 1 patrol encounters, NPC AI/firing, hazards, autopilot, automatic target acquisition, native missile lock and ITTS. Carrier landing, first debriefing and player/wingman funerals are connected; the host ends after this mission and does not advance the campaign.",
     "generator": "bin/extractSwcFlightData.py",
     "generated_header": "src/sdl/swc_objects.h",
     "data_sha256": "8373edcff90ab35cda5663c1b0cc5112d00ed8c6c35ab14a45a0577a23a54faa",
@@ -917,7 +962,7 @@
       "validation": "Fresh Ghidra CODE_09 export, original instructions and expanded A5-string review, native/GUI builds and Clang static analysis. No tests or game/GUI execution. SDL-only source change; Win32 source and flags unchanged."
     },
     "functions": ["PollKeyboardState", "process_player_input", "player_input", "QueueInputEvent", "WarpMouseTo", "accelerate", "your_afterburner", "SetSpaceFlightFrameTiming"],
-    "qualification": "DOS/Win32 controls are intentional. Held keyboard input is sampled per tick, with independent axis release. Mouse motion is passed to WC1 player_input using an initialized SWC viewport, preserving its response tables, signs and right-button roll/throttle. Only motion/modifier events are queued; the SWC host owns SDL event pumping and leaves weapon button states clear. Right double-click/hold uses WC1's timing-only 20/60-second interval and shared afterburner routine. Pointer capture is released on pause/focus loss, and SDL logical coordinates handle resizing and warping. The SDL host calls the shared gun/missile, selection and target routines directly. HandleSpaceFlightControls remains bypassed; unsupported mission/VDU commands are not dispatched. SWC's Mac event/device code differs.",
+    "qualification": "DOS/Win32 controls are intentional. Held keyboard input is sampled per tick, with independent axis release. Mouse motion is passed to WC1 player_input using an initialized SWC viewport, preserving its response tables, signs and right-button roll/throttle. Only motion/modifier events are queued; the SWC host owns SDL event pumping and leaves weapon button states clear. Right double-click/hold uses WC1's timing-only 20/60-second interval and shared afterburner routine. Pointer capture is released on pause/focus loss, and SDL logical coordinates handle resizing and warping. The SDL host calls the shared gun/missile, weapon selection and target-list/cycling routines directly; native automatic acquisition and missile locking live in swc_cockpit.c. HandleSpaceFlightControls remains bypassed; unsupported mission/VDU commands are not dispatched. SWC's Mac event/device code differs.",
     "wc1_mouse_evidence": {"source": "src/main.c", "wc1_address": "0x004285d0", "response_tables": ["0x0046a030", "0x0046a040"]},
     "mac_input_evidence": [
       {"name": "get_player_input", "resource": "CODE_01.bin", "entry_offset": "0x4508"},
@@ -932,7 +977,14 @@
   ],
   "cockpit_ui": {
     "source": "src/sdl/swc_cockpit.c",
-    "scope": "Enyo 1 Hornet instruments, target hull/armor/shields, normal reticle, navigation/hostile markers, warning lamps, component text, malfunctioning VDUs, damaged panels and sparks. Spatial HUD is masked by the cockpit; text/HUD also appear without it. Capacities use SWC definitions. L toggles lock mode and the WC2-derived, SWC-adjusted ITTS calculation. Cockpit banking, pilot hands, communication portraits and computer messages are connected. Further targeting/WC2 integration is deferred at user request. Side/rear views and other cockpitless instruments remain pending. SDL2 2.0.18 or later is required for VDU polygons.",
+    "scope": "Enyo 1 Hornet instruments, target hull/armor/shields, normal reticle, navigation/hostile markers, warning lamps, component text, malfunctioning VDUs, damaged panels and sparks. Spatial HUD is masked by the cockpit; text/HUD also appear without it. Capacities use SWC definitions. Automatic hostile acquisition enables lock mode; L toggles it and the WC2-derived, SWC-adjusted ITTS calculation. Cockpit banking, pilot hands, communication portraits and computer messages are connected. Automatic acquisition, 18/32-update missile locks, CKPT/5 convergence/blink and separate blue speaker brackets are connected; WC2 source supplies the common control structure with Mac-specific behavior. Side/rear views and other cockpitless instruments remain pending. SDL2 2.0.18 or later is required for VDU polygons.",
+    "targeting": {
+      "source": "src/sdl/swc_cockpit.c",
+      "selection": "CODE_13 check_target +0x3aa4 adapts WC2's common structure with the Mac's nearest/current-list choice and automatic hostile lock. Shared WC1 build_your_target_list, sort_viable_target_list and cycle_onscreen_targets match CODE_13 +0x38f0/+0x39c6 and CODE_05 +0x0b52. Visible ships use a strict 12000-unit cutoff. Locked offscreen targets persist; T prefers enemies when cycling.",
+      "missile_lock": "CODE_13 +0x36b2..+0x38de: HS 18 updates/facing <=-65, IR 32, projected radius <=60. Offscreen progress is retained; component-five malfunction stalls it. SDL handles snd/21 search and snd/22 acquired, retaining the original signed X*2/5 search volume argument with host volume clamping. Unsupported/absent weapons are rejected without negative-index access. No WC2 torpedo lock or WC1 extra completion malfunction/text.",
+      "presentation": "CODE_13 draw_target_box +0x3114: CKPT/36 friendly/hostile corners, wider blue speaker highlight, separate four-frame CKPT/5 countdown convergence and acquired blink on odd frames. DATA/0 +0x43f2 maps CKPT/5 to handle +0xa546. CODE_03 init_vdus +0x0914 sets the right VDU to target mode; T preserves an active portrait. Projection refreshes before every simulation targeting update; pause holds progress and blink.",
+      "validation": "Fresh Ghidra CODE_05/13 exports, original CODE_01/03 and DATA/A5 operands, offline CKPT/5 frame inspection, WC2 source/original assembly review, make -j4 modern modern-gui modern-swc and clean Clang static analysis of the three changed SDL units. No tests added/run, game/GUI launch or audio playback. Original Win32 sources and build flags are unchanged; interactive parity remains unverified."
+    },
     "banking_and_hands": {
       "evidence": [{"resource": "CODE_13.bin", "entry_offset": "0x18f2", "name": "handle_cockpit_banking"}, {"resource": "CODE_13.bin", "entry_offset": "0x14e2", "name": "determine_pilot_hand"}, {"resource": "CODE_01.bin", "entry_offset": "0x065c", "name": "DrawBorder"}, {"resource": "CODE_01.bin", "entry_offset": "0x06d4", "name": "dump_buffer_to_screen"}],
       "implementation": "SdlUpdateSwcCockpit approaches pitch/yaw rotation*6 by one pixel per tick, clamping Y to +/-6 and X to +/-8. All cockpit layers, instruments, VDU polygons and text use the banking offset. PC00/6 has sixteen hand frames, selected with horizontal priority from input/2. After flight composition, SwcDrawFlight restores DrawBorder's fixed palette-255 margins (8 pixels on each side, 6 at top/bottom), so banking never exposes an uncovered strip inside the visible picture. The same frame surrounds cockpitless and external flight views, as in the Mac flight-mode presentation. Shared WC1 rotation/input fields and host tick timing replace wider Mac state.",
@@ -985,7 +1037,7 @@
         {"offset": "0x089a", "encoding": "BE32 A5-relative string pointers", "meaning": "Ok, Light, Moderate, Heavy, Destroyed"},
         {"offset": "0x08ae", "encoding": "BE32 A5-relative string pointers", "meaning": "nine component names"},
         {"offset": "0x433e", "encoding": "BE32 triples", "meaning": "cockpit resource list; selected chunks PC00/6, 7, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19 (glare mask)"},
-        {"offset": "0x43e6", "encoding": "BE32 triples", "meaning": "shared cockpit resource list; reticle/nav/hostile CKPT/1, sparks CKPT/6 and contacts CKPT/31"}
+        {"offset": "0x43e6", "encoding": "BE32 triples", "meaning": "shared cockpit resource list; reticle/nav/hostile CKPT/1, missile lock CKPT/5 (entry +0x43f2, handle +0xa546), sparks CKPT/6, contacts CKPT/31 and target/speaker corners CKPT/36"}
       ]
     },
     "text_evidence": [
@@ -1077,7 +1129,7 @@
       ],
       "qualification": "Consecutive frames starting at zero, then 0xa000 removal; one tick per frame. The host temporarily supplies these sequences/scales to WC1's animation interpreter and restores the original definitions on exit."
     },
-    "qualification": "Rendering uses the original (160,100) plus projected XY, with horizontal/vertical flip bits retained. Object scale/definitions now come from SWC. CODE_01 rotate_Mac_shape2 and edge/span rules now draw sprites into an SDL streaming texture. WC1 projection and SDL target brackets remain provisional. Original hit/explosion glare and fighter/capital explosion types are connected; Mac handle management is not reproduced. Native SWC weapon audio and NPC ship AI are connected.",
+    "qualification": "Rendering uses the original (160,100) plus projected XY, with horizontal/vertical flip bits retained. Object scale/definitions now come from SWC. CODE_01 rotate_Mac_shape2 and edge/span rules now draw sprites into an SDL streaming texture. Mac projection and Q16 target bounds are adapted; CKPT/36 target/speaker brackets and CKPT/5 missile-lock sprites use the original offsets. Original hit/explosion glare and fighter/capital explosion types are connected; Mac handle management is not reproduced. Native SWC weapon audio and NPC ship AI are connected.",
     "validation": "Original-instruction and offline resource inspection; static source review; make modern modern-gui only. No interactive execution or tests."
   },
   "startup_endings": {
@@ -1222,7 +1274,7 @@
     "validation": "Fresh Ghidra CODE_02/14 exports plus original CODE_01/03/07/12/13/15 instructions and A5/DATA inspection; offline CMF/frame/music inventories. Native/GUI/viewer compilation and Clang static analysis. No tests added/run and no game, GUI or playback launched. No Win32 reconstruction source or flags changed. Font data and interactive appearance/timing remain unverified."
   },
   "classic_font_resource": {"source": "src/sdl/swc_text.c", "location": "SWC_MAC_FONT_RESOURCE or game-root Fonts/Helvetica.rsrc", "format": "FOND 21 plain-style association -> exact-size NFNT/FONT; FONT-only family*128+size fallback. Monochrome FontRec pixels, per-glyph bearings/advances and ascent. Raw resource fork, explicit macOS ..namedfork/rsrc path, or AppleDouble accepted.", "references": ["https://developer.apple.com/library/archive/documentation/mac/Text/Text-250.html", "https://developer.apple.com/library/archive/documentation/mac/Text/Text-271.html"], "limits": "No bundled font data; no actual classic Helvetica resource available for validation. Printable ASCII only, with existing platform fallback for missing/unsupported strikes."},
-  "target_message_evidence": {"source": "src/sdl/swc_cockpit.c", "original": "CODE_13 set_global_message +0x3f4e only writes DATA+0x4712/+0x4716; an all-CODE operand search found no readers. CODE_05 fire_missile +0x38b0 rejects unlocked shots silently.", "implementation": "Remove WC1 ITTS/out-of-range, Need Lock and MISSILE LOCKED bottom banners from SWC. Preserve shared damage notices via CockpitMessage at native status positions/lifetimes. Reticle and lock sound remain; host communications acknowledgments use the native queue."},
+  "target_message_evidence": {"source": "src/sdl/swc_cockpit.c", "original": "CODE_13 set_global_message +0x3f4e only writes DATA+0x4712/+0x4716; an all-CODE operand search found no readers. CODE_05 fire_missile +0x38b0 rejects unlocked shots silently.", "implementation": "Remove WC1 ITTS/out-of-range, Need Lock and MISSILE LOCKED bottom banners from SWC. Preserve shared damage notices via CockpitMessage at native status positions/lifetimes. Native reticle, converging/blinking missile-lock markers and search/acquired sounds supply targeting feedback; host communications acknowledgments use the native queue."},
   "host_only_sources": ["src/swc/rsrc.c", "src/swc/speech.c", "src/swc/sound.c", "src/swc/music.c", "src/sdl/swc_sound.c", "src/sdl/swc_music.c", "src/sdl/swc_demo.c", "src/sdl/swc_flight.c", "src/sdl/swc_raster.c", "src/sdl/swc_cockpit.c", "src/sdl/swc_nav.c", "src/sdl/swc_text.c", "src/sdl/swc_rooms.c", "src/sdl/swc_movie.c"],
   "palette_resource_fork_sha256": "24b707f9e024d86bf8ce996e2bc45521f36f75582b7e7410bef6467c49cb7c2b"
 }

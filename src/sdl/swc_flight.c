@@ -45,7 +45,10 @@ static SDL_Texture *swcRasterCanvas;
 static SwcTextFont swcPauseFont;
 static SDL_Texture *swcStarTextures[10];
 static SDL_Rect swcStarBounds[10];
+static int swcObjectDistances[SPACE_OBJECT_COUNT];
 int nSwcCinemaResult;
+
+static void SwcTransformObjectsToView(void);
 
 /* CODE_02 generate_stars +0x38cc: eight dust particles in a 5,000-unit
  * volume, then seven stars using PLNT/1 frames 32..41. Random3DO's upper
@@ -625,12 +628,15 @@ static int SwcStartMissionShips(void)
     nTrainSimActive = 0;
     nExternalViewShip = -1;
     nTargetLockCountdown = -1;
+    bTargetLockAcquired = 0;
+    bTargetLockReadoutDirty = 0;
     memset(aHudMessageSlots, 0, sizeof(aHudMessageSlots));
     memset(acVduModeStackDepth, 0, sizeof(acVduModeStackDepth));
     memset(ausVduModeStack, 0, sizeof(ausVduModeStack));
     ausVduModeStack[0] = 1;
     acVduModeStackDepth[1] = 0;
-    ausVduModeStack[8] = 5;
+    /* CODE_03 init_vdus +0x0918 starts the right VDU in target mode. */
+    ausVduModeStack[8] = 3;
     ResetCommMenuChoices(0);
     SetPendingMenuAction(0);
     nScreenWidth = SWC_FRAME_WIDTH;
@@ -830,15 +836,9 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
         update_objective_location((short)((unsigned short)nSpaceFrame % cMissionObjectiveCount));
     SwcUpdateFlightCamera();
     SwcUpdateStarField();
-    if (acShipTarget[0] >= 0 &&
-        (acShipTarget[0] >= 10 || aeObjectClass[acShipTarget[0]] < OBJECT_CLASS_SHIP ||
-         aeSpecialManeuver[acShipTarget[0]] == SPECIAL_MANEUVER_UNKNOWN_9))
-        acShipTarget[0] = -1;
-    if (acShipTarget[0] >= 0 &&
-        asObjectScreenX[acShipTarget[0]] == (short)0x8001)
-        lock_off();
-    else
-        target_locking(acShipTarget[0]);
+    /* CODE_09 Draw_3Space_Frame projects objects before CODE_13 checks
+     * targets. Catch-up simulation ticks must not reuse the last render. */
+    SwcTransformObjectsToView();
     if (IsCommChoiceMenuOpen()) {
         if (bPlayerDestroyed || !CanOpenCommMenu() ||
             (GetPendingMenuAction() == 2 &&
@@ -859,7 +859,7 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
  * 32-bit depth and scale until clamping and divides the full XY product.
  * Only the compatibility cache for the shared WC1 targeting code is 16-bit;
  * the SDL depth sort below uses the original full-distance values. */
-static void SwcTransformObjectsToView(int distances[SPACE_OBJECT_COUNT])
+static void SwcTransformObjectsToView(void)
 {
     FixedVector direction;
     FixedVector *view;
@@ -872,7 +872,7 @@ static void SwcTransformObjectsToView(int distances[SPACE_OBJECT_COUNT])
 
     nClosestVisibleObject = -1;
     draw_nav_pointer();
-    memset(distances, 0, sizeof(int) * SPACE_OBJECT_COUNT);
+    memset(swcObjectDistances, 0, sizeof(swcObjectDistances));
     for (object = 0; object <= SPACE_LAST_MOVING_OBJECT; object++) {
         if (aeObjectClass[object] == OBJECT_CLASS_NULL ||
             aeObjectClass[object] == OBJECT_CLASS_FIXED_OBJECT || object == nNavPointerObject)
@@ -907,15 +907,15 @@ static void SwcTransformObjectsToView(int distances[SPACE_OBJECT_COUNT])
             if (asObjectScreenScale[object] <= 4)
                 continue;
         }
-        distances[object] = distance >> 8;
+        swcObjectDistances[object] = distance >> 8;
         asObjectScreenX[object] = (short)(((int64_t)view->x * 0xa000 / view->z) >> 8);
         asObjectScreenY[object] = (short)(((int64_t)view->y * 0xa000 / view->z) >> 8);
         switch (aeObjectClass[object]) {
         case OBJECT_CLASS_STAR:
-            distances[object] = 0x7ffe;
+            swcObjectDistances[object] = 0x7ffe;
             break;
         case OBJECT_CLASS_PLANET:
-            distances[object] = 0x7ffd;
+            swcObjectDistances[object] = 0x7ffd;
             if (asObjectScreenScale[object] == 0xff)
                 set_background_objects_rotation(object, &direction);
             break;
@@ -933,7 +933,7 @@ static void SwcTransformObjectsToView(int distances[SPACE_OBJECT_COUNT])
         default:
             break;
         }
-        asObjectDistance[object] = (short)SDL_min(distances[object], UINT16_MAX);
+        asObjectDistance[object] = (short)SDL_min(swcObjectDistances[object], UINT16_MAX);
     }
 }
 
@@ -950,21 +950,20 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
         {0, SWC_FRAME_HEIGHT - 6, SWC_FRAME_WIDTH, 6}
     };
     SDL_Rect rectangle;
-    SDL_Rect targetBounds = {0};
+    SDL_Rect objectBounds[10] = {{0}};
     SwcRasterImage *image;
     SwcBuffer stars = {0};
     SwcFrame star;
     short object;
     short frame;
     short sorted[SPACE_OBJECT_COUNT];
-    int distances[SPACE_OBJECT_COUNT];
     short count = 0;
     short index;
     /* CODE_02 draw_sorted_objects_to_buffer uses (160,100) + projected XY
        in both cockpit modes. Positive view Y also points down in WC1. */
     int centreY = 100;
 
-    SwcTransformObjectsToView(distances);
+    SwcTransformObjectsToView();
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     if (SDL_RenderClear(renderer) != 0)
         return -1;
@@ -978,7 +977,7 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
             asObjectScreenX[object] == (short)0x8001 || object == nNavPointerObject)
             continue;
         index = count++;
-        while (index > 0 && distances[sorted[index - 1]] < distances[object]) {
+        while (index > 0 && swcObjectDistances[sorted[index - 1]] < swcObjectDistances[object]) {
             sorted[index] = sorted[index - 1];
             index--;
         }
@@ -1033,14 +1032,14 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
         if (SdlDrawSwcRotatedImage(renderer, swcRasterCanvas, image, colors,
                 160 + asObjectScreenX[object], centreY + asObjectScreenY[object],
                 asObjectScreenAngle[object], (unsigned short)asObjectScreenScale[object],
-                asObjectFlip[object], object == acShipTarget[0] ? &targetBounds : NULL) != 0)
+                asObjectFlip[object], object < 10 ? &objectBounds[object] : NULL) != 0)
             return -1;
     }
     /* CODE_13 update_cockpit draws the HUD and instruments only in
        cockpit views. External views include the player's own ship. */
     if (nCameraViewMode > 3)
         goto border;
-    if (SdlDrawSwcSpaceHud(targetBounds.w > 0 ? &targetBounds : NULL) != 0)
+    if (SdlDrawSwcSpaceHud(objectBounds) != 0)
         return -1;
     if (!cockpitless) {
         rectangle = (SDL_Rect){swcCockpitOffset.x, swcCockpitOffset.y, 320, 240};
@@ -1778,6 +1777,7 @@ title_menu:
     bHostSecondaryMouseButton = 0;
     nSpaceFrame = 0;
     nRenderedSpaceFrame = 0;
+    SwcTransformObjectsToView();
     SdlUpdateSwcCockpit();
     SetSpaceFlightFrameTiming();
     tickInterval = (Uint32)nFrameIntervalMs;
@@ -1930,10 +1930,8 @@ title_menu:
                         nTargetLockMode = (short)(nTargetLockMode == 0);
                     break;
                 case SDLK_t:
-                    if (focused && !paused) {
+                    if (focused && !paused)
                         cycle_onscreen_targets();
-                        set_mode(1, acShipTarget[0] == -1 ? 5 : 3);
-                    }
                     break;
                 case SDLK_g:
                     if (focused && !paused)
@@ -1942,7 +1940,7 @@ title_menu:
                 case SDLK_w:
                     if (focused && !paused) {
                         select_new_release_weapon((enum ObjectType)-1);
-                        lock_off();
+                        SdlSwcLockOff();
                     }
                     break;
                 case SDLK_RETURN:

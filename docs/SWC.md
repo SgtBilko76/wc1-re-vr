@@ -193,9 +193,11 @@ Communications use base-game speakers for Enyo 1, WC1's RNG with adjusted bounds
 and the host simulation clock; later campaign voice substitutions are absent.
 
 The earlier WC2 findings identify `HasInRangeGunForTargetLead` (0x43ce8f) and
-`UpdateTargetLeadIndicator` (0x43cf5a), already adapted for ITTS. Further WC2
-module integration and targeting changes are explicitly deferred; this pass
-leaves that targeting implementation in place. Side/rear cockpit art (PC00/2..4) is
+`UpdateTargetLeadIndicator` (0x43cf5a), adapted for ITTS. The targeting pass also
+adapts `check_target` (0x43ddfc) and `target_locking` (0x43c048), using the Mac
+instructions for acquisition, lock timing, malfunction and display differences.
+The matching target-list, sorting and cycling functions remain shared with WC1.
+Side/rear cockpit art (PC00/2..4) is
 absent from this demo's cockpit CMF.
 
 Validation uses original instructions/data, static review and compilation of
@@ -336,7 +338,7 @@ Flight uses WC1's DOS/Win32 mouse and keyboard controls through SDL2:
 | Space / left mouse button | Fire selected guns; holding repeats while energy and cooldown permit |
 | Enter / press both mouse buttons | Release one selected missile; guided weapons require a lock |
 | G / W | Cycle gun selection / missile type |
-| T | Cycle visible targets using WC1's range ordering and enemy preference |
+| T | Cycle visible targets in range order, skipping friendlies when hostiles are available |
 | L | Toggle target-lock mode; ITTS leads a hostile fighter when guns are in range |
 | A | Autopilot toward the selected objective, stopping for enemies or hazards |
 | N / M | Next objective / in-flight computer |
@@ -1011,7 +1013,7 @@ rejected because a persisted Mac pointer cannot be used as a host pointer.
 | `house_keep_objects`, `update_objects_in_space`, `object_intelligence` | Lifetimes, collisions, damage, ship AI, missile guidance, recharge and animations | SWC dispatch and common setup verified; complete AI/probability equivalence is not established |
 | `ReleaseStaleNavTarget`, `set_up_action_sphere`, `init_ship`, `check_next_wave` | Enter nav spheres and spawn their ships/hazards/waves | CMF textures replace WC1 packet loading; later mission scripts remain unsupported |
 | `auto_pilot_sequence`, `check_hazards`, `extra_hazard`, `update_hazards` | Formation travel, encounter stops and hazard lifecycle | Original SWC boundary rollback and SDL presentation of the 120-frame external view; the Mac starfield adapter reuses hazard maintenance |
-| `select_new_gun`, `select_new_release_weapon`, `cycle_onscreen_targets`, `target_locking` | Shared selection and missile lock state | SDL presents SWC art and text instead of WC1's cockpit packets |
+| `select_new_gun`, `select_new_release_weapon`, `build_your_target_list`, `sort_viable_target_list`, `cycle_onscreen_targets` | Shared weapon selection and distance-ordered visible target list | Target-list and cycling behavior match the Mac; SDL supplies automatic acquisition and native missile locking instead of WC1 `check_target` / `target_locking` |
 | `draw_nav_pointer`, `auto_pilot_valid`, `missile_on_tail`, `calculate_damage_level` | Shared objective projection and warning queries | SWC navigation activation and stale-marker reset; autopilot dispatches to the recovered SWC eligibility and escort-wait state |
 | `malf`, `your_internal_damage`, `place_damage_on_cockpit` | Shared component damage and impact flow | SDL-only SWC malfunction countdown and three physical damage regions; original Mac static, damage and spark artwork |
 | `SetSpaceFlightFrameTiming` | Initializes the shared flight tick interval, 50 ms at WC1's default 20 Hz | Replaces the host's hard-coded 62 ms; SWC's elapsed-tick translation scaling is not reproduced |
@@ -1230,7 +1232,8 @@ ship-side test for patrols (CODE_02 +0x1c2c). Hazard updates and render-dependen
 gameplay counters advance once per simulation tick. Communications, carrier
 landing and the first debriefing are described above; later progression is pending.
 
-`L` enables ITTS for a selected hostile fighter. `SwcIttsRangeCheck` and
+Automatic acquisition enables target lock for a hostile; `L` toggles it.
+`SwcIttsRangeCheck` and
 `SwcUpdateItts` adapt WC2 `cockpt.c`'s `HasInRangeGunForTargetLead` (0x43ce8f)
 and `UpdateTargetLeadIndicator` (0x43cf5a), checked against SWC CODE_13
 +0x2bce/+0x2c48. They use enabled guns, projectile lifetime/range, the player's
@@ -1243,6 +1246,46 @@ Validation for this slice: original instruction/data inspection, static source
 review and `make modern modern-gui`. No tests, game, GUI or interactive checks
 were run. AI edge cases, combat balance and presentation need runtime review;
 this is not a claim of complete SWC gameplay equivalence.
+
+### Target acquisition and missile lock
+
+`SwcCheckTarget` adapts WC2 `cockpt.c`'s `check_target` (0x43ddfc), checked
+against Mac CODE_13 +0x3aa4. Visible ships within 12,000 units are sorted by
+distance. The Mac keeps the current listed target or selects the nearest entry,
+then enables lock mode for a hostile; a locked target can leave the screen
+without being discarded. Friendly targets never retain lock mode. `T` uses the
+matching shared cycle routine, which skips friendly ships while visible enemies
+are available. Neutralized, removed and invalid targets are cleared safely.
+The Mac has neither WC2's special target-camera selection nor its periodic
+lock-mode malfunction check.
+
+`SwcUpdateTargetLock` uses WC2 `target_locking` (0x43c048) as a structural
+reference and Mac CODE_13 +0x36b2..+0x38de for behavior. Heat seekers take
+18 countdown updates and require target facing <= -65; image-recognition
+missiles take 32. Acquisition requires a projected radius <= 60 pixels.
+Targeting malfunctions stall the countdown; destroyed targeting hardware,
+friendly/missing targets, an unsuitable weapon or leaving the acquisition
+circle turn missile locking off. An offscreen target preserves the countdown
+without advancing it. There is no WC2 torpedo-lock branch or WC1 random marker
+angle, extra lock-completion malfunction or text banner. The native snd/21
+search pulse and snd/22 acquired tone use the SDL mixer. The original passes
+signed projected X times 2/5 as search volume; SDL clamps it to 0..255.
+
+CODE_13 `draw_target_box` +0x3114 uses CKPT/36 for normal friendly/hostile
+corners and a separate blue highlight for the transmitting ship. Four CKPT/5
+sprites converge from the countdown distance around projected center minus
+(14,14), then blink on odd simulation frames after acquisition. DATA/0
++0x43f2 binds CKPT/5 to the original lock-shape handle. The right VDU starts
+in target mode, matching CODE_03 `init_vdus` +0x0914; cycling targets preserves
+an active communication portrait. Projection is refreshed before each targeting
+update, including catch-up ticks. Pause does not advance the countdown or blink.
+
+This pass changes only SDL source and its SDL-only header. Fresh Ghidra
+CODE_05/13 exports, expanded resource tables and CKPT/5 frame headers were
+checked against the WC2 source and original disassembly. `make -j4 modern
+modern-gui modern-swc` passed; Clang static analysis of the three changed SDL
+units reported no findings. No tests were added or run, and no game, GUI or
+audio playback was launched. Interactive visual/audio parity remains unverified.
 
 ### Hornet cockpit
 
@@ -1262,7 +1305,8 @@ X offset only during SWC flight. The Win32 reference branches are preserved.
 | Radar | CODE_13 `draw_3d_scanner` +0x285a; DATA/0 +0x300 / +0x390 | CKPT/31 contact sprites, 30,000-unit cutoff, nav marker, then PC00/18 grid at (139, 151) |
 | Destination / range | CODE_13 `update_digital_readouts`; DATA/0 +0x6f6 | Baseline (200, 94), 11-pixel line spacing, `FAR` at 32,000 or above |
 | Target / range | CODE_13 `update_digital_readouts` +0x0660; DATA/0 +0x6c6 / +0x2ca4 | Baseline (200, 110), pilot callsigns for ratings 0..7, ace names for 9..12, otherwise SWC ship names; shared surface range |
-| Target brackets | CODE_13 `draw_target_box` +0x3114; CODE_01 `get_Mac_boundaries` +0x0ae2 | Original CKPT/36 corner masks, Q16 bounds, friendly/hostile/locked colors and distinct locked offsets |
+| Target brackets | CODE_13 `draw_target_box` +0x3114; CODE_01 `get_Mac_boundaries` +0x0ae2 | Original CKPT/36 corner masks, Q16 bounds, friendly/hostile colors and distinct blue speaker offsets |
+| Missile lock | CODE_13 +0x3336..+0x340a, `target_locking` +0x37c0; DATA/0 +0x43f2 | Four CKPT/5 markers close in over 18/32 countdown updates, then blink after acquisition |
 | Target hull / armor / shields | CODE_13 `show_target_disp` +0x1270; DATA/0 +0x756 | STnn/2 or SHnn/38 at (230,136), with PC00/9 shields |
 | Gun / missile selection | CODE_13 `update_status_text` +0x102e; DATA/0 +0x726 | Original short names at (51,84), fifteen-update selection notices, followed by computer messages |
 | Reticle | CODE_13 `overlay_head_up_display` +0x2f56; DATA/0 +0x792 | CKPT/1 frame 0 at (144,96), including frame and cockpit banking offsets |
@@ -1326,7 +1370,7 @@ The cockpit toggle retains the spatial HUD, weapon/component status,
 target/navigation text, and messages. ITTS and the L lock control are connected.
 Banking, pilot animation, communication portraits, computer-message timing,
 damage sounds and alarms are connected as described above. Automatic target
-acquisition and lock animation are deferred along with further WC2 integration.
+acquisition, missile-lock animation and separate speaker brackets are connected.
 Side/rear views and other cockpitless instruments remain pending. The autopilot
 lamp uses SWC's eligibility and escort-wait gate; missile/damage lamps reuse
 WC1's queries.
@@ -1399,7 +1443,7 @@ CODE_01 `get_Mac_boundaries` +0x0ae2 is now separate from the drawing quad:
 it retains the low scale bit, calculates corners in Q16 and floors all extrema.
 CODE_13 `draw_target_box` +0x3114 colors four 6x6 CKPT/36 masks with MacDrawColor2
 semantics. Normal corners start at left/top minus 3 and right/bottom minus 3;
-locked corners use minus 5 and minus 1 respectively. Both renderers use these
+speaker-highlight corners use minus 5 and minus 1 respectively. Both renderers use these
 original bounds, including the software rasterizer's deliberate Q8 difference.
 
 The SDL projector follows CODE_04 `transform_objects_to_your_view` +0x4150:
@@ -1415,8 +1459,8 @@ eight dust slots use a 5,000-unit initial volume, seven stars use the native
 exclusive frame choices, and respawning retains the Mac camera offset and
 velocity-dependent distances. This also removes WC1's possible frame-42 choice.
 Shared `start_dust`, hazard maintenance and WC1 RNG remain; the adapter does
-not claim the same random sequence as the Mac. Automatic acquisition and the
-separate nearest-ship camera candidate remain deferred with WC2 work.
+not claim the same random sequence as the Mac. Automatic acquisition uses the
+refreshed projection cache; the separate nearest-ship camera candidate remains pending.
 Pixel parity has not been checked against a running original.
 
 Ejection and cockpit validation: fresh Ghidra instruction/data inspection,
@@ -1538,8 +1582,8 @@ controls still need user review.
 2. Continue remaining 320x240 HUD work. Mac projection, target brackets and
    pilot/ace names and native star/dust rendering are implemented. Exact font
    pixels require a supplied Helvetica resource; interactive visual parity remains
-   unverified. Automatic targeting
-   and lock animation stay deferred with further WC2 integration.
+   unverified. Automatic targeting, missile-lock feedback and speaker brackets
+   are implemented; the separate nearest-ship camera candidate remains pending.
 3. Continue later campaign communications, remaining HUD modes and
    post-debriefing progression. Landing and the first debriefing are connected;
    the demo disables its simulator and ends after Enyo 1. Office/award ceremonies

@@ -35,6 +35,7 @@ enum SwcCockpitInstrument {
     SWC_PILOT_HAND,
     SWC_SPACE_GLARE,
     SWC_TARGET_BRACKETS,
+    SWC_MISSILE_LOCK,
     SWC_COCKPIT_INSTRUMENT_COUNT
 };
 
@@ -551,8 +552,8 @@ int SdlInitSwcCockpit(SDL_Renderer *renderer, const SwcCmf *cockpit,
 {
     /* DATA/0 +0x433e/+0x43e6 resource lists, and +0x420/+0x786/+0x78c
        frame maxima: energy 10, throttle 13, fuel 13 for the Hornet. */
-    static const uint32_t chunks[] = {10, 15, 16, 17, 18, 31, 9, 1, 12, 13, 14, 7, 6, 6, 19, 36};
-    static const uint32_t counts[] = {7, 11, 14, 14, 1, 13, 2, 14, 1, 1, 2, 3, 8, 16, 1, 4};
+    static const uint32_t chunks[] = {10, 15, 16, 17, 18, 31, 9, 1, 12, 13, 14, 7, 6, 6, 19, 36, 5};
+    static const uint32_t counts[] = {7, 11, 14, 14, 1, 13, 2, 14, 1, 1, 2, 3, 8, 16, 1, 4, 4};
     size_t index;
     int shared;
     int result = -1;
@@ -564,7 +565,8 @@ int SdlInitSwcCockpit(SDL_Renderer *renderer, const SwcCmf *cockpit,
     memcpy(swcCockpitColors, colors, sizeof(swcCockpitColors));
     for (index = 0; index < SDL_arraysize(chunks); index++) {
         shared = index == SWC_SCANNER_CONTACTS || index == SWC_RETICLE ||
-            index == SWC_COCKPIT_SPARKS || index == SWC_TARGET_BRACKETS;
+            index == SWC_COCKPIT_SPARKS || index == SWC_TARGET_BRACKETS ||
+            index == SWC_MISSILE_LOCK;
         if (SwcLoadCockpitShape(shared ? space : cockpit, shared ? "CKPT" : "PC00",
                                chunks[index], counts[index], &swcCockpitShapes[index]) != 0)
             goto done;
@@ -639,6 +641,130 @@ static int SwcCockpitTarget(void)
     return target > 0 && target < 10 &&
         aeObjectClass[target] >= OBJECT_CLASS_SHIP &&
         aeSpecialManeuver[target] != SPECIAL_MANEUVER_UNKNOWN_9 ? target : -1;
+}
+
+/* CODE_13 lock_off +0x3708. The Mac owns two sound IDs and a persistent
+ * acquired flag; WC1's text-message and random-angle lock path is separate. */
+void SdlSwcLockOff(void)
+{
+    if (nTargetLockCountdown >= 0) {
+        bTargetLockReadoutDirty = 1;
+        SdlStopSwcSound(21);
+    } else {
+        SdlStopSwcSound(22);
+    }
+    bTargetLockAcquired = 0;
+    nTargetLockCountdown = -1;
+}
+
+/* CODE_13 target_locking +0x37c0, start/starting_lock +0x36b2/+0x36d6
+ * and decrement_lock_time +0x3752. WC2 cockpt.c (0x43c048) supplies the
+ * common structure; SWC retains 18/32 updates, its sounds and malfunction
+ * stall, without WC2's torpedo, target-camera or damage-eligibility branches. */
+static void SwcUpdateTargetLock(void)
+{
+    const ShipWeaponSlot *weapons = (ShipWeaponSlot *)&aShipWeapons[0][1];
+    int target = SwcCockpitTarget();
+    enum ObjectType weapon;
+    int duration;
+    int x;
+    int y;
+
+    if (target == -1 || aeShipSide[target] == aeShipSide[0] ||
+        acPlayerComponentDamage[5] >= 4) {
+        swcIttsActive = 0;
+        SdlSwcLockOff();
+        return;
+    }
+    x = asObjectScreenX[target];
+    if (x == (short)0x8001)
+        return;
+    if (nTargetLockCountdown < -1) {
+        nTargetLockCountdown++;
+    } else {
+        y = asObjectScreenY[target];
+        if (x * x + y * y > 3600 || nSelectedReleaseWeaponIndex < 0 ||
+            nSelectedReleaseWeaponIndex >= (signed char)aShipWeapons[0][0]) {
+            SdlSwcLockOff();
+            return;
+        }
+        weapon = weapons[nSelectedReleaseWeaponIndex].type;
+        if (weapon == OBJECT_TYPE_HEAT_SEEKING_MISSILE) {
+            get_facing_range_from_object(0, (short)target);
+            if (nTargetFacing > -65) {
+                SdlSwcLockOff();
+                return;
+            }
+            duration = 18;
+        } else if (weapon == OBJECT_TYPE_IMAGE_RECOGNITION_MISSILE) {
+            duration = 32;
+        } else {
+            SdlSwcLockOff();
+            return;
+        }
+        if (nTargetLockCountdown == -1) {
+            nTargetLockCountdown = (short)duration;
+            bTargetLockReadoutDirty = 0;
+        } else if (nTargetLockCountdown > 0) {
+            /* +0x3766 explicitly passes signed projected X * 2 / 5 as
+             * play_sound's volume word. The SDL mixer bounds its volume. */
+            SdlStopSwcSound(21);
+            SdlPlaySwcSound(21, x * 2 / 5);
+            if (!malf(5)) {
+                nTargetLockCountdown--;
+                bTargetLockAcquired = nTargetLockCountdown == 0;
+            }
+        }
+    }
+    if (bTargetLockAcquired)
+        SdlPlaySwcSound(22, 255);
+}
+
+/* CODE_13 check_target +0x3aa4. Adapt WC2 cockpt.c's check_target
+ * (0x43ddfc): the Mac retains a listed target or takes the nearest entry,
+ * then enables lock mode automatically. It has no WC2 target camera or
+ * eight-frame lock-malfunction check. build_your_target_list and its sort
+ * already match CODE_13 +0x38f0 / CODE_05 +0x0b52 below 12,000 units. */
+static void SwcCheckTarget(void)
+{
+    int oldTarget = SwcCockpitTarget();
+    int index;
+    short hasEnemy;
+
+    if (acShipTarget[0] != oldTarget) {
+        acShipTarget[0] = (signed char)oldTarget;
+        nTargetLockCountdown = -1;
+    }
+    if (oldTarget == -1 || (nTargetLockMode == 0 &&
+        (asObjectScreenX[oldTarget] == (short)0x8001 ||
+         aeShipSide[oldTarget] == aeShipSide[0]))) {
+        if (oldTarget == -1)
+            nTargetLockMode = 0;
+        build_your_target_list(&hasEnemy);
+        if (cViableTargetCount == 0) {
+            acShipTarget[0] = -1;
+            if (oldTarget != -1)
+                swcScannerEnemy = oldTarget;
+        } else if (!(hasEnemy == 0 && oldTarget != -1 &&
+                     aeShipSide[oldTarget] == aeShipSide[0] &&
+                     (nTargetLockMode != 0 ||
+                      asObjectScreenX[oldTarget] != (short)0x8001))) {
+            for (index = 0; index < cViableTargetCount &&
+                 acViableTarget[index] != oldTarget; index++)
+                ;
+            acShipTarget[0] = acViableTarget[index % cViableTargetCount];
+            nTargetLockMode = 1;
+        }
+        if (acShipTarget[0] != oldTarget) {
+            if (oldTarget != -1 && acShipTarget[0] == -1)
+                nTargetLockMode = 0;
+            nTargetLockCountdown = -1;
+        }
+    }
+    if (acShipTarget[0] == -1 || aeShipSide[acShipTarget[0]] == aeShipSide[0]) {
+        nTargetLockMode = 0;
+        swcIttsActive = 0;
+    }
 }
 
 /* CODE_13 itts_range_check +0x2bce. WC2's
@@ -891,6 +1017,9 @@ void SdlUpdateSwcCockpit(void)
     int horizontal;
     int vertical;
 
+    SwcCheckTarget();
+    if (nCameraViewMode == 0)
+        SwcUpdateTargetLock();
     swcSpaceGlareColor = 0;
     /* handle_space_glare precedes this frame's handle_cockpit_banking. */
     swcSpaceGlareOffset = swcCockpitOffset;
@@ -974,7 +1103,8 @@ void SdlUpdateSwcCockpit(void)
         }
     }
     SwcUpdateCockpitScanner();
-    SwcUpdateItts();
+    if (nCameraViewMode == 0)
+        SwcUpdateItts();
     /* CODE_13 explosion_draw +0x40a0: eight frames, occasional repeat
        around the damaged panel. Frame zero is retained for the impact tick. */
     if (swcSparkFrame >= 0 && swcSparkStartFrame != nSpaceFrame &&
@@ -1179,11 +1309,57 @@ int SdlDrawSwcSpaceGlare(void)
     return swcCockpitDrawResult;
 }
 
-int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds)
+/* CODE_13 draw_target_box +0x3114: colored CKPT/36 corners identify a
+ * selected ship or current speaker. CKPT/5 is a separate missile-lock
+ * overlay, closing inward by one pixel per countdown update. */
+static void SwcDrawTargetBox(int object, const SDL_Rect *bounds,
+                              unsigned char ink, int missileLock)
+{
+    SDL_Color color;
+    SDL_Point corners[4];
+    int index;
+    int left;
+    int top;
+    int right;
+    int bottom;
+    int x;
+    int y;
+
+    if (object <= 0 || object >= 10 || bounds->w == 0 ||
+        asObjectScreenX[object] == (short)0x8001 || swcCockpitDrawResult != 0)
+        return;
+    if (ink == 0xd4 && aeShipSide[object] == aeShipSide[0])
+        ink = 0xef;
+    color = swcCockpitColors[ink];
+    left = bounds->x - (ink == 0x81 ? 5 : 3);
+    top = bounds->y - (ink == 0x81 ? 5 : 3);
+    right = bounds->x + bounds->w - (ink == 0x81 ? 1 : 3);
+    bottom = bounds->y + bounds->h - (ink == 0x81 ? 1 : 3);
+    corners[0] = (SDL_Point){left, top};
+    corners[1] = (SDL_Point){right, top};
+    corners[2] = (SDL_Point){right, bottom};
+    corners[3] = (SDL_Point){left, bottom};
+    for (index = 0; index < 4 && swcCockpitDrawResult == 0; index++) {
+        swcCockpitDrawResult = SDL_SetTextureColorMod(
+            swcCockpitShapes[SWC_TARGET_BRACKETS].frames[index].texture,
+            color.r, color.g, color.b);
+        SwcDrawInstrument(SWC_TARGET_BRACKETS, index, corners[index].x, corners[index].y);
+    }
+    if (!missileLock || nTargetLockCountdown < 0 ||
+        (bTargetLockAcquired && !(nSpaceFrame & 1)))
+        return;
+    x = 160 + asObjectScreenX[object] - 14;
+    y = 100 + asObjectScreenY[object] - 14;
+    SwcDrawInstrument(SWC_MISSILE_LOCK, 0, x, y - nTargetLockCountdown);
+    SwcDrawInstrument(SWC_MISSILE_LOCK, 1, x + nTargetLockCountdown, y);
+    SwcDrawInstrument(SWC_MISSILE_LOCK, 2, x, y + nTargetLockCountdown);
+    SwcDrawInstrument(SWC_MISSILE_LOCK, 3, x - nTargetLockCountdown, y);
+}
+
+int SdlDrawSwcSpaceHud(const SDL_Rect objectBounds[10])
 {
     int target = SwcCockpitTarget();
     int object = nNavPointerObject;
-    int index;
     int reticle = 0;
 
     swcCockpitDrawResult = 0;
@@ -1198,6 +1374,10 @@ int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds)
             swcIttsPosition.y + 20 >= 107 && swcIttsPosition.y + 10 <= 115)
             reticle = 4;
     }
+    if (target != -1)
+        SwcDrawTargetBox(target, &objectBounds[target], 0xd4, 1);
+    if (SdlSwcMessageShowing() && nCommSpeakerObject > 0 && nCommSpeakerObject < 10)
+        SwcDrawTargetBox(nCommSpeakerObject, &objectBounds[nCommSpeakerObject], 0x81, 0);
     swcCockpitDrawOffset = swcCockpitOffset;
     SwcDrawInstrument(SWC_RETICLE, reticle, 144, 96);
     if (!anCockpitDamageState[0] && swcHostileArrow != -1)
@@ -1211,27 +1391,6 @@ int SdlDrawSwcSpaceHud(const SDL_Rect *targetBounds)
         SwcDrawInstrument(SWC_RETICLE, 3,
             160 + asObjectScreenX[object] - bounds->x - bounds->w / 2,
             100 + asObjectScreenY[object] - bounds->y - bounds->h / 2);
-    }
-    if (target != -1 && targetBounds != NULL && swcCockpitDrawResult == 0) {
-        int locked = nTargetLockCountdown == 0;
-        SDL_Color color = swcCockpitColors[locked ? 0x81 :
-            aeShipSide[target] == aeShipSide[0] ? 0xef : 0xd4];
-        int left = targetBounds->x - (locked ? 5 : 3);
-        int top = targetBounds->y - (locked ? 5 : 3);
-        int right = targetBounds->x + targetBounds->w - (locked ? 1 : 3);
-        int bottom = targetBounds->y + targetBounds->h - (locked ? 1 : 3);
-        SDL_Point corners[4] = {
-            {left, top}, {right, top}, {right, bottom}, {left, bottom}
-        };
-
-        /* CODE_13 draw_target_box +0x3114 uses get_Mac_boundaries and
-         * four CKPT/36 masks. Locked corners sit two pixels farther out. */
-        for (index = 0; index < 4 && swcCockpitDrawResult == 0; index++) {
-            swcCockpitDrawResult = SDL_SetTextureColorMod(
-                swcCockpitShapes[SWC_TARGET_BRACKETS].frames[index].texture,
-                color.r, color.g, color.b);
-            SwcDrawInstrument(SWC_TARGET_BRACKETS, index, corners[index].x, corners[index].y);
-        }
     }
     return swcCockpitDrawResult;
 }
