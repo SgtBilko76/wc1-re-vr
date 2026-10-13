@@ -691,7 +691,8 @@ static void SwcUpdateItts(void)
         if (!SwcIttsRangeCheck(distance_from_object(0, (short)target)))
             return;
         swcIttsActive = 1;
-        set_global_message("ITTS engaged", 0xd4, 3);
+        /* Mac set_global_message +0x3f4e only writes DATA+0x4712/+0x4716.
+         * Neither global is read anywhere in this executable. */
     }
     weapon = (signed char)aShipWeapons[0][0];
     while (weapon-- > 0) {
@@ -717,7 +718,6 @@ static void SwcUpdateItts(void)
                          &targetOffset);
     AddFixedVectors(&aShipPosition[target], &targetOffset, &interceptPoint);
     if (!SwcIttsRangeCheck(distance_from_point(0, &interceptPoint))) {
-        set_global_message("Target out of range", 0xd4, 3);
         swcIttsActive = 0;
         return;
     }
@@ -949,6 +949,14 @@ void SdlUpdateSwcCockpit(void)
         SdlPlaySwcSound(23, 199); /* update_VDUs +0x0b4e. */
     else
         SdlStopSwcSound(23);
+    /* Preserve shared damage notices in the Mac status queue. CODE_05
+     * fire_missile +0x38b0 rejects an unlocked shot silently; CODE_13's
+     * lock/ITTS paths never draw WC1's two VDU message slots. */
+    if (aHudMessageSlots[0].text != NULL && aHudMessageSlots[0].flashCount != 0 &&
+        strcmp(aHudMessageSlots[0].text, szNeedLock) != 0)
+        SdlSwcCockpitMessage(aHudMessageSlots[0].text,
+            aHudMessageSlots[0].colour == cRedColour ? 0xd4 : 0x84, 1, -1);
+    ClearHudGunReadouts();
     SwcUpdateMessage();
     SwcUpdateCommunication();
     /* CODE_13 update_vid_disp +0x0d7e: one-in-four mouth toggle. */
@@ -1283,7 +1291,7 @@ int SdlDrawSwcHud(void)
         SwcDrawCockpitText(51, baseline, swcCurrentMessage.color, swcCurrentMessage.text);
 
     if (target != -1) {
-        /* CODE_13 update_digital_readouts +0x08b0; ace strings are in
+        /* CODE_13 update_digital_readouts +0x0660; ace strings are in
          * DATA/A5+0x2ca4. Named fighters display the pilot, other ships
          * display their class. Series 6 retains its Valkyrie override. */
         static const char *const aces[] = {"Bhurak", "Dakhath", "Khajja", "Bakhtosh"};
@@ -1322,13 +1330,6 @@ int SdlDrawSwcHud(void)
         else
             SDL_strlcpy(text, " FAR", sizeof(text));
         SwcDrawCockpitText(200 + SdlSwcTextWidth(&swcCockpitFont, "Range:"), 105, 0x84, text);
-    }
-    /* Retain the shared WC1 messages used by the existing targeting path. */
-    for (index = 0; index < 2; index++) {
-        const HudMessageSlot *slot = &aHudMessageSlots[index];
-
-        if (slot->text != NULL && slot->flashCount != 0 && slot->drawColour != cBlackColour)
-            SwcDrawCockpitText(8, 214 + 11 * index, 0x81, slot->text);
     }
     if (IsCommChoiceMenuOpen()) {
         SDL_Rect panel = {10, 12, 300, 34 + 11 * SDL_min(nCommMenuChoiceCount, 7)};

@@ -116,7 +116,9 @@ Flight effects and voices now use the native Mac sound bank through
 `SdlPlayGameSoundEffect` and the SDL cockpit adapter. Startup splash/logo/prologue
 and the new-campaign opening are connected before the carrier visit. The title
 battle, idle intro replay, death cinematic and animated endings are connected.
-Classic font pixels, movie palette transitions and exact pacing remain incomplete.
+Movie palette dimming, the native briefing map and room animations are connected.
+Exact classic font pixels require an optional Helvetica resource; frame pacing
+and interactive visual parity remain unverified.
 The most useful next work is correcting the demonstrated RNG differences,
 then inspecting a full Enyo 1 route through combat and return before
 expanding campaign support. Other AI/collision paths still need individual
@@ -493,7 +495,7 @@ The SDL adapter shares these existing WC1 functions without changing them:
 | `ConversationSceneRecord`, `ParseTests` | Original 13-byte scene commands and conditional branches |
 | `AddPCName` | Player callsign, name, rank and player/wingman kill substitutions in original dialogue |
 | `ParseMouthAnimation`, `ParseFaceAnimation` | Original script strings decoded into animation commands |
-| `Build_objective_list`, `SetScale`, `nav_getxy` | Shared mission objectives and briefing-map coordinates |
+| `Build_objective_list` | Shared mission objectives; the SDL adapter supplies the Mac map transforms |
 
 WC1's complete `SceneDirector`, `RecRoom` and `BarracksScreen` call DOS packet,
 viewport, font and input routines. The SDL adapter uses their reusable logic
@@ -592,17 +594,40 @@ Carrier presentation now includes the following recovered behavior:
 - `PanToScreen` +0x2222 is the commander's turn toward the display, followed
   by the map reveal. BRFG/4 frames 11..16 run at eight Mac ticks per frame;
   CODE_14 `BriefingMap_ShowGrid` +0x0cfe reveals BRFG/27 two pixels per edge
-  per update at its DATA/0 origin `(40,20)`. `Dismissed` uses its own BRFG/29,
-  /31 and /32 reverse angle. Route labels/markers still use WC1 transforms
-  and SDL drawing; the dismissal's subsequent walk-out is not yet animated.
+  per update at its DATA/0 origin `(40,20)`. Both maps now share the native
+  `BuildMap`, `SetScale`, `ScaleX`/`ScaleY` and `FindTextPos` adaptation.
+  Briefing uses DATA/0 +0x272's `(125,124,40,20,54,45)` layout and BRFG/28
+  masks, hazard/objective colors, full labels and a thirty-update objective
+  blink. The initial reveal draws markers without labels, as `DisplayMap`
+  +0x0f88 does; later records use `BriefingMap_UpdateMap` +0x10c4.
+- `Dismissed` +0x1eba uses BRFG/29's reverse angle. After speech, BRFG/31
+  frames 11..13 turn the commander and BRFG/32 frames 0..4 show the pilots
+  standing. BRFG/30 at `(85,5)` and /33 at `(5,0)` then walk out with the
+  original independent one-in-five start gates and terminal frames 10/9.
+  Pause/focus loss freeze the thirty-update host clock; release input skips.
+  Its separate `BRIEFING.MooV` cue is absent from the supplied demo, so the
+  existing `BRIEFIN0.MooV` briefing cue continues.
+- Bunk occupants represent **saved pilot slots**, not the current wingman
+  roster. A fresh original preferences file clears all eight occupancy bytes.
+  If a `SuperWing Preferences` data fork is copied into the game-data root,
+  SDL reads only those bytes at `10 + slot*0x458` from the original 0x2372-byte
+  file. This does not import campaign state or enable save/load. Occupied
+  RCRM/15..22 bunks follow the original draw order and DATA/0 +0x40c2/+0x40e2
+  frame/delay/jump programs. RCRM/45 supplies hover lamps, including empty
+  slots. The desk has its falling palette-8 pixel, six-update flash frames
+  and sound 35. These animations use the existing 15 Hz room clock.
+- The incidental bar animation is the original **`@` Easter egg**:
+  `SetGInputForChar` enables `RecRoom` +0x0e5c's RCRM/49 sprite. Its thirteen
+  frames move from x=-75 to x=320 at y=40 behind the room/window artwork.
+  It is not a random idle event.
 - `print_subtitle` +0x1122 uses **white, centered Helvetica 14**. The record's
   `textColour` also identifies the speaker; it does not directly select the
   Mac subtitle ink. Wrapping uses measured advances and a 275-pixel width,
   with 15-pixel line spacing and the original text-layer position. Long
-  expanded captions are kept inside the host picture. macOS uses system
-  Helvetica through CoreText, without redistributing font data. The demo has
-  no FONT/NFNT resource; original classic-Mac bitmap glyphs remain unavailable,
-  and other hosts retain the bundled bitmap fallback. Cockpit text is unchanged.
+  expanded captions are kept inside the host picture. An optional classic
+  Helvetica resource supplies the original bitmap strikes on every host;
+  without it, macOS uses system Helvetica through CoreText and other hosts
+  use the bundled bitmap fallback. See the font setup below.
 - CODE_15 `dark` +0x03c2 loads the current palette's **clut ID + 10**;
   these resources dim the picture rather than making it black. Room and
   conversation transitions use those actual palette colors. SDL interpolates
@@ -610,10 +635,10 @@ Carrier presentation now includes the following recovered behavior:
   interpolation is a host presentation choice, while the Mac routines switch
   palettes directly. Captured render targets keep resize, pause and skip safe.
 
-Remaining presentation differences include classic bitmap font rasterization,
-the portable font fallback, the briefing-map renderer, dismissal
-walk-out, bunk occupants, incidental bar animations and exact frame pacing.
-Movie palette transitions remain separate work.
+Remaining presentation limits are the external classic-font asset, fixed host
+frame pacing and interactive visual verification. Save/load, name entry and
+later campaign scenes remain separate work. The optional font reader has not
+been checked with an actual classic Helvetica resource.
 
 Mission state is prepared before the carrier for the briefing map; simulation
 starts only after launch. Actions complete on release, focus loss pauses
@@ -753,8 +778,8 @@ pilot's rank is zero, matching the supplied `$R` speech variant.
 The host presents the original moving `PLNT/1` background and Helvetica 14
 THE END after the player's farewell, retaining `the_end` +0x4b1e's input wait.
 Funeral music continues through this screen. Skipping the funeral still bypasses
-THE END, as the original skip-latch branch does. Movie fades and exact scene
-timing remain pending. The GUI requires `Funeral.CMF`.
+THE END, as the original skip-latch branch does. Movie skip dimming is connected;
+exact scene timing remains unverified. The GUI requires `Funeral.CMF`.
 
 ## Startup, opening, launch, landing and funeral movies
 
@@ -807,8 +832,9 @@ session, and music, PCM, textures and temporary buffers are released on exit.
 
 The host continues into `Title_Sequence` (+0x1c86). Idle replay calls IntroFilm
 without repeating the splash or Lion. Saved-game selection remains disabled
-because the host has no save loader. Palette fades and exact Mac draw/RNG timing
-remain pending; live animation uses a 20 Hz host cadence and shared WC1 RNG.
+because the host has no save loader. Movie palette dimming is connected; exact
+Mac draw/RNG timing remains unverified. Live animation uses a 20 Hz host cadence
+and shared WC1 RNG.
 `intro_shakecockpit` is empty in this demo. `BUC` belongs to CODE_14
 `stranded_sequence` +0x0a06 (MovieDisplay call +0x0a40), not startup.
 
@@ -888,7 +914,8 @@ Validation: fresh Ghidra instruction exports, original DATA/CMF/clut inspection,
 `make -j4 modern modern-gui modern-swc` and Clang static analysis. No tests,
 game/GUI execution, playback or audio device were run. Original artwork was
 extracted for inspection only. Shared AI/RNG differences, exact classic font
-pixels, variable Mac frame pacing and movie fades remain outside this change.
+pixels and variable Mac frame pacing remain unverified; movie palette dimming
+is described below.
 
 CODE_03 `opening_scene` +0x4374 plays `OPEN0`, `OPEN1`, `OPEN2`, then `OPEN3`.
 The names resolve from A5-0x347c, -0x3468, -0x3462 and -0x345c respectively;
@@ -928,9 +955,18 @@ while longer audio finishes. All movie resources are released on finish, skip,
 error, or window close.
 
 The separate `MIDI/DOCKING.MooV`, `ARMOR.MooV`, `LANDING.MooV` and
-`FUNERAL.MooV` soundtracks accompany their groups; palette fades remain
-pending. First briefing, bar, debriefing and funeral scenes use the carrier
-adapter described above. No external video library is needed for this slice.
+`FUNERAL.MooV` soundtracks accompany their groups. First briefing, bar,
+debriefing and funeral scenes use the carrier adapter described above.
+No external video library is needed for this slice.
+
+CODE_15 `movie_dim_screen` +0x046c halves all 256 palette entries immediately.
+The SDL player applies that transition after Lion, the final prologue clip,
+opening, launch, landing and stranded BUC. The funeral calls it after room/end
+presentation, so its intermediate clips retain their palette. Skipping follows
+CODE_12 `MovieDisplay` +0x0738 instead: entries 1..254 are halved and endpoints
+0/255 are preserved. There is no timed fade in either native routine. SDL
+re-presents the indexed frame with the dimmed palette before releasing it.
+The separate skip-time zero-index pixel rewrite at +0x07d0 is not reproduced.
 
 Opening integration was checked against fresh Ghidra instructions for its
 caller, the original four MovieDisplay calls and expanded A5 strings. Validation
@@ -966,7 +1002,7 @@ rejected because a persisted Mac pointer cannot be used as a host pointer.
 | `set_sphere_point` in `src/brains.c` | Adds the existing nav position and ship-relative position | Validated with synthetic data and Enyo 1 |
 | `Set_up_ship_info` / `init_intelligence_data` | Sets the Enyo player's position, orientation, speed, pilot, and mission state | Other mission modes and SWC AI differences need review |
 | `Build_objective_list` | Builds Enyo's three nav objectives and carrier-return objective | Other SWC objective behavior is not established |
-| `cycle_next_objective`, `nav_getxy`, `SetScale` | Cycles shared objectives and projects the briefing map | Briefing still uses WC1 map units/layout; in-flight navigation now uses the Mac scaling and layout in `src/sdl/swc_nav.c` |
+| `cycle_next_objective` | Cycles shared objectives | Briefing and in-flight maps both use Mac scaling/layout in `src/sdl/swc_nav.c`; WC1 `nav_getxy`/`SetScale` are not used by these maps |
 | `PollKeyboardState`, `process_player_input` | WC1 keyboard priorities, diagonals, gradual steering, reversals, and Shift response | Deliberately uses DOS/Win32 controls; SWC's Mac event/device layer differs |
 | `player_input`, `QueueInputEvent`, `WarpMouseTo` | Original mouse response, edge limits, right-button roll/throttle, and recentering | SWC supplies only motion events and the right-button modifier; weapon events are excluded |
 | `accelerate`, `celerate`, `your_afterburner`, `fire_afterburner` | Throttle bounds, boost activation, and boost timers | SDL supplies the native afterburner loop and resource-fork release tail |
@@ -974,12 +1010,12 @@ rejected because a persisted Mac pointer cannot be used as a host pointer.
 | `fire_players_lasers`, `fire_fixed_projectile_weapon`, `fire_weapon`, `fire_missile` | Energy, cooldowns, projectile initialization and missile release | Recovered SWC definitions and all 63 weapon hardpoints; SDL-only aiming offset and laser cooldown |
 | `house_keep_objects`, `update_objects_in_space`, `object_intelligence` | Lifetimes, collisions, damage, ship AI, missile guidance, recharge and animations | SWC dispatch and common setup verified; complete AI/probability equivalence is not established |
 | `ReleaseStaleNavTarget`, `set_up_action_sphere`, `init_ship`, `check_next_wave` | Enter nav spheres and spawn their ships/hazards/waves | CMF textures replace WC1 packet loading; later mission scripts remain unsupported |
-| `auto_pilot_sequence`, `check_hazards`, `update_star_field` | Formation travel, encounter stops and hazard lifecycle | Original SWC boundary rollback and SDL presentation of the 120-frame external view |
+| `auto_pilot_sequence`, `check_hazards`, `extra_hazard`, `update_hazards` | Formation travel, encounter stops and hazard lifecycle | Original SWC boundary rollback and SDL presentation of the 120-frame external view; the Mac starfield adapter reuses hazard maintenance |
 | `select_new_gun`, `select_new_release_weapon`, `cycle_onscreen_targets`, `target_locking` | Shared selection and missile lock state | SDL presents SWC art and text instead of WC1's cockpit packets |
 | `draw_nav_pointer`, `auto_pilot_valid`, `missile_on_tail`, `calculate_damage_level` | Shared objective projection and warning queries | SWC navigation activation and stale-marker reset; autopilot dispatches to the recovered SWC eligibility and escort-wait state |
 | `malf`, `your_internal_damage`, `place_damage_on_cockpit` | Shared component damage and impact flow | SDL-only SWC malfunction countdown and three physical damage regions; original Mac static, damage and spark artwork |
 | `SetSpaceFlightFrameTiming` | Initializes the shared flight tick interval, 50 ms at WC1's default 20 Hz | Replaces the host's hard-coded 62 ms; SWC's elapsed-tick translation scaling is not reproduced |
-| `generate_stars`, `update_star_field`, `get_right_shape` | Starfield state and selection among 37 decoded ship views | SDL now uses Mac projection and target brackets; star/dust point rendering and complete visual parity still need review |
+| `start_dust`, `get_right_shape` | Dust positioning and selection among 37 decoded ship views | Mac star generation/respawn and star/dust drawing live in SDL; shared RNG and complete visual parity remain qualified |
 
 The SDL version of `nav_getxy` writes coordinates through byte copies because
 the existing packed objective records can place them at odd addresses. Its
@@ -1279,8 +1315,13 @@ rasterizer by default; enhanced OpenGL maps the same corners with GPU triangles.
 Target names use pilot callsigns or the original Bhurak/Dakhath/Khajja/Bakhtosh
 ace strings for named fighters; other targets retain SWC ship names. Series 6's
 Valkyrie override is retained even though later missions are not connected.
-Shared targeting/missile-lock notices still use WC1 lifetimes at host positions;
-component and native computer messages use the original SWC status area.
+The WC1-only bottom-edge ITTS, Need Lock and MISSILE LOCKED banners are removed
+from SWC. CODE_13 `set_global_message` +0x3f4e writes DATA/0 +0x4712/+0x4716,
+but neither value is read by this demo executable. CODE_05 `fire_missile`
++0x38b0 silently rejects an unlocked shot; the Mac provides reticle and sound
+feedback. Shared damage notices and host communications acknowledgments now use
+the native status queue and its lifetime. Target readouts remain at `(200,110)`
+and `(200,121)`, with navigation at `(200,94)` and `(200,105)`.
 The cockpit toggle retains the spatial HUD, weapon/component status,
 target/navigation text, and messages. ITTS and the L lock control are connected.
 Banking, pilot animation, communication portraits, computer-message timing,
@@ -1295,19 +1336,31 @@ WC1's queries.
 The inspected Mac cockpit layers request QuickDraw font ID 21 (Helvetica) at
 size 9: CODE_06 `AllocTextLayer` +0x1d9a and CODE_14 `init_text` +0x1fec.
 CODE_06 `tprintf` +0x1ef4 advances a newline by font size plus two pixels.
-The cockpit now shares the carrier's CoreText adapter at size 9, with antialiasing
-and font smoothing disabled, integer proportional advances and baseline origins.
-Colored label/value segments share a pen position instead of fixed columns.
-The demo contains no FONT/NFNT resources, so modern system Helvetica supplies
-the face on macOS; classic QuickDraw bitmap glyphs and advances are not claimed
-pixel-identical. Carrier dialogue keeps Helvetica 14.
+Cockpit, map, pause and carrier text share the font adapter at sizes 9, 10 and
+14. Colored label/value segments share a pen position instead of fixed columns.
+For classic pixels, supply a resource fork containing Helvetica (FOND ID 21)
+as `Fonts/Helvetica.rsrc` under the game-data root, or point the
+`SWC_MAC_FONT_RESOURCE` environment variable at it. Raw resource forks and
+AppleDouble files are accepted; on macOS the path can name a font suitcase's
+`..namedfork/rsrc`. No font data is redistributed.
+
+The reader follows FOND's plain-style associations to exact-size NFNT/FONT
+strikes and preserves their one-bit pixels, glyph bearings, advances and ascent.
+For old FONT-only resources it uses family ID * 128 + point size. Resource
+layout follows Apple's [NFNT documentation](https://developer.apple.com/library/archive/documentation/mac/Text/Text-250.html)
+and [FOND associations](https://developer.apple.com/library/archive/documentation/mac/Text/Text-271.html).
+The demo contains no such fonts and no local classic Helvetica resource was
+available for validation. Unsupported/missing strikes fall back to modern
+system Helvetica on macOS (without antialiasing/smoothing), whose pixels are
+not claimed identical to QuickDraw.
 
 Other hosts retain the generated **SWC HUD Bitmap**, a monochrome ASCII atlas
 with a five-pixel advance. The TTF, source hash and SIL Open Font License remain
 in [`third_party/anonymouspro`](../third_party/anonymouspro/README.md); the optional
 [`bin/buildSwcHudFont.py`](../bin/buildSwcHudFont.py) generator records rasterizer
-versions. Release archives include the license. A portable Helvetica provider
-and bytes outside printable ASCII remain pending.
+versions. Release archives include the license. This remains the portable fallback
+when no classic strike is supplied. Bytes outside printable ASCII and QuickDraw
+font synthesis remain pending.
 
 `update_status_text` +0x102e starts at (51,84), draws a damaged-component line,
 then any active gun/weapon selection notices, then the computer message.
@@ -1354,9 +1407,16 @@ The SDL projector follows CODE_04 `transform_objects_to_your_view` +0x4150:
 the wide result until its 0..8192 clamp. Depth sorting preserves 32-bit distances,
 while shared WC1 targeting receives a saturated 16-bit compatibility cache.
 Mac dust cutoff/size constants (5,000 units and 0x2100) and sky-depth sentinels
-are recovered. The shared navigation marker and ship-view selector remain,
-and star/dust pixels still use the host point renderer. Automatic acquisition
-and the separate nearest-ship camera candidate remain deferred with WC2 work.
+are recovered. CODE_02's class-2 stars now draw the original PLNT/1 frames
+32..41 with unscaled `MacDraw2` origins; class-4 dust is one palette-128 pixel.
+Both participate in depth sorting after glare. Native `generate_stars` +0x38cc
+and `update_star_field` +0x39f2 replace the WC1 initialization/respawn ranges:
+eight dust slots use a 5,000-unit initial volume, seven stars use the native
+exclusive frame choices, and respawning retains the Mac camera offset and
+velocity-dependent distances. This also removes WC1's possible frame-42 choice.
+Shared `start_dust`, hazard maintenance and WC1 RNG remain; the adapter does
+not claim the same random sequence as the Mac. Automatic acquisition and the
+separate nearest-ship camera candidate remain deferred with WC2 work.
 Pixel parity has not been checked against a running original.
 
 Ejection and cockpit validation: fresh Ghidra instruction/data inspection,
@@ -1458,8 +1518,9 @@ layout and the original Win32 function bodies are preserved.
 
 Flight and audio pause while the computer is open. SDL supplies mouse input,
 controller navigation, release-to-activate actions, focus/cursor restoration
-and a bounded objective search. Animations use a 50 ms host clock. Original
-classic-Mac font rasterization and the briefing map remain separate work.
+and a bounded objective search. Animations use a 50 ms host clock. The briefing
+map shares the native map builder; the optional font resource supplies classic
+bitmap text as described above.
 
 Validation uses fresh Ghidra instruction exports, offline CMF/resource-fork
 inspection, native and GUI builds, and Clang static analysis. The computer and
@@ -1475,16 +1536,18 @@ controls still need user review.
    including RNG bounds, elapsed-tick motion and later mission modes. The
    common 58 object definitions are recovered; Mac IDs 58..82 remain unsupported.
 2. Continue remaining 320x240 HUD work. Mac projection, target brackets and
-   pilot/ace names are implemented; classic-Mac font pixels, original star/dust
-   rendering and interactive visual parity remain unverified. Automatic targeting
+   pilot/ace names and native star/dust rendering are implemented. Exact font
+   pixels require a supplied Helvetica resource; interactive visual parity remains
+   unverified. Automatic targeting
    and lock animation stay deferred with further WC2 integration.
 3. Continue later campaign communications, remaining HUD modes and
    post-debriefing progression. Landing and the first debriefing are connected;
    the demo disables its simulator and ends after Enyo 1. Office/award ceremonies
    are later campaign work, not missing demo visits (see the postflight audit).
-4. Connect later scripted scenes; add save/load, movie palette transitions,
-   remaining room animations and the
-   original briefing-map presentation. The first bar, barracks and briefing, AIFF speech and Hornet
+4. Connect later scripted scenes and save/load. Bunk art now follows optional
+   original preferences occupancy, but saved campaign state is not imported.
+   The native briefing map, walk-out, incidental room animations and movie
+   palette dimming are connected. The first bar, barracks and briefing, AIFF speech and Hornet
    startup/opening/launch/landing playback, first debriefing and player/Spirit funerals are
    present, along with the title battle, idle replay, death cinematic, stranded
    BUC sequence and animated end background. Other scene entry points remain pending.

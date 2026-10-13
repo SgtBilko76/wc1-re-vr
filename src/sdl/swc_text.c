@@ -1,5 +1,6 @@
 /* SDL replacement for QuickDraw text, shared by the SWC cockpit and rooms. */
 #include "swc.h"
+#include "wc1sdl.h"
 #include "swc_hud_font.h"
 
 #include <string.h>
@@ -105,14 +106,168 @@ int SdlDrawSwcSubtitle(SDL_Renderer *renderer, SDL_Texture *font,
     return 0;
 }
 
+/* QuickDraw FontRec/NFNT, documented in Inside Macintosh: Text, 4-62.
+ * Read the supplied monochrome strike verbatim: no outline rasterization
+ * or scaling. A missing strike returns 1 so the host can use its fallback. */
+static int SwcLoadClassicFont(SDL_Renderer *renderer, SwcTextFont *font, int size)
+{
+    const char *resourcePath = SDL_getenv("SWC_MAC_FONT_RESOURCE");
+    char path[PATH_MAX];
+    SwcBuffer family = {0};
+    SwcBuffer bitmap = {0};
+    SDL_RWops *reader = NULL;
+    SDL_Surface *surface = NULL;
+    uint32_t *row;
+    size_t locations;
+    size_t widths;
+    size_t stride;
+    size_t offset;
+    int id = 21 * 128 + size;
+    int count;
+    int index;
+    int first;
+    int last;
+    int height;
+    int ascent;
+    int kern;
+    int highOffset;
+    int character;
+    int glyph;
+    int left;
+    int right;
+    int metrics;
+    int x;
+    int y;
+    int result = 1;
+
+    if (resourcePath == NULL || *resourcePath == 0) {
+        if (!SdlResolvePath("Fonts/Helvetica.rsrc", path, sizeof(path)))
+            return 1;
+        resourcePath = path;
+    }
+    /* NFNT IDs are mapped by the FOND association table; FONT resources
+     * without a FOND use the older family*128 + point-size convention. */
+    if (SwcReadResource(resourcePath, "FOND", 21, &family) == 0) {
+        if (family.size < 54)
+            goto malformed;
+        reader = SDL_RWFromConstMem(family.data, (int)family.size);
+        if (reader == NULL)
+            goto done;
+        SDL_RWseek(reader, 52, RW_SEEK_SET);
+        count = (int)SDL_ReadBE16(reader) + 1;
+        if ((size_t)count > (family.size - 54) / 6)
+            goto malformed;
+        id = -1;
+        for (index = 0; index < count; index++) {
+            int pointSize = SDL_ReadBE16(reader);
+            int style = SDL_ReadBE16(reader);
+            int fontId = (int16_t)SDL_ReadBE16(reader);
+
+            if (pointSize == size && style == 0)
+                id = fontId;
+        }
+        SDL_RWclose(reader);
+        reader = NULL;
+        if (id == -1)
+            goto done;
+    }
+    if (SwcReadResource(resourcePath, "NFNT", (int16_t)id, &bitmap) != 0 &&
+        SwcReadResource(resourcePath, "FONT", (int16_t)id, &bitmap) != 0)
+        goto done;
+    if (bitmap.size < 26)
+        goto malformed;
+    reader = SDL_RWFromConstMem(bitmap.data, (int)bitmap.size);
+    if (reader == NULL)
+        goto done;
+    if (SDL_ReadBE16(reader) & 0xc)
+        goto malformed; /* Only the classic 1-bit Helvetica strikes. */
+    first = SDL_ReadBE16(reader);
+    last = SDL_ReadBE16(reader);
+    if (first > last || last > 255)
+        goto malformed;
+    SDL_RWseek(reader, 8, RW_SEEK_SET);
+    kern = (int16_t)SDL_ReadBE16(reader);
+    highOffset = (int16_t)SDL_ReadBE16(reader);
+    SDL_RWseek(reader, 14, RW_SEEK_SET);
+    height = SDL_ReadBE16(reader);
+    widths = SDL_ReadBE16(reader);
+    if (highOffset > 0)
+        widths += (size_t)highOffset << 16;
+    widths = 16 + widths * 2; /* owTLoc is in words from its own field. */
+    ascent = SDL_ReadBE16(reader);
+    SDL_RWseek(reader, 24, RW_SEEK_SET);
+    stride = (size_t)SDL_ReadBE16(reader) * 2;
+    if (height < 1 || height > 128 || ascent > height || stride == 0 || stride > 8192)
+        goto malformed;
+    locations = 26 + stride * height;
+    if (locations > bitmap.size ||
+        (size_t)(last - first + 3) * 2 > bitmap.size - locations ||
+        widths < locations + (size_t)(last - first + 3) * 2 || widths > bitmap.size ||
+        (size_t)(last - first + 3) * 2 > bitmap.size - widths)
+        goto malformed;
+    /* One atlas row is the original font bitmap. Glyph source rectangles
+     * share it directly; their individual bearings live beside advances. */
+    surface = SDL_CreateRGBSurfaceWithFormat(0, (int)stride * 8, height, 32,
+        SDL_PIXELFORMAT_ARGB8888);
+    if (surface == NULL)
+        goto done;
+    for (y = 0; y < height; y++) {
+        row = (uint32_t *)((uint8_t *)surface->pixels + y * surface->pitch);
+        for (x = 0; x < surface->w; x++) {
+            offset = 26 + (size_t)y * stride + (size_t)x / 8;
+            row[x] = bitmap.data[offset] & (0x80 >> (x & 7)) ? UINT32_C(0xffffffff) : 0;
+        }
+    }
+    for (character = 0; character < 95; character++) {
+        glyph = character + 32;
+        glyph = glyph >= first && glyph <= last ? glyph - first : last - first + 1;
+        SDL_RWseek(reader, (Sint64)(widths + (size_t)glyph * 2), RW_SEEK_SET);
+        metrics = SDL_ReadBE16(reader);
+        if (metrics == 0xffff) {
+            glyph = last - first + 1;
+            SDL_RWseek(reader, (Sint64)(widths + (size_t)glyph * 2), RW_SEEK_SET);
+            metrics = SDL_ReadBE16(reader);
+        }
+        SDL_RWseek(reader, (Sint64)(locations + (size_t)glyph * 2), RW_SEEK_SET);
+        left = SDL_ReadBE16(reader);
+        right = SDL_ReadBE16(reader);
+        if (right < left || right > surface->w || metrics == 0xffff)
+            goto malformed;
+        font->glyphs[character] = (SDL_Rect){left, 0, right - left, height};
+        font->advances[character] = metrics & 255;
+        font->bearings[character] = -kern - (metrics >> 8);
+    }
+    font->baseline = ascent;
+    font->texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (font->texture == NULL)
+        goto done;
+    result = 0;
+    goto done;
+malformed:
+    fprintf(stderr, "SWC classic Helvetica %d: unsupported or malformed font in %s\n", size, resourcePath);
+done:
+    if (reader != NULL)
+        SDL_RWclose(reader);
+    SDL_FreeSurface(surface);
+    SDL_free(family.data);
+    SDL_free(bitmap.data);
+    if (result != 0)
+        SDL_ClearError();
+    return result;
+}
+
 /* CODE_06 AllocTextLayer +0x1d9a selects Helvetica (QuickDraw ID 21).
  * CODE_14 init_text +0x1fec selects size 9 for cockpit readouts;
  * CODE_03 print_subtitle +0x1122 selects size 14. The demo contains no
- * FONT/NFNT resources: on macOS use the system face, without bundling it.
- * Other hosts retain the bundled bitmap until a Helvetica provider exists. */
+ * FONT/NFNT resources. Prefer a local classic font resource; absent that,
+ * macOS uses system Helvetica and other hosts use the bundled bitmap. */
 int SdlCreateSwcTextFont(SDL_Renderer *renderer, SwcTextFont *font, int size)
 {
     int character;
+
+    SDL_zero(*font);
+    if (SwcLoadClassicFont(renderer, font, size) == 0)
+        goto ready;
 #ifdef __APPLE__
     SDL_Surface *surface;
     CTFontRef face;
@@ -148,8 +303,8 @@ int SdlCreateSwcTextFont(SDL_Renderer *renderer, SwcTextFont *font, int size)
     CGContextSetShouldSmoothFonts(context, false);
     CGContextSetRGBFillColor(context, 1, 1, 1, 1);
     font->baseline = size + 4;
-    font->bearing = 2;
     for (character = 0; character < 95; character++) {
+        font->bearings[character] = 2;
         code = (UniChar)(character + 32);
         CTFontGetGlyphsForCharacters(face, &code, &glyph, 1);
         CTFontGetAdvancesForGlyphs(face, kCTFontOrientationHorizontal, &glyph, &advance, 1);
@@ -169,13 +324,14 @@ int SdlCreateSwcTextFont(SDL_Renderer *renderer, SwcTextFont *font, int size)
     memset(font, 0, sizeof(*font));
     font->texture = SdlCreateSwcFont(renderer);
     font->baseline = SWC_HUD_FONT_BASELINE;
-    font->bearing = SWC_HUD_FONT_BEARING;
     for (character = 0; character < 95; character++) {
+        font->bearings[character] = SWC_HUD_FONT_BEARING;
         font->glyphs[character] = (SDL_Rect){character % 16 * SWC_HUD_FONT_WIDTH,
             character / 16 * SWC_HUD_FONT_HEIGHT, SWC_HUD_FONT_WIDTH, SWC_HUD_FONT_HEIGHT};
         font->advances[character] = SWC_HUD_FONT_ADVANCE;
     }
 #endif
+ready:
     if (font->texture == NULL)
         return -1;
     if (SDL_SetTextureBlendMode(font->texture, SDL_BLENDMODE_BLEND) != 0) {
@@ -213,9 +369,10 @@ int SdlDrawSwcProportionalText(SDL_Renderer *renderer, const SwcTextFont *font,
         character = (unsigned char)*text++;
         character = character < 32 || character > 126 ? '?' - 32 : character - 32;
         destination = font->glyphs[character];
-        destination.x = x - font->bearing;
+        destination.x = x - font->bearings[character];
         destination.y = baseline - font->baseline;
-        if (SDL_RenderCopy(renderer, font->texture, &font->glyphs[character], &destination) != 0)
+        if (destination.w > 0 &&
+            SDL_RenderCopy(renderer, font->texture, &font->glyphs[character], &destination) != 0)
             return -1;
         x += font->advances[character];
     }
@@ -293,9 +450,10 @@ int SdlDrawSwcRoomSubtitle(SDL_Renderer *renderer, const SwcTextFont *font,
             character = (unsigned char)clean[cursor];
             character = character < 32 || character > 126 ? '?' - 32 : character - 32;
             destination = font->glyphs[character];
-            destination.x = x - font->bearing;
+            destination.x = x - font->bearings[character];
             destination.y = baseline - font->baseline;
-            if (SDL_RenderCopy(renderer, font->texture, &font->glyphs[character], &destination) != 0)
+            if (destination.w > 0 &&
+                SDL_RenderCopy(renderer, font->texture, &font->glyphs[character], &destination) != 0)
                 return -1;
             x += font->advances[character];
         }

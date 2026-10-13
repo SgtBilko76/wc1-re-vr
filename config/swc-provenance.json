@@ -119,9 +119,9 @@
       "entry_offset": "0x14f8",
       "end_offset": "0x1bf8",
       "source": "src/sdl/swc_nav.c",
-      "symbol": "SwcBuildNavMap",
+      "symbol": "SdlBuildSwcMap",
       "relationship": "algorithm-and-presentation-adaptation",
-      "differences": "Navigation DATA+0x28a layout (137,138,41,43,0,0), SetScale +0x1c8a, ScaleX/ScaleY +0x1eaa/+0x1f06 and FindTextPos +0x142c. Includes player/objective/hazard bounds, mobile positions, hidden/lost filtering, visited colors and label placement. Uses matching shared find_ships_sphere (CODE_05 +0x6498) and mission state. SDL caches CKPT/10 masks; size-10 Helvetica uses the platform font adapter. Briefing remains separate."
+      "differences": "Shared SDL map builder for briefing DATA+0x272 (125,124,40,20,54,45) and navigation DATA+0x28a (137,138,41,43,0,0). Uses SetScale +0x1c8a, ScaleX/ScaleY +0x1eaa/+0x1f06 and FindTextPos +0x142c, including the extra briefing offsets and text-layer origin. Retains objective/hazard bounds, mobile positions, hidden/lost filtering, visited colors and label placement; the player entry appears only in navigation. BRFG/28 and CKPT/10 use replacement-color masks. Font size 10 uses the shared classic-resource/platform adapter."
     },
     {
       "original_name": "InflightComputer",
@@ -201,7 +201,7 @@
       "source": "src/sdl/swc_rooms.c",
       "symbol": "SdlRunSwcCarrier",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Enyo 1 Shotglass/Paladin/Angel roster. Corrects swapped Barracks/ranking hotspots using CODE_07 +0x060e..+0x0638 and A5 label strings; uses Mac half-open rectangles and character priority. Original hover poses (frames 3/4/5), door highlight, board highlight at (245,15), and simulator RCRM/11 opening/closing at (0,85). Idle byte programs and hover motion use a 30 Hz host clock. SDL text/cursors and interpolated normal/dim palette transitions replace Mac hardware presentation. RECROOM.MooV accompanies bar/rankings. Simulator restriction follows CODE_09 GameFlow; incidental bar animation and debug selectors remain outside this scope."
+      "differences": "Enyo 1 Shotglass/Paladin/Angel roster; native half-open hotspots and character priority, hover poses 3/4/5, door/board highlights and RCRM/11 simulator animation. Idle programs and hover motion use the existing 15 Hz host clock. CODE_01 SetGInputForChar('@') enables RecRoom +0x0e5c's RCRM/49 incidental sprite: thirteen frames, x=-75..320, y=40, drawn behind RCRM/1. SDL text/cursors and interpolated normal/dim palettes replace Mac hardware presentation. RECROOM.MooV accompanies bar/rankings. Simulator restriction remains; debug selectors are outside scope."
     },
     {
       "original_name": "BarracksScreen",
@@ -211,7 +211,7 @@
       "source": "src/sdl/swc_rooms.c",
       "symbol": "SdlRunSwcCarrier",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original background and eleven room/bunk hotspots with Mac half-open bounds. Door/medal hover sequences use RCRM/13 frames 1..8, 9..16 and 17..21; wall display and desk light use original sprite origins. Bar, briefing and medals are connected. Bunks explain unsupported save/load. Bunk occupants, incidental animations and save/name-entry dialogs remain pending."
+      "differences": "Original room/bunk hotspots, door/medal hovers, wall display and desk. RCRM/15..22 occupants follow DATA+0x419a order 2,6,0,1,3,4,5,7, DATA+0x411a origins and DATA+0x40c2/+0x40e2 frame/delay/jump programs. Hover changes reset old/new program cursors while retaining delays/frames; RCRM/45 lamps use DATA+0x415a. The desk follows +0x6320..+0x63f6's falling palette-8 pixel, six-update flashes and sound 35. Optional original SuperWing Preferences metadata supplies saved-slot occupancy; absent preferences leave bunks empty. Save/load and name-entry dialogs remain unsupported. Animations use the existing 15 Hz host clock."
     },
     {
       "original_name": "ShowChalkBoard",
@@ -241,7 +241,7 @@
       "source": "src/sdl/swc_rooms.c",
       "symbol": "SwcPlayRoomScene",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Supports BRF0/5 sections 0,2,4,6,8 and BRF0/1 funeral sections 0,2,10,12. Shares WC1 ParseTests/AddPCName/animation parsers and pilot state, with validated records and original portraits/backgrounds. AIFF MARK phonemes now drive speaking mouths from the shared audio playback clock; CloseLook portraits remain still during other voices. Eye scripts retain the Mac minimum 24-update delay on a 30 Hz host clock. Restores PanToScreen commander turn/map-grid reveal and Dismissed reverse angle. Centered Helvetica 14 subtitles on macOS; portable bitmap fallback. Original normal/dim palettes with host interpolation at room/scene boundaries. Map labels/routes remain WC1/SDL drawing; dismissal walk-out and exact classic font/frame pacing remain incomplete."
+      "differences": "BRF0/5 sections 0,2,4,6,8 and BRF0/1 funeral sections 0,2,10,12 share WC1 scene tests, substitutions and animation parsing. Original art and AIFF MARK phonemes drive speaking mouths; CloseLook suppresses other voices. Eye scripts use a 30 Hz host clock. PanToScreen retains its commander turn and grid reveal; the map now uses native transforms/markers/labels. Dismissed includes standing and staggered walk-outs after speech. Helvetica 14 uses optional classic bitmap resources with platform fallback. Normal/dim palettes retain host interpolation. Save/load, later scenes and exact frame pacing remain qualified."
     },
     {
       "original_name": "funeral_sequence",
@@ -251,7 +251,7 @@
       "source": "src/sdl/swc_rooms.c",
       "symbol": "SdlRunSwcCarrier",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Fresh Enyo 1 player/Spirit paths: SdlPlaySwcFuneralMovies plays FUNSERV0/FUNSERVA before the eulogy and FUNSERVB before farewell. Original BRF0/1 dialogue branches, artwork and AIFF speech use the shared WC1 parser and pilot state. A shared SDL device mixes movie/dialogue PCM with continuous FUNERAL.MooV music; skip/quit/errors stop the sequence. Movie fades and exact scene timing remain pending."
+      "differences": "Fresh Enyo 1 player/Spirit paths: SdlPlaySwcFuneralMovies plays FUNSERV0/FUNSERVA before the eulogy and FUNSERVB before farewell. Original BRF0/1 dialogue branches, artwork and AIFF speech use the shared WC1 parser and pilot state. A shared SDL device mixes movie/dialogue PCM with continuous FUNERAL.MooV music; skip/quit/errors stop the sequence. Movie skip palette dimming is connected; no group-end dim is applied between its room speeches. Exact scene timing remains unverified."
     },
     {
       "original_name": "the_end",
@@ -261,7 +261,7 @@
       "source": "src/sdl/swc_rooms.c",
       "symbol": "SdlShowSwcEnding",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original RecRoomScene.CMF PLNT/1 particle background, palette 135, Helvetica 14 THE END at baseline 110 and palette index 4, with the original input wait. FUNERAL.MooV continues through this screen. Host animation runs at 20 Hz and uses WC1 RNG; classic Mac font pixels and variable frame pacing differ. Skipping the funeral bypasses the end card, matching its skip-latch branch."
+      "differences": "Original RecRoomScene.CMF PLNT/1 particle background, palette 135, Helvetica 14 THE END at baseline 110 and palette index 4, with the original input wait. FUNERAL.MooV continues through this screen. Host animation runs at 20 Hz and uses WC1 RNG; classic Mac pixels require a supplied font resource; variable frame pacing differs. Skipping the funeral bypasses the end card, matching its skip-latch branch."
     },
     {
       "original_name": "Title_Sequence",
@@ -331,7 +331,7 @@
       "source": "src/sdl/swc_movie.c",
       "symbol": "SdlPlaySwcOpening",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original OPEN0/OPEN1/OPEN2/OPEN3 order before the initial carrier visit, following CODE_09 squadron +0x84..+0x90. Reuses the existing SDL movie decoder and sequence player. Missing files or skipping leave carrier entry available; quit/error end the session. DOCKING.MooV accompanies the group. The separate startup splash/logo/prologue now precedes this group; palette transitions remain pending."
+      "differences": "Original OPEN0/OPEN1/OPEN2/OPEN3 order before the initial carrier visit, following CODE_09 squadron +0x84..+0x90. Reuses the existing SDL movie decoder and sequence player. Missing files or skipping leave carrier entry available; quit/error end the session. DOCKING.MooV accompanies the group. The separate startup splash/logo/prologue now precedes this group; native group-end and skip palette dimming are connected."
     },
     {
       "original_name": "scramble",
@@ -341,7 +341,7 @@
       "source": "src/sdl/swc_movie.c",
       "symbol": "SdlPlaySwcLaunch",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original nine-clip order with Hornet suffix 00. Uses the existing SDL path resolver; missing movies preserve direct flight. Skipping, quit and error are explicit results. ARMOR.MooV accompanies the group; palette transitions remain pending. WC1's sprite-based scramble is not suitable for these assets."
+      "differences": "Original nine-clip order with Hornet suffix 00. Uses the existing SDL path resolver; missing movies preserve direct flight. Skipping, quit and error are explicit results. ARMOR.MooV accompanies the group; native group-end and skip palette dimming are connected. WC1's sprite-based scramble is not suitable for these assets."
     },
     {
       "original_name": "landing",
@@ -351,7 +351,7 @@
       "source": "src/sdl/swc_movie.c",
       "symbol": "SdlPlaySwcLanding",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original seven-clip order with Hornet suffix 00; LANDING7 variant is 2-evaluate_damage(0)*2/100. Shares the launch SDL decoder/presentation and skip/quit/error handling. Missing movies leave debriefing available. LANDING.MooV accompanies the group; palette transitions remain pending."
+      "differences": "Original seven-clip order with Hornet suffix 00; LANDING7 variant is 2-evaluate_damage(0)*2/100. Shares the launch SDL decoder/presentation and skip/quit/error handling. Missing movies leave debriefing available. LANDING.MooV accompanies the group; native group-end and skip palette dimming are connected."
     },
     {
       "original_name": "MovieDisplay",
@@ -361,7 +361,7 @@
       "source": "src/sdl/swc_movie.c",
       "symbol": "SdlPlaySwcMovie",
       "relationship": "partial-presentation-adaptation",
-      "differences": "SDL textures, per-movie palette conversion, shared PCM/music mixing and event handling replace QuickDraw/Sound Manager. Adds pause/focus handling, explicit quit and skip-on-release; skips the complete current movie group. Separate sequence music is connected; palette transitions remain pending."
+      "differences": "SDL textures, per-movie palette conversion, shared PCM/music mixing and events replace QuickDraw/Sound Manager. Adds pause/focus handling, explicit quit and skip-on-release for a complete movie group. movie_dim_screen halves all palette entries at native group boundaries; MovieDisplay +0x0738 halves only entries 1..254 on skip. Both changes are immediate. The native +0x07d0 skip-time zero-index pixel rewrite is not reproduced."
     },
     {
       "original_name": "LMovieOpen",
@@ -593,7 +593,7 @@
       "source": "src/sdl/swc_cockpit.c",
       "symbol": "SdlDrawSwcHud",
       "relationship": "partial-presentation-adaptation",
-      "differences": "Original component/severity strings and colors with show_weapon_disp's 30-update cycle. Gun/weapon notices last fifteen simulation updates after selection, including automatic changes; computer messages follow them at (51,84) with eleven-pixel advances. Proportional Helvetica 9 on macOS and the portable bitmap fallback elsewhere. Shared WC1 targeting notices remain at host positions."
+      "differences": "Original component/severity strings and colors with show_weapon_disp's 30-update cycle. Gun/weapon notices last fifteen simulation updates, including automatic changes; computer messages follow them at (51,84) with eleven-pixel advances. Helvetica 9 uses the shared classic-resource/platform adapter. Shared damage notices and host communication acknowledgments now join the native queue; WC1's bottom-edge targeting banners are suppressed in SWC."
     },
     {
       "original_name": "cockpit_explosion",
@@ -624,6 +624,76 @@
       "symbol": "SdlDrawSwcCockpitDamage",
       "relationship": "host-adaptation",
       "differences": "Original eight CKPT/6 spark frames and offsets; SdlUpdateSwcCockpit advances/restarts them on simulation ticks. Repeat probability and position ranges use WC1 RNG with adjusted exclusive upper bounds. Initial impact audio is supplied by SdlSwcCockpitDamage."
+    },
+    {
+      "original_name": "BriefingMap_DisplayMap",
+      "resource": "CODE_14.bin",
+      "entry_offset": "0x0f88",
+      "end_offset": "0x10aa",
+      "source": "src/sdl/swc_rooms.c",
+      "symbol": "SwcDrawBriefingMap",
+      "relationship": "algorithm-and-presentation-adaptation",
+      "differences": "Initial map after the grid reveal: original BRFG/27 background/overlay and BRFG/28 replacement-color markers, without labels. Shared SDL map data replaces Mac handles and QuickDraw text layers."
+    },
+    {
+      "original_name": "BriefingMap_UpdateMap",
+      "resource": "CODE_14.bin",
+      "entry_offset": "0x10c4",
+      "end_offset": "0x1414",
+      "source": "src/sdl/swc_rooms.c",
+      "symbol": "SwcDrawBriefingMap",
+      "relationship": "algorithm-and-presentation-adaptation",
+      "differences": "Original map transforms, size-10 labels, thirty-update objective blink (three on/three off) and terminal BRFG/27 overlay. SDL uses a 30 Hz scene clock and shared mission state."
+    },
+    {
+      "original_name": "Dismissed",
+      "resource": "CODE_03.bin",
+      "entry_offset": "0x1eba",
+      "end_offset": "0x2216",
+      "source": "src/sdl/swc_rooms.c",
+      "symbol": "SwcPlayDismissal",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "SwcPlayRoomScene owns speech/reverse-angle mouth frames. The post-speech phase uses BRFG/32 stand frames every third update, BRFG/31 turn frames every second update, then independent one-in-five walk starts and BRFG/30/33 terminal frames 10/9. SDL pause/focus/release-skip handling and 30 Hz cadence replace the redraw loop. Original BRIEFING.MooV is absent; BRIEFIN0 continues."
+    },
+    {
+      "original_name": "generate_stars",
+      "resource": "CODE_02.bin",
+      "entry_offset": "0x38cc",
+      "end_offset": "0x39e0",
+      "source": "src/sdl/swc_flight.c",
+      "symbol": "SwcGenerateStars",
+      "relationship": "algorithm-adaptation",
+      "differences": "Eight dust slots use native 0..4999 forward range; seven stars use frame 32..41 and Q8 15000 distance. Shared fixed-vector/rotation/start_dust routines and WC1 RNG remain; upper bounds are adjusted to Mac exclusive choices."
+    },
+    {
+      "original_name": "update_star_field",
+      "resource": "CODE_02.bin",
+      "entry_offset": "0x39f2",
+      "end_offset": "0x3cee",
+      "source": "src/sdl/swc_flight.c",
+      "symbol": "SwcUpdateStarField",
+      "relationship": "algorithm-adaptation",
+      "differences": "Native 200-unit camera offset, twenty-times velocity, one-at-a-time offscreen respawn, pitch/yaw selection, frame 32..36 respawn and velocity-dependent dust range. Reuses shared hazards and start_dust with adjusted exclusive choices, without reproducing the Mac RNG sequence."
+    },
+    {
+      "original_name": "draw_sorted_objects_to_buffer",
+      "resource": "CODE_02.bin",
+      "entry_offset": "0x00b8",
+      "end_offset": "0x02e6",
+      "source": "src/sdl/swc_flight.c",
+      "symbol": "SwcDrawFlight",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "Native class-2 stars use unscaled PLNT/1 frames 32..41 and original MacDraw2 origins; class-4 dust draws a palette-128 pixel. Both are depth sorted after glare. SDL owns cached textures; the existing ship rasterizer handles other supported classes. Planet presentation and full original rendering parity remain outside this path."
+    },
+    {
+      "original_name": "movie_dim_screen",
+      "resource": "CODE_15.bin",
+      "entry_offset": "0x046c",
+      "end_offset": "0x050a",
+      "source": "src/sdl/swc_movie.c",
+      "symbol": "SdlPlaySwcMovie",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "Immediate RGB halving for all 256 entries at native movie-group endings; skip handling separately halves entries 1..254, preventing a second dim. SDL reblits and presents the indexed final frame. Funeral room/end-screen transitions retain their existing palette path."
     }
   ],
   "shared_wc1_evidence": [
@@ -654,7 +724,7 @@
     {"name": "set_sphere_point", "resource": "CODE_04.bin", "entry_offset": "0x000c", "source": "src/brains.c", "wc1_address": "0x0040b670"},
     {"name": "Set_up_ship_info", "resource": "CODE_04.bin", "entry_offset": "0x1340", "source": "src/brains.c", "wc1_address": "0x0040c5e0"},
     {"name": "Build_objective_list", "resource": "CODE_14.bin", "entry_offset": "0x24fc", "source": "src/brains.c", "wc1_address": "0x0040ced0", "qualification": "Enyo 1 uses the existing WC1 objective builder; other SWC objective behavior remains unverified."},
-    {"name": "nav_getxy", "resource": "CODE_14.bin", "entry_offset": "0x24d0", "source": "src/brains.c", "wc1_address": "0x0040cc30", "qualification": "The host currently uses WC1 map coordinates. The SWC original stores world coordinates shifted by eight in wider map fields."},
+    {"name": "nav_getxy", "resource": "CODE_14.bin", "entry_offset": "0x24d0", "source": "src/brains.c", "wc1_address": "0x0040cc30", "qualification": "Comparison evidence only for the Mac's wider, world-unit map coordinates. SDL briefing/navigation now use SdlBuildSwcMap instead of WC1 nav_getxy/SetScale; the Win32 reference remains unchanged."},
     {"name": "players_flight_dynamics", "resource": "CODE_09.bin", "entry_offset": "0x02de", "source": "src/main.c", "wc1_address": "0x004284d0", "qualification": "Same axis-rate/input division, signs and blowing-up branch. Uses recovered SWC ship definitions with narrower WC1 rotation fields."},
     {"name": "rotate_object", "resource": "CODE_02.bin", "entry_offset": "0x4306", "source": "src/spc.c", "wc1_address": "0x00412920", "qualification": "Same per-axis rotate/approach-zero sequence; SWC rotation fields are wider."},
     {"name": "alter_pitch", "resource": "CODE_04.bin", "entry_offset": "0x2b1c", "source": "src/geom.c", "wc1_address": "0x00419110"},
@@ -870,7 +940,7 @@
     },
     "computer_messages": {
       "evidence": [{"resource": "CODE_13.bin", "entry_offset": "0x01aa", "name": "CockpitMessage"}, {"resource": "CODE_13.bin", "entry_offset": "0x000c", "name": "UpdateMessage"}],
-      "implementation": "Sixteen queued messages with copied text capped at 34 characters; queued voice IDs or unvoiced text suppress duplicates. Forty-tick unvoiced lifetime, flash counter reset to 20, snd/(voice+79) playback controls voiced lifetime. Autopilot and objective arrival call this queue. Host bounds overflow by dropping new messages; missing audio falls back to timed text. Uses host position (8,203) above shared targeting notices, preserving permanent weapon readouts."
+      "implementation": "Sixteen copied messages capped at 34 characters; deduplicates queued voice IDs/unvoiced text. Forty-update unvoiced lifetime, flash counter reset to 20, snd/(voice+79) controls voiced lifetime. Native update_status_text +0x102e starts at (51,84), advances eleven pixels for component/weapon notices and then draws the message. Shared damage notices and host comm acknowledgments join this queue. WC1's separate bottom-edge VDU banners are not drawn in SWC. Missing audio uses timed text; bounded overflow drops new messages."
     },
     "communication": {
       "evidence": [{"resource": "CODE_06.bin", "entry_offset": "0x000c", "name": "vid_equiv"}, {"resource": "CODE_06.bin", "entry_offset": "0x00c4", "name": "talk_equiv"}, {"resource": "CODE_06.bin", "entry_offset": "0x045c", "name": "Vocalize_Message"}, {"resource": "CODE_06.bin", "entry_offset": "0x049e", "name": "real_vid_transmit"}, {"resource": "CODE_06.bin", "entry_offset": "0x061e", "name": "message_showing"}, {"resource": "CODE_06.bin", "entry_offset": "0x0640", "name": "check_message"}, {"resource": "CODE_13.bin", "entry_offset": "0x0d00", "name": "update_vid_disp"}, {"resource": "CODE_13.bin", "entry_offset": "0x3d2e", "name": "npc_communication"}],
@@ -931,7 +1001,7 @@
       "generated_header": "src/sdl/swc_hud_font.h",
       "generator": "bin/buildSwcHudFont.py",
       "license": "SIL OFL 1.1; third_party/anonymouspro/OFL.txt; copied into release archives",
-      "qualification": "Portable fallback only for cockpit/carrier text; macOS uses system Helvetica at original sizes 9/14. Also retained by other host overlays. Nine-pixel monochrome ASCII substitute with five-pixel advance, requiring neither SDL2_ttf nor a runtime TTF."
+      "qualification": "Fallback for missing classic Helvetica strikes on portable hosts; macOS falls back to system Helvetica at sizes 9/10/14. Also retained by host-only overlays. Nine-pixel monochrome ASCII substitute with five-pixel advance, requiring neither SDL2_ttf nor a runtime TTF."
     },
     "validation": "Original-instruction, expanded-resource and offline glyph inspection; static source review; native and GUI compilation only. No game, GUI or interactive checks executed for this pass."
   },
@@ -952,8 +1022,8 @@
         "CODE_15 select_new_gun +0x0222",
         "CODE_15 select_new_release_weapon +0x0398"
       ],
-      "implementation": "System Helvetica 9 without antialiasing/smoothing on macOS, integer proportional advances and baseline origins. Colored labels advance the same pen as their values. Native status flow starts at (51,84), advances eleven pixels per line, shows selected weapons for fifteen updates, then computer text. UpdateMessage retains the flash timer across messages and advances clocks during communication. Speech starts on dequeue; unavailable audio uses timed text.",
-      "limits": "Classic FONT/NFNT glyphs are absent from the demo. Modern Helvetica is not claimed pixel-identical to QuickDraw. Non-Apple hosts retain the bitmap fallback. Shared WC1 targeting messages and target/ace names remain separate pending work."
+      "implementation": "Optional classic FOND/NFNT/FONT Helvetica strikes preserve one-bit glyphs, bearings, advances and ascent at exact sizes 9/10/14. Missing strikes fall back to macOS CoreText or the portable bitmap. Label/value segments share the pen. Status starts at (51,84), advances eleven pixels, shows weapon selections for fifteen updates, then computer text. Unvoiced messages last forty updates; the flash clock persists across messages. Shared damage/host comm notices now use this queue. Target/navigation origins remain (200,110)/(200,94), each with an eleven-pixel range line. Target names use native pilot/ace strings.",
+      "limits": "The demo contains no classic font resources and no actual classic Helvetica resource was available for validation. The optional reader is bounded but its output has not been inspected with real font data. Printable ASCII only; no QuickDraw font synthesis or full Font Manager emulation. Modern Helvetica/fallback pixels and host frame timing are not claimed identical to the Mac."
     },
     "raster": {
       "evidence": [
@@ -968,7 +1038,7 @@
         "DATA/0 +0x4550 BE16[91]"
       ],
       "implementation": "Q8 corners and UV, scale/2 truncation before dimension multiplication, inverted angles, original quadrant table, corner flips, width/height-minus-one UV endpoints, first-extrema edge walks, original rounding and exclusive row endpoints, horizontal clip interpolation before texel sampling, max(2, span-1) loop and transparent palette zero. Shared by flight sprites and VDU/portrait polygons; completed ARGB pixels are copied through SDL at logical 1:1.",
-      "limits": "Original unchecked source/output accesses are bounded. WC1 projection and host target brackets remain. No running-original comparison or claim of complete pixel parity. Fresh Ghidra exports recover short Cos/Sin names missing from the older symbol inventory."
+      "limits": "Original unchecked accesses are bounded. Native Mac projection and target bounds are now adapted separately. No running-original comparison or complete pixel-parity claim. Fresh Ghidra exports recover Cos/Sin names absent from the older inventory."
     },
     "glare": {
       "evidence": [
@@ -1042,7 +1112,7 @@
       "presentation": "63 moving PLNT/1 particles, then centered Helvetica 14 THE END at baseline 110, color 4. Funeral music continues until dismissal. The original funeral skip latch bypasses this screen.",
       "routing": "Death, stranded and completed Enyo 1 paths return to the title menu. Window close exits. P/focus loss pause scenes/audio; activation completes on release."
     },
-    "limits": "No save/load or campaign progression. Fixed 20 Hz pacing, shared WC1 RNG/AI and modern Helvetica metrics prevent a claim of original interactive parity. Movie fades and classic-Mac font rasterization remain pending.",
+    "limits": "No save/load or campaign progression. Fixed 20 Hz pacing and shared WC1 RNG/AI remain. Exact classic font pixels require a supplied Helvetica resource; fallback fonts and interactive parity are unverified. Native movie palette dimming is connected.",
     "validation": "Fresh Ghidra CODE_02/04/14 exports plus original CODE_03/05/07/09/13 instructions; A5 calls/strings and expanded DATA inspected; title frame dimensions, palettes and original artwork inspected offline. All three SDL targets built and changed units checked with Clang static analysis. No tests added/run, no game/GUI execution, playback or audio device. No original Win32 source or flags changed."
   },
   "movies": {
@@ -1064,7 +1134,7 @@
         {"resource": "CODE_07.bin", "entry_offset": "0x1adc", "name": "intro_ranger_dead", "symbol": "SdlPlaySwcIntroSpeech", "qualification": "IntroFilm2.CMF, clut/131, same TKHD/13 layering; speech intro.10..11. intro_shakecockpit +0x18e8 is empty in the demo."},
         {"resource": "CODE_12.bin", "entry_offset": "0x00de", "name": "ParseMarks", "symbol": "SwcReadSpeechMarks", "qualification": "AIFF MARK words use the phoneme table at DATA/0 +0x0908, five 60 Hz ticks per phoneme, th/ch pairs, h hold, then closed mouth. GetMouthPos +0x036a selects the current frame. Speech without MARK retains the base mouth."},
         {"resource": "CODE_05.bin", "entry_offset": "0x4480", "name": "init_3d_shards", "qualification": "Intro-only stationary 180-degree camera case; update_3d_shards +0x4598, generate_new_3d_shard +0x4362, 63 PLNT/1 sprites and frame table DATA/0 +0x2ede. Shared WC1 vector/RNG routines use adjusted exclusive ranges; no flight shard state is changed."},
-        {"resource": "CODE_15.bin", "entry_offset": "0x046c", "name": "movie_dim_screen", "qualification": "Clears a830 skip latch after Lion and at the end of IntroFilm; palette dimming remains pending."}
+        {"resource": "CODE_15.bin", "entry_offset": "0x046c", "name": "movie_dim_screen", "qualification": "Clears a830 skip latch after Lion and at the end of IntroFilm, otherwise halves all 256 palette colors immediately. SDL now applies native group-end dimming and avoids double-dimming skips."}
       ],
       "controls": "Splash and Lion dismiss separately. A prologue movie or speech skip exits the remaining prologue. Key/mouse releases complete skips; P/focus loss pause the shared audio device and animation clock. Quit/error propagate to session cleanup. Missing startup movies, CMFs or speech skip the group.",
       "limits": "The title battle and idle IntroFilm replay are connected; saved-game selection remains disabled until a save loader exists. Palette fades and exact original frame/RNG timing remain pending. BUC belongs to stranded_sequence +0x0a06, now connected from arcade state 3. No original picture/audio assets are embedded in source.",
@@ -1079,7 +1149,7 @@
     "funeral_sequence": ["FUNSERV0", "FUNSERVA", "eulogy dialogue", "FUNSERVB", "farewell dialogue"],
     "funeral_string_evidence": "CODE_03 funeral_sequence +0x4a08; expanded DATA/0 A5-relative strings -0x3397 FUNSERV0, -0x338e FUNERAL.MooV, -0x3381 FUNSERVA, -0x3378 FUNSERVB.",
     "audio": "Embedded unsigned 8-bit mono at 0x56ee8ba3 fixed-point Hz (22254.545...), rounded to 22255 Hz by SDL. Stored blocks are 11128 bytes; header +0xa6 is the valid sample count. The shared SDL mixer resamples trimmed PCM alongside sequence music, pauses with video, and falls back to silent playback if the device is unavailable.",
-    "pending": "Movie palette transitions and later scripted scenes. DOCKING/ARMOR/LANDING cues span their movie groups; FUNERAL spans death, funeral movies/speeches and THE END; LASTRITE spans BUC and the stranded presentation. Title battle and idle IntroFilm replay are connected.",
+    "pending": "Later scripted scenes, exact presentation timing and MovieDisplay's separate skip-time zero-index pixel rewrite. Native group-end/skip palette dimming is connected. DOCKING/ARMOR/LANDING cues span their groups; FUNERAL spans death, funeral movies/speeches and THE END; LASTRITE spans BUC and stranding. Title battle and idle IntroFilm replay are connected.",
     "opening_validation": "Fresh Ghidra CODE_09 squadron export, original opening_scene instructions and expanded A5 strings; static source review and make modern modern-gui. No tests, game, GUI, playback or audio device executed for this change.",
     "validation": "Original assembly and A5-string inspection; offline parsing of all 38 original files and 3521 encoded frames, including record bounds, scanline commands, exact frame consumption and audio lengths; static source review and make modern modern-gui. No interactive code, game, GUI, playback or audio device executed."
   },
@@ -1104,7 +1174,7 @@
       {"resource": "CODE_03.bin", "entry_offset": "0x4888", "name": "funeral_wingman"},
       {"resource": "CODE_03.bin", "entry_offset": "0x494a", "name": "farwell_wingman"}
     ],
-    "shared_wc1_functions": ["ResetCampaignData", "CorrectPointers", "ParseTests", "wing_status", "AddPCName", "ParseMouthAnimation", "ParseFaceAnimation", "Build_objective_list", "SetScale", "nav_getxy", "PostMission", "FullMissionScore", "PlayersMissionScore"],
+    "shared_wc1_functions": ["ResetCampaignData", "CorrectPointers", "ParseTests", "wing_status", "AddPCName", "ParseMouthAnimation", "ParseFaceAnimation", "Build_objective_list", "PostMission", "FullMissionScore", "PlayersMissionScore"],
     "reuse_qualification": "Reference functions are unchanged. Original WC1 room/director functions also perform DOS resource and viewport I/O, so the host reuses their separable logic/data types and provides SDL presentation. Pilot identity, rankings and awards start from WC1's initial campaign template; the SWC character initialization template and name-entry UI are not reconstructed.",
     "script": {"file": "Data.CMF", "chunk": "BRF0/5", "directory": "10 LE32 section offsets", "record": "13 bytes: three signed bytes, five LE16 fields", "sections": {"briefing": 0, "debriefing": 2, "shotglass": 4, "angel": 6, "paladin": 8}, "roster": "CMP0/3 indexed by (series-1)*8+mission*2; Enyo 1 pair 5,4 is validated."},
     "debriefing": {
@@ -1129,7 +1199,7 @@
       "script": "Data.CMF BRF0/1: 14 LE32 offsets, same 13-byte records. Enyo player eulogy/farewell sections 2/0, Spirit sections 12/10. DATA/0 +0x42be selects player story 0 for series 1. Wingman dialogue uses shared ParseTests command 30 and wing_status.",
       "art": "Funeral.CMF palette 193: BRFG/19 long shot, BRFG/20 background frame 0 for textColour 0 otherwise 1, TKHD/1 and TKHD/10 with base frame 0. Original MountGraphics +0x2484/+0x2498 and SceneDirector +0x29b0 identify these assets. GUI requires this CMF.",
       "speech": "AIFF/camp.0/00/00SSLL00.AIF; 11 supplied recordings for the player/Spirit sequences. Fresh pilot rank 0 is validated for the $R voice variant. Missing speech keeps subtitles usable.",
-      "limits": "Fresh Enyo 1 only. Death cinematic precedes the player funeral; the completed farewell leads to animated THE END with Helvetica 14 on macOS and the portable bitmap fallback elsewhere. FUNERAL.MooV continues through the end screen. Movie fades and exact timing remain pending."
+      "limits": "Fresh Enyo 1 only. Death cinematic precedes the player funeral; the completed farewell leads to animated THE END with Helvetica 14 on macOS and the portable bitmap fallback elsewhere. FUNERAL.MooV continues through the end screen. Movie skip dimming is connected; exact timing remains unverified."
     },
     "data_offsets": {"palettes": "0x3fd2", "filenames": "0x4046", "ranking_rows": "0x2690", "idle_sequences": ["0x27ae", "0x2816", "0x27da"], "medal_frames": "0x42f2", "briefing_origin": ["0x4306", "0x430a"]},
     "speech": {
@@ -1143,14 +1213,16 @@
     "presentation": {
       "hotspots": "CODE_07 +0x060e..+0x0638 and A5-0x2b7d/-0x2b6e: Barracks (250,65)-(318,127), Pilot Ranking (268,26)-(320,65). Right/bottom edges excluded; characters override doors, using original frame-zero bounds.",
       "hover": "DATA/0 +0x2782/+0x2788/+0x278a hold character hover frames 3/4/5. RecRoom +0x0af0..+0x0c18 draws the door, simulator (two-update pacing, frames 0..6) and board highlight. BarracksScreen +0x5fcc..+0x6144 supplies door/medal ranges.",
-      "subtitles": "CODE_14 init_text +0x1fec allocates a 300x200 layer. CODE_06 AllocTextLayer +0x1d9a selects QuickDraw font 21 (Helvetica); CODE_03 print_subtitle +0x1122 uses size 14, origin (10,120), 275-pixel wrapping, centered lines and 15-pixel advances. Original ink is nearest-palette white; textColour also identifies the speaking portrait. macOS CoreText supplies system Helvetica without redistributing it. Classic FONT/NFNT resources are absent; other hosts retain the bundled bitmap fallback. Long captions are clamped inside the host picture.",
-      "pan_to_screen": "CODE_03 PanToScreen +0x2222 draws BRFG/4 frames 11..16 at (25,50), using SetPace(7)/CheckPace (>7 ticks). This turns the commander before switching to the map. CODE_14 BriefingMap_ShowGrid +0x0cfe expands BRFG/27 vertically by two pixels per edge per update at origin (40,20), from DATA/0 +0x272. Map route rendering remains shared WC1/SDL.",
+      "subtitles": "CODE_14 init_text +0x1fec allocates a 300x200 layer. CODE_06 AllocTextLayer +0x1d9a selects QuickDraw font 21 (Helvetica); CODE_03 print_subtitle +0x1122 uses size 14, origin (10,120), 275-pixel wrapping, centered lines and 15-pixel advances. Original ink is nearest-palette white; textColour also identifies the speaking portrait. An optional classic Helvetica resource supplies exact-size bitmap strikes; absent that, macOS uses system Helvetica and other hosts retain the bundled bitmap. No font resources are bundled. Long captions are clamped inside the host picture.",
+      "pan_to_screen": "CODE_03 PanToScreen +0x2222 draws BRFG/4 frames 11..16 at (25,50), using SetPace(7)/CheckPace (>7 ticks). This turns the commander before switching to the map. CODE_14 BriefingMap_ShowGrid +0x0cfe expands BRFG/27 vertically by two pixels per edge per update at origin (40,20), from DATA/0 +0x272. Native BuildMap transforms, BRFG/28 markers, labels and objective blink now replace WC1 route drawing; DisplayMap initial reveal omits labels.",
       "palettes": "CODE_15 dark +0x03c2 selects clut=current+10; CODE_12 ChangeSWPaletteClut +0x4d38 restores the normal palette. SDL uses the actual dim clut entries, preserving visible room colors. Interpolation over ten Mac ticks (167 ms) is an SDL presentation choice: the original routines swap palettes directly. Offscreen targets preserve the frame through pause/resize; release input is carried across fades.",
-      "differences": "The original Mac PanToScreen sequence is a sprite turn/map reveal; no continuous camera interpolation is inferred. Current system Helvetica outlines are not the original classic-Mac bitmap glyphs. Route labels/markers, frame pacing and some ambient animations remain host adaptations."
+      "differences": "PanToScreen is a sprite turn/map reveal; no continuous camera interpolation is inferred. Fixed host pacing and WC1 RNG remain qualified. Optional classic-font rendering needs validation against real Helvetica data; fallback outlines/bitmap are not original Mac pixels. Bunk metadata does not import saved campaign state."
     },
-    "pending": "Save/load and name entry, later rooms/scenes, campaign progression, classic-Mac font rasterization and portable Helvetica provider, complete Mac map renderer, dismissal walk-out, bunk occupants, incidental bar animations and exact frame pacing. Movie palette transitions remain separate.",
-    "validation": "Fresh Ghidra original-instruction exports, A5 call/string resolution and offline original CMF/clut inspection. Native, GUI and viewer compilation, compiler static analysis and portable-font syntax compilation. No tests, game, GUI, interactive checks, playback or audio device executed. Visual appearance and timing require user review; no Win32 reference source or flags changed."
+    "pending": "Save/load and name entry, later rooms/scenes, campaign progression and exact frame pacing. Classic bitmap font output requires an external resource and remains unverified. Native briefing map, dismissal walk-out, bunk art, incidental bar animation and movie palette dimming are connected.",
+    "validation": "Fresh Ghidra CODE_02/14 exports plus original CODE_01/03/07/12/13/15 instructions and A5/DATA inspection; offline CMF/frame/music inventories. Native/GUI/viewer compilation and Clang static analysis. No tests added/run and no game, GUI or playback launched. No Win32 reconstruction source or flags changed. Font data and interactive appearance/timing remain unverified."
   },
+  "classic_font_resource": {"source": "src/sdl/swc_text.c", "location": "SWC_MAC_FONT_RESOURCE or game-root Fonts/Helvetica.rsrc", "format": "FOND 21 plain-style association -> exact-size NFNT/FONT; FONT-only family*128+size fallback. Monochrome FontRec pixels, per-glyph bearings/advances and ascent. Raw resource fork, explicit macOS ..namedfork/rsrc path, or AppleDouble accepted.", "references": ["https://developer.apple.com/library/archive/documentation/mac/Text/Text-250.html", "https://developer.apple.com/library/archive/documentation/mac/Text/Text-271.html"], "limits": "No bundled font data; no actual classic Helvetica resource available for validation. Printable ASCII only, with existing platform fallback for missing/unsupported strikes."},
+  "target_message_evidence": {"source": "src/sdl/swc_cockpit.c", "original": "CODE_13 set_global_message +0x3f4e only writes DATA+0x4712/+0x4716; an all-CODE operand search found no readers. CODE_05 fire_missile +0x38b0 rejects unlocked shots silently.", "implementation": "Remove WC1 ITTS/out-of-range, Need Lock and MISSILE LOCKED bottom banners from SWC. Preserve shared damage notices via CockpitMessage at native status positions/lifetimes. Reticle and lock sound remain; host communications acknowledgments use the native queue."},
   "host_only_sources": ["src/swc/rsrc.c", "src/swc/speech.c", "src/swc/sound.c", "src/swc/music.c", "src/sdl/swc_sound.c", "src/sdl/swc_music.c", "src/sdl/swc_demo.c", "src/sdl/swc_flight.c", "src/sdl/swc_raster.c", "src/sdl/swc_cockpit.c", "src/sdl/swc_nav.c", "src/sdl/swc_text.c", "src/sdl/swc_rooms.c", "src/sdl/swc_movie.c"],
   "palette_resource_fork_sha256": "24b707f9e024d86bf8ce996e2bc45521f36f75582b7e7410bef6467c49cb7c2b"
 }

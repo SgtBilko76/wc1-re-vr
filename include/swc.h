@@ -197,7 +197,7 @@ typedef struct SwcTextFont {
     SDL_Rect glyphs[95];
     int advances[95];
     int baseline;
-    int bearing;
+    int bearings[95];
 } SwcTextFont;
 int SdlCreateSwcTextFont(SDL_Renderer *renderer, SwcTextFont *font, int size);
 int SdlSwcTextWidth(const SwcTextFont *font, const char *text);

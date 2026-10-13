@@ -43,7 +43,107 @@ static const SDL_Color *swcCinemaColors;
 static SwcFlightImages *swcCinemaImages;
 static SDL_Texture *swcRasterCanvas;
 static SwcTextFont swcPauseFont;
+static SDL_Texture *swcStarTextures[10];
+static SDL_Rect swcStarBounds[10];
 int nSwcCinemaResult;
+
+/* CODE_02 generate_stars +0x38cc: eight dust particles in a 5,000-unit
+ * volume, then seven stars using PLNT/1 frames 32..41. Random3DO's upper
+ * bound is exclusive; WC1's generate_stars uses 1,400 and includes frame 42. */
+static void SwcGenerateStars(void)
+{
+    FixedVector origin = {0};
+    short object;
+    short distance;
+    short pitch;
+    short yaw;
+
+    for (object = 34; object < 49; object++) {
+        if (object < 42) {
+            distance = RandomBelowOrEqual(4999);
+            start_dust(object, origin, distance,
+                signed_random(distance) * 256, signed_random(distance) * 256);
+        } else {
+            aeObjectClass[object] = OBJECT_CLASS_STAR;
+            pitch = signed_random(45);
+            yaw = signed_random(45);
+            copy_frame(EYE_OBJECT, 63);
+            rotate_about_j(yaw, &aShipRightVector[63], &aShipForwardVector[63]);
+            rotate_about_i(pitch, &aShipUpVector[63], &aShipForwardVector[63]);
+            ScaleFixedVector(&aShipForwardVector[63], 15000 * 256, &aShipPosition[object]);
+            asObjectViewFrame[object] = (short)(32 + RandomBelowOrEqual(9));
+        }
+    }
+}
+
+/* CODE_02 update_star_field +0x39f2. Retain the common hazard objects,
+ * with the Mac's camera offset, respawn ranges and exclusive choices. */
+static void SwcUpdateStarField(void)
+{
+    FixedVector cameraMotion;
+    FixedVector viewMotion;
+    FixedVector origin;
+    int distance;
+    int shift;
+    short choice;
+    short object;
+    short pitch;
+    short yaw;
+
+    vPreviousStarFieldMotion = vStarFieldMotion;
+    ScaleFixedVector(&aShipForwardVector[EYE_OBJECT], 200 * 256, &cameraMotion);
+    ScaleFixedVector(&aShipVelocity[EYE_OBJECT], 20 * 256, &vStarFieldMotion);
+    AddFixedVectors(&cameraMotion, &vStarFieldMotion, &vStarFieldMotion);
+    ComputeVectorDelta(&vPreviousStarFieldMotion, &vStarFieldMotion, &origin);
+    for (object = 34; object < 49; object++) {
+        if (asObjectScreenX[object] != (short)0x8001)
+            continue;
+        choice = RandomBelowOrEqual(6);
+        if (pActiveHazardField == NULL) {
+            if (aeObjectClass[object] == OBJECT_CLASS_ASTEROID ||
+                (int)aeObjectClass[object] == 0x21 || aeObjectClass[object] == OBJECT_CLASS_NULL) {
+                set_objects_data(object, OBJECT_TYPE_SPACE_DUST, -1);
+                choice = 0;
+            }
+        } else if (object < 42) {
+            extra_hazard(object);
+        }
+        if (aeObjectClass[object] == OBJECT_CLASS_STAR && choice == 0) {
+            if (anObjectYawRotation[0] == 0 && anObjectPitchRotation[0] == 0)
+                continue;
+            copy_frame(EYE_OBJECT, 63);
+            if (anObjectPitchRotation[0] != 0) {
+                pitch = anObjectPitchRotation[0] < 0 ? -45 : 45;
+                yaw = signed_random(45);
+            } else {
+                /* Random3DO(0,1) is zero, so pitch wins when both turn. */
+                yaw = anObjectYawRotation[0] < 0 ? -45 : 45;
+                pitch = signed_random(45);
+            }
+            rotate_about_i(pitch, &aShipUpVector[63], &aShipForwardVector[63]);
+            rotate_about_j(yaw, &aShipRightVector[63], &aShipForwardVector[63]);
+            ScaleFixedVector(&aShipForwardVector[63], 15000 * 256, &aShipPosition[object]);
+            asObjectViewFrame[object] = (short)(32 + RandomBelowOrEqual(4));
+            break;
+        }
+        if (aeObjectClass[object] == OBJECT_CLASS_DUST && choice < 2) {
+            transform_to_objects_frame(&aShipVelocity[EYE_OBJECT], &viewMotion, EYE_OBJECT);
+            ScaleFixedVector(&viewMotion, 10 * 256, &viewMotion);
+            if (viewMotion.z < 0)
+                distance = asObjectCollisionRadius[EYE_OBJECT] + RandomBelowOrEqual(141);
+            else
+                distance = asObjectCollisionRadius[EYE_OBJECT] * 2 + RandomBelowOrEqual(1249) +
+                    RandomBelowOrEqual((short)SDL_max(0, (viewMotion.z >> 8) - 1)) * 2;
+            shift = viewMotion.z <= 0 ? 512 : 256;
+            start_dust(object, origin, (short)distance,
+                viewMotion.x + signed_random((short)(distance >> 1)) * shift,
+                viewMotion.y + signed_random((short)(distance >> 1)) * shift);
+            break;
+        }
+    }
+    if (pActiveHazardField != NULL)
+        update_hazards();
+}
 
 /* CODE_02 shrink_vector +0x57c8 and shrink +0x5828. The Mac always
  * halves once and repeats until every component is below 0xf00. */
@@ -191,7 +291,7 @@ static void SwcSelectFlightView(int view)
     zero_vector(&aShipVelocity[EYE_OBJECT]);
     remove_nav_pointer();
     SwcUpdateFlightCamera();
-    generate_stars();
+    SwcGenerateStars();
 }
 
 /* SWC CODE_09 +0x00c2: Update_3Space. Mac house_keep (+0x01d0)
@@ -537,7 +637,7 @@ static int SwcStartMissionShips(void)
     copy_frame(0, EYE_OBJECT);
     aShipPosition[EYE_OBJECT] = aShipPosition[0];
     asObjectCollisionRadius[EYE_OBJECT] = asObjectCollisionRadius[0];
-    generate_stars();
+    SwcGenerateStars();
     return count;
 }
 
@@ -729,7 +829,7 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
     if (cMissionObjectiveCount > 0)
         update_objective_location((short)((unsigned short)nSpaceFrame % cMissionObjectiveCount));
     SwcUpdateFlightCamera();
-    update_star_field();
+    SwcUpdateStarField();
     if (acShipTarget[0] >= 0 &&
         (acShipTarget[0] >= 10 || aeObjectClass[acShipTarget[0]] < OBJECT_CLASS_SHIP ||
          aeSpecialManeuver[acShipTarget[0]] == SPECIAL_MANEUVER_UNKNOWN_9))
@@ -739,8 +839,6 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
         lock_off();
     else
         target_locking(acShipTarget[0]);
-    UpdateMessage(&aHudMessageSlots[0]);
-    UpdateMessage(&aHudMessageSlots[1]);
     if (IsCommChoiceMenuOpen()) {
         if (bPlayerDestroyed || !CanOpenCommMenu() ||
             (GetPendingMenuAction() == 2 &&
@@ -854,6 +952,8 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     SDL_Rect rectangle;
     SDL_Rect targetBounds = {0};
     SwcRasterImage *image;
+    SwcBuffer stars = {0};
+    SwcFrame star;
     short object;
     short frame;
     short sorted[SPACE_OBJECT_COUNT];
@@ -868,21 +968,14 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     if (SDL_RenderClear(renderer) != 0)
         return -1;
-    SDL_SetRenderDrawColor(renderer, 160, 175, 200, 255);
-    for (object = 1; object <= SPACE_LAST_MOVING_OBJECT; object++) {
-        if ((aeObjectClass[object] == OBJECT_CLASS_STAR ||
-             aeObjectClass[object] == OBJECT_CLASS_DUST) &&
-            asObjectScreenX[object] != (short)0x8001)
-            SDL_RenderDrawPoint(renderer, 160 + asObjectScreenX[object],
-                                 centreY + asObjectScreenY[object]);
-    }
     if (SdlDrawSwcSpaceGlare() != 0)
         return -1;
     for (object = nCameraViewMode > 3 ? 0 : 1;
          object <= SPACE_LAST_MOVING_OBJECT; object++) {
-        if (aeObjectClass[object] < OBJECT_CLASS_EXPLOSION ||
+        if ((aeObjectClass[object] < OBJECT_CLASS_EXPLOSION &&
+             aeObjectClass[object] != OBJECT_CLASS_STAR && aeObjectClass[object] != OBJECT_CLASS_DUST) ||
             aeObjectClass[object] == OBJECT_CLASS_FIXED_OBJECT ||
-            asObjectScreenX[object] == (short)0x8001)
+            asObjectScreenX[object] == (short)0x8001 || object == nNavPointerObject)
             continue;
         index = count++;
         while (index > 0 && distances[sorted[index - 1]] < distances[object]) {
@@ -893,6 +986,40 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     }
     for (index = 0; index < count; index++) {
         object = sorted[index];
+        /* CODE_02 +0x0142: class 4 dust is one palette-128 pixel.
+         * Class 2 stars use unscaled MacDraw2 with the sprite's origin. */
+        if (aeObjectClass[object] == OBJECT_CLASS_DUST) {
+            if (SDL_SetRenderDrawColor(renderer, colors[0x80].r,
+                    colors[0x80].g, colors[0x80].b, 255) != 0 ||
+                SDL_RenderDrawPoint(renderer, 160 + asObjectScreenX[object],
+                    centreY + asObjectScreenY[object]) != 0)
+                return -1;
+            continue;
+        }
+        if (aeObjectClass[object] == OBJECT_CLASS_STAR) {
+            frame = (short)(asObjectViewFrame[object] - 32);
+            if (frame < 0 || frame >= (short)SDL_arraysize(swcStarTextures))
+                return SDL_SetError("Invalid SWC star frame %d", asObjectViewFrame[object]);
+            if (swcStarTextures[frame] == NULL) {
+                if (SwcCMGetChunk(cockpitCmf, "PLNT", 1, &stars) != 0)
+                    return -1;
+                if (SwcGetFramePtr(&stars, (uint32_t)(frame + 32), &star) == 0) {
+                    swcStarBounds[frame] = (SDL_Rect){star.x, star.y, star.width, star.height};
+                    swcStarTextures[frame] = SdlCreateSwcTexture(renderer, &stars,
+                        (uint32_t)(frame + 32), colors);
+                }
+                SDL_free(stars.data);
+                SDL_zero(stars);
+                if (swcStarTextures[frame] == NULL)
+                    return -1;
+            }
+            rectangle = swcStarBounds[frame];
+            rectangle.x += 160 + asObjectScreenX[object];
+            rectangle.y += centreY + asObjectScreenY[object];
+            if (SDL_RenderCopy(renderer, swcStarTextures[frame], NULL, &rectangle) != 0)
+                return -1;
+            continue;
+        }
         if (SwcLoadFlightImages(cockpitCmf, spaceCmf,
                                aeObjectType[object], &images[aeObjectType[object]]) != 0)
             return -1;
@@ -987,7 +1114,7 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
     zero_vector(&aShipVelocity[EYE_OBJECT]);
     look_at(0);
     set_eye_direction_and_position();
-    generate_stars();
+    SwcGenerateStars();
     remove_nav_pointer();
     SdlStopSwcAfterburnerSound();
     SdlPlaySwcSound(17, 255); /* CODE_14 visit_the_cinema +0x0028. */
@@ -1045,7 +1172,7 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
         if (frames > 0 && elapsed >= interval) {
             nTickCount60Hz = (unsigned int)((uint64_t)current * 60 / 1000);
             SdlSwcUpdateSpace();
-            update_star_field();
+            SwcUpdateStarField();
             check_next_wave();
             /* CODE_13 update_cockpit +0x0316..+0x034e also runs during
                external views and checks one objective per space frame. */
@@ -1073,7 +1200,7 @@ done:
     cViewObject = savedViewObject;
     cCockpitView = savedCockpit;
     SwcUpdateFlightCamera();
-    generate_stars();
+    SwcGenerateStars();
     SwcResetFlightInput();
     return result;
 }
@@ -1289,7 +1416,7 @@ static int SwcRunFlightScene(enum SwcFlightScene scene)
     zero_vector(&aShipVelocity[EYE_OBJECT]);
     look_at(cViewObject);
     SwcUpdateSceneCamera();
-    generate_stars();
+    SwcGenerateStars();
     nRenderedSpaceFrame = 0;
     focused = (SDL_GetWindowFlags(swcCinemaWindow) & SDL_WINDOW_INPUT_FOCUS) != 0;
     previous = SDL_GetTicks();
@@ -1402,7 +1529,7 @@ static int SwcRunFlightScene(enum SwcFlightScene scene)
         nTickCount60Hz = (unsigned int)((uint64_t)now * 60 / 1000);
         SdlSwcUpdateSpace();
         SwcUpdateSceneCamera();
-        update_star_field();
+        SwcUpdateStarField();
         nRenderedSpaceFrame++;
         ticks++;
 draw_scene:
@@ -1860,11 +1987,11 @@ title_menu:
                         if (command > 0)
                             SdlSwcVocalizeMessage(command);
                         if (command == 12)
-                            set_global_message(bLandingAuthorized ? "Landing clearance granted" :
-                                "Landing clearance denied", 0x81, 5);
+                            SdlSwcCockpitMessage(bLandingAuthorized ? "Landing clearance granted" :
+                                "Landing clearance denied", 0x81, 0, -1);
                         else if (command > 0 && recipient > 0 && recipient < 10)
-                            set_global_message(acWingmanMessageState[recipient] == 1 ?
-                                "Unable to comply" : "Message sent", 0x81, 3);
+                            SdlSwcCockpitMessage(acWingmanMessageState[recipient] == 1 ?
+                                "Unable to comply" : "Message sent", 0x81, 0, -1);
                     }
                     break;
                 case SDLK_F1:
@@ -2060,6 +2187,10 @@ done:
     swcRasterCanvas = NULL;
     SDL_DestroyTexture(swcPauseFont.texture);
     SDL_zero(swcPauseFont);
+    for (view = 0; view < (int)SDL_arraysize(swcStarTextures); view++) {
+        SDL_DestroyTexture(swcStarTextures[view]);
+        swcStarTextures[view] = NULL;
+    }
     SDL_DestroyRenderer(renderer);
     SdlShutdownJoysticks();
     SDL_DestroyWindow(window);

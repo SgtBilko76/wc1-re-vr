@@ -6,7 +6,7 @@
 #include <string.h>
 
 static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
-                           const char *path)
+                           const char *path, int dimOnFinish)
 {
     SwcMovie movie = {0};
     SDL_Surface *indexed = NULL;
@@ -30,6 +30,7 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
     int changed = 1;
     int redraw = 1;
     int result = SWC_MOVIE_ERROR;
+    int index;
 
     SdlPauseSwcSound(1);
     SdlClearSwcPcm();
@@ -149,6 +150,25 @@ static int SdlPlaySwcMovie(SDL_Window *window, SDL_Renderer *renderer,
     }
 
 done:
+    /* CODE_15 movie_dim_screen +0x046c halves all palette entries after
+     * a movie group. CODE_12 MovieDisplay +0x0738 does the same on skip,
+     * leaving entries 0 and 255 unchanged. Both are immediate palette
+     * changes; the next scene owns the subsequent palette. */
+    if ((result == SWC_MOVIE_FINISHED && dimOnFinish) || result == SWC_MOVIE_SKIPPED) {
+        for (index = result == SWC_MOVIE_SKIPPED ? 1 : 0;
+             index < (result == SWC_MOVIE_SKIPPED ? 255 : 256); index++) {
+            movie.colors[index].r >>= 1;
+            movie.colors[index].g >>= 1;
+            movie.colors[index].b >>= 1;
+        }
+        if (SDL_SetPaletteColors(indexed->format->palette, movie.colors, 0, 256) != 0 ||
+            SDL_BlitSurface(indexed, NULL, rgba, NULL) != 0 ||
+            SDL_UpdateTexture(texture, NULL, rgba->pixels, rgba->pitch) != 0 ||
+            SDL_RenderCopy(renderer, texture, NULL, NULL) != 0)
+            result = SWC_MOVIE_ERROR;
+        else
+            SDL_RenderPresent(renderer);
+    }
     SDL_strlcpy(failure, SDL_GetError(), sizeof(failure));
     SdlClearSwcPcm();
     SDL_DestroyTexture(texture);
@@ -235,7 +255,8 @@ int SdlPlaySwcStartup(SDL_Window *window, SDL_Renderer *renderer,
             SdlPauseSwcSound(1);
             SdlPlaySwcMusic("SUPRWNG4.MooV", 50);
         }
-        result = SdlPlaySwcMovie(window, renderer, paths[index]);
+        result = SdlPlaySwcMovie(window, renderer, paths[index],
+            index == 0 || index + 1 == SDL_arraysize(names));
         if (index == 0 && result == SWC_MOVIE_SKIPPED)
             continue;
         if (result != SWC_MOVIE_FINISHED)
@@ -353,7 +374,9 @@ static int SdlPlaySwcMovieSequence(SDL_Window *window, SDL_Renderer *renderer,
     /* Funeral music spans the movies and both room speeches. Its lifetime
      * belongs to SdlRunSwcCarrier, as in CODE_03 funeral_sequence. */
     for (index = 0; index < count; index++) {
-        result = SdlPlaySwcMovie(window, renderer, paths[index]);
+        result = SdlPlaySwcMovie(window, renderer, paths[index],
+            index + 1 == count && sequence != SWC_MOVIES_FUNERAL_START &&
+            sequence != SWC_MOVIES_FUNERAL_FAREWELL);
         if (result != SWC_MOVIE_FINISHED)
             break;
     }

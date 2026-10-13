@@ -2,25 +2,7 @@
  * The Mac map uses 32-bit world units and its own layout, not WC1 SetScale. */
 #include "wc1.h"
 #include "swc.h"
-
-typedef struct SwcNavEntry {
-    FixedVector position;
-    SDL_Point marker;
-    SDL_Point label;
-    char text[32];
-    int frame;
-    int color;
-    int objective;
-} SwcNavEntry;
-
-typedef struct SwcNavMap {
-    SwcNavEntry entries[ACTIVE_MISSION_NAV_POINT_COUNT * 10 + MISSION_OBJECTIVE_COUNT + 1];
-    int count;
-    int minX;
-    int maxX;
-    int minZ;
-    int maxZ;
-} SwcNavMap;
+#include "swc_map.h"
 
 typedef struct SwcNavArt {
     SDL_Texture *texture;
@@ -51,10 +33,15 @@ static void SwcNavCheckPoint(SwcNavMap *map, FixedVector point)
     map->maxZ = SDL_max(map->maxZ, z);
 }
 
-/* CODE_14 FindTextPos +0x142c and BuildMap +0x14f8. DATA+0x28a
- * supplies (137,138,41,43,0,0); label rows are 138/17+1 pixels high. */
-static void SwcBuildNavMap(SwcNavMap *map, const SwcTextFont *font)
+/* CODE_14 FindTextPos +0x142c and BuildMap +0x14f8. DATA+0x272/+0x28a
+ * contain width, height, layer origin and the extra marker offset. */
+void SdlBuildSwcMap(SwcNavMap *map, const SwcTextFont *font, int navigation)
 {
+    static const int layouts[2][6] = {
+        {125, 124, 40, 20, 54, 45}, {137, 138, 41, 43, 0, 0}
+    };
+    const int *layout = layouts[navigation != 0];
+    int rowHeight = layout[1] / 17 + 1;
     unsigned char rows[17] = {0};
     MissionObjective *objective;
     MissionNavPoint *nav;
@@ -137,12 +124,14 @@ static void SwcBuildNavMap(SwcNavMap *map, const SwcTextFont *font)
             entry->color = objective->type == 1 ? 0xfa : objective->type == 4 ? 0xfb : 0xfc;
         SDL_strlcpy(entry->text, objective->displayName, sizeof(entry->text));
     }
-    entry = &map->entries[map->count++];
-    entry->position = aShipPosition[0];
-    entry->frame = 2;
-    entry->color = 0xf8;
-    entry->objective = -1;
-    SDL_strlcpy(entry->text, (const char *)abMissionAuxData, sizeof(entry->text));
+    if (navigation) {
+        entry = &map->entries[map->count++];
+        entry->position = aShipPosition[0];
+        entry->frame = 2;
+        entry->color = 0xf8;
+        entry->objective = -1;
+        SDL_strlcpy(entry->text, (const char *)abMissionAuxData, sizeof(entry->text));
+    }
 
     /* SetScale, ScaleX +0x1eaa and ScaleY +0x1f06. Preserve the Mac's
      * asymmetric 10,000-unit margin and its integer division order. */
@@ -150,12 +139,14 @@ static void SwcBuildNavMap(SwcNavMap *map, const SwcTextFont *font)
     height = 10000 + map->maxZ - map->minZ;
     centreX = map->minX + width / 2;
     centreZ = map->maxZ - height / 2;
-    scale = SDL_max(1, SDL_max(width / 137, height / 138));
+    scale = SDL_max(1, SDL_max(width / layout[0], height / layout[1]));
     for (index = 0; index < map->count; index++) {
         entry = &map->entries[index];
-        entry->marker.x = 41 + 137 / 2 + ((entry->position.x >> 8) - centreX) / scale;
-        entry->marker.y = 43 + 138 / 2 - ((entry->position.z >> 8) - centreZ) / scale;
-        row = SDL_clamp((entry->marker.y - 43) / 9, 0, 16);
+        entry->marker.x = layout[2] + layout[4] + layout[0] / 2 +
+            ((entry->position.x >> 8) - centreX) / scale;
+        entry->marker.y = layout[3] + layout[5] + layout[1] / 2 -
+            ((entry->position.z >> 8) - centreZ) / scale;
+        row = SDL_clamp((entry->marker.y - layout[3]) / rowHeight, 0, 16);
         if (rows[row]) {
             for (distance = 1; distance < 3; distance++) {
                 if (row + distance <= 16 && !rows[row + distance]) {
@@ -170,8 +161,8 @@ static void SwcBuildNavMap(SwcNavMap *map, const SwcTextFont *font)
         }
         rows[row] = 1;
         entry->label.x = SDL_min(entry->marker.x,
-            41 + 137 - SdlSwcTextWidth(font, entry->text)) - 1;
-        entry->label.y = 43 + row * 9 + 8;
+            layout[2] + layout[4] + layout[0] - SdlSwcTextWidth(font, entry->text)) - 1;
+        entry->label.y = layout[3] + row * rowHeight + 8;
     }
 }
 
@@ -515,7 +506,7 @@ int SdlShowSwcComputer(SDL_Window *window, SDL_Renderer *renderer, const char *r
         SDL_TEXTUREACCESS_STREAMING, SWC_FRAME_WIDTH, SWC_FRAME_HEIGHT);
     if (canvas == NULL || SDL_SetTextureBlendMode(canvas, SDL_BLENDMODE_BLEND) != 0)
         goto done;
-    SwcBuildNavMap(&map, &labelFont);
+    SdlBuildSwcMap(&map, &labelFont, 1);
     if (SDL_RenderSetClipRect(renderer, NULL) != 0)
         goto done;
     SDL_SetWindowMouseGrab(window, SDL_FALSE);
