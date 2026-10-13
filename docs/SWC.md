@@ -649,19 +649,68 @@ TKHD portraits use palettes 190/191. Body origins follow `DrawDebriefingLongShot
 frame 0 base used in other conversations.
 Early returns and Spirit's loss select the original dialogue instead of a
 fixed success outcome. Spirit's funeral follows if she died on this mission.
-Office/award ceremonies, save persistence and advancing to Enyo 2 remain
-pending; dismissal returns to the title menu after any funeral.
+Dismissal returns to the title menu after any funeral. Office/award ceremonies
+are not reached by the original demo's Enyo 1 path; see the postflight audit
+below. Save persistence and later campaign progression remain unimplemented.
 
 Validation: original Ghidra instructions and offline demo-data inspection,
 static review, and `make -j4 modern modern-gui`. No tests, interactive code,
 game/GUI sessions or audio playback were run. Existing packed-pointer linker
 warnings remain; the launcher fixture only gained the required CMF filenames.
 
+## Demo postflight applicability
+
+The original demo returns to its title after one flight. CODE_09 `squadron`
++0x003a..+0x0058 selects Enyo 1 and the Hornet; after `GameFlow` returns zero
+at +0x219c, `squadron` +0x0090..+0x00aa returns to `Title_Sequence`.
+
+CODE_09 `GameFlow` +0x2002..+0x200a branches directly to the wingman-funeral
+check when the post-series sequence is -1, bypassing every office/award call.
+`UpdateSeries` +0x1922..+0x1942 only selects a sequence when the incremented
+mission index reaches the series mission count. `Data.CMF` `CMP0/2` describes
+Enyo as two missions (BE32 at +4); finishing mission index 0 leaves the sequence
+at -1. The office-pending and medal-pending flags alone cannot open those scenes.
+The three `Office` calls are at +0x2066, +0x214c and +0x2170; the sole
+`MedalSequence` call at +0x2048 additionally requires sequence 64. Enyo 1's
+mission medal record is type 0 with threshold 2000 (BE32 at +32/+36), but
+queuing a medal still does not bypass the series gate.
+
+The supplied data retains scripts and palettes for these later scenes, while
+omitting their presentation assets. CODE_03 `Office` +0x147c and
+`MedalSequence` +0x3584 identify the script chunks. `GameMode` +0x6e3c uses
+the filename/palette tables at DATA/0 +0x4046/+0x3fd2:
+
+| Scene | Present in the demo | Missing from the demo |
+| --- | --- | --- |
+| Office | `Data.CMF` `BRF0/2` (4454 bytes), palettes 192/202 | `Office.CMF`, `COMMANDE.MooV` |
+| Medal ceremony | `Data.CMF` `BRF0/3` (1760 bytes), palettes 194..196/204..206 | `MedalLongShot.CMF`, `MedalCommander.CMF`, `MedalPinning.CMF`, `MEDALCE0.MooV`, `MEDALCE1.MooV`, `MEDALCER.MooV` |
+
+Office uses GameMode 5; medal establishing, commander and pinning shots use
+modes 10, 25 and 26. `ViewMedals.CMF` supplies the existing barracks medal-case
+screen, not ceremony artwork. These absent packs must not become required
+demo assets or trigger fabricated postflight scenes.
+
+One reachable flow differed: `GameFlow` +0x1f6a..+0x1f70 bypasses promotion
+and `DeBriefing` after rescued ejection. The SDL host now runs `PostMission`,
+skips landing/debriefing, then plays Spirit's funeral if she was lost and
+returns to the title. Ordinary landings retain debriefing and the same funeral
+check; death and stranding keep their existing endings. Mission setup also
+clears all six pending postflight flags from +0x1ba6..+0x1bc6, so a queued
+first-ejection medal cannot leak into another New Game. These flags are outside
+the shared `ResetCampaignData` template.
+
+Validation: fresh Ghidra CODE_03/09 exports, A5 jump-table/string resolution,
+offline inventory of all 23 demo CMFs and the original resource fork, native
+and GUI builds, and Clang static analysis. No tests, game or GUI were run.
+Full `UpdateSeries`, office/ceremony presentation and campaign persistence
+remain future full-game work; they are not additional scenes missing from
+the demo's Enyo 1 ending.
+
 ## Funeral scenes
 
 CODE_09 `GameFlow` +0x1b8e routes player death to `funeral_sequence(1)`
 (call at +0x1e44), without landing or `PostMission`. Its +0x218c check starts
-`funeral_sequence(0)` after debriefing when the wingman was lost. The SDL host
+`funeral_sequence(0)` after any debriefing when the wingman was lost. The SDL host
 uses those outcomes and WC1's existing pilot-death state, retaining the flown
 mission for the original `ParseTests` command 30 / `wing_status` branches.
 
@@ -802,8 +851,9 @@ the missing asset. No game data is added to this repository.
 CODE_09 `GameFlow` +0x1e62..+0x1ef2 checks for stranding after ejection. A rescued
 pilot bypasses the landing movie, records the ejection, loses one promotion point
 (minimum zero), increments the eject count and queues medal 3 for the first eject.
-PostMission and the existing debriefing then run. The office/medal ceremony and
-further campaign progression remain outside the Enyo 1 host.
+`PostMission` runs, but +0x1f6a..+0x1f70 skips debriefing. The series gate at
++0x2002 also bypasses office/medal ceremonies for Enyo 1, even with that pending
+medal. Any lost-wingman funeral then precedes the return to the title menu.
 
 CODE_13 `check_stranded` +0x1630 selects arcade state 3 when the carrier record
 has state 3 and no enemy is within 30,000 units. This now enters CODE_14's BUC
@@ -1374,7 +1424,8 @@ appearance and camera feel still need user review.
    and lock animation stay deferred with further WC2 integration.
 3. Continue later campaign communications, remaining HUD modes and
    post-debriefing progression. Landing and the first debriefing are connected;
-   the demo disables its simulator.
+   the demo disables its simulator and ends after Enyo 1. Office/award ceremonies
+   are later campaign work, not missing demo visits (see the postflight audit).
 4. Connect later scripted scenes; add save/load, movie palette transitions,
    remaining room animations and the
    original briefing-map presentation. The first bar, barracks and briefing, AIFF speech and Hornet

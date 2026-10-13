@@ -461,8 +461,14 @@ static int SwcStartMissionShips(void)
     nPlayerKillCount = 0;
     nWingmanKillCount = 0;
     nWingmanKilledThisMission = 0;
+    /* CODE_09 GameFlow +0x1ba6..+0x1bc6 resets pending postflight events.
+     * These globals are outside ResetCampaignData's campaign template. */
+    nPostSeriesSequence = -1;
+    nPendingMedalIndex = -1;
     bPlayerEjectedThisMission = 0;
+    bPromotionPending = 0;
     bOfficeVisitPending = 0;
+    bPlayerShipTypeChanged = 0;
     bRadioSilence = 0;
     clear_message_time();
     nEnemySighting = 0x7fff;
@@ -1935,15 +1941,22 @@ title_menu:
             if (movieResult == SWC_MOVIE_ERROR)
                 goto done;
             if (movieResult != SWC_MOVIE_QUIT) {
-                /* CODE_09 PostMission +0x1672 matches WC1's statistics and
-                   badges. Keep the flown mission selected for its debrief. */
+                /* CODE_09 PostMission +0x1672 shares WC1's player/wingman
+                   statistics and badges. Keep the flown mission selected. */
                 PostMission();
-                movieResult = SdlRunSwcCarrier(window, renderer, missionPath, path, SWC_CARRIER_DEBRIEFING);
-                if (movieResult == SWC_MOVIE_ERROR)
-                    goto done;
+                /* GameFlow +0x1f6a..+0x1f70 skips DeBriefing after rescue.
+                 * Enyo 1 cannot finish its two-mission series (CMP0/2 +4),
+                 * so +0x2002..+0x200a also bypasses Office/MedalSequence,
+                 * even when the first ejection has queued medal 3. */
+                if (!bPlayerEjectedThisMission) {
+                    movieResult = SdlRunSwcCarrier(window, renderer, missionPath, path,
+                                                    SWC_CARRIER_DEBRIEFING);
+                    if (movieResult == SWC_MOVIE_ERROR)
+                        goto done;
+                }
                 if (movieResult != SWC_MOVIE_QUIT && nWingmanKilledThisMission) {
                     /* GameFlow +0x218c dispatches the lost-wingman service
-                       after debriefing. The flown mission remains selected. */
+                       after any debriefing. The flown mission remains selected. */
                     movieResult = SdlRunSwcCarrier(window, renderer, missionPath, path,
                                                     SWC_CARRIER_WINGMAN_FUNERAL);
                     if (movieResult == SWC_MOVIE_ERROR)
