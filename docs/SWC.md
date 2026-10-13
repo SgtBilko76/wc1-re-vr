@@ -336,11 +336,18 @@ Flight uses WC1's DOS/Win32 mouse and keyboard controls through SDL2:
 | L | Toggle target-lock mode; ITTS leads a hostile fighter when guns are in range |
 | A | Autopilot toward the selected objective, stopping for enemies or hazards |
 | N / M | Next objective / nav map |
+| Y / D / F | Cockpit / battle / chase view; D or F again returns to the cockpit |
 | C / 1..7 | Open/close WC1 communications / choose a numbered recipient or command |
 | Ctrl+E | Eject; a damaged ejector can fail, and a destroyed ejector cannot operate |
 | Ctrl+F1 | Toggle cockpit |
 | P / Esc | Toggle pause |
 | Cmd+Enter (macOS), Alt+Enter (other platforms) | Toggle fullscreen in flight, menus, and movies |
+
+M opens the original in-flight navigation page and suspends flight. Arrow keys
+or N select an objective; clicking its marker or label selects it directly.
+M, Escape, Backspace, Enter, Space, or clicking the highlighted Nav button
+returns to flight. Controller D-pad selects objectives, A accepts, and B/Back
+closes the map. Closing it preserves the camera and recentres the flight mouse.
 
 The window title remains **Super Wing Commander** throughout the demo, without
 control hints or flight telemetry. The pointer is confined to the flight window;
@@ -590,7 +597,7 @@ Carrier presentation now includes the following recovered behavior:
   palettes directly. Captured render targets keep resize, pause and skip safe.
 
 Remaining presentation differences include classic bitmap font rasterization,
-the portable font fallback, the complete Mac navigation-map renderer, dismissal
+the portable font fallback, the briefing-map renderer, dismissal
 walk-out, bunk occupants, incidental bar animations and exact frame pacing.
 Movie palette transitions remain separate work.
 
@@ -895,7 +902,7 @@ rejected because a persisted Mac pointer cannot be used as a host pointer.
 | `set_sphere_point` in `src/brains.c` | Adds the existing nav position and ship-relative position | Validated with synthetic data and Enyo 1 |
 | `Set_up_ship_info` / `init_intelligence_data` | Sets the Enyo player's position, orientation, speed, pilot, and mission state | Other mission modes and SWC AI differences need review |
 | `Build_objective_list` | Builds Enyo's three nav objectives and carrier-return objective | Other SWC objective behavior is not established |
-| `cycle_next_objective`, `nav_getxy`, `SetScale` | Cycles and projects the shared objective state | This uses WC1 map units/layout; SWC's `nav_getxy` uses wider coordinates and different scaling |
+| `cycle_next_objective`, `nav_getxy`, `SetScale` | Cycles shared objectives and projects the briefing map | Briefing still uses WC1 map units/layout; in-flight navigation now uses the Mac scaling and layout in `src/sdl/swc_nav.c` |
 | `PollKeyboardState`, `process_player_input` | WC1 keyboard priorities, diagonals, gradual steering, reversals, and Shift response | Deliberately uses DOS/Win32 controls; SWC's Mac event/device layer differs |
 | `player_input`, `QueueInputEvent`, `WarpMouseTo` | Original mouse response, edge limits, right-button roll/throttle, and recentering | SWC supplies only motion events and the right-button modifier; weapon events are excluded |
 | `accelerate`, `celerate`, `your_afterburner`, `fire_afterburner` | Throttle bounds, boost activation, and boost timers | SDL supplies the native afterburner loop and resource-fork release tail |
@@ -1318,6 +1325,44 @@ resource-fork, allocation, and input plumbing have no one-to-one original game
 function mapping. Do not infer code reuse percentages from matching names;
 many WC1 names were already derived from this Mac executable's MacsBug strings.
 
+## In-flight navigation and selectable cameras
+
+The SDL flight host exposes the original MENU/206 bindings: Y returns to the
+cockpit, D toggles battle view (14), and F toggles chase view (4).
+CODE_01 `DoViewsMenu` +0x3052 and `process_player_input` supply the toggles.
+The camera updates follow CODE_02 `new_view` +0x3190,
+`set_eye_direction_and_position` +0x25d8 and `battle_view` +0x58f6.
+Chase starts 1,200 units behind the player, approaches a 700-unit trailing
+position with the original 1/25 response, and follows the player's roll.
+Battle view frames the active fleet, switching to player-relative framing
+when ships are widely separated. Both render the player's ship without cockpit
+layers. Map visits preserve the view, and autopilot repositions it on arrival.
+The shared WC1 camera and Win32 reconstruction are unchanged.
+
+`src/sdl/swc_nav.c` replaces the M-key overlay with navigation page 0 of
+CODE_14 `InflightComputer` +0x2dd2. It loads `ComputerInflight.CMF` CKPT/2
+(frame), /3 (map background), /4 (selected tab), /10 (markers), and /13
+(eject guard), using GameMode(11)'s clut/250. Mac `BuildMap`
++0x14f8, `FindTextPos` +0x142c and `SetScale` +0x1c8a supply the 137x138
+map at (41,43), 10,000-unit margin, marker types/colors, objective visibility,
+visited state, player position, hazard fields and label placement.
+`UpdateInflightNavText` +0x273a supplies the sector, system, flight, mission
+role and selected-objective note, with size-9 text coordinates and 11-pixel
+line spacing. Map labels use size 10. Original classic-Mac font pixels remain
+subject to the existing Helvetica/fallback limitation.
+
+Flight and audio pause while the map is open; input closes it on release to
+avoid firing or toggling pause on return. SDL adds mouse marker/label selection,
+controller navigation and a bounded selection search when objectives are hidden.
+Marker blinking uses a 50 ms host clock. The briefing map and the computer's
+communications, gun, weapon and eject tabs remain separate presentation work;
+their existing flight controls remain available.
+
+Validation uses fresh Ghidra instruction exports, offline CMF/resource-fork
+inspection, native and GUI builds, and Clang static analysis. No tests were
+added or run, and neither the game nor the GUI was launched. Interactive
+appearance and camera feel still need user review.
+
 ## Next support slices
 
 1. Continue comparing shared AI/collision behavior with SWC instructions,
@@ -1332,7 +1377,7 @@ many WC1 names were already derived from this Mac executable's MacsBug strings.
    the demo disables its simulator.
 4. Connect later scripted scenes; add save/load, movie palette transitions,
    remaining room animations and the
-   complete Mac map renderer. The first bar, barracks and briefing, AIFF speech and Hornet
+   original briefing-map presentation. The first bar, barracks and briefing, AIFF speech and Hornet
    startup/opening/launch/landing playback, first debriefing and player/Spirit funerals are
    present, along with the title battle, idle replay, death cinematic, stranded
    BUC sequence and animated end background. Other scene entry points remain pending.

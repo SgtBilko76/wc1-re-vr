@@ -84,6 +84,56 @@
   },
   "functions": [
     {
+      "original_name": "new_view",
+      "resource": "CODE_02.bin",
+      "entry_offset": "0x3190",
+      "end_offset": "0x37aa",
+      "source": "src/sdl/swc_flight.c",
+      "symbol": "SwcSelectFlightView",
+      "relationship": "partial-algorithm-and-presentation-adaptation",
+      "differences": "Views 0/4/14 follow CODE_01 DoViewsMenu +0x3052 and MENU/206 Y/D/F bindings. Chase case 4 targets +0x35ba: -0x4b000 initial offset, despite an incorrect 0x5000 in Ghidra pseudocode. SDL owns cockpit visibility and input. Selected view persists through navigation and is repositioned after autopilot travel."
+    },
+    {
+      "original_name": "set_eye_direction_and_position",
+      "resource": "CODE_02.bin",
+      "entry_offset": "0x25d8",
+      "end_offset": "0x3144",
+      "source": "src/sdl/swc_flight.c",
+      "symbol": "SwcUpdateFlightCamera",
+      "relationship": "partial-algorithm-adaptation",
+      "differences": "Mac cases 4/14 replace the forced cockpit camera. Chase uses -700/-500 units, 25/7-frame following, roll matching and CODE_02 shrink_vector +0x57c8 with its 0xf00 limit. Shared cases retain cockpit/autopilot behavior; scene view 16 keeps its own updater. No Win32 changes."
+    },
+    {
+      "original_name": "battle_view",
+      "resource": "CODE_02.bin",
+      "entry_offset": "0x58f6",
+      "end_offset": "0x5bb4",
+      "source": "src/sdl/swc_flight.c",
+      "symbol": "SwcBattleView",
+      "relationship": "algorithm-adaptation",
+      "differences": "Active ships 0..9 supply the integer centroid, 1200-unit minimum range, player-relative framing beyond 8000 units and 10000-unit look-at threshold. Shared vector operations use Mac point_at reduction through SwcPointCameraAt; scratch object 63 supplies orientation. Both external views render the player ship and omit cockpit layers."
+    },
+    {
+      "original_name": "BuildMap",
+      "resource": "CODE_14.bin",
+      "entry_offset": "0x14f8",
+      "end_offset": "0x1bf8",
+      "source": "src/sdl/swc_nav.c",
+      "symbol": "SwcBuildNavMap",
+      "relationship": "algorithm-and-presentation-adaptation",
+      "differences": "Navigation DATA+0x28a layout (137,138,41,43,0,0), SetScale +0x1c8a, ScaleX/ScaleY +0x1eaa/+0x1f06 and FindTextPos +0x142c. Includes player/objective/hazard bounds, mobile positions, hidden/lost filtering, visited colors and label placement. Uses matching shared find_ships_sphere (CODE_05 +0x6498) and mission state. SDL caches CKPT/10 masks; size-10 Helvetica uses the platform font adapter. Briefing remains separate."
+    },
+    {
+      "original_name": "InflightComputer",
+      "resource": "CODE_14.bin",
+      "entry_offset": "0x2dd2",
+      "end_offset": "0x3616",
+      "source": "src/sdl/swc_nav.c",
+      "symbol": "SdlShowSwcNavigation",
+      "relationship": "partial-presentation-adaptation",
+      "differences": "Navigation page 0 uses ComputerInflight.CMF CKPT/2,3,4,10,13 and GameMode(11)'s clut/250. UpdateInflightNavText +0x273a supplies size-9 text positions, mission information and objective note. Simulation/audio suspend while open; blink uses a host 50 ms clock. Selection uses set_new_objective with a bounded flight-path search. Mouse selection, controller input, fullscreen and release-to-close are SDL adaptations. Other computer tabs remain separate presentation work."
+    },
+    {
       "original_name": "init_data_struct1",
       "resource": "CODE_08.bin",
       "entry_offset": "0x0286",

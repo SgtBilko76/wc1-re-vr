@@ -237,4 +237,7 @@ extern SDL_Point swcCockpitOffset; /* SWC DATA/A5+0x47d4/+0x47d8. */
 void SdlSwcCockpitMessage(const char *text, unsigned char color, int flash, int voice);
 void SdlFreeSwcCockpit(void);
 
+/* Original in-flight navigation page; flight is suspended until it closes. */
+int SdlShowSwcNavigation(SDL_Window *window, SDL_Renderer *renderer, const char *resourceFork);
+
 #endif

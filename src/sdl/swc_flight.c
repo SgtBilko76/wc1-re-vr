@@ -43,6 +43,155 @@ static SwcFlightImages *swcCinemaImages;
 static SDL_Texture *swcRasterCanvas;
 int nSwcCinemaResult;
 
+/* CODE_02 shrink_vector +0x57c8 and shrink +0x5828. The Mac always
+ * halves once and repeats until every component is below 0xf00. */
+static void SwcShrinkCameraVector(FixedVector *vector)
+{
+    do {
+        vector->x >>= 1;
+        vector->y >>= 1;
+        vector->z >>= 1;
+    } while (vector->x <= -0xf00 || vector->x >= 0xf00 ||
+             vector->y <= -0xf00 || vector->y >= 0xf00 ||
+             vector->z <= -0xf00 || vector->z >= 0xf00);
+}
+
+/* CODE_04 point_at +0x1aa4, using the Mac vector reduction above. */
+static void SwcPointCameraAt(short object, FixedVector point)
+{
+    FixedVector direction;
+
+    ComputeVectorDelta(&aShipPosition[object], &point, &direction);
+    SwcShrinkCameraVector(&direction);
+    aShipForwardVector[object] = direction;
+    fix_objects_ijk(object);
+}
+
+/* CODE_02 battle_view +0x58f6. Same fleet-centre calculation as WC1's
+ * SetFleetOverviewView, but Mac point_at uses a different reduction limit. */
+static void SwcBattleView(void)
+{
+    FixedVector centre = {0};
+    FixedVector orientation = {255, 255, 255};
+    FixedVector offset;
+    int ships = 0;
+    int maximumRange = 1200 * 256;
+    int playerRange = maximumRange;
+    int distance;
+    int object;
+
+    for (object = 0; object < 10; object++) {
+        if (aeObjectClass[object] >= OBJECT_CLASS_SHIP)
+            ships++;
+    }
+    if (ships > 1) {
+        for (object = 0; object < 10; object++) {
+            if (aeObjectClass[object] >= OBJECT_CLASS_SHIP) {
+                centre.x += aShipPosition[object].x / ships;
+                centre.y += aShipPosition[object].y / ships;
+                centre.z += aShipPosition[object].z / ships;
+            }
+        }
+        for (object = 9; object >= 0; object--) {
+            if (aeObjectClass[object] < OBJECT_CLASS_SHIP)
+                continue;
+            ComputeVectorDelta(&centre, &aShipPosition[object], &offset);
+            distance = Vector_magnitude(&offset);
+            maximumRange = SDL_max(maximumRange, distance);
+            if (object == 0)
+                playerRange = distance;
+        }
+        if (maximumRange <= 8000 * 256)
+            playerRange = maximumRange;
+    } else {
+        position_relative_ijk(&centre, 0, 400, 400, 400);
+    }
+    distance = (playerRange >> 3) * 9 + 700 * 256;
+    aShipPosition[63] = centre;
+    aShipRightVector[63] = orientation;
+    aShipUpVector[63] = orientation;
+    SwcPointCameraAt(63, aShipPosition[0]);
+    ScaleFixedVector(&aShipRightVector[63], distance >> 2, &offset);
+    AddFixedVectors(&aShipPosition[63], &offset, &aShipPosition[63]);
+    ScaleFixedVector(&aShipUpVector[63], 150 * 256, &offset);
+    AddFixedVectors(&aShipPosition[63], &offset, &aShipPosition[63]);
+    ScaleFixedVector(&aShipForwardVector[63], distance, &offset);
+    AddFixedVectors(&aShipPosition[63], &offset, &aShipPosition[63]);
+    aShipPosition[EYE_OBJECT] = aShipPosition[63];
+    aShipRightVector[EYE_OBJECT] = orientation;
+    aShipUpVector[EYE_OBJECT] = orientation;
+    SwcPointCameraAt(EYE_OBJECT,
+        maximumRange < 10000 * 256 ? centre : aShipPosition[0]);
+}
+
+/* CODE_02 set_eye_direction_and_position +0x25d8, views 4 and 14.
+ * Keep the shared cockpit/autopilot cases; scene view 16 has its own updater. */
+static void SwcUpdateFlightCamera(void)
+{
+    FixedVector direction;
+    FixedVector destination;
+    FixedVector delta;
+
+    if (nCameraViewMode == 14) {
+        SwcBattleView();
+    } else if (nCameraViewMode == 4) {
+        if (aeObjectClass[cViewObject] != OBJECT_CLASS_NULL) {
+            ComputeVectorDelta(&aShipPosition[EYE_OBJECT],
+                &aShipPosition[cViewObject], &direction);
+            destination = aShipForwardVector[0];
+            SetVectorFixedPoint((unsigned int *)&destination,
+                (short)(bAlternateChaseView ? -500 : -700));
+            AddFixedVectors(&destination, &aShipPosition[cViewObject], &destination);
+            ComputeVectorDelta(&aShipPosition[EYE_OBJECT], &destination, &delta);
+            divide_vector(&delta, (bAlternateChaseView ? 7 : 25) * 256,
+                &aShipVelocity[EYE_OBJECT]);
+            SwcShrinkCameraVector(&direction);
+            aShipForwardVector[EYE_OBJECT] = direction;
+            fix_objects_ijk(EYE_OBJECT);
+            nEyeRollGoal = match_roll_orientation(EYE_OBJECT, cViewObject);
+            if (nEyeRollGoal != 0) {
+                if (abs((int)nEyeRollGoal) < 5) {
+                    aShipUpVector[EYE_OBJECT] = aShipUpVector[0];
+                    nEyeRollGoal = 0;
+                } else {
+                    nEyeRollRate = 4;
+                    rotate_eye_to_goal();
+                    rotate_object(EYE_OBJECT);
+                }
+            }
+        }
+        AddFixedVectors(&aShipPosition[EYE_OBJECT], &aShipVelocity[EYE_OBJECT],
+            &aShipPosition[EYE_OBJECT]);
+    } else {
+        set_eye_direction_and_position();
+    }
+}
+
+/* CODE_01 DoViewsMenu +0x3052 and process_player_input: Y/D/F select
+ * cockpit/battle/chase. CODE_02 new_view +0x3190 supplies initial placement. */
+static void SwcSelectFlightView(int view)
+{
+    FixedVector offset;
+
+    nCameraViewMode = view;
+    cViewObject = 0;
+    cCockpitView = view == 0 ? 0 : 4;
+    asObjectCollisionRadius[EYE_OBJECT] = MaxShort(10, asObjectCollisionRadius[0]);
+    if (view == 4) {
+        /* The actual case-4 target is +0x35ba: -0x4b000, or 1,200
+         * units behind the ship. Ghidra's decompiler misreads this case. */
+        ScaleFixedVector(&aShipForwardVector[0], -1200 * 256, &offset);
+        AddFixedVectors(&aShipPosition[0], &offset, &aShipPosition[EYE_OBJECT]);
+        aShipUpVector[EYE_OBJECT] = aShipUpVector[0];
+        aShipForwardVector[EYE_OBJECT] = offset;
+        fix_objects_ijk(EYE_OBJECT);
+    }
+    zero_vector(&aShipVelocity[EYE_OBJECT]);
+    remove_nav_pointer();
+    SwcUpdateFlightCamera();
+    generate_stars();
+}
+
 /* SWC CODE_09 +0x00c2: Update_3Space. Mac house_keep (+0x01d0)
  * has only the periodic nav/hazard checks, without WC1 palette rendering. */
 void SdlSwcUpdateSpace(void)
@@ -55,7 +204,7 @@ void SdlSwcUpdateSpace(void)
     }
     house_keep_objects();
     update_objects_in_space();
-    set_eye_direction_and_position();
+    SwcUpdateFlightCamera();
     if (nCameraViewMode != 16)
         SdlUpdateSwcFlightMusic();
     nSpaceFrame++;
@@ -348,6 +497,7 @@ static int SwcStartMissionShips(void)
     initialize_direction_view_frames();
     nNavPointerObject = -1;
     nCameraViewMode = 0;
+    bAlternateChaseView = 0;
     cViewObject = 0;
     cCockpitView = 0;
     nCannedSceneMode = 0;
@@ -570,9 +720,7 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
         cycle_next_objective();
     if (cMissionObjectiveCount > 0)
         update_objective_location((short)((unsigned short)nSpaceFrame % cMissionObjectiveCount));
-    copy_frame(0, EYE_OBJECT);
-    aShipPosition[EYE_OBJECT] = aShipPosition[0];
-    aShipVelocity[EYE_OBJECT] = aShipVelocity[0];
+    SwcUpdateFlightCamera();
     update_star_field();
     if (acShipTarget[0] >= 0 &&
         (acShipTarget[0] >= 10 || aeObjectClass[acShipTarget[0]] < OBJECT_CLASS_SHIP ||
@@ -687,7 +835,7 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
                           const SwcCmf *cockpitCmf, const SwcCmf *spaceCmf,
                           const SDL_Color colors[256],
                           SwcFlightImages images[OBJECT_TYPE_COUNT],
-                          int cockpitless, int showMap)
+                          int cockpitless)
 {
     static const SDL_Rect frameBorder[] = {
         {0, 0, SWC_FRAME_WIDTH, 6},
@@ -704,12 +852,9 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     int distances[SPACE_OBJECT_COUNT];
     short count = 0;
     short index;
-    short prior;
     /* CODE_02 draw_sorted_objects_to_buffer uses (160,100) + projected XY
        in both cockpit modes. Positive view Y also points down in WC1. */
     int centreY = 100;
-    int x;
-    int y;
 
     SwcTransformObjectsToView(distances);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -725,7 +870,7 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     }
     if (SdlDrawSwcSpaceGlare() != 0)
         return -1;
-    for (object = nCameraViewMode == 12 || nCameraViewMode == 16 ? 0 : 1;
+    for (object = nCameraViewMode > 3 ? 0 : 1;
          object <= SPACE_LAST_MOVING_OBJECT; object++) {
         if (aeObjectClass[object] < OBJECT_CLASS_EXPLOSION ||
             aeObjectClass[object] == OBJECT_CLASS_FIXED_OBJECT ||
@@ -757,8 +902,8 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
             return -1;
     }
     /* CODE_13 update_cockpit draws the HUD and instruments only in
-       cockpit views. External autopilot includes the player's own ship. */
-    if (nCameraViewMode == 12 || nCameraViewMode == 16)
+       cockpit views. External views include the player's own ship. */
+    if (nCameraViewMode > 3)
         goto border;
     if (SdlDrawSwcSpaceHud(targetBounds.w > 0 ? &targetBounds : NULL) != 0)
         return -1;
@@ -770,33 +915,6 @@ static int SwcDrawFlight(SDL_Renderer *renderer, SDL_Texture *cockpit,
     }
     if (SdlDrawSwcHud() != 0 || (!cockpitless && SdlDrawSwcCockpitDamage() != 0))
         return -1;
-    if (showMap) {
-        SetScale();
-        rectangle.x = 80;
-        rectangle.y = 22;
-        rectangle.w = 160;
-        rectangle.h = 146;
-        SDL_SetRenderDrawColor(renderer, 4, 10, 22, 255);
-        SDL_RenderFillRect(renderer, &rectangle);
-        SDL_SetRenderDrawColor(renderer, 70, 230, 130, 255);
-        for (index = 0; index < cMissionObjectiveCount; index++) {
-            short mapX;
-            short mapY;
-
-            nav_getxy(&mapX, &mapY, aMissionObjectives[index].position.x,
-                       aMissionObjectives[index].position.z);
-            x = 85 + mapX;
-            y = 27 + mapY;
-            rectangle.x = x - 2;
-            rectangle.y = y - 2;
-            rectangle.w = rectangle.h = index == cCurrentObjective ? 7 : 4;
-            SDL_RenderDrawRect(renderer, &rectangle);
-            prior = (short)((index + 1) % cMissionObjectiveCount);
-            nav_getxy(&mapX, &mapY, aMissionObjectives[prior].position.x,
-                       aMissionObjectives[prior].position.z);
-            SDL_RenderDrawLine(renderer, x, y, 85 + mapX, 27 + mapY);
-        }
-    }
 border:
     /* CODE_01 dump_buffer_to_screen +0x06dc calls DrawBorder +0x065c
      * in flight modes. Its fixed 8x6 margins cover the full banking range,
@@ -898,7 +1016,7 @@ int SdlSwcVisitCinema(int view, int obj, short frames)
             if (cMissionObjectiveCount > 0)
                 update_objective_location((short)((unsigned short)nSpaceFrame % cMissionObjectiveCount));
             if (SwcDrawFlight(swcCinemaRenderer, NULL, swcCinemaCockpitCmf,
-                              swcCinemaSpaceCmf, swcCinemaColors, swcCinemaImages, 1, 0) != 0) {
+                              swcCinemaSpaceCmf, swcCinemaColors, swcCinemaImages, 1) != 0) {
                 result = -1;
                 goto done;
             }
@@ -915,7 +1033,7 @@ done:
     nCameraViewMode = savedView;
     cViewObject = savedViewObject;
     cCockpitView = savedCockpit;
-    set_eye_direction_and_position();
+    SwcUpdateFlightCamera();
     generate_stars();
     SwcResetFlightInput();
     return result;
@@ -953,13 +1071,7 @@ static void SwcUpdateSceneCamera(void)
     if (Vector_magnitude(&delta) > 0x138800) {
         /* Mac shrink_vector +0x57c8 halves all components until each is
          * below 0xf00. WC1's same-named helper has a different limit. */
-        do {
-            delta.x >>= 1;
-            delta.y >>= 1;
-            delta.z >>= 1;
-        } while (delta.x <= -0xf00 || delta.x >= 0xf00 ||
-                 delta.y <= -0xf00 || delta.y >= 0xf00 ||
-                 delta.z <= -0xf00 || delta.z >= 0xf00);
+        SwcShrinkCameraVector(&delta);
         AddFixedVectors(&aShipVelocity[EYE_OBJECT], &delta,
             &aShipVelocity[EYE_OBJECT]);
         if (Vector_magnitude(&aShipVelocity[EYE_OBJECT]) > 0x5000) {
@@ -1251,7 +1363,7 @@ static int SwcRunFlightScene(enum SwcFlightScene scene)
         nRenderedSpaceFrame++;
         ticks++;
         if (SwcDrawFlight(swcCinemaRenderer, NULL, swcCinemaCockpitCmf,
-                swcCinemaSpaceCmf, swcCinemaColors, swcCinemaImages, 1, 0) != 0)
+                swcCinemaSpaceCmf, swcCinemaColors, swcCinemaImages, 1) != 0)
             goto done;
         if (titleMenu) {
             if (SDL_RenderCopy(swcCinemaRenderer, menuTextures[0], NULL, &bounds[0]) != 0 ||
@@ -1326,7 +1438,6 @@ int SdlRunSwcMission(const char *missionPath, int cockpitless)
     int shipCount;
     int object;
     int view;
-    int showMap = 0;
     int paused = 0;
     int focused = 1;
     int savedCursorVisible = -1;
@@ -1424,7 +1535,6 @@ title_menu:
     SwcResetFlightInput();
     FlushInputEvents();
     paused = 0;
-    showMap = 0;
     elapsed = 0;
     bSwcWaitingForEscort = 0;
     nSwcCinemaResult = 0;
@@ -1603,8 +1713,22 @@ title_menu:
                     if (focused && !paused)
                         cycle_next_objective();
                     break;
+                case SDLK_y:
+                case SDLK_d:
+                case SDLK_f:
+                    if (focused && !paused && !bPlayerDestroyed && nArcadeState == 0) {
+                        view = event.key.keysym.sym == SDLK_y ? 0 :
+                            event.key.keysym.sym == SDLK_d ? 14 : 4;
+                        if (view == nCameraViewMode)
+                            view = 0;
+                        if (view != nCameraViewMode)
+                            SwcSelectFlightView(view);
+                    }
+                    break;
                 case SDLK_a:
                     if (focused && !paused && !bPlayerDestroyed && nArcadeState == 0) {
+                        FixedVector departure = aShipPosition[0];
+
                         auto_pilot_sequence();
                         if (nSwcCinemaResult < 0)
                             goto done;
@@ -1615,9 +1739,10 @@ title_menu:
                         focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
                         SDL_SetWindowMouseGrab(window, focused ? SDL_TRUE : SDL_FALSE);
                         SDL_ShowCursor(focused ? SDL_DISABLE : SDL_ENABLE);
-                        copy_frame(0, EYE_OBJECT);
-                        aShipPosition[EYE_OBJECT] = aShipPosition[0];
-                        aShipVelocity[EYE_OBJECT] = aShipVelocity[0];
+                        /* Travel can move the ship by an entire nav leg.
+                         * Reposition the selected camera at the arrival. */
+                        if (!equ_vector(&departure, &aShipPosition[0]))
+                            SwcSelectFlightView(nCameraViewMode);
                         elapsed = 0;
                         previous = SDL_GetTicks();
                         if (focused)
@@ -1701,7 +1826,22 @@ title_menu:
                     }
                     break;
                 case SDLK_m:
-                    showMap = !showMap;
+                    if (focused && !paused && !bPlayerDestroyed && nArcadeState == 0) {
+                        SwcResetFlightInput();
+                        movieResult = SdlShowSwcNavigation(window, renderer, path);
+                        if (movieResult == SWC_MOVIE_ERROR)
+                            goto done;
+                        if (movieResult == SWC_MOVIE_QUIT) {
+                            result = 0;
+                            goto done;
+                        }
+                        focused = (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0;
+                        SwcResetFlightInput();
+                        elapsed = 0;
+                        previous = SDL_GetTicks();
+                        if (focused)
+                            SwcCentreFlightMouse();
+                    }
                     break;
                 case SDLK_ESCAPE:
                 case SDLK_p:
@@ -1816,7 +1956,7 @@ title_menu:
             goto done;
         }
         if (SwcDrawFlight(renderer, cockpit, &cockpitCmf, &spaceCmf, colors,
-                          images, cockpitless, showMap) != 0)
+                          images, cockpitless) != 0)
             goto done;
         SDL_RenderPresent(renderer);
         SDL_Delay(8);

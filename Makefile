@@ -405,6 +405,7 @@ MODERN_GAME_HOST_SRCS = \
 	src/sdl/swc_flight.c \
 	src/sdl/swc_raster.c \
 	src/sdl/swc_cockpit.c \
+	src/sdl/swc_nav.c \
 	src/sdl/swc_sound.c \
 	src/sdl/swc_music.c \
 	src/sdl/swc_text.c \
