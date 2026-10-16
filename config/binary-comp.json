@@ -97,6 +97,10 @@
       "globals_source": "../out/globals-audit.c",
       "globals_header": "../src/globals.h",
       "code_globals_header": "../code-full/globals.h",
+      "preprocessor": {
+        "defined": {"_MSC_VER": "1020"},
+        "undefined": ["SDL_PORT", "SDL_PORT_LEGACY_DEBUG_OUTPUT"]
+      },
       "values": {
         "policy": "checkValuesCapstone.json"
       },
