@@ -1,8 +1,9 @@
 /*
  *  Kill board, conversation scenes and save-slot flags.
  *
- *  Address range 0x43c000-0x440bff (provisional -- see docs/ORDER.md).
- *  Boundary evidence: ShowTigersClawKillBoard/RunConversationScene; string band 0x4705DC-0x470668.
+ *  Address range 0x43f640-0x440bff (provisional -- see docs/ORDER.md).
+ *  Boundary evidence: ShowTigersClawKillBoard/RunConversationScene; string band 0x4705DC-0x470668;
+ *  the INT3 fill after the raster library ends at its first function.
  */
 #include "wc1.h"
 

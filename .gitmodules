@@ -4,3 +4,6 @@
 [submodule "wibo-src"]
 	path = wibo-src
 	url = https://github.com/neuromancer/wibo
+[submodule "compilers/uasm"]
+	path = compilers/uasm
+	url = https://github.com/neuviemeporte/UASM.git

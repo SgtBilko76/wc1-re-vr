@@ -1,15 +1,8 @@
 /*
- * Portable counterparts for the recovered raster library's hand-written x86
- * routines.  This file is included only by the SDL_PORT build of screens.c;
- * the recovered high-level screen code and the original x86 implementations
- * remain in their original compilation unit.
+ * Portable counterparts for the hand-written raster library in
+ * src/raster.asm.  This file is included only by the SDL_PORT build of
+ * screens.c; the Win32 build assembles the original routines.
  */
-
-void __stdcall FillRasterBytes(void *destination, unsigned int length,
-                               short value)
-{
-    memset(destination, (unsigned char)value, length);
-}
 
 char *CopyRasterDriverName(void *const *callbacks)
 {

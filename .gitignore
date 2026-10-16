@@ -4,6 +4,8 @@ out-modern/
 dist/
 *.obj
 *.asm
+# Hand-written assembly is source; the other .asm files are compiler listings.
+!/src/*.asm
 *.map
 *.stdout
 

@@ -26,6 +26,12 @@ CC = $(WIBO) compilers/msvc420/bin/CL.EXE
 LINK = $(WIBO) compilers/msvc420/bin/LINK.EXE
 LIBRARIAN = $(WIBO) compilers/msvc420/bin/LIB.EXE
 
+# The raster library was hand-written assembly (docs/COMPILER.md).  UASM, a
+# MASM-compatible assembler built from the submodule, reproduces it.
+UASM_DIR = compilers/uasm
+UASM = out/uasm/uasm
+HOST_CC ?= cc
+
 # MSVC expects Windows-style include/library search paths.  The recipes pass
 # these through the host shell to wibo, so command-line /I paths use doubled
 # backslashes while env vars keep normal Windows separators.
@@ -338,6 +344,7 @@ SRCS_ORDERED_CORE = \
 	src/strdos.c \
 	src/eventmgr.c \
 	src/screens.c \
+	src/raster.asm \
 	src/killbrd.c \
 	src/gr.c \
 	src/globals.c
@@ -374,12 +381,14 @@ SRCS_ORDERED_IX = $(SRCS_IX_LOG) $(SRCS_IX_LIBRARIES)
 
 SRCS_ORDERED = $(SRCS_ORDERED_CORE) $(SRCS_ORDERED_IX)
 
-ALL_SRCS = $(wildcard src/*.c) $(wildcard src/*.cpp) $(wildcard src/ix/*.cpp)
+ALL_SRCS = $(wildcard src/*.c) $(wildcard src/*.cpp) $(wildcard src/*.asm) \
+           $(wildcard src/ix/*.cpp)
 SRCS = $(filter $(ALL_SRCS), $(SRCS_ORDERED)) \
        $(filter-out $(SRCS_ORDERED), $(ALL_SRCS))
 
 objects_of = $(patsubst src/%,$(OUT_DIR)/%, \
-               $(patsubst %.c,%.obj, $(patsubst %.cpp,%.obj, $(1))))
+               $(patsubst %.c,%.obj, $(patsubst %.cpp,%.obj, \
+               $(patsubst %.asm,%.obj, $(1)))))
 
 # Everything except the ix library members is an object on the command line.
 LINK_OBJS = $(call objects_of,$(filter-out $(SRCS_IX_LIBRARIES),$(SRCS)))
@@ -782,6 +791,27 @@ $(OUT_DIR)/%.obj $(OUT_DIR)/%.asm: src/%.cpp | $(WIBO) $(MSVCRT_DLL)
 		/Fo$(OUT_DIR)/$*.obj \
 		/Fa$(OUT_DIR)/$*.asm \
 		> $(OUT_DIR)/$*.stdout
+
+# The raster library is assembled, not compiled (docs/COMPILER.md).
+$(OUT_DIR)/%.obj: src/%.asm | $(UASM)
+	@mkdir -p $(dir $(OUT_DIR)/$*)
+	@$(UASM) -q -coff -Fo$@ -Fw$(OUT_DIR)/$*.err $< > $(OUT_DIR)/$*.stdout || \
+		(cat $(OUT_DIR)/$*.stdout >&2; exit 1)
+
+# UASM's own makefile links with GNU ld's -Map option, which Apple's linker
+# rejects, so build its objects there and link them here.
+$(UASM):
+	@mkdir -p $(dir $@)
+	@test -f $(UASM_DIR)/gccmod.inc || \
+		(echo "Error: $(UASM_DIR) is empty; run 'git submodule update --init'." >&2 && exit 1)
+	@echo "Building UASM..."
+	@$(MAKE) -C $(UASM_DIR) CC=$(HOST_CC) OUTD=$(abspath $(dir $@)) \
+		$(addprefix $(abspath $(dir $@))/,main.o $(UASM_OBJS)) \
+		> $(dir $@)build.log 2>&1 || (cat $(dir $@)build.log >&2; exit 1)
+	@$(HOST_CC) $(addprefix $(dir $@),main.o $(UASM_OBJS)) -o $@
+
+UASM_OBJS = $(shell sed -n 's|^\$$(OUTD)/\([A-Za-z0-9_]*\.o\).*|\1|p' \
+	$(UASM_DIR)/gccmod.inc)
 
 # ---------------------------------------------------------------------------
 # Recovery reports and binary-comp audits

@@ -39,17 +39,30 @@ Two regions were written in assembly, through different tools:
   Its padding (`nop`, `lea ecx,[ecx]`) is what CL 4.20's inline assembler emits
   for `ALIGN 4`, and its forward jumps are near, as inline assembly emits them
   in `/Od` code.
-- The raster library (`0x00439C0E`–`0x0043F5A9`) was assembled. All 82 of its
-  shifts by one use the `D1`/`D0` encodings, which neither CL 4.20 nor its
+- The raster library (`0x00439C40`–`0x0043F635`, data
+  `0x0046E69C`–`0x0047008B`) was assembled. All 98 of its shifts and
+  rotates by one use the `D1`/`D0` encodings, which neither CL 4.20 nor its
   inline assembler emits (both write `C1`/`C0` with an immediate 1), and it
-  keeps data tables in `.text`, which inline assembly cannot declare.
-  Reproducing it byte for byte needs MASM 6.x or a compatible assembler.
-  Inline assembly in optimized code does choose short jumps, but under
-  `#pragma optimize("", off)` it emits near ones.
+  keeps data tables in `.text`, which inline assembly cannot declare. Its frames open with
+  MASM's `add esp, -N`, every jump has the shortest encoding, as MASM 6
+  sizes them, and both segments start on 4-byte boundaries, the alignment
+  `.model flat` gives `_TEXT` and `_DATA`; no function in it is padded.
+  `src/raster.asm` is that source, extracted from the retail executable by
+  `bin/extractRasterLibrary.py`, which checks that UASM (a MASM-compatible
+  assembler, built from the `compilers/uasm` submodule) reproduces every
+  byte and relocation. Regenerate it with the script rather than editing it.
+
+`FillRasterBytes` (`0x00439C10`), just before the library, is compiled C: its
+body is CL's inline `memset`, and the `mov edi, edi` before and after it is
+CL's padding. In optimized code CL ends every function with NOPs up to a
+16-byte boundary, so all 1,291 core functions start 16-byte aligned, and the
+only INT3 fill LINK adds in the core is the run after the raster library,
+which ends unaligned.
 
 Linking uses `/SUBSYSTEM:WINDOWS /ALIGN:4096` without `/ENTRY`, so LINK
-supplies `WinMainCRTStartup` itself. The command line lists the core objects,
-`ixlog.obj`, then `kernel32`, `user32`, `gdi32`, `advapi32`, `winmm`, the five
+supplies `WinMainCRTStartup` itself. The command line lists the core objects
+(with `raster.obj` between `screens.obj` and `killbrd.obj`), `ixlog.obj`,
+then `kernel32`, `user32`, `gdi32`, `advapi32`, `winmm`, the five
 `ix` libraries, `dsound` and `ddraw`; LIBCMTD and OLDNAMES follow as default
 libraries. Base relocations remain enabled. `docs/ORDER.md` records the
 evidence for each choice.

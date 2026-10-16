@@ -1,7 +1,7 @@
 # Address-sorted developer functions in WC1.EXE (original addresses).
 # MSVC emits functions in source order, so adjacency here is evidence of
 # shared compilation-unit ownership. Regenerate with: make sort
-# 1453 developer functions; CRT begins at 0x00449100.
+# 1454 developer functions; CRT begins at 0x00449100.
 
 0x00401000 SaveGamePalette
 0x00401020 RestoreGamePalette
@@ -1230,8 +1230,8 @@
 0x00439840 ShowGetReadyScreen
 0x00439910 ShowVictoryScreen
 0x00439A80 ShowGameOverScreen
-0x00439C0E FillRasterBytes
-0x00439C3E CopyRasterDriverName
+0x00439C10 FillRasterBytes
+0x00439C40 CopyRasterDriverName
 0x00439C69 InstallRasterDriverCallbacks
 0x00439C88 SetRasterClipPixel
 0x00439D63 ReadRasterClipPixel
@@ -1286,6 +1286,7 @@
 0x0043F05B GetRLEFrameCount
 0x0043F06E CollectUniqueRLEImageFrames
 0x0043F0D0 CollectUniqueRLEPaletteFrames
+0x0043F1AE DissolveRasterClip
 0x0043F425 FadeRasterPaletteToPalette
 0x0043F5A9 CollectRasterClipColours
 0x0043F640 CorrectPointers

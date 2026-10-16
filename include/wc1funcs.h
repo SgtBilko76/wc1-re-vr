@@ -1499,8 +1499,8 @@ unsigned int ShowGetReadyScreen(void);                                 /* 0x0043
 unsigned int ShowVictoryScreen(void);                                  /* 0x00439910 */
 unsigned int ShowGameOverScreen(void);                                 /* 0x00439A80 */
 void __stdcall FillRasterBytes(void *destination, unsigned int length,
-                               short value);                          /* 0x00439C0E */
-char *CopyRasterDriverName(void *const *callbacks);                   /* 0x00439C3E */
+                               short value);                          /* 0x00439C10 */
+char *CopyRasterDriverName(void *const *callbacks);                   /* 0x00439C40 */
 void InstallRasterDriverCallbacks(void *const *callbacks);            /* 0x00439C69 */
 unsigned int SetRasterClipPixel(RasterClip *clip, int x, int y,
                                 int colour);                           /* 0x00439C88 */

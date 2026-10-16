@@ -7,6 +7,10 @@
  */
 #include "wc1.h"
 
+/* The raster library's tables and variables.  The Win32 build takes them
+ * from src/raster.asm, which keeps these first tables in its code segment;
+ * the SDL build defines them here for the portable routines. */
+#ifdef SDL_PORT
 /* Quarter-wave 16.16 cosine table embedded with the original raster
  * assembly.  Indices are tenths of a degree from 0 through 90 degrees. */
 const int anRLEQuarterCosine[901] = { /* 0x0043d4bf */
@@ -129,6 +133,7 @@ const int anRLEQuarterCosine[901] = { /* 0x0043d4bf */
 const unsigned char abIffBmhdChunkId[4] = { 'B', 'M', 'H', 'D' }; /* 0x0043e778 */
 const unsigned char abIffCmapChunkId[4] = { 'C', 'M', 'A', 'P' }; /* 0x0043e77c */
 const unsigned char abIffBodyChunkId[4] = { 'B', 'O', 'D', 'Y' }; /* 0x0043e780 */
+#endif
 
 TitleMenuRegion aBarracksMenuRegions[21] = { /* 0x00463008 */
     { 1, 137, 88, 149, 94 },
@@ -1561,6 +1566,7 @@ char szBriefingReturnTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e64c */
 char szDismissedTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e658 */
 char szDebriefEstablishTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e664 */
 char szFuneralLongShotTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e670 */
+#ifdef SDL_PORT
 void *apRasterDriverCallbacks[13]; /* 0x0046e69c */
 char szRasterDriverName[13] = "MCGA.DLL"; /* 0x0046e6d0 */
 unsigned char *pRLEEncodeBuffer; /* 0x0046e6dd */
@@ -1589,6 +1595,7 @@ RasterClip *pGifRasterTarget; /* 0x0046ff28 */
 unsigned char abRasterPaletteTranslation[256]; /* 0x0046ff2c */
 RLETransformVertex aRLETransformVertices[4]; /* 0x0047002c */
 int anRLESourceSteps[4]; /* 0x0047007c */
+#endif
 const char *pszBlankRoomMenuLabel = /* 0x00470090 */
     szBlankRoomMenuLabel;
 const char *apszPilotRankNames[5] = { /* 0x00470098 */

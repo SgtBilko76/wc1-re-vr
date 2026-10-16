@@ -6,6 +6,7 @@ remain provisional.
 
 ```text
 0x00401000  game core and Win32 support (command-line objects)
+0x00439C40  raster library (raster.obj, assembled), then killbrd.obj and gr.obj
 0x004426A0  ix_log_printf (ixlog.obj, the last command-line object)
 0x00442750  ix library members
 0x004492C6  DirectSound and DirectDraw call thunks
@@ -92,9 +93,18 @@ sits at one constant offset from the original.
 | `src/mathfp.c` | `0x434CD0`–`0x4353FF` |
 | `src/strdos.c` | `0x435400`–`0x4355EF` |
 | `src/eventmgr.c` | `0x4355F0`–`0x436FFF` |
-| `src/screens.c` | `0x437000`–`0x43F5FF` |
-| `src/killbrd.c` | `0x43F600`–`0x440BFF` |
+| `src/screens.c` | `0x437000`–`0x439C3F` |
+| `src/raster.asm` | `0x439C40`–`0x43F635` |
+| `src/killbrd.c` | `0x43F640`–`0x440BFF` |
 | `src/gr.c` | `0x440C00`–`0x44269F` |
+
+The raster library is the one assembled object, and its edges are proven.
+CL pads every optimized function with NOPs to a 16-byte boundary, so the
+`mov edi, edi` after `FillRasterBytes` closes `screens.obj` at `0x439C40`. The
+library's own functions are unpadded, and LINK fills the gap after it with
+INT3, the only such run in the core, up to `killbrd.obj` at `0x43F640`. Its
+`.data` (`0x0046E69C`–`0x0047008B`) follows the same order, between the
+"Game Over" literal of `screens.c` and the kill board tables.
 
 `src/globals.c` is temporary storage, not an original unit. Move a global only
 when ownership and declaration order are proven. When a boundary changes,

@@ -15,7 +15,7 @@ GitHub Sponsors](https://github.com/sponsors/neuromancer).
 
 ## Status
 
-All 1,474 identified functions have source implementations.
+All 1,485 identified functions have source implementations.
 
 `make report` calculates per-function machine-code similarity to the retail
 executable; those scores measure reconstruction fidelity, not gameplay
@@ -208,7 +208,8 @@ include this GUI build under the usual `wc1-modern` name.
 ### Reconstructed Win32 build
 
 The default target builds `WC1.EXE` with the original MSVC 4.20 toolchain under
-wibo:
+wibo, and assembles the hand-written raster library with UASM, built from its
+submodule on first use:
 
 ```sh
 make -j
