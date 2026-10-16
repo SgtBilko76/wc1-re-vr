@@ -33,62 +33,62 @@ extern int bMainWindowMinimized; /* 0x00465080 */
 extern int bWindowMessagePumpActive; /* 0x004650a8 */
 extern unsigned int bF1KeyLatch; /* 0x004650ac */
 extern GuardedAllocation *pGuardedAllocationHead; /* 0x004650b0 */
-extern const char szJoystickDevCapsFailure[26]; /* 0x004652dc */
+extern char szJoystickDevCapsFailure[26]; /* 0x004652dc */
 extern short nPacketError; /* 0x00465460 */
 extern short nAutopilotFormationShipCount; /* 0x00465544 */
-extern const short asEjectionPrimaryFrames[8]; /* 0x00465550 */
-extern const short asEjectionSecondaryFrames[8]; /* 0x00465560 */
-extern const short asEjectionViewScript[12]; /* 0x00465570 */
+extern short asEjectionPrimaryFrames[8]; /* 0x00465550 */
+extern short asEjectionSecondaryFrames[8]; /* 0x00465560 */
+extern short asEjectionViewScript[12]; /* 0x00465570 */
 extern const char *pStrandedMessage; /* 0x00465588 */
-extern const char szStrandedMessage[72]; /* 0x0046558c */
-extern const char szViewTemplates[16]; /* 0x004655d4 */
-extern const char szStrandedTheEnd[12]; /* 0x004655e4 */
-extern const short asMouthFramesByPhoneme[26]; /* 0x004655f0 */
-extern const char szConversationIntegerFormat[4]; /* 0x00465628 */
-extern const char szConversationIntegerFormatAlt[4]; /* 0x0046562c */
-extern const char szCampaignDateFormat[12]; /* 0x00465630 */
-extern const char szSavedCampaignDateFormat[12]; /* 0x0046563c */
-extern const char szCampaignTimeFormat[12]; /* 0x00465648 */
-extern const char szConversationTextFormat[12]; /* 0x00465654 */
-extern const char szBriefingMapTextFormat[12]; /* 0x00465660 */
-extern const char szCloseLookTextFormat[12]; /* 0x0046566c */
+extern char szStrandedMessage[72]; /* 0x0046558c */
+extern char szViewTemplates[16]; /* 0x004655d4 */
+extern char szStrandedTheEnd[12]; /* 0x004655e4 */
+extern short asMouthFramesByPhoneme[26]; /* 0x004655f0 */
+extern char szConversationIntegerFormat[4]; /* 0x00465628 */
+extern char szConversationIntegerFormatAlt[4]; /* 0x0046562c */
+extern char szCampaignDateFormat[12]; /* 0x00465630 */
+extern char szSavedCampaignDateFormat[12]; /* 0x0046563c */
+extern char szCampaignTimeFormat[12]; /* 0x00465648 */
+extern char szConversationTextFormat[12]; /* 0x00465654 */
+extern char szBriefingMapTextFormat[12]; /* 0x00465660 */
+extern char szCloseLookTextFormat[12]; /* 0x0046566c */
 extern signed char cScrambleLeftWalkerFrame; /* 0x00465768 */
 extern signed char cScrambleRightWalkerFrame; /* 0x0046576c */
 extern signed char acScrambleWalkerOverlayFrames[8]; /* 0x00465770 */
 extern short nScrambleLeftWalkerX; /* 0x00465778 */
 extern short nScrambleRightWalkerX; /* 0x0046577c */
 extern short nScrambleBackgroundX; /* 0x00465780 */
-extern const unsigned short ausScrambleActorAnimationA[8]; /* 0x00465788 */
-extern const unsigned short ausScrambleActorAnimationB[11]; /* 0x00465798 */
+extern unsigned short ausScrambleActorAnimationA[8]; /* 0x00465788 */
+extern unsigned short ausScrambleActorAnimationB[11]; /* 0x00465798 */
 extern ScrambleAnimationActor aScrambleAnimationActors[5]; /* 0x004657b0 */
-extern const ScrambleShipDetail aaScrambleShipDetails[4][32]; /* 0x00465828 */
-extern const int anLandingDamageDetailCounts[4]; /* 0x00465aa8 */
+extern ScrambleShipDetail aaScrambleShipDetails[4][32]; /* 0x00465828 */
+extern int anLandingDamageDetailCounts[4]; /* 0x00465aa8 */
 extern const char *apszLandingDamageComments[4]; /* 0x00465ab8 */
-extern const signed char acLandingCanopyFramesHeavy[24]; /* 0x00465ac8 */
-extern const signed char acLandingCanopyFramesLight[24]; /* 0x00465ae0 */
-extern const signed char acLandingCanopyFramesModerate[16]; /* 0x00465af8 */
+extern signed char acLandingCanopyFramesHeavy[24]; /* 0x00465ac8 */
+extern signed char acLandingCanopyFramesLight[24]; /* 0x00465ae0 */
+extern signed char acLandingCanopyFramesModerate[16]; /* 0x00465af8 */
 extern const signed char *apLandingCanopyFrames[4]; /* 0x00465b08 */
-extern const ShortPoint aFuneralParticleOrigins[7]; /* 0x00465b18 */
-extern const short asFuneralSceneBySeries[15]; /* 0x00465b36 */
+extern ShortPoint aFuneralParticleOrigins[7]; /* 0x00465b18 */
+extern short asFuneralSceneBySeries[15]; /* 0x00465b36 */
 extern int bFuneralShowTheEnd; /* 0x00465b54 */
-extern const char szLandingCleanComment[32]; /* 0x00465b58 */
-extern const char szLandingLightDamageComment[48]; /* 0x00465b78 */
-extern const char szLandingHeavyDamageComment[36]; /* 0x00465ba8 */
-extern const char szLandingSurvivalComment[44]; /* 0x00465bcc */
-extern const char szLandingCommentFormat[12]; /* 0x00465bf8 */
-extern const char szFuneralTheEnd[8]; /* 0x00465c04 */
-extern const char szFuneralTextFormat[12]; /* 0x00465c0c */
-extern const char szFuneralCompanyCommand[20]; /* 0x00465c18 */
-extern const char szFuneralAttentionCommand[20]; /* 0x00465c2c */
-extern const char szFuneralPrepareArmsCommand[20]; /* 0x00465c40 */
-extern const char szFuneralFireCommand[16]; /* 0x00465c54 */
+extern char szLandingCleanComment[32]; /* 0x00465b58 */
+extern char szLandingLightDamageComment[48]; /* 0x00465b78 */
+extern char szLandingHeavyDamageComment[36]; /* 0x00465ba8 */
+extern char szLandingSurvivalComment[44]; /* 0x00465bcc */
+extern char szLandingCommentFormat[12]; /* 0x00465bf8 */
+extern char szFuneralTheEnd[8]; /* 0x00465c04 */
+extern char szFuneralTextFormat[12]; /* 0x00465c0c */
+extern char szFuneralCompanyCommand[20]; /* 0x00465c18 */
+extern char szFuneralAttentionCommand[20]; /* 0x00465c2c */
+extern char szFuneralPrepareArmsCommand[20]; /* 0x00465c40 */
+extern char szFuneralFireCommand[16]; /* 0x00465c54 */
 extern short nEnemySighting; /* 0x00465c7c */
 extern short nDebriefingPersonality; /* 0x00465c80 */
 extern void *aapPacketReferences[4][0x25]; /* 0x00465c88 */
 extern int bInitialFormationSetup; /* 0x00465c84 */
-extern const ShortVector aaFormationPositions[5][8]; /* 0x00465ed8 */
-extern const int anPilotTurnInterval[18]; /* 0x00465fc8 */
-extern const char szErrorLoadingPilotSpeech[32]; /* 0x00466010 */
+extern ShortVector aaFormationPositions[5][8]; /* 0x00465ed8 */
+extern int anPilotTurnInterval[18]; /* 0x00465fc8 */
+extern char szErrorLoadingPilotSpeech[32]; /* 0x00466010 */
 extern short nNavMapCoordinateScaling; /* 0x00468660 */
 extern short nNavMapScale; /* 0x00468664 */
 extern NavMapObjectiveStyle aNavMapObjectiveStyles[10]; /* 0x00468668 */
@@ -196,40 +196,40 @@ extern char szWaitForFormat[12]; /* 0x004693a4 */
 extern unsigned int dwModalBoundsTopLeft; /* 0x00469440 */
 extern unsigned int dwModalBoundsBottomRight; /* 0x00469444 */
 extern ModalTextPanel *pModalTextPanel; /* 0x00469448 */
-extern const short asCampaignPilotFiles[3]; /* 0x00469450 */
-extern const short asCampaignBriefingFiles[3]; /* 0x00469458 */
-extern const short asMissionDataFiles[3]; /* 0x00469460 */
+extern short asCampaignPilotFiles[3]; /* 0x00469450 */
+extern short asCampaignBriefingFiles[3]; /* 0x00469458 */
+extern short asMissionDataFiles[3]; /* 0x00469460 */
 extern unsigned char cEmptyHudMessage; /* 0x004693b0 */
 extern char *pGameVersion; /* 0x004693b4 */
 extern char szGameVersion[9]; /* 0x004693b8 */
-extern const ShortPoint aBarracksBunkOrigins[8]; /* 0x004693c8 */
+extern ShortPoint aBarracksBunkOrigins[8]; /* 0x004693c8 */
 extern const char *apszSaveCampaignMenuLabels[2]; /* 0x004693e8 */
 extern char *apszBarracksMenuLabels[20]; /* 0x004693f0 */
-extern const char szSaveCampaignMenuLabel[24]; /* 0x00469468 */
-extern const char szSaveCampaignMenuLabelAlt[24]; /* 0x00469480 */
-extern const char szMissionHangarMenuLabel[16]; /* 0x00469498 */
-extern const char szReturnToBarMenuLabel[20]; /* 0x004694a8 */
-extern const char szQuitGameMenuLabel[20]; /* 0x004694bc */
-extern const char szViewMedalsMenuLabel[20]; /* 0x004694d0 */
+extern char szSaveCampaignMenuLabel[24]; /* 0x00469468 */
+extern char szSaveCampaignMenuLabelAlt[24]; /* 0x00469480 */
+extern char szMissionHangarMenuLabel[16]; /* 0x00469498 */
+extern char szReturnToBarMenuLabel[20]; /* 0x004694a8 */
+extern char szQuitGameMenuLabel[20]; /* 0x004694bc */
+extern char szViewMedalsMenuLabel[20]; /* 0x004694d0 */
 extern short nPaletteTransitionInitialise; /* 0x00469640 */
 extern int nDebugOverlayConsoleCount; /* 0x00469644 */
 extern DWORD dwDebugOverlayKey; /* 0x00469648 */
 extern DWORD dwDebugOverlayKeyLatch; /* 0x0046964c */
 extern HHOOK hDebugKeyboardHook; /* 0x00469650 */
-extern const char szDebugOverlayFontName[8]; /* 0x00469654 */
-extern const char szDebugOverlaySpinner[5]; /* 0x0046965c */
-extern const char szDebugOverlayNewline[4]; /* 0x00469664 */
+extern char szDebugOverlayFontName[8]; /* 0x00469654 */
+extern char szDebugOverlaySpinner[5]; /* 0x0046965c */
+extern char szDebugOverlayNewline[4]; /* 0x00469664 */
 extern const char *apszGraphicsModeNames[4]; /* 0x00469668 */
 extern char szDiskMarkerFile[9]; /* 0x00469688 */
 extern short nDiskPromptBorderColour; /* 0x00469694 */
 extern short nKeyboardPointerStep; /* 0x004696a4 */
-extern const short asPlayerDamageSystemTable[50]; /* 0x00469878 */
-extern const enum ObjectType aeShipHitDebrisTypes[3]; /* 0x00469950 */
-extern const signed char acGunRefireDelay[4]; /* 0x0046995c */
-extern const char szWeaponDestroyed[20]; /* 0x00469960 */
-extern const char szFuelTanksHit[16]; /* 0x00469974 */
-extern const char szComponentFixedFormat[8]; /* 0x00469984 */
-extern const char szNeedLock[12]; /* 0x0046998c */
+extern short asPlayerDamageSystemTable[50]; /* 0x00469878 */
+extern enum ObjectType aeShipHitDebrisTypes[3]; /* 0x00469950 */
+extern signed char acGunRefireDelay[4]; /* 0x0046995c */
+extern char szWeaponDestroyed[20]; /* 0x00469960 */
+extern char szFuelTanksHit[16]; /* 0x00469974 */
+extern char szComponentFixedFormat[8]; /* 0x00469984 */
+extern char szNeedLock[12]; /* 0x0046998c */
 extern short bSlowSceneAnimation; /* 0x00469998 */
 extern unsigned char cBlackColour; /* 0x0046999c */
 extern unsigned char cViewportClearColour; /* 0x004699a0 */
@@ -247,12 +247,12 @@ extern unsigned char cDefaultTextColour; /* 0x004699cc */
 extern unsigned char cBrownColour; /* 0x004699d0 */
 extern unsigned char cAsteroidColour; /* 0x004699d4 */
 extern unsigned char cPrimaryViewBufferColour; /* 0x004699d8 */
-extern const unsigned char abLegacyVideoModeColours[14]; /* 0x004699e0 */
+extern unsigned char abLegacyVideoModeColours[14]; /* 0x004699e0 */
 extern short asConversationTextColours[24]; /* 0x004699f0 */
 extern int bGraphicsActive; /* 0x00469a20 */
-extern const int anBaseMemoryReservationByVideoMode[4]; /* 0x00469a90 */
-extern const int anFullMusicMemoryReservationByVideoMode[4]; /* 0x00469aa0 */
-extern const int anExpandedMemoryReservationByVideoMode[3]; /* 0x00469ab0 */
+extern int anBaseMemoryReservationByVideoMode[4]; /* 0x00469a90 */
+extern int anFullMusicMemoryReservationByVideoMode[4]; /* 0x00469aa0 */
+extern int anExpandedMemoryReservationByVideoMode[3]; /* 0x00469ab0 */
 extern PacketResourceDescriptor aCommon3SpaceResources[12]; /* 0x00469bc0 */
 extern int nCapitalShipViewDistance; /* 0x00468ff4 */
 extern unsigned char bLandingAuthorized; /* 0x00468ff8 */
@@ -262,36 +262,36 @@ extern unsigned int bIntroSceneResourcesActive; /* 0x00469d48 */
 extern short asConstellationObjectIndices[4]; /* 0x00469d50 */
 extern int b3SpaceObjectsActive; /* 0x00469d5c */
 extern int bCockpitResourcesActive; /* 0x00469d58 */
-extern const short asSceneAnimationLogicalFiles[8]; /* 0x00469d60 */
+extern short asSceneAnimationLogicalFiles[8]; /* 0x00469d60 */
 extern short bSceneAnimationWaitCommand; /* 0x00469d70 */
-extern const char szSceneAnimationTextFormat[12]; /* 0x00469d74 */
+extern char szSceneAnimationTextFormat[12]; /* 0x00469d74 */
 extern PacketResourceDescriptor aMissionResourceDescriptors[5]; /* 0x00469c20 */
 extern PacketResourceDescriptor aCockpitResourceDescriptors[19]; /* 0x00469c48 */
 extern PacketResourceDescriptor aCockpitSecondaryResources[5]; /* 0x00469ce0 */
 extern PacketResourceDescriptor aCockpitPrimaryResources[8]; /* 0x00469d08 */
-extern const char szMeanwhile[16]; /* 0x00469d80 */
-extern const char szEmptyAnswerInput[4]; /* 0x00469d90 */
-extern const char szAnswerLabel[9]; /* 0x00469d94 */
+extern char szMeanwhile[16]; /* 0x00469d80 */
+extern char szEmptyAnswerInput[4]; /* 0x00469d90 */
+extern char szAnswerLabel[9]; /* 0x00469d94 */
 extern Viewport stTrainSimPanelViewport; /* 0x00469da8 */
-extern const ShortRect stTrainSimPanelBounds; /* 0x00469dc0 */
-extern const char szTrainSimTitle[24]; /* 0x00469dc8 */
+extern ShortRect stTrainSimPanelBounds; /* 0x00469dc0 */
+extern char szTrainSimTitle[24]; /* 0x00469dc8 */
 extern unsigned char *apszBuiltInHighScoreNames[6]; /* 0x00469de0 */
 extern TitleMenuRegion aTrainSimMissionRegions[5]; /* 0x00469df8 */
 extern unsigned char aszBuiltInHighScores[48]; /* 0x00469e38 */
 extern unsigned int dwTrainSimStringPadding; /* 0x00469e68 */
-extern const char szTextFlushToken[4]; /* 0x00469e6c */
-extern const char szNewPilotPrompt[80]; /* 0x00469e70 */
-extern const char szDefaultPilotName[8]; /* 0x00469ec0 */
-extern const char szPilotNameLabel[12]; /* 0x00469ec8 */
-extern const char szDefaultCallsign[12]; /* 0x00469ed4 */
-extern const char szCallsignLabel[12]; /* 0x00469ee0 */
-extern const char szCheaterCallsign[8]; /* 0x00469eec */
-extern const char szHighScoreCongratulations[68]; /* 0x00469ef4 */
-extern const char szLowScoreMessage[56]; /* 0x00469f38 */
-extern const char szHighScoresHeading[16]; /* 0x00469f70 */
-extern const char szHighScoreNumberFormat[8]; /* 0x00469f80 */
-extern const char szHighScoreRowFormat[16]; /* 0x00469f88 */
-extern const char szSelectEnemy[16]; /* 0x00469f98 */
+extern char szTextFlushToken[4]; /* 0x00469e6c */
+extern char szNewPilotPrompt[80]; /* 0x00469e70 */
+extern char szDefaultPilotName[8]; /* 0x00469ec0 */
+extern char szPilotNameLabel[12]; /* 0x00469ec8 */
+extern char szDefaultCallsign[12]; /* 0x00469ed4 */
+extern char szCallsignLabel[12]; /* 0x00469ee0 */
+extern char szCheaterCallsign[8]; /* 0x00469eec */
+extern char szHighScoreCongratulations[68]; /* 0x00469ef4 */
+extern char szLowScoreMessage[56]; /* 0x00469f38 */
+extern char szHighScoresHeading[16]; /* 0x00469f70 */
+extern char szHighScoreNumberFormat[8]; /* 0x00469f80 */
+extern char szHighScoreRowFormat[16]; /* 0x00469f88 */
+extern char szSelectEnemy[16]; /* 0x00469f98 */
 extern int nTrainSimActive; /* 0x00469e2c */
 extern short nTrainSimMission; /* 0x00469e30 */
 extern short nArcadeWave; /* 0x00469e34 */
@@ -312,51 +312,51 @@ extern int bMouseCursorVisible; /* 0x0046a018 */
 extern unsigned char bInputPollingGuard; /* 0x0046a01c */
 extern InputDeviceSample stLastPolledFlightInput; /* 0x0046a020 */
 extern int bMouseAfterburnerControl; /* 0x0046a02c */
-extern const short asMouseYawThresholds[6]; /* 0x0046a030 */
-extern const short asMousePitchThresholds[6]; /* 0x0046a040 */
+extern short asMouseYawThresholds[6]; /* 0x0046a030 */
+extern short asMousePitchThresholds[6]; /* 0x0046a040 */
 extern unsigned int dwLastSecondaryButtonPress; /* 0x0046a04c */
 extern unsigned char bFlightRollLatch; /* 0x0046a050 */
 extern unsigned char bAfterburnerButtonLatched; /* 0x0046a054 */
 extern short nMouseYawInput; /* 0x0046a058 */
 extern short nMousePitchInput; /* 0x0046a05c */
-extern const char szSpaceBuffer[16]; /* 0x0046a1d0 */
-extern const char szAllocateBufferTag[4]; /* 0x0046a1e0 */
+extern char szSpaceBuffer[16]; /* 0x0046a1d0 */
+extern char szAllocateBufferTag[4]; /* 0x0046a1e0 */
 extern unsigned char *pDamageDisplayBackground; /* 0x0046a748 */
-extern const ShortPoint aDamageDisplayPositions[9]; /* 0x0046a750 */
+extern ShortPoint aDamageDisplayPositions[9]; /* 0x0046a750 */
 extern const char *apszComponentNames[9]; /* 0x0046a778 */
-extern const unsigned char abDamageDisplayFrames[9]; /* 0x0046a7a0 */
+extern unsigned char abDamageDisplayFrames[9]; /* 0x0046a7a0 */
 extern const char *apszDamageSeverityNames[5]; /* 0x0046a7b0 */
-extern const char szIonDrive[12]; /* 0x0046a7c4 */
-extern const char szPowerPlant[12]; /* 0x0046a7d0 */
-extern const char szShieldGenerator[16]; /* 0x0046a7dc */
-extern const char szComputerSystem[16]; /* 0x0046a7ec */
-extern const char szIntercomUnit[16]; /* 0x0046a7fc */
-extern const char szTargetTracking[16]; /* 0x0046a80c */
-extern const char szAccelerationAbsorbers[16]; /* 0x0046a81c */
-extern const char szEjectorSystem[16]; /* 0x0046a82c */
-extern const char szRepairSystems[16]; /* 0x0046a83c */
-extern const char szDamageOk[4]; /* 0x0046a84c */
-extern const char szDamageLight[8]; /* 0x0046a850 */
-extern const char szDamageModerate[12]; /* 0x0046a858 */
-extern const char szDamageHeavy[8]; /* 0x0046a864 */
-extern const char szDamageDestroyed[12]; /* 0x0046a86c */
-extern const char szDamageReport[16]; /* 0x0046a878 */
-extern const char szNoInternalDamage[20]; /* 0x0046a888 */
-extern const char szDamagedUnitCountFormat[20]; /* 0x0046a89c */
-extern const char szDamageStatusFormat[16]; /* 0x0046a8b0 */
-extern const char szDamageStatusFormatHighRes[16]; /* 0x0046a8c0 */
+extern char szIonDrive[12]; /* 0x0046a7c4 */
+extern char szPowerPlant[12]; /* 0x0046a7d0 */
+extern char szShieldGenerator[16]; /* 0x0046a7dc */
+extern char szComputerSystem[16]; /* 0x0046a7ec */
+extern char szIntercomUnit[16]; /* 0x0046a7fc */
+extern char szTargetTracking[16]; /* 0x0046a80c */
+extern char szAccelerationAbsorbers[16]; /* 0x0046a81c */
+extern char szEjectorSystem[16]; /* 0x0046a82c */
+extern char szRepairSystems[16]; /* 0x0046a83c */
+extern char szDamageOk[4]; /* 0x0046a84c */
+extern char szDamageLight[8]; /* 0x0046a850 */
+extern char szDamageModerate[12]; /* 0x0046a858 */
+extern char szDamageHeavy[8]; /* 0x0046a864 */
+extern char szDamageDestroyed[12]; /* 0x0046a86c */
+extern char szDamageReport[16]; /* 0x0046a878 */
+extern char szNoInternalDamage[20]; /* 0x0046a888 */
+extern char szDamagedUnitCountFormat[20]; /* 0x0046a89c */
+extern char szDamageStatusFormat[16]; /* 0x0046a8b0 */
+extern char szDamageStatusFormatHighRes[16]; /* 0x0046a8c0 */
 extern ActiveSoundEntry *pActiveSoundHead; /* 0x0046a438 */
 extern ActiveSoundEntry *pActiveSoundTail; /* 0x0046a43c */
 extern int bAudioSystemInitialized; /* 0x0046a440 */
 extern WaveTableEntry *pWaveTableHead; /* 0x0046a444 */
 extern WaveTableEntry *pWaveTableTail; /* 0x0046a448 */
-extern const char szPlayWaveOpenError[36]; /* 0x0046a46c */
-extern const short asCarrierLaunchApproachDeltaX[24]; /* 0x0046a550 */
-extern const signed char acCarrierLaunchApproachFrames[24]; /* 0x0046a580 */
-extern const ShortPoint aCarrierLaunchFighterPath[9]; /* 0x0046a598 */
-extern const short asCarrierLaunchFighterDeltaY[16]; /* 0x0046a5bc */
-extern const short asCarrierLaunchViewData[16]; /* 0x0046a5dc */
-extern const char szPressAnyKeyWhenReady[28]; /* 0x0046a5fc */
+extern char szPlayWaveOpenError[36]; /* 0x0046a46c */
+extern short asCarrierLaunchApproachDeltaX[24]; /* 0x0046a550 */
+extern signed char acCarrierLaunchApproachFrames[24]; /* 0x0046a580 */
+extern ShortPoint aCarrierLaunchFighterPath[9]; /* 0x0046a598 */
+extern short asCarrierLaunchFighterDeltaY[16]; /* 0x0046a5bc */
+extern short asCarrierLaunchViewData[16]; /* 0x0046a5dc */
+extern char szPressAnyKeyWhenReady[28]; /* 0x0046a5fc */
 extern short nMusicPlaybackMode; /* 0x0046a9f8 */
 extern int bMusicCommandSuppressed; /* 0x0046a9fc */
 extern short nMusicTrackComplete; /* 0x0046aa04 */
@@ -372,28 +372,28 @@ extern int nCombatMusicActive; /* 0x0046aa3c */
 extern int nInFlightMusicActive; /* 0x0046aa40 */
 extern short nPassingShipSoundObject; /* 0x0046aa48 */
 extern short nPassingShipSoundCountdown; /* 0x0046aa4c */
-extern const unsigned char abFireworkSoundDescriptor[7]; /* 0x0046ab70 */
-extern const char szSfxWaveFormat[12]; /* 0x0046ad2c */
+extern unsigned char abFireworkSoundDescriptor[7]; /* 0x0046ab70 */
+extern char szSfxWaveFormat[12]; /* 0x0046ad2c */
 extern unsigned char abTaggedAllocationPrefix[8]; /* 0x0046ad88 */
 extern const char *apszCampaignVictoryText[4]; /* 0x0046ad90 */
 extern const char *pszTigerClawEscapeOpening; /* 0x0046ada0 */
 extern const char *pszTigerClawEscapeJump; /* 0x0046ada4 */
 extern const char *pszTigerClawEscapeClosing; /* 0x0046ada8 */
-extern const ShortVector aCampaignVictoryProjectileOrigins[4]; /* 0x0046adb0 */
+extern ShortVector aCampaignVictoryProjectileOrigins[4]; /* 0x0046adb0 */
 extern const char *pszTheEnd; /* 0x0046adc8 */
 extern const char *pszForNow; /* 0x0046adcc */
-extern const char szCampaignVictoryOpening[68]; /* 0x0046add0 */
-extern const char szCampaignVictoryAttack[44]; /* 0x0046ae14 */
-extern const char szCampaignVictoryConclusion[52]; /* 0x0046ae40 */
-extern const char szTigerClawEscapeOpening[64]; /* 0x0046ae74 */
-extern const char szTigerClawEscapeJump[48]; /* 0x0046aeb4 */
-extern const char szTigerClawEscapeClosing[44]; /* 0x0046aee4 */
-extern const char szTheEnd[8]; /* 0x0046af10 */
-extern const char szForNow[12]; /* 0x0046af18 */
-extern const char szCampaignVictoryTextFormat[12]; /* 0x0046af24 */
-extern const char szTigerClawEscapeOpeningFormat[12]; /* 0x0046af30 */
-extern const char szTigerClawEscapeJumpFormat[12]; /* 0x0046af3c */
-extern const char szTigerClawEscapeClosingFormat[12]; /* 0x0046af48 */
+extern char szCampaignVictoryOpening[68]; /* 0x0046add0 */
+extern char szCampaignVictoryAttack[44]; /* 0x0046ae14 */
+extern char szCampaignVictoryConclusion[52]; /* 0x0046ae40 */
+extern char szTigerClawEscapeOpening[64]; /* 0x0046ae74 */
+extern char szTigerClawEscapeJump[48]; /* 0x0046aeb4 */
+extern char szTigerClawEscapeClosing[44]; /* 0x0046aee4 */
+extern char szTheEnd[8]; /* 0x0046af10 */
+extern char szForNow[12]; /* 0x0046af18 */
+extern char szCampaignVictoryTextFormat[12]; /* 0x0046af24 */
+extern char szTigerClawEscapeOpeningFormat[12]; /* 0x0046af30 */
+extern char szTigerClawEscapeJumpFormat[12]; /* 0x0046af3c */
+extern char szTigerClawEscapeClosingFormat[12]; /* 0x0046af48 */
 extern short nCommMenuChoiceCount; /* 0x0046af60 */
 extern short nCommMenuReuseMode; /* 0x0046af64 */
 extern signed char cPendingCommMenuAction; /* 0x0046af6c */
@@ -404,40 +404,40 @@ extern signed char cCommMenuRecipient; /* 0x0046afc4 */
 extern short nCommSpeakerObject; /* 0x0046afc8 */
 extern short nCommSpeakerRating; /* 0x0046afcc */
 extern short nCommPortraitIndex; /* 0x0046afd0 */
-extern const char szConfedCommFormat[8]; /* 0x0046b150 */
-extern const char szKilrathiAceCommFormat[8]; /* 0x0046b158 */
-extern const char szShipCommFormat[8]; /* 0x0046b160 */
+extern char szConfedCommFormat[8]; /* 0x0046b150 */
+extern char szKilrathiAceCommFormat[8]; /* 0x0046b158 */
+extern char szShipCommFormat[8]; /* 0x0046b160 */
 extern short nInputDoubleClickInterval; /* 0x0046af54 */
 extern short nMenuPointerSpeed; /* 0x0046af58 */
-extern const short asConstellationVelocity[16]; /* 0x0046a8d8 */
-extern const short asConstellationFrame[16]; /* 0x0046a8f8 */
+extern short asConstellationVelocity[16]; /* 0x0046a8d8 */
+extern short asConstellationFrame[16]; /* 0x0046a8f8 */
 extern short nConstellationDirection; /* 0x0046a918 */
 extern unsigned char *pPacketDecompressionWorkspace; /* 0x0046a91c */
 extern unsigned short wPacketDecompressionInputSizeOverride; /* 0x0046a920 */
 extern unsigned short wPacketCompressionFormatFlags; /* 0x0046a924 */
-extern const ShortRect aTargetArmorClipRects[4]; /* 0x0046a928 */
+extern ShortRect aTargetArmorClipRects[4]; /* 0x0046a928 */
 extern char szEmptyTargetDisplayText[4]; /* 0x0046a948 */
-extern const char szLockedTarget[20]; /* 0x0046a94c */
-extern const char szTextColourStringColourFormat[8]; /* 0x0046a960 */
-extern const char szAutoTargetting[20]; /* 0x0046a968 */
-extern const char szTextColourStringFormat[8]; /* 0x0046a97c */
-extern const char szTargetLabel[12]; /* 0x0046a984 */
-extern const char szNoTarget[8]; /* 0x0046a990 */
-extern const char szWingmanTargetNameFormat[4]; /* 0x0046a998 */
-extern const char szAceTargetNameFormat[4]; /* 0x0046a99c */
-extern const char szShipTargetNameFormat[4]; /* 0x0046a9a0 */
-extern const char szRangeLabel[12]; /* 0x0046a9a4 */
-extern const char szTargetTooFar[8]; /* 0x0046a9b0 */
-extern const char szRangeMetresSuffix[4]; /* 0x0046a9b8 */
-extern const char szTargetOffscreenRange[8]; /* 0x0046a9bc */
+extern char szLockedTarget[20]; /* 0x0046a94c */
+extern char szTextColourStringColourFormat[8]; /* 0x0046a960 */
+extern char szAutoTargetting[20]; /* 0x0046a968 */
+extern char szTextColourStringFormat[8]; /* 0x0046a97c */
+extern char szTargetLabel[12]; /* 0x0046a984 */
+extern char szNoTarget[8]; /* 0x0046a990 */
+extern char szWingmanTargetNameFormat[4]; /* 0x0046a998 */
+extern char szAceTargetNameFormat[4]; /* 0x0046a99c */
+extern char szShipTargetNameFormat[4]; /* 0x0046a9a0 */
+extern char szRangeLabel[12]; /* 0x0046a9a4 */
+extern char szTargetTooFar[8]; /* 0x0046a9b0 */
+extern char szRangeMetresSuffix[4]; /* 0x0046a9b8 */
+extern char szTargetOffscreenRange[8]; /* 0x0046a9bc */
 extern unsigned short nVideoMode; /* 0x0046b168 */
-extern const signed char acGraphicsModeByAnimationSpeed[8]; /* 0x0046b178 */
-extern const CockpitLayout stCockpitLayout; /* 0x0046e008 */
-extern const short aasCockpitLightX[5][7]; /* 0x0046dca8 */
-extern const short aasCockpitLightY[5][7]; /* 0x0046dcf0 */
-extern const signed char aacCockpitLightOffFrame[5][7]; /* 0x0046dd38 */
-extern const signed char aacCockpitLightOnFrame[5][7]; /* 0x0046dd60 */
-extern const CockpitBarDefinition aaCockpitBars[5][8]; /* 0x0046dd88 */
+extern signed char acGraphicsModeByAnimationSpeed[8]; /* 0x0046b178 */
+extern CockpitLayout stCockpitLayout; /* 0x0046e008 */
+extern short aasCockpitLightX[5][7]; /* 0x0046dca8 */
+extern short aasCockpitLightY[5][7]; /* 0x0046dcf0 */
+extern signed char aacCockpitLightOffFrame[5][7]; /* 0x0046dd38 */
+extern signed char aacCockpitLightOnFrame[5][7]; /* 0x0046dd60 */
+extern CockpitBarDefinition aaCockpitBars[5][8]; /* 0x0046dd88 */
 extern const GUID guidDirectDraw2; /* 0x00463118 */
 extern LPDIRECTDRAW2 pDirectDraw2; /* 0x0046b1a4 */
 extern unsigned char bCurrentKey; /* 0x0046c014 */
@@ -473,32 +473,32 @@ extern signed char cViableTargetCount; /* 0x0046c088 */
 extern MissionNavPoint aMissionNavPoints[MISSION_NAV_POINT_COUNT]; /* 0x0046c2f0 */
 extern MissionShipRecord
     aMissionShips[MISSION_SHIP_STORAGE_COUNT]; /* 0x0046c948 */
-extern const short asIntroCameraSequence[]; /* 0x0046c090 */
-extern const short asCannedSequence32[]; /* 0x0046c0b8 */
-extern const short asCannedSequence33[]; /* 0x0046c0d8 */
-extern const short asCannedSequence34[]; /* 0x0046c0f0 */
-extern const short asCannedSequence35[]; /* 0x0046c108 */
-extern const short asCampaignVictoryViewScript[24]; /* 0x0046c160 */
-extern const short asCannedSequence37[]; /* 0x0046c190 */
-extern const short asCannedSequence38[]; /* 0x0046c1b0 */
-extern const short asCannedSequence39[]; /* 0x0046c1d0 */
-extern const short asCannedSequence40[]; /* 0x0046c1e0 */
-extern const short asCannedSequence41[]; /* 0x0046c230 */
-extern const short asTigerClawEscapeViewScript[12]; /* 0x0046c238 */
-extern const short asCannedSequence42[]; /* 0x0046c250 */
-extern const short asCannedSequence43[]; /* 0x0046c270 */
-extern const short asCannedSequence44[]; /* 0x0046c2a0 */
-extern const short asCannedSequence45[]; /* 0x0046c2e8 */
-extern const signed char acDirectionShapeFrame[ /* 0x0046db28 */
+extern short asIntroCameraSequence[]; /* 0x0046c090 */
+extern short asCannedSequence32[]; /* 0x0046c0b8 */
+extern short asCannedSequence33[]; /* 0x0046c0d8 */
+extern short asCannedSequence34[]; /* 0x0046c0f0 */
+extern short asCannedSequence35[]; /* 0x0046c108 */
+extern short asCampaignVictoryViewScript[24]; /* 0x0046c160 */
+extern short asCannedSequence37[]; /* 0x0046c190 */
+extern short asCannedSequence38[]; /* 0x0046c1b0 */
+extern short asCannedSequence39[]; /* 0x0046c1d0 */
+extern short asCannedSequence40[]; /* 0x0046c1e0 */
+extern short asCannedSequence41[]; /* 0x0046c230 */
+extern short asTigerClawEscapeViewScript[12]; /* 0x0046c238 */
+extern short asCannedSequence42[]; /* 0x0046c250 */
+extern short asCannedSequence43[]; /* 0x0046c270 */
+extern short asCannedSequence44[]; /* 0x0046c2a0 */
+extern short asCannedSequence45[]; /* 0x0046c2e8 */
+extern signed char acDirectionShapeFrame[ /* 0x0046db28 */
     DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT];
-extern const signed char acDirectionShapeFlip[ /* 0x0046dbe8 */
+extern signed char acDirectionShapeFlip[ /* 0x0046dbe8 */
     DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT];
 extern InputEvent *pInputEventHead; /* 0x0046da90 */
 extern InputEvent *pInputEventTail; /* 0x0046da94 */
 extern int bInputEventPoolInitialized; /* 0x0046da98 */
 extern short nScreenWidth; /* 0x0046daa4 */
 extern short nScreenHeight; /* 0x0046daa8 */
-extern const ScreenViewportGeometry aScreenViewportGeometry[6]; /* 0x0046dab8 */
+extern ScreenViewportGeometry aScreenViewportGeometry[6]; /* 0x0046dab8 */
 extern int aiIntelligenceEvent[10]; /* 0x0046d368 */
 extern signed char aDefenseManeuversNovice[8]; /* 0x0046d390 */
 extern signed char aDefenseManeuversVeteran[8]; /* 0x0046d398 */
@@ -512,24 +512,24 @@ extern signed char acPilotAggression[24]; /* 0x0046d9a0 */
 extern signed char acPilotRecovery[20]; /* 0x0046d9b8 */
 extern unsigned char *pDrawnMouseCursorShape; /* 0x0046da9c */
 extern int nMouseCursorShowCount; /* 0x0046daa0 */
-extern const short asPilotHandOrigins[10]; /* 0x0046e120 */
+extern short asPilotHandOrigins[10]; /* 0x0046e120 */
 extern CampaignDate stSavedCampaignDate; /* 0x0046e188 */
-extern const TalkingHeadOrigin aTalkingHeadOrigins[11]; /* 0x0046e190 */
-extern const signed char abBriefingSmallCharacterAnimation[24]; /* 0x0046e1e8 */
-extern const signed char abBriefingLargeCharacterAnimation[24]; /* 0x0046e200 */
+extern TalkingHeadOrigin aTalkingHeadOrigins[11]; /* 0x0046e190 */
+extern signed char abBriefingSmallCharacterAnimation[24]; /* 0x0046e1e8 */
+extern signed char abBriefingLargeCharacterAnimation[24]; /* 0x0046e200 */
 extern BriefingCharacterLayout aBriefingCharacters[8]; /* 0x0046e218 */
-extern const short asMedalDisplayX[5]; /* 0x0046e2d0 */
+extern short asMedalDisplayX[5]; /* 0x0046e2d0 */
 extern const char *apszMedalNames[5]; /* 0x0046e2e0 */
 extern unsigned char *pMedalSceneShape; /* 0x0046e2f4 */
 extern const char *pszMedalsPilotSummary; /* 0x0046e2f8 */
-extern const signed char aBriefingPortraitOffsetX[8][12]; /* 0x0046e300 */
-extern const signed char aBriefingPortraitOffsetY[8][12]; /* 0x0046e360 */
-extern const short aBriefingPortraitScale[8][12]; /* 0x0046e3c0 */
-extern const int aiBriefingLeftPanelVelocity[12]; /* 0x0046e480 */
-extern const int aiBriefingPodiumVelocity[12]; /* 0x0046e4b0 */
-extern const int aiBriefingRightPanelVelocity[12]; /* 0x0046e4e0 */
-extern const signed char abBriefingPodiumFrames[40]; /* 0x0046e510 */
-extern const signed char abDebriefingEstablishDeltas[48]; /* 0x0046e538 */
+extern signed char aBriefingPortraitOffsetX[8][12]; /* 0x0046e300 */
+extern signed char aBriefingPortraitOffsetY[8][12]; /* 0x0046e360 */
+extern short aBriefingPortraitScale[8][12]; /* 0x0046e3c0 */
+extern int aiBriefingLeftPanelVelocity[12]; /* 0x0046e480 */
+extern int aiBriefingPodiumVelocity[12]; /* 0x0046e4b0 */
+extern int aiBriefingRightPanelVelocity[12]; /* 0x0046e4e0 */
+extern signed char abBriefingPodiumFrames[40]; /* 0x0046e510 */
+extern signed char abDebriefingEstablishDeltas[48]; /* 0x0046e538 */
 extern short nDebriefingLeftX; /* 0x0046e56c */
 extern short nDebriefingPilotX; /* 0x0046e570 */
 extern short nDebriefingRightX; /* 0x0046e574 */
@@ -540,22 +540,22 @@ extern short nTalkingHeadFace; /* 0x0046e584 */
 extern short nConversationBackdropFrame; /* 0x0046e588 */
 extern int bConversationConstellation; /* 0x0046e58c */
 extern int bConversationOverlay; /* 0x0046e590 */
-extern const char szBronzeStar[12]; /* 0x0046e594 */
-extern const char szSilverStar[12]; /* 0x0046e5a0 */
-extern const char szGoldStar[12]; /* 0x0046e5ac */
-extern const char szGoldenSun[12]; /* 0x0046e5b8 */
-extern const char szTerranMedalOfValor[24]; /* 0x0046e5c4 */
-extern const char szMedalsPilotSummary[40]; /* 0x0046e5dc */
-extern const char szViewMedalsTextFormat[12]; /* 0x0046e604 */
-extern const char szMedalChestTextFormat[12]; /* 0x0046e610 */
-extern const char szMedalLongShotTextFormat[12]; /* 0x0046e61c */
-extern const char szMedalEstablishTextFormat[12]; /* 0x0046e628 */
-extern const char szPinMedalTextFormat[12]; /* 0x0046e634 */
-extern const char szEstablishingShotTextFormat[12]; /* 0x0046e640 */
-extern const char szBriefingReturnTextFormat[12]; /* 0x0046e64c */
-extern const char szDismissedTextFormat[12]; /* 0x0046e658 */
-extern const char szDebriefEstablishTextFormat[12]; /* 0x0046e664 */
-extern const char szFuneralLongShotTextFormat[12]; /* 0x0046e670 */
+extern char szBronzeStar[12]; /* 0x0046e594 */
+extern char szSilverStar[12]; /* 0x0046e5a0 */
+extern char szGoldStar[12]; /* 0x0046e5ac */
+extern char szGoldenSun[12]; /* 0x0046e5b8 */
+extern char szTerranMedalOfValor[24]; /* 0x0046e5c4 */
+extern char szMedalsPilotSummary[40]; /* 0x0046e5dc */
+extern char szViewMedalsTextFormat[12]; /* 0x0046e604 */
+extern char szMedalChestTextFormat[12]; /* 0x0046e610 */
+extern char szMedalLongShotTextFormat[12]; /* 0x0046e61c */
+extern char szMedalEstablishTextFormat[12]; /* 0x0046e628 */
+extern char szPinMedalTextFormat[12]; /* 0x0046e634 */
+extern char szEstablishingShotTextFormat[12]; /* 0x0046e640 */
+extern char szBriefingReturnTextFormat[12]; /* 0x0046e64c */
+extern char szDismissedTextFormat[12]; /* 0x0046e658 */
+extern char szDebriefEstablishTextFormat[12]; /* 0x0046e664 */
+extern char szFuneralLongShotTextFormat[12]; /* 0x0046e670 */
 extern void *apRasterDriverCallbacks[13]; /* 0x0046e69c */
 extern char szRasterDriverName[13]; /* 0x0046e6d0 */
 extern unsigned char *pRLEEncodeBuffer; /* 0x0046e6dd */
@@ -571,9 +571,9 @@ extern int nRLEEncodedMaximumY; /* 0x0046e711 */
 extern unsigned char abRasterDecodeBuffer[0xd00]; /* 0x0046ec15 */
 extern unsigned char abRasterPaletteUsageScratch[0x300]; /* 0x0046f915 */
 extern unsigned char abRasterFadeAccumulator[0x300]; /* 0x0046fc15 */
-extern const unsigned char abGifLZWCodeMasks[9]; /* 0x0046ff15 */
-extern const unsigned char abGifInterlaceRowSteps[5]; /* 0x0046ff1e */
-extern const unsigned char abGifInterlaceRowStarts[5]; /* 0x0046ff23 */
+extern unsigned char abGifLZWCodeMasks[9]; /* 0x0046ff15 */
+extern unsigned char abGifInterlaceRowSteps[5]; /* 0x0046ff1e */
+extern unsigned char abGifInterlaceRowStarts[5]; /* 0x0046ff23 */
 extern RasterClip *pGifRasterTarget; /* 0x0046ff28 */
 extern unsigned char abRasterPaletteTranslation[256]; /* 0x0046ff2c */
 extern RLETransformVertex aRLETransformVertices[4]; /* 0x0047002c */
@@ -595,7 +595,7 @@ extern signed char abShotglassGlassAnimation[32]; /* 0x004703d0 */
 extern signed char abShotglassPourAnimation[80]; /* 0x004703f0 */
 extern signed char abShotglassWipeAnimation[24]; /* 0x00470440 */
 extern signed char *apRecRoomAnimations[14]; /* 0x00470458 */
-extern const ShortPoint aRecRoomCharacterOrigins[3]; /* 0x00470490 */
+extern ShortPoint aRecRoomCharacterOrigins[3]; /* 0x00470490 */
 extern short nRecRoomPanelOriginX; /* 0x0047049c */
 extern short nRecRoomPanelOriginY; /* 0x0047049e */
 extern TitleMenuRegion aRecRoomMenuRegions[7]; /* 0x004704a0 */
@@ -603,45 +603,45 @@ extern char *apszRecRoomBaseLabels[3]; /* 0x004704e8 */
 extern char *apszRecRoomMenuLabels[6]; /* 0x004704f8 */
 extern CampaignDate stChalkBoardDate; /* 0x00470514 */
 extern short asChalkBoardPilotOrder[9]; /* 0x00470518 */
-extern const char szBlankRoomMenuLabel[4]; /* 0x0047052c */
-extern const char szSecondLieutenantRank[8]; /* 0x00470530 */
-extern const char szFirstLieutenantRank[8]; /* 0x00470538 */
-extern const char szCaptainRank[8]; /* 0x00470540 */
-extern const char szMajorRank[8]; /* 0x00470548 */
-extern const char szLieutenantColonelRank[12]; /* 0x00470550 */
+extern char szBlankRoomMenuLabel[4]; /* 0x0047052c */
+extern char szSecondLieutenantRank[8]; /* 0x00470530 */
+extern char szFirstLieutenantRank[8]; /* 0x00470538 */
+extern char szCaptainRank[8]; /* 0x00470540 */
+extern char szMajorRank[8]; /* 0x00470548 */
+extern char szLieutenantColonelRank[12]; /* 0x00470550 */
 extern char szTalkToShotglass[20]; /* 0x0047055c */
 extern char szTalkToFirstPilot[24]; /* 0x00470570 */
 extern char szTalkToSecondPilot[24]; /* 0x00470588 */
 extern char szCheckPilotScores[20]; /* 0x004705a0 */
 extern char szEnterBarracks[16]; /* 0x004705b4 */
 extern char szFlyTrainingMission[24]; /* 0x004705c4 */
-extern const char szRoomMenuLabelFormat[12]; /* 0x004705dc */
-extern const char szEmptyRoomMenuLabel[4]; /* 0x004705e8 */
-extern const char szTalkToPilotFormat1[16]; /* 0x004705ec */
-extern const char szTalkToPilotFormat2[16]; /* 0x004705fc */
-extern const char szChalkBoardHeading[32]; /* 0x0047060c */
-extern const char szChalkBoardPilotHeading[12]; /* 0x0047062c */
-extern const char szChalkBoardScoreHeading[20]; /* 0x00470638 */
-extern const char szChalkBoardPilotFormat[12]; /* 0x0047064c */
-extern const char szChalkBoardScoreFormat[12]; /* 0x00470658 */
-extern const char szKilledInAction[4]; /* 0x00470664 */
-extern const char szChalkBoardKiaFormat[16]; /* 0x00470668 */
+extern char szRoomMenuLabelFormat[12]; /* 0x004705dc */
+extern char szEmptyRoomMenuLabel[4]; /* 0x004705e8 */
+extern char szTalkToPilotFormat1[16]; /* 0x004705ec */
+extern char szTalkToPilotFormat2[16]; /* 0x004705fc */
+extern char szChalkBoardHeading[32]; /* 0x0047060c */
+extern char szChalkBoardPilotHeading[12]; /* 0x0047062c */
+extern char szChalkBoardScoreHeading[20]; /* 0x00470638 */
+extern char szChalkBoardPilotFormat[12]; /* 0x0047064c */
+extern char szChalkBoardScoreFormat[12]; /* 0x00470658 */
+extern char szKilledInAction[4]; /* 0x00470664 */
+extern char szChalkBoardKiaFormat[16]; /* 0x00470668 */
 extern unsigned char abPaletteTranslation[256]; /* 0x00470678 */
 extern unsigned short awAbsoluteCosine[360]; /* 0x00470778 */
 extern unsigned short awAbsoluteSine[360]; /* 0x00470a48 */
 extern int bPanRoomTransition; /* 0x00470510 */
-extern const char szInvalidShapeAllocation[12]; /* 0x00470d18 */
-extern const char szBadViewport[12]; /* 0x00470d24 */
-extern const char szShapeRLEVersion[8]; /* 0x00470d30 */
-extern const char szShapeRLEOverflow[20]; /* 0x00470d38 */
-extern const char szBadShapeFlip[12]; /* 0x00470d4c */
-extern const char szCopyLine[12]; /* 0x00470d58 */
-extern const char szWipeLine[12]; /* 0x00470d64 */
-extern const char szTriangle[12]; /* 0x00470d70 */
-extern const char szShadedTriangle[16]; /* 0x00470d7c */
-extern const char szShadowDraw[12]; /* 0x00470d8c */
-extern const char szFizzleFade[12]; /* 0x00470d98 */
-extern const char szSnowViewport[16]; /* 0x00470da4 */
+extern char szInvalidShapeAllocation[12]; /* 0x00470d18 */
+extern char szBadViewport[12]; /* 0x00470d24 */
+extern char szShapeRLEVersion[8]; /* 0x00470d30 */
+extern char szShapeRLEOverflow[20]; /* 0x00470d38 */
+extern char szBadShapeFlip[12]; /* 0x00470d4c */
+extern char szCopyLine[12]; /* 0x00470d58 */
+extern char szWipeLine[12]; /* 0x00470d64 */
+extern char szTriangle[12]; /* 0x00470d70 */
+extern char szShadedTriangle[16]; /* 0x00470d7c */
+extern char szShadowDraw[12]; /* 0x00470d8c */
+extern char szFizzleFade[12]; /* 0x00470d98 */
+extern char szSnowViewport[16]; /* 0x00470da4 */
 extern int nInsertKeyState; /* 0x00475b68 */
 extern int nClearedKeyboardState; /* 0x00475b6c */
 extern int nOemPeriodKeyState; /* 0x00475bf0 */
@@ -1180,7 +1180,7 @@ extern unsigned char abTargetBracketPadding[7]; /* 0x004691d9 */
 extern short asHudMessageOrigins[10]; /* 0x004691e0 */
 extern const char *apszCommMenuText[13]; /* 0x0046af90 */
 extern const char *apszKilrathiAceNames[4]; /* 0x0046af80 */
-extern const char aszCommMenuText[0xe8]; /* 0x0046aff8 */
+extern char aszCommMenuText[0xe8]; /* 0x0046aff8 */
 extern ShortPoint aaCockpitDamagePositions[5][4]; /* 0x00469228 */
 extern unsigned long dwGameClockBase; /* 0x005a89a8 */
 
@@ -1240,12 +1240,12 @@ extern int bHostPrimaryMouseButton; /* 0x005a8998 */
 extern int bHostSecondaryMouseButton; /* 0x005a899c */
 
 extern ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT]; /* 0x00466458 */
-extern const ShortVector aChildOffsets[56]; /* 0x004682f0 */
+extern ShortVector aChildOffsets[56]; /* 0x004682f0 */
 #ifdef SDL_PORT
 extern const ShortVector aSwcChildOffsets[63];
 #endif
-extern const ShortPoint aWeaponDisplayPositions[32]; /* 0x00468440 */
-extern const ShortPoint aWeaponDisplayOrigins[5]; /* 0x004684c0 */
+extern ShortPoint aWeaponDisplayPositions[32]; /* 0x00468440 */
+extern ShortPoint aWeaponDisplayOrigins[5]; /* 0x004684c0 */
 extern LPDIRECTDRAWSURFACE pPrimarySurface; /* 0x0046b1a8 */
 extern LPDIRECTDRAWSURFACE pSecondarySurface; /* 0x0046b1ac */
 extern LPDIRECTDRAWPALETTE pDirectDrawPalette; /* 0x0046b1b0 */
@@ -1261,7 +1261,7 @@ extern ShortVector aShipFormationOffset[10]; /* 0x0059b520 */
 /* Ordered name tables read directly out of the image; see include/wcdata.h.
  * Both are packed variable-length strings, not fixed-stride arrays, so the
  * game indexes them through a pointer table rather than by multiplication. */
-extern const char aszObjectTypeDisplayNames[]; /* Hornet .. Star post, then weapons */ /* 0x004684d4 */
-extern const char aszKilrathiAceNames[];  /* Bhurak, Dakhath, Khajja, Bakhtosh */ /* 0x0046afd4 */
+extern char aszObjectTypeDisplayNames[]; /* Hornet .. Star post, then weapons */ /* 0x004684d4 */
+extern char aszKilrathiAceNames[];  /* Bhurak, Dakhath, Khajja, Bakhtosh */ /* 0x0046afd4 */
 
 #endif /* GAME_GLOBALS_H */

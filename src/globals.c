@@ -169,38 +169,38 @@ int bMainWindowMinimized; /* 0x00465080 */
 int bWindowMessagePumpActive; /* 0x004650a8 */
 unsigned int bF1KeyLatch; /* 0x004650ac */
 GuardedAllocation *pGuardedAllocationHead; /* 0x004650b0 */
-const char szJoystickDevCapsFailure[26] = /* 0x004652dc */
+char szJoystickDevCapsFailure[26] = /* 0x004652dc */
     "Joystick: !joyGetDevCaps\n";
 short nPacketError; /* 0x00465460 */
 short nAutopilotFormationShipCount; /* 0x00465544 */
-const short asEjectionPrimaryFrames[8] = { /* 0x00465550 */
+short asEjectionPrimaryFrames[8] = { /* 0x00465550 */
     0, 1, 1, 3, 3, 0, 0, 0
 };
-const short asEjectionSecondaryFrames[8] = { /* 0x00465560 */
+short asEjectionSecondaryFrames[8] = { /* 0x00465560 */
     -1, -1, 2, -1, 4, 0, 0, 0
 };
-const short asEjectionViewScript[12] = { /* 0x00465570 */
+short asEjectionViewScript[12] = { /* 0x00465570 */
     3, 11, 14, 70, 3, 10, 14, 80, 3, 4, -1, 0
 };
 const char *pStrandedMessage = /* 0x00465588 */
     szStrandedMessage;
-const char szStrandedMessage[72] = /* 0x0046558c */
+char szStrandedMessage[72] = /* 0x0046558c */
     "\nWith your carrier\ndestroyed, you drift\nendlessly through\n"
     "the void...";
-const char szViewTemplates[16] = "View Templates"; /* 0x004655d4 */
-const char szStrandedTheEnd[12] = "THE END"; /* 0x004655e4 */
-const short asMouthFramesByPhoneme[26] = { /* 0x004655f0 */
+char szViewTemplates[16] = "View Templates"; /* 0x004655d4 */
+char szStrandedTheEnd[12] = "THE END"; /* 0x004655e4 */
+short asMouthFramesByPhoneme[26] = { /* 0x004655f0 */
     0, 5, 4, 4, 1, 8, 4, 7, 0, 4, 4, 7, 5,
     4, 2, 5, 6, 4, 4, 4, 3, 4, 6, 4, 4, 4
 };
-const char szConversationIntegerFormat[4] = "%d"; /* 0x00465628 */
-const char szConversationIntegerFormatAlt[4] = "%d"; /* 0x0046562c */
-const char szCampaignDateFormat[12] = "%03d.%03d"; /* 0x00465630 */
-const char szSavedCampaignDateFormat[12] = "%03d.%03d"; /* 0x0046563c */
-const char szCampaignTimeFormat[12] = "%02d:%02d"; /* 0x00465648 */
-const char szConversationTextFormat[12] = "%X%Y%F%s%P"; /* 0x00465654 */
-const char szBriefingMapTextFormat[12] = "%X%Y%F%s%P"; /* 0x00465660 */
-const char szCloseLookTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046566c */
+char szConversationIntegerFormat[4] = "%d"; /* 0x00465628 */
+char szConversationIntegerFormatAlt[4] = "%d"; /* 0x0046562c */
+char szCampaignDateFormat[12] = "%03d.%03d"; /* 0x00465630 */
+char szSavedCampaignDateFormat[12] = "%03d.%03d"; /* 0x0046563c */
+char szCampaignTimeFormat[12] = "%02d:%02d"; /* 0x00465648 */
+char szConversationTextFormat[12] = "%X%Y%F%s%P"; /* 0x00465654 */
+char szBriefingMapTextFormat[12] = "%X%Y%F%s%P"; /* 0x00465660 */
+char szCloseLookTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046566c */
 signed char cScrambleLeftWalkerFrame = 7; /* 0x00465768 */
 signed char cScrambleRightWalkerFrame = 10; /* 0x0046576c */
 signed char acScrambleWalkerOverlayFrames[8] = { /* 0x00465770 */
@@ -209,10 +209,10 @@ signed char acScrambleWalkerOverlayFrames[8] = { /* 0x00465770 */
 short nScrambleLeftWalkerX = 70; /* 0x00465778 */
 short nScrambleRightWalkerX = 170; /* 0x0046577c */
 short nScrambleBackgroundX = 0; /* 0x00465780 */
-const unsigned short ausScrambleActorAnimationA[8] = { /* 0x00465788 */
+unsigned short ausScrambleActorAnimationA[8] = { /* 0x00465788 */
     0, 1, 2, 3, 4, 5, 0x80, 0
 };
-const unsigned short ausScrambleActorAnimationB[11] = { /* 0x00465798 */
+unsigned short ausScrambleActorAnimationB[11] = { /* 0x00465798 */
     0, 0, 1, 2, 2, 2, 2, 2, 1, 1, 0x80
 };
 ScrambleAnimationActor aScrambleAnimationActors[5] = { /* 0x004657b0 */
@@ -225,7 +225,7 @@ ScrambleAnimationActor aScrambleAnimationActors[5] = { /* 0x004657b0 */
     { 0, 0, 0, 0,  0, -1, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0,  1, -1, 0, 0, 0, 0, 0, 0 }
 };
-const ScrambleShipDetail aaScrambleShipDetails[4][32] = { /* 0x00465828 */
+ScrambleShipDetail aaScrambleShipDetails[4][32] = { /* 0x00465828 */
     {
         {  2,   23,   5 }, {  3, -112,  16 },
         {  6,  -94, -23 }, {  6,  -26,   5 },
@@ -299,7 +299,7 @@ const ScrambleShipDetail aaScrambleShipDetails[4][32] = { /* 0x00465828 */
         {  8,  221,  33 }, {  1,  282,  22 }
     }
 };
-const int anLandingDamageDetailCounts[4] = { /* 0x00465aa8 */
+int anLandingDamageDetailCounts[4] = { /* 0x00465aa8 */
     0, 8, 16, 24
 };
 const char *apszLandingDamageComments[4] = { /* 0x00465ab8 */
@@ -308,15 +308,15 @@ const char *apszLandingDamageComments[4] = { /* 0x00465ab8 */
     szLandingHeavyDamageComment,
     szLandingSurvivalComment
 };
-const signed char acLandingCanopyFramesHeavy[24] = { /* 0x00465ac8 */
+signed char acLandingCanopyFramesHeavy[24] = { /* 0x00465ac8 */
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10,
     10, 10, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0x40
 };
-const signed char acLandingCanopyFramesLight[24] = { /* 0x00465ae0 */
+signed char acLandingCanopyFramesLight[24] = { /* 0x00465ae0 */
     0, 1, 2, 3, 11, 12, 13, 14, 14, 14, 14, 14,
     14, 14, 13, 12, 11, 3, 2, 1, 0, 0x40, 0, 0
 };
-const signed char acLandingCanopyFramesModerate[16] = { /* 0x00465af8 */
+signed char acLandingCanopyFramesModerate[16] = { /* 0x00465af8 */
     0, 15, 16, 17, 18, 19, 19, 18,
     17, 16, 15, 0, 0x40, 0, 0, 0
 };
@@ -326,38 +326,38 @@ const signed char *apLandingCanopyFrames[4] = { /* 0x00465b08 */
     acLandingCanopyFramesHeavy,
     acLandingCanopyFramesHeavy
 };
-const ShortPoint aFuneralParticleOrigins[7] = { /* 0x00465b18 */
+ShortPoint aFuneralParticleOrigins[7] = { /* 0x00465b18 */
     { 234, 83 }, { 248, 85 }, { 260, 80 }, { 273, 78 },
     { 286, 75 }, { 299, 76 }, { 310, 74 }
 };
-const short asFuneralSceneBySeries[15] = { /* 0x00465b36 */
+short asFuneralSceneBySeries[15] = { /* 0x00465b36 */
     0, 0, 1, 1, 1, 1, 1, 2, 3, 2, 3, 3, 2, 3, 0
 };
 int bFuneralShowTheEnd; /* 0x00465b54 */
-const char szLandingCleanComment[32] = /* 0x00465b58 */
+char szLandingCleanComment[32] = /* 0x00465b58 */
     "You got away pretty clean, sir!";
-const char szLandingLightDamageComment[48] = /* 0x00465b78 */
+char szLandingLightDamageComment[48] = /* 0x00465b78 */
     "Looks like it got a little hot out there, sir!";
-const char szLandingHeavyDamageComment[36] = /* 0x00465ba8 */
+char szLandingHeavyDamageComment[36] = /* 0x00465ba8 */
     "You sure got yourself shot up, sir!";
-const char szLandingSurvivalComment[44] = /* 0x00465bcc */
+char szLandingSurvivalComment[44] = /* 0x00465bcc */
     "Glad to see you made it back alive, sir.";
-const char szLandingCommentFormat[12] = "%X%Y%F%s%P"; /* 0x00465bf8 */
-const char szFuneralTheEnd[8] = "THE END"; /* 0x00465c04 */
-const char szFuneralTextFormat[12] = "%X%Y%F%s%P"; /* 0x00465c0c */
-const char szFuneralCompanyCommand[20] = /* 0x00465c18 */
+char szLandingCommentFormat[12] = "%X%Y%F%s%P"; /* 0x00465bf8 */
+char szFuneralTheEnd[8] = "THE END"; /* 0x00465c04 */
+char szFuneralTextFormat[12] = "%X%Y%F%s%P"; /* 0x00465c0c */
+char szFuneralCompanyCommand[20] = /* 0x00465c18 */
     "%X%Y%FCompany...%P";
-const char szFuneralAttentionCommand[20] = /* 0x00465c2c */
+char szFuneralAttentionCommand[20] = /* 0x00465c2c */
     "%X%YAtten-SHUN!%P";
-const char szFuneralPrepareArmsCommand[20] = /* 0x00465c40 */
+char szFuneralPrepareArmsCommand[20] = /* 0x00465c40 */
     "%X%YPrepare arms!%P";
-const char szFuneralFireCommand[16] = /* 0x00465c54 */
+char szFuneralFireCommand[16] = /* 0x00465c54 */
     "%X%Y%FFire!%P";
 short nEnemySighting = 0x7fff; /* 0x00465c7c */
 short nDebriefingPersonality; /* 0x00465c80 */
 int bInitialFormationSetup; /* 0x00465c84 */
 void *aapPacketReferences[4][0x25]; /* 0x00465c88 */
-const ShortVector aaFormationPositions[5][8] = { /* 0x00465ed8 */
+ShortVector aaFormationPositions[5][8] = { /* 0x00465ed8 */
     {
         { 0, 0, 0 }, { -750, 0, 0 }, { 750, 0, 0 }, { 0, 0, -750 },
         { 0, 0, 750 }, { -750, 0, -750 }, { 750, 0, -750 },
@@ -385,12 +385,12 @@ const ShortVector aaFormationPositions[5][8] = { /* 0x00465ed8 */
         { 0, 500, -500 }, { 0, 500, -1250 }
     }
 };
-const int anPilotTurnInterval[18] = { /* 0x00465fc8 */
+int anPilotTurnInterval[18] = { /* 0x00465fc8 */
     5, 5, 4, 4, 3, 3, 3, 2, 2, 1, 3, 3, 3, 3, 2, 2, 2, 1
 };
-const char szErrorLoadingPilotSpeech[32] = /* 0x00466010 */
+char szErrorLoadingPilotSpeech[32] = /* 0x00466010 */
     "Error loading pilot speech";
-const ShortPoint aBarracksBunkOrigins[8] = { /* 0x004693c8 */
+ShortPoint aBarracksBunkOrigins[8] = { /* 0x004693c8 */
     {109, 86}, {170, 86}, {98, 95}, {173, 95},
     {78, 110}, {176, 110}, {42, 136}, {183, 136}
 };
@@ -409,25 +409,25 @@ char *apszBarracksMenuLabels[20] = { /* 0x004693f0 */
 unsigned int dwModalBoundsTopLeft = 0x00280018; /* 0x00469440 */
 unsigned int dwModalBoundsBottomRight = 0x003c0128; /* 0x00469444 */
 ModalTextPanel *pModalTextPanel; /* 0x00469448 */
-const short asCampaignPilotFiles[3] = {58, 61, 74}; /* 0x00469450 */
-const short asCampaignBriefingFiles[3] = {10, 62, 73}; /* 0x00469458 */
-const short asMissionDataFiles[3] = {15, 52, 72}; /* 0x00469460 */
-const char szSaveCampaignMenuLabel[24] = /* 0x00469468 */
+short asCampaignPilotFiles[3] = {58, 61, 74}; /* 0x00469450 */
+short asCampaignBriefingFiles[3] = {10, 62, 73}; /* 0x00469458 */
+short asMissionDataFiles[3] = {15, 52, 72}; /* 0x00469460 */
+char szSaveCampaignMenuLabel[24] = /* 0x00469468 */
     "Save this campaign  ";
-const char szSaveCampaignMenuLabelAlt[24] = /* 0x00469480 */
+char szSaveCampaignMenuLabelAlt[24] = /* 0x00469480 */
     "Save this campaign  ";
-const char szMissionHangarMenuLabel[16] = "Mission Hangar"; /* 0x00469498 */
-const char szReturnToBarMenuLabel[20] = "Return to the Bar"; /* 0x004694a8 */
-const char szQuitGameMenuLabel[20] = "Quit Wing Commander"; /* 0x004694bc */
-const char szViewMedalsMenuLabel[20] = "View your medals"; /* 0x004694d0 */
+char szMissionHangarMenuLabel[16] = "Mission Hangar"; /* 0x00469498 */
+char szReturnToBarMenuLabel[20] = "Return to the Bar"; /* 0x004694a8 */
+char szQuitGameMenuLabel[20] = "Quit Wing Commander"; /* 0x004694bc */
+char szViewMedalsMenuLabel[20] = "View your medals"; /* 0x004694d0 */
 short nPaletteTransitionInitialise = 1; /* 0x00469640 */
 int nDebugOverlayConsoleCount; /* 0x00469644 */
 DWORD dwDebugOverlayKey; /* 0x00469648 */
 DWORD dwDebugOverlayKeyLatch; /* 0x0046964c */
 HHOOK hDebugKeyboardHook; /* 0x00469650 */
-const char szDebugOverlayFontName[8] = "Courier"; /* 0x00469654 */
-const char szDebugOverlaySpinner[5] = "-\\|/"; /* 0x0046965c */
-const char szDebugOverlayNewline[4] = "\n"; /* 0x00469664 */
+char szDebugOverlayFontName[8] = "Courier"; /* 0x00469654 */
+char szDebugOverlaySpinner[5] = "-\\|/"; /* 0x0046965c */
+char szDebugOverlayNewline[4] = "\n"; /* 0x00469664 */
 const char *apszGraphicsModeNames[4] = { /* 0x00469668 */
     "vga",
     "ega",
@@ -437,23 +437,23 @@ const char *apszGraphicsModeNames[4] = { /* 0x00469668 */
 char szDiskMarkerFile[9] = "DISK.000"; /* 0x00469688 */
 short nDiskPromptBorderColour = 0x50; /* 0x00469694 */
 short nKeyboardPointerStep = 4; /* 0x004696a4 */
-const short asPlayerDamageSystemTable[50] = { /* 0x00469878 */
+short asPlayerDamageSystemTable[50] = { /* 0x00469878 */
     0, 8, 6, 5, 0, 3, 5, 5, 7, 6,
     0, 8, 6, 5, 4, 3, 4, 0, 4, 4,
     1, 2, 5, 2, 7, 3, 4, 7, 5, 1,
     1, 4, 1, 5, 2, 3, 4, 7, 2, 1,
     4, 4, 4, 4, 0, 8, 6, 5, 4, 0
 };
-const enum ObjectType aeShipHitDebrisTypes[3] = { /* 0x00469950 */
+enum ObjectType aeShipHitDebrisTypes[3] = { /* 0x00469950 */
     OBJECT_TYPE_DEBRIS_SHIP_GIRDER_CHUNK,
     OBJECT_TYPE_DEBRIS_SHIP_TUBING,
     OBJECT_TYPE_DEBRIS_O_RING
 };
-const signed char acGunRefireDelay[4] = {6, 10, 4, 0}; /* 0x0046995c */
-const char szWeaponDestroyed[20] = "Weapon destroyed"; /* 0x00469960 */
-const char szFuelTanksHit[16] = "Fuel tanks hit"; /* 0x00469974 */
-const char szComponentFixedFormat[8] = "%s FIXD"; /* 0x00469984 */
-const char szNeedLock[12] = "Need Lock"; /* 0x0046998c */
+signed char acGunRefireDelay[4] = {6, 10, 4, 0}; /* 0x0046995c */
+char szWeaponDestroyed[20] = "Weapon destroyed"; /* 0x00469960 */
+char szFuelTanksHit[16] = "Fuel tanks hit"; /* 0x00469974 */
+char szComponentFixedFormat[8] = "%s FIXD"; /* 0x00469984 */
+char szNeedLock[12] = "Need Lock"; /* 0x0046998c */
 short bSlowSceneAnimation; /* 0x00469998 */
 unsigned char cBlackColour; /* 0x0046999c */
 unsigned char cViewportClearColour = 15; /* 0x004699a0 */
@@ -471,7 +471,7 @@ unsigned char cDefaultTextColour = 0xa8; /* 0x004699cc */
 unsigned char cBrownColour = 0xfd; /* 0x004699d0 */
 unsigned char cAsteroidColour = 0xf5; /* 0x004699d4 */
 unsigned char cPrimaryViewBufferColour = 0xbf; /* 0x004699d8 */
-const unsigned char abLegacyVideoModeColours[14] = { /* 0x004699e0 */
+unsigned char abLegacyVideoModeColours[14] = { /* 0x004699e0 */
     9, 14, 4, 2, 10, 12, 15, 8, 7, 5, 2, 6, 7, 0
 };
 short asConversationTextColours[24] = { /* 0x004699f0 */
@@ -480,13 +480,13 @@ short asConversationTextColours[24] = { /* 0x004699f0 */
     0x0b, 0x0c, 0x01, 0x0a, 0x06, 0x0e, 0x02, 0x07
 };
 int bGraphicsActive; /* 0x00469a20 */
-const int anBaseMemoryReservationByVideoMode[4] = { /* 0x00469a90 */
+int anBaseMemoryReservationByVideoMode[4] = { /* 0x00469a90 */
     280000, 260000, 280000, 0
 };
-const int anFullMusicMemoryReservationByVideoMode[4] = { /* 0x00469aa0 */
+int anFullMusicMemoryReservationByVideoMode[4] = { /* 0x00469aa0 */
     306000, 286000, 306000, 0
 };
-const int anExpandedMemoryReservationByVideoMode[3] = { /* 0x00469ab0 */
+int anExpandedMemoryReservationByVideoMode[3] = { /* 0x00469ab0 */
     258000, 238000, 258000
 };
 PacketResourceDescriptor aCommon3SpaceResources[12] = { /* 0x00469bc0 */
@@ -558,19 +558,19 @@ short asConstellationObjectIndices[4] = { /* 0x00469d50 */
 };
 int bCockpitResourcesActive; /* 0x00469d58 */
 int b3SpaceObjectsActive; /* 0x00469d5c */
-const short asSceneAnimationLogicalFiles[8] = { /* 0x00469d60 */
+short asSceneAnimationLogicalFiles[8] = { /* 0x00469d60 */
     63, 64, 65, 66, 67, 68, 69, 70
 };
 short bSceneAnimationWaitCommand; /* 0x00469d70 */
-const char szSceneAnimationTextFormat[12] = "%X%Y%F%s%P"; /* 0x00469d74 */
-const char szMeanwhile[16] = "Meanwhile..."; /* 0x00469d80 */
-const char szEmptyAnswerInput[4] = ""; /* 0x00469d90 */
-const char szAnswerLabel[9] = "Answer: "; /* 0x00469d94 */
+char szSceneAnimationTextFormat[12] = "%X%Y%F%s%P"; /* 0x00469d74 */
+char szMeanwhile[16] = "Meanwhile..."; /* 0x00469d80 */
+char szEmptyAnswerInput[4] = ""; /* 0x00469d90 */
+char szAnswerLabel[9] = "Answer: "; /* 0x00469d94 */
 Viewport stTrainSimPanelViewport; /* 0x00469da8 */
-const ShortRect stTrainSimPanelBounds = { /* 0x00469dc0 */
+ShortRect stTrainSimPanelBounds = { /* 0x00469dc0 */
     0x30, 0x1d, 0x110, 0x6d
 };
-const char szTrainSimTitle[24] = "SQUADRON: TRAINSIM"; /* 0x00469dc8 */
+char szTrainSimTitle[24] = "SQUADRON: TRAINSIM"; /* 0x00469dc8 */
 unsigned char *apszBuiltInHighScoreNames[6] = { /* 0x00469de0 */
     &aszBuiltInHighScores[0],
     &aszBuiltInHighScores[8],
@@ -597,33 +597,33 @@ unsigned char aszBuiltInHighScores[48] = /* 0x00469e38 */
     "THE MAN\0"
     "MONGO\0\0\0";
 unsigned int dwTrainSimStringPadding; /* 0x00469e68 */
-const char szTextFlushToken[4] = "%P"; /* 0x00469e6c */
-const char szNewPilotPrompt[80] = /* 0x00469e70 */
+char szTextFlushToken[4] = "%P"; /* 0x00469e6c */
+char szNewPilotPrompt[80] = /* 0x00469e70 */
     "CONGRATULATIONS!\n"
     "YOU HAVE A TOP SCORE!\n"
     "PLEASE ENTER YOUR\n"
     "NAME AND CALLSIGN:\n";
-const char szDefaultPilotName[8] = "Blair"; /* 0x00469ec0 */
-const char szPilotNameLabel[12] = "LAST NAME: "; /* 0x00469ec8 */
-const char szDefaultCallsign[12] = "Maverick"; /* 0x00469ed4 */
-const char szCallsignLabel[12] = "CALLSIGN : "; /* 0x00469ee0 */
-const char szCheaterCallsign[8] = "CHEATER"; /* 0x00469eec */
-const char szHighScoreCongratulations[68] = /* 0x00469ef4 */
+char szDefaultPilotName[8] = "Blair"; /* 0x00469ec0 */
+char szPilotNameLabel[12] = "LAST NAME: "; /* 0x00469ec8 */
+char szDefaultCallsign[12] = "Maverick"; /* 0x00469ed4 */
+char szCallsignLabel[12] = "CALLSIGN : "; /* 0x00469ee0 */
+char szCheaterCallsign[8] = "CHEATER"; /* 0x00469eec */
+char szHighScoreCongratulations[68] = /* 0x00469ef4 */
     "*******\n"
     "CONGRATULATIONS!\n"
     "YOU HAVE SCORE NUMBER\n"
     ">>>> %d <<<<\n"
     "*******";
-const char szLowScoreMessage[56] = /* 0x00469f38 */
+char szLowScoreMessage[56] = /* 0x00469f38 */
     "> SORRY <\n\n"
     "YOUR SCORE IS ONLY\n"
     "%ld0\n\n"
     "PLEASE PLAY AGAIN!";
-const char szHighScoresHeading[16] = "%JHIGH SCORES%P"; /* 0x00469f70 */
-const char szHighScoreNumberFormat[8] = "%0ld"; /* 0x00469f80 */
-const char szHighScoreRowFormat[16] = /* 0x00469f88 */
+char szHighScoresHeading[16] = "%JHIGH SCORES%P"; /* 0x00469f70 */
+char szHighScoreNumberFormat[8] = "%0ld"; /* 0x00469f80 */
+char szHighScoreRowFormat[16] = /* 0x00469f88 */
     "%X%Y%d. %s%X%s0";
-const char szSelectEnemy[16] = "SELECT\nENEMY%P"; /* 0x00469f98 */
+char szSelectEnemy[16] = "SELECT\nENEMY%P"; /* 0x00469f98 */
 int nCannedSceneMode; /* 0x00469fac */
 int nArcadeState; /* 0x00469fb0 */
 short nFrameSkipCounter = 1; /* 0x00469fb4 */
@@ -648,10 +648,10 @@ int bMouseCursorVisible; /* 0x0046a018 */
 unsigned char bInputPollingGuard; /* 0x0046a01c */
 InputDeviceSample stLastPolledFlightInput; /* 0x0046a020 */
 int bMouseAfterburnerControl; /* 0x0046a02c */
-const short asMouseYawThresholds[6] = { /* 0x0046a030 */
+short asMouseYawThresholds[6] = { /* 0x0046a030 */
     10, 37, 52, 57, 62, 1070
 };
-const short asMousePitchThresholds[6] = { /* 0x0046a040 */
+short asMousePitchThresholds[6] = { /* 0x0046a040 */
     5, 18, 27, 35, 38, 1040
 };
 unsigned int dwLastSecondaryButtonPress; /* 0x0046a04c */
@@ -659,42 +659,42 @@ unsigned char bFlightRollLatch; /* 0x0046a050 */
 unsigned char bAfterburnerButtonLatched; /* 0x0046a054 */
 short nMouseYawInput; /* 0x0046a058 */
 short nMousePitchInput; /* 0x0046a05c */
-const char szSpaceBuffer[16] = "SPACE BUFFER"; /* 0x0046a1d0 */
-const char szAllocateBufferTag[4] = "AB"; /* 0x0046a1e0 */
+char szSpaceBuffer[16] = "SPACE BUFFER"; /* 0x0046a1d0 */
+char szAllocateBufferTag[4] = "AB"; /* 0x0046a1e0 */
 ActiveSoundEntry *pActiveSoundHead; /* 0x0046a438 */
 ActiveSoundEntry *pActiveSoundTail; /* 0x0046a43c */
 int bAudioSystemInitialized; /* 0x0046a440 */
 WaveTableEntry *pWaveTableHead; /* 0x0046a444 */
 WaveTableEntry *pWaveTableTail; /* 0x0046a448 */
-const char szPlayWaveOpenError[36] = /* 0x0046a46c */
+char szPlayWaveOpenError[36] = /* 0x0046a46c */
     "playWAVE Unable to open file '%s'";
-const short asCarrierLaunchApproachDeltaX[24] = { /* 0x0046a550 */
+short asCarrierLaunchApproachDeltaX[24] = { /* 0x0046a550 */
     -1, -1, -1, -2, -2, -2, -2, -3,
     -3, -3, -3, -3, -2, -2, -2, -2,
     -1, -1, -1, -1, -1, 0, 0, 0
 };
-const signed char acCarrierLaunchApproachFrames[24] = { /* 0x0046a580 */
+signed char acCarrierLaunchApproachFrames[24] = { /* 0x0046a580 */
     36, 32, 32, 32, 32, 32, 32, 32,
     25, 25, 25, 25, 25, 25, 25, 25,
     18, 18, 18, 18, 18, 18, 18, 18
 };
-const ShortPoint aCarrierLaunchFighterPath[9] = { /* 0x0046a598 */
+ShortPoint aCarrierLaunchFighterPath[9] = { /* 0x0046a598 */
     { -2, 1 }, { -1, 1 }, { -1, 1 },
     { -1, 0 }, { -1, 1 }, { -1, 0 },
     { -1, 1 }, { -1, 0 }, { 0, 0 }
 };
-const short asCarrierLaunchFighterDeltaY[16] = { /* 0x0046a5bc */
+short asCarrierLaunchFighterDeltaY[16] = { /* 0x0046a5bc */
     0, 0, 3, 3, 3, 2, 2, 2,
     2, 2, 1, 1, 1, 1, 1, 1
 };
-const short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
+short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
     0, 0, 12, 11,
     1, 90, 90, 0, 9, -90, 0, 0, 20, 3, 15, -1
 };
-const char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
+char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
     "Press any key when ready";
 unsigned char *pDamageDisplayBackground; /* 0x0046a748 */
-const ShortPoint aDamageDisplayPositions[9] = { /* 0x0046a750 */
+ShortPoint aDamageDisplayPositions[9] = { /* 0x0046a750 */
     {36, 37}, {36, 28}, {36, 30}, {36, 23}, {36, 19},
     {36, 15}, {36, 24}, {36, 16}, {36, 22}
 };
@@ -709,7 +709,7 @@ const char *apszComponentNames[9] = { /* 0x0046a778 */
     szEjectorSystem,
     szRepairSystems
 };
-const unsigned char abDamageDisplayFrames[9] = { /* 0x0046a7a0 */
+unsigned char abDamageDisplayFrames[9] = { /* 0x0046a7a0 */
     21, 22, 23, 24, 25, 26, 27, 28, 29
 };
 const char *apszDamageSeverityNames[5] = { /* 0x0046a7b0 */
@@ -721,36 +721,36 @@ const char *apszDamageSeverityNames[5] = { /* 0x0046a7b0 */
 };
 short nScriptedViewObject = -1; /* 0x0046a8d0 */
 int bScriptedView; /* 0x0046a8d4 */
-const short asConstellationVelocity[16] = { /* 0x0046a8d8 */
+short asConstellationVelocity[16] = { /* 0x0046a8d8 */
     8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1
 };
-const short asConstellationFrame[16] = { /* 0x0046a8f8 */
+short asConstellationFrame[16] = { /* 0x0046a8f8 */
     0, 16, 16, 0, 4, 4, 20, 20, 24, 8, 8, 24, 28, 12, 12, 28
 };
 short nConstellationDirection = -1; /* 0x0046a918 */
 unsigned char *pPacketDecompressionWorkspace; /* 0x0046a91c */
 unsigned short wPacketDecompressionInputSizeOverride; /* 0x0046a920 */
 unsigned short wPacketCompressionFormatFlags; /* 0x0046a924 */
-const ShortRect aTargetArmorClipRects[4] = { /* 0x0046a928 */
+ShortRect aTargetArmorClipRects[4] = { /* 0x0046a928 */
     { 12, -20, 29, 20 },
     { -11, 1, 11, 20 },
     { -11, -20, 11, 0 },
     { -29, -20, -12, 20 }
 };
 char szEmptyTargetDisplayText[4] = ""; /* 0x0046a948 */
-const char szLockedTarget[20] = "   LOCKED TARGET"; /* 0x0046a94c */
-const char szTextColourStringColourFormat[8] = "%F%s%F"; /* 0x0046a960 */
-const char szAutoTargetting[20] = "  AUTO TARGETTING"; /* 0x0046a968 */
-const char szTextColourStringFormat[8] = "%F%s"; /* 0x0046a97c */
-const char szTargetLabel[12] = "\nTarget:"; /* 0x0046a984 */
-const char szNoTarget[8] = " None"; /* 0x0046a990 */
-const char szWingmanTargetNameFormat[4] = " %s"; /* 0x0046a998 */
-const char szAceTargetNameFormat[4] = " %s"; /* 0x0046a99c */
-const char szShipTargetNameFormat[4] = " %s"; /* 0x0046a9a0 */
-const char szRangeLabel[12] = "\nRange : "; /* 0x0046a9a4 */
-const char szTargetTooFar[8] = "TOO FAR"; /* 0x0046a9b0 */
-const char szRangeMetresSuffix[4] = " m"; /* 0x0046a9b8 */
-const char szTargetOffscreenRange[8] = "----- m"; /* 0x0046a9bc */
+char szLockedTarget[20] = "   LOCKED TARGET"; /* 0x0046a94c */
+char szTextColourStringColourFormat[8] = "%F%s%F"; /* 0x0046a960 */
+char szAutoTargetting[20] = "  AUTO TARGETTING"; /* 0x0046a968 */
+char szTextColourStringFormat[8] = "%F%s"; /* 0x0046a97c */
+char szTargetLabel[12] = "\nTarget:"; /* 0x0046a984 */
+char szNoTarget[8] = " None"; /* 0x0046a990 */
+char szWingmanTargetNameFormat[4] = " %s"; /* 0x0046a998 */
+char szAceTargetNameFormat[4] = " %s"; /* 0x0046a99c */
+char szShipTargetNameFormat[4] = " %s"; /* 0x0046a9a0 */
+char szRangeLabel[12] = "\nRange : "; /* 0x0046a9a4 */
+char szTargetTooFar[8] = "TOO FAR"; /* 0x0046a9b0 */
+char szRangeMetresSuffix[4] = " m"; /* 0x0046a9b8 */
+char szTargetOffscreenRange[8] = "----- m"; /* 0x0046a9bc */
 short nMusicPlaybackMode; /* 0x0046a9f8 */
 int bMusicCommandSuppressed; /* 0x0046a9fc */
 short nMusicTrackComplete = 1; /* 0x0046aa04 */
@@ -766,10 +766,10 @@ int nCombatMusicActive; /* 0x0046aa3c */
 int nInFlightMusicActive; /* 0x0046aa40 */
 short nPassingShipSoundObject = -1; /* 0x0046aa48 */
 short nPassingShipSoundCountdown; /* 0x0046aa4c */
-const unsigned char abFireworkSoundDescriptor[7] = { /* 0x0046ab70 */
+unsigned char abFireworkSoundDescriptor[7] = { /* 0x0046ab70 */
     0x00, 0x80, 0x40, 0x40, 0x3c, 0x00, 0x00
 };
-const char szSfxWaveFormat[12] = "sfx%02i.wav"; /* 0x0046ad2c */
+char szSfxWaveFormat[12] = "sfx%02i.wav"; /* 0x0046ad2c */
 unsigned char abTaggedAllocationPrefix[8] = { /* 0x0046ad88 */
     'j', 'e', 'f', 'f', 0, 0, 0, 0
 };
@@ -785,30 +785,30 @@ const char *pszTigerClawEscapeJump = /* 0x0046ada4 */
     szTigerClawEscapeJump;
 const char *pszTigerClawEscapeClosing = /* 0x0046ada8 */
     szTigerClawEscapeClosing;
-const ShortVector aCampaignVictoryProjectileOrigins[4] = { /* 0x0046adb0 */
+ShortVector aCampaignVictoryProjectileOrigins[4] = { /* 0x0046adb0 */
     { -55, 42, 0 }, { -68, 46, 0 },
     { 60, 42, 16 }, { 73, 46, 16 }
 };
 const char *pszTheEnd = szTheEnd; /* 0x0046adc8 */
 const char *pszForNow = szForNow; /* 0x0046adcc */
-const char szCampaignVictoryOpening[68] = /* 0x0046add0 */
+char szCampaignVictoryOpening[68] = /* 0x0046add0 */
     "Destroying the remains of the Kilrathi naval power in the sector...";
-const char szCampaignVictoryAttack[44] = /* 0x0046ae14 */
+char szCampaignVictoryAttack[44] = /* 0x0046ae14 */
     "The Tiger's Claw closes in for the kill...";
-const char szCampaignVictoryConclusion[52] = /* 0x0046ae40 */
+char szCampaignVictoryConclusion[52] = /* 0x0046ae40 */
     "And the last Kilrathi planet in the sector falls!";
-const char szTigerClawEscapeOpening[64] = /* 0x0046ae74 */
+char szTigerClawEscapeOpening[64] = /* 0x0046ae74 */
     "Fleeing from the overwelming Kilrathi forces in the sector...";
-const char szTigerClawEscapeJump[48] = /* 0x0046aeb4 */
+char szTigerClawEscapeJump[48] = /* 0x0046aeb4 */
     "The Tiger's Claw manages to jump out. Barely.";
-const char szTigerClawEscapeClosing[44] = /* 0x0046aee4 */
+char szTigerClawEscapeClosing[44] = /* 0x0046aee4 */
     "There'll be other sectors, other battles...";
-const char szTheEnd[8] = "The End"; /* 0x0046af10 */
-const char szForNow[12] = "For Now..."; /* 0x0046af18 */
-const char szCampaignVictoryTextFormat[12] = "%X%Y%s%P"; /* 0x0046af24 */
-const char szTigerClawEscapeOpeningFormat[12] = "%X%Y%s%P"; /* 0x0046af30 */
-const char szTigerClawEscapeJumpFormat[12] = "%X%Y%s%P"; /* 0x0046af3c */
-const char szTigerClawEscapeClosingFormat[12] = "%X%Y%s%P"; /* 0x0046af48 */
+char szTheEnd[8] = "The End"; /* 0x0046af10 */
+char szForNow[12] = "For Now..."; /* 0x0046af18 */
+char szCampaignVictoryTextFormat[12] = "%X%Y%s%P"; /* 0x0046af24 */
+char szTigerClawEscapeOpeningFormat[12] = "%X%Y%s%P"; /* 0x0046af30 */
+char szTigerClawEscapeJumpFormat[12] = "%X%Y%s%P"; /* 0x0046af3c */
+char szTigerClawEscapeClosingFormat[12] = "%X%Y%s%P"; /* 0x0046af48 */
 short nInputDoubleClickInterval = 1; /* 0x0046af54 */
 short nMenuPointerSpeed = 2; /* 0x0046af58 */
 short nCommMenuChoiceCount = -1; /* 0x0046af60 */
@@ -821,11 +821,11 @@ signed char cCommMenuRecipient = -1; /* 0x0046afc4 */
 short nCommSpeakerObject; /* 0x0046afc8 */
 short nCommSpeakerRating; /* 0x0046afcc */
 short nCommPortraitIndex = -1; /* 0x0046afd0 */
-const char szConfedCommFormat[8] = "%s: %Fs"; /* 0x0046b150 */
-const char szKilrathiAceCommFormat[8] = "%s: %Fs"; /* 0x0046b158 */
-const char szShipCommFormat[8] = "%s: %Fs"; /* 0x0046b160 */
+char szConfedCommFormat[8] = "%s: %Fs"; /* 0x0046b150 */
+char szKilrathiAceCommFormat[8] = "%s: %Fs"; /* 0x0046b158 */
+char szShipCommFormat[8] = "%s: %Fs"; /* 0x0046b160 */
 unsigned short nVideoMode = 0xffff; /* 0x0046b168 */
-const signed char acGraphicsModeByAnimationSpeed[8] = { /* 0x0046b178 */
+signed char acGraphicsModeByAnimationSpeed[8] = { /* 0x0046b178 */
     0x13, 0x0d, 4, 9, 7, 0, 0, 0
 };
 const GUID guidDirectDraw2 = { /* 0x00463118 */
@@ -843,35 +843,35 @@ int nPreviousFrameTimeMs; /* 0x0046b1c4 */
 int bSpaceFlightFrameTiming; /* 0x0046b1c8 */
 float fSpaceFlightFrameRate = 20.0f; /* 0x0046b1cc */
 float fCinematicFrameRate = 16.0f; /* 0x0046b1d0 */
-const short aasCockpitLightX[5][7] = { /* 0x0046dca8 */
+short aasCockpitLightX[5][7] = { /* 0x0046dca8 */
     {101, 101, 189, 137, 265, -99, 203},
     {198, 198, 133, 145, 234, 234, -99},
     {76, 76, 139, 257, 20, 20, -99},
     {194, 194, 96, 137, 96, 96, -99},
     {-99, -99, 179, 133, -99, -99, -99}
 };
-const short aasCockpitLightY[5][7] = { /* 0x0046dcf0 */
+short aasCockpitLightY[5][7] = { /* 0x0046dcf0 */
     {122, 145, 121, 7, 121, -99, 147},
     {120, 139, 114, 114, 179, 188, -99},
     {164, 183, 22, 181, 162, 178, -99},
     {119, 142, 136, 15, 126, 116, -99},
     {-99, -99, 115, 114, -99, -99, -99}
 };
-const signed char aacCockpitLightOffFrame[5][7] = { /* 0x0046dd38 */
+signed char aacCockpitLightOffFrame[5][7] = { /* 0x0046dd38 */
     {14, 14, 14, 11, 13, 14, 14},
     {12, 12, 12, 13, 12, 12, 12},
     {9, 9, 9, 14, 9, 9, 9},
     {15, 15, 13, 11, 13, 13, 13},
     {5, 5, 5, 5, 5, 5, 5}
 };
-const signed char aacCockpitLightOnFrame[5][7] = { /* 0x0046dd60 */
+signed char aacCockpitLightOnFrame[5][7] = { /* 0x0046dd60 */
     {3, 3, 3, 0, 2, 3, 3},
     {2, 2, 2, 3, 2, 2, 2},
     {1, 1, 1, 6, 1, 1, 1},
     {4, 4, 2, 0, 2, 2, 2},
     {1, 1, 1, 1, 1, 1, 1}
 };
-const CockpitBarDefinition aaCockpitBars[5][8] = { /* 0x0046dd88 */
+CockpitBarDefinition aaCockpitBars[5][8] = { /* 0x0046dd88 */
     {
         {0, 215, 122, 219, 152, 31, 16, 5},
         {2, 143, 97, 175, 99, 33, 12, 1},
@@ -923,7 +923,7 @@ const CockpitBarDefinition aaCockpitBars[5][8] = { /* 0x0046dd88 */
         {0, -99, -99, 0, 0, 0, 0, 0}
     }
 };
-const CockpitLayout stCockpitLayout = { /* 0x0046e008 */
+CockpitLayout stCockpitLayout = { /* 0x0046e008 */
     {
         {{99, 130}, {227, 122}, {38, 164}, {192, 126},
          {-99, -99}, {0, 0}},
@@ -990,65 +990,65 @@ int bMissileCameraEnabled; /* 0x0046c07c */
 int bEngageAllowed; /* 0x0046c080 */
 short nAutoEngageTimer = -1; /* 0x0046c084 */
 signed char cViableTargetCount; /* 0x0046c088 */
-const short asIntroCameraSequence[20] = { /* 0x0046c090 */
+short asIntroCameraSequence[20] = { /* 0x0046c090 */
     0, -1000, 0, -4263, 2, 15, 1, 0, 30, 0,
     3, 15, 4, 30, 1, 13, 14, 400, -1, 0
 };
-const short asCannedSequence32[] = { /* 0x0046c0b8 */
+short asCannedSequence32[] = { /* 0x0046c0b8 */
     0, 20, 1, 0, 0, 180, 40, 1, 0, 0, 180, 40,
     2, 0, 400, -1
 };
-const short asCannedSequence33[] = { /* 0x0046c0d8 */
+short asCannedSequence33[] = { /* 0x0046c0d8 */
     0, 20, 0, 20, 1, 0, -15, -60, 50, 0, 400, -1
 };
-const short asCannedSequence34[] = { /* 0x0046c0f0 */
+short asCannedSequence34[] = { /* 0x0046c0f0 */
     0, 20, 0, 20, 1, 0, 15, 60, 50, 0, 400, -1
 };
-const short asCannedSequence35[42] = { /* 0x0046c108 */
+short asCannedSequence35[42] = { /* 0x0046c108 */
     0, 17, 0, 6, 3, 0, 6, 3, 0, 6, 3, 0, 6, 3,
     0, 6, 3, 0, 6, 3, 0, 6, 3,
     1, 0, 0, 180, 40, 1, 0, 0, 180, 40,
     1, 0, -30, 60, 40, 0, 400, -1
 };
-const short asCampaignVictoryViewScript[24] = { /* 0x0046c160 */
+short asCampaignVictoryViewScript[24] = { /* 0x0046c160 */
     16, 38, 0, 1200, 0, 1600, 1, 180,
     0, 0, 15, 3, 4, 14, 100, 2,
     15, 3, 15, 14, 120, -1, 0, 0
 };
-const short asCannedSequence37[] = { /* 0x0046c190 */
+short asCannedSequence37[] = { /* 0x0046c190 */
     0, 100, 1, 0, 30, 0, 50, 0, 20, 2, 0, 400, -1
 };
-const short asCannedSequence38[] = { /* 0x0046c1b0 */
+short asCannedSequence38[] = { /* 0x0046c1b0 */
     0, 110, 1, 0, 30, 0, 50, 0, 10, 2, 0, 400, -1
 };
-const short asCannedSequence39[] = { /* 0x0046c1d0 */
+short asCannedSequence39[] = { /* 0x0046c1d0 */
     0, 10, 2, 0, 400, -1
 };
-const short asCannedSequence40[] = { /* 0x0046c1e0 */
+short asCannedSequence40[] = { /* 0x0046c1e0 */
     0, 40,
     3, 1, 0, 0, 90, 60, 3, 1, 0, 0, 90, 60,
     3, 1, 0, 0, 90, 60, 3, 1, 0, 0, 90, 60,
     3, 1, 0, 0, 90, 60, 3, 1, 0, 0, 90, 60, -1
 };
-const short asCannedSequence41[3] = { 0, 400, -1 }; /* 0x0046c230 */
-const short asTigerClawEscapeViewScript[12] = { /* 0x0046c238 */
+short asCannedSequence41[3] = { 0, 400, -1 }; /* 0x0046c230 */
+short asTigerClawEscapeViewScript[12] = { /* 0x0046c238 */
     0, 0, 0, 0, 2, 15, 3, 15, 14, 400, -1, 0
 };
-const short asCannedSequence42[] = { /* 0x0046c250 */
+short asCannedSequence42[] = { /* 0x0046c250 */
     0, 120, 1, 0, 0, 180, 50, 3, 1, 0, 0, 180, 50, 3, -1
 };
-const short asCannedSequence43[] = { /* 0x0046c270 */
+short asCannedSequence43[] = { /* 0x0046c270 */
     0, 120, 1, 0, 0, 180, 50, 3, 1, 0, 0, 180, 50,
     3, 1, 0, 0, 180, 50, 3, -1
 };
-const short asCannedSequence44[] = { /* 0x0046c2a0 */
+short asCannedSequence44[] = { /* 0x0046c2a0 */
     0, 5, 3, 0, 5, 3, 0, 5, 3, 0, 5, 3,
     1, 0, 0, 180, 50, 1, 0, 0, 180, 50,
     1, 0, 0, 180, 50, 1, 0, 0, 180, 50, -1
 };
-const short asCannedSequence45[] = { 0, 20, 2, -1 }; /* 0x0046c2e8 */
+short asCannedSequence45[] = { 0, 20, 2, -1 }; /* 0x0046c2e8 */
 
-const signed char acDirectionShapeFrame[ /* 0x0046db28 */
+signed char acDirectionShapeFrame[ /* 0x0046db28 */
     DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT] = {
     0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2,
     14, 13, 12, 11, 10, 9, 8, 9, 10, 11, 12, 13,
@@ -1067,7 +1067,7 @@ const signed char acDirectionShapeFrame[ /* 0x0046db28 */
     10, 11, 12, 10, 12, 11, 10, 11, 12, 10, 12, 11,
     13, 14, 15, 13, 15, 14, 13, 14, 15, 13, 15, 14, 16
 };
-const signed char acDirectionShapeFlip[ /* 0x0046dbe8 */
+signed char acDirectionShapeFlip[ /* 0x0046dbe8 */
     DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT] = {
     0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
     0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
@@ -1418,7 +1418,7 @@ unsigned char *pDrawnMouseCursorShape; /* 0x0046da9c */
 int nMouseCursorShowCount; /* 0x0046daa0 */
 short nScreenWidth = 320; /* 0x0046daa4 */
 short nScreenHeight = 200; /* 0x0046daa8 */
-const ScreenViewportGeometry aScreenViewportGeometry[6] = { /* 0x0046dab8 */
+ScreenViewportGeometry aScreenViewportGeometry[6] = { /* 0x0046dab8 */
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -1426,11 +1426,11 @@ const ScreenViewportGeometry aScreenViewportGeometry[6] = { /* 0x0046dab8 */
     { 320, 128, 0, 24, 0, 24, -24576, -1 },
     { 320, 200, 0, 0, 0, 0, -1536, -1 }
 };
-const short asPilotHandOrigins[10] = { /* 0x0046e120 */
+short asPilotHandOrigins[10] = { /* 0x0046e120 */
     154, 187, 154, 187, 154, 187, 154, 187, 154, 187
 };
 CampaignDate stSavedCampaignDate = {20, 340}; /* 0x0046e188 */
-const TalkingHeadOrigin aTalkingHeadOrigins[11] = { /* 0x0046e190 */
+TalkingHeadOrigin aTalkingHeadOrigins[11] = { /* 0x0046e190 */
     {161, 60, 161, 90},
     {161, 60, 161, 87},
     {160, 60, 159, 90},
@@ -1443,11 +1443,11 @@ const TalkingHeadOrigin aTalkingHeadOrigins[11] = { /* 0x0046e190 */
     {161, 60, 161, 90},
     {160, 53, 160, 88},
 };
-const signed char abBriefingSmallCharacterAnimation[24] = { /* 0x0046e1e8 */
+signed char abBriefingSmallCharacterAnimation[24] = { /* 0x0046e1e8 */
     1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0
 };
-const signed char abBriefingLargeCharacterAnimation[24] = { /* 0x0046e200 */
+signed char abBriefingLargeCharacterAnimation[24] = { /* 0x0046e200 */
     0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0
 };
@@ -1469,7 +1469,7 @@ BriefingCharacterLayout aBriefingCharacters[8] = { /* 0x0046e218 */
     {287, 122, 212, 76, 256, 1, 9, 1,
       abBriefingLargeCharacterAnimation, 0}
 };
-const short asMedalDisplayX[5] = {191, 199, 207, 216, 228}; /* 0x0046e2d0 */
+short asMedalDisplayX[5] = {191, 199, 207, 216, 228}; /* 0x0046e2d0 */
 const char *apszMedalNames[5] = { /* 0x0046e2e0 */
     szBronzeStar,
     szSilverStar,
@@ -1480,7 +1480,7 @@ const char *apszMedalNames[5] = { /* 0x0046e2e0 */
 unsigned char *pMedalSceneShape; /* 0x0046e2f4 */
 const char *pszMedalsPilotSummary = /* 0x0046e2f8 */
     szMedalsPilotSummary;
-const signed char aBriefingPortraitOffsetX[8][12] = { /* 0x0046e300 */
+signed char aBriefingPortraitOffsetX[8][12] = { /* 0x0046e300 */
     {  0,  0, -2, -2, -1, -2, -4, -3, -5, -7, -7, -4},
     { -1,  0, -2, -3, -3, -4, -3, -4, -6, -8, -7, -6},
     {  0,  1,  0,  0,  0,  0,  0, -1, -2, -4, -5, -3},
@@ -1490,7 +1490,7 @@ const signed char aBriefingPortraitOffsetX[8][12] = { /* 0x0046e300 */
     { -2, -1, -4, -4, -4, -7, -8, -7, -5, -8, -9, -7},
     {  0,  0,  0,  0,  0, -3, -3, -7, -5, -7, -8, -7}
 };
-const signed char aBriefingPortraitOffsetY[8][12] = { /* 0x0046e360 */
+signed char aBriefingPortraitOffsetY[8][12] = { /* 0x0046e360 */
     { -6, -2, -3, -1, -4,-10,-12,-20,-32,-38,-42,-43},
     { -5,  0, -4, -4, -7,-12,-16,-23,-32,-37,-42,-42},
     { -5, -3,  0,  1,  0, -7,-13,-23,-33,-38,-42,-42},
@@ -1500,7 +1500,7 @@ const signed char aBriefingPortraitOffsetY[8][12] = { /* 0x0046e360 */
     { -6, -4, -3, -5, -9,-14,-23,-34,-49,-57,-61,-62},
     {-10, -5,  0,  0, -3, -7,-24,-32,-47,-55,-59,-60}
 };
-const short aBriefingPortraitScale[8][12] = { /* 0x0046e3c0 */
+short aBriefingPortraitScale[8][12] = { /* 0x0046e3c0 */
     {357, 357, 357, 359, 355,   0, 352, 355, 353, 353, 355,   1},
     {355,   0, 354, 354, 352, 354, 355, 355, 352, 352, 353, 350},
     {354, 354, 359,   0, 358, 357, 357, 356, 357,   0,   0,   2},
@@ -1510,22 +1510,22 @@ const short aBriefingPortraitScale[8][12] = { /* 0x0046e3c0 */
     {356, 356, 352, 354, 352, 349, 350, 352,   0,   0,   0,   0},
     {  0,   0,   0, 359,   0, 350, 354, 350, 356, 357, 357, 357}
 };
-const int aiBriefingLeftPanelVelocity[12] = { /* 0x0046e480 */
+int aiBriefingLeftPanelVelocity[12] = { /* 0x0046e480 */
     1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4
 };
-const int aiBriefingPodiumVelocity[12] = { /* 0x0046e4b0 */
+int aiBriefingPodiumVelocity[12] = { /* 0x0046e4b0 */
     1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6
 };
-const int aiBriefingRightPanelVelocity[12] = { /* 0x0046e4e0 */
+int aiBriefingRightPanelVelocity[12] = { /* 0x0046e4e0 */
     2, 2, 3, 4, 4, 4, 5, 5, 5, 6, 7, 8
 };
-const signed char abBriefingPodiumFrames[40] = { /* 0x0046e510 */
+signed char abBriefingPodiumFrames[40] = { /* 0x0046e510 */
      0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
     10, 11, 12, 13, 14, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 14, 13, 12, 11, 10,  9,
      8,  7,  6,  5,  4,  0,  0,  0,  0,  0
 };
-const signed char abDebriefingEstablishDeltas[48] = { /* 0x0046e538 */
+signed char abDebriefingEstablishDeltas[48] = { /* 0x0046e538 */
     -2, -2, -1, -1,  0,  0,  1,  0,
      1,  0,  1,  0,  1,  0,  1,  1,
      1,  1,  1,  1,  1,  1,  1,  1,
@@ -1543,24 +1543,24 @@ short nTalkingHeadFace = -1; /* 0x0046e584 */
 short nConversationBackdropFrame = -1; /* 0x0046e588 */
 int bConversationConstellation; /* 0x0046e58c */
 int bConversationOverlay; /* 0x0046e590 */
-const char szBronzeStar[12] = "Bronze Star"; /* 0x0046e594 */
-const char szSilverStar[12] = "Silver Star"; /* 0x0046e5a0 */
-const char szGoldStar[12] = "Gold Star"; /* 0x0046e5ac */
-const char szGoldenSun[12] = "Golden Sun"; /* 0x0046e5b8 */
-const char szTerranMedalOfValor[24] = /* 0x0046e5c4 */
+char szBronzeStar[12] = "Bronze Star"; /* 0x0046e594 */
+char szSilverStar[12] = "Silver Star"; /* 0x0046e5a0 */
+char szGoldStar[12] = "Gold Star"; /* 0x0046e5ac */
+char szGoldenSun[12] = "Golden Sun"; /* 0x0046e5b8 */
+char szTerranMedalOfValor[24] = /* 0x0046e5c4 */
     "Terran Medal of Valor";
-const char szMedalsPilotSummary[40] = /* 0x0046e5dc */
+char szMedalsPilotSummary[40] = /* 0x0046e5dc */
     "$R $N, aka $C.\n$S system, dateline $D.";
-const char szViewMedalsTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e604 */
-const char szMedalChestTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e610 */
-const char szMedalLongShotTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e61c */
-const char szMedalEstablishTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e628 */
-const char szPinMedalTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e634 */
-const char szEstablishingShotTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e640 */
-const char szBriefingReturnTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e64c */
-const char szDismissedTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e658 */
-const char szDebriefEstablishTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e664 */
-const char szFuneralLongShotTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e670 */
+char szViewMedalsTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e604 */
+char szMedalChestTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e610 */
+char szMedalLongShotTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e61c */
+char szMedalEstablishTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e628 */
+char szPinMedalTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e634 */
+char szEstablishingShotTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e640 */
+char szBriefingReturnTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e64c */
+char szDismissedTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e658 */
+char szDebriefEstablishTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e664 */
+char szFuneralLongShotTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046e670 */
 void *apRasterDriverCallbacks[13]; /* 0x0046e69c */
 char szRasterDriverName[13] = "MCGA.DLL"; /* 0x0046e6d0 */
 unsigned char *pRLEEncodeBuffer; /* 0x0046e6dd */
@@ -1576,13 +1576,13 @@ int nRLEEncodedMaximumY; /* 0x0046e711 */
 unsigned char abRasterDecodeBuffer[0xd00]; /* 0x0046ec15 */
 unsigned char abRasterPaletteUsageScratch[0x300]; /* 0x0046f915 */
 unsigned char abRasterFadeAccumulator[0x300]; /* 0x0046fc15 */
-const unsigned char abGifLZWCodeMasks[9] = { /* 0x0046ff15 */
+unsigned char abGifLZWCodeMasks[9] = { /* 0x0046ff15 */
     0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff
 };
-const unsigned char abGifInterlaceRowSteps[5] = { /* 0x0046ff1e */
+unsigned char abGifInterlaceRowSteps[5] = { /* 0x0046ff1e */
     8, 8, 4, 2, 0
 };
-const unsigned char abGifInterlaceRowStarts[5] = { /* 0x0046ff23 */
+unsigned char abGifInterlaceRowStarts[5] = { /* 0x0046ff23 */
     0, 4, 2, 1, 0
 };
 RasterClip *pGifRasterTarget; /* 0x0046ff28 */
@@ -1702,7 +1702,7 @@ signed char *apRecRoomAnimations[14] = { /* 0x00470458 */
     abShotglassWipeAnimation,
     0
 };
-const ShortPoint aRecRoomCharacterOrigins[3] = { /* 0x00470490 */
+ShortPoint aRecRoomCharacterOrigins[3] = { /* 0x00470490 */
     {94, 59}, {161, 79}, {202, 79}
 };
 short nRecRoomPanelOriginX = 158; /* 0x0047049c */
@@ -1732,31 +1732,31 @@ CampaignDate stChalkBoardDate = {-1, -1}; /* 0x00470514 */
 short asChalkBoardPilotOrder[9] = { /* 0x00470518 */
     0, 1, 2, 3, 4, 5, 6, 7, 8
 };
-const char szBlankRoomMenuLabel[4] = " "; /* 0x0047052c */
-const char szSecondLieutenantRank[8] = "2ND LT."; /* 0x00470530 */
-const char szFirstLieutenantRank[8] = "1ST LT."; /* 0x00470538 */
-const char szCaptainRank[8] = "CAPTAIN"; /* 0x00470540 */
-const char szMajorRank[8] = "MAJOR"; /* 0x00470548 */
-const char szLieutenantColonelRank[12] = "LT. COL."; /* 0x00470550 */
+char szBlankRoomMenuLabel[4] = " "; /* 0x0047052c */
+char szSecondLieutenantRank[8] = "2ND LT."; /* 0x00470530 */
+char szFirstLieutenantRank[8] = "1ST LT."; /* 0x00470538 */
+char szCaptainRank[8] = "CAPTAIN"; /* 0x00470540 */
+char szMajorRank[8] = "MAJOR"; /* 0x00470548 */
+char szLieutenantColonelRank[12] = "LT. COL."; /* 0x00470550 */
 char szTalkToShotglass[20] = "Talk to SHOTGLASS."; /* 0x0047055c */
 char szTalkToFirstPilot[24] = "Talk to ??????????????"; /* 0x00470570 */
 char szTalkToSecondPilot[24] = "Talk to ??????????????"; /* 0x00470588 */
 char szCheckPilotScores[20] = "Check pilot scores"; /* 0x004705a0 */
 char szEnterBarracks[16] = "Enter barracks"; /* 0x004705b4 */
 char szFlyTrainingMission[24] = "Fly training mission"; /* 0x004705c4 */
-const char szRoomMenuLabelFormat[12] = "%X%Y%s%P"; /* 0x004705dc */
-const char szEmptyRoomMenuLabel[4] = ""; /* 0x004705e8 */
-const char szTalkToPilotFormat1[16] = "Talk to %s."; /* 0x004705ec */
-const char szTalkToPilotFormat2[16] = "Talk to %s."; /* 0x004705fc */
-const char szChalkBoardHeading[32] = /* 0x0047060c */
+char szRoomMenuLabelFormat[12] = "%X%Y%s%P"; /* 0x004705dc */
+char szEmptyRoomMenuLabel[4] = ""; /* 0x004705e8 */
+char szTalkToPilotFormat1[16] = "Talk to %s."; /* 0x004705ec */
+char szTalkToPilotFormat2[16] = "Talk to %s."; /* 0x004705fc */
+char szChalkBoardHeading[32] = /* 0x0047060c */
     "%X%YCARRIER - TIGER'S CLAW%P";
-const char szChalkBoardPilotHeading[12] = "%X%YPILOT"; /* 0x0047062c */
-const char szChalkBoardScoreHeading[20] = /* 0x00470638 */
+char szChalkBoardPilotHeading[12] = "%X%YPILOT"; /* 0x0047062c */
+char szChalkBoardScoreHeading[20] = /* 0x00470638 */
     "%X%YSORTIES KILLS";
-const char szChalkBoardPilotFormat[12] = "%X%Y%s %s"; /* 0x0047064c */
-const char szChalkBoardScoreFormat[12] = "%X%Y%d%X%d"; /* 0x00470658 */
-const char szKilledInAction[4] = "KIA"; /* 0x00470664 */
-const char szChalkBoardKiaFormat[16] = "%X%Y     %s"; /* 0x00470668 */
+char szChalkBoardPilotFormat[12] = "%X%Y%s %s"; /* 0x0047064c */
+char szChalkBoardScoreFormat[12] = "%X%Y%d%X%d"; /* 0x00470658 */
+char szKilledInAction[4] = "KIA"; /* 0x00470664 */
+char szChalkBoardKiaFormat[16] = "%X%Y     %s"; /* 0x00470668 */
 unsigned char abPaletteTranslation[256] = { /* 0x00470678 */
       0,   1,   2,   3,   4,   5,   6,   7,
       8,   9,  10,  11,  12,  13,  14,  15,
@@ -1855,18 +1855,18 @@ unsigned short awAbsoluteSine[360] = { /* 0x00470a48 */
     104, 100,  96,  92,  88,  83,  79,  74,  71,  66,  62,  58,
      53,  49,  45,  40,  36,  31,  27,  22,  18,  13,   9,   4
 };
-const char szInvalidShapeAllocation[12] = "not jefftep"; /* 0x00470d18 */
-const char szBadViewport[12] = "bad vport"; /* 0x00470d24 */
-const char szShapeRLEVersion[8] = "1.00"; /* 0x00470d30 */
-const char szShapeRLEOverflow[20] = "qq copy overflow"; /* 0x00470d38 */
-const char szBadShapeFlip[12] = "bad flip"; /* 0x00470d4c */
-const char szCopyLine[12] = "__copyline"; /* 0x00470d58 */
-const char szWipeLine[12] = "__wipeline"; /* 0x00470d64 */
-const char szTriangle[12] = "triangle"; /* 0x00470d70 */
-const char szShadedTriangle[16] = "shaded_triangle"; /* 0x00470d7c */
-const char szShadowDraw[12] = "shadow_draw"; /* 0x00470d8c */
-const char szFizzleFade[12] = "fizzle_fade"; /* 0x00470d98 */
-const char szSnowViewport[16] = "snow_viewport"; /* 0x00470da4 */
+char szInvalidShapeAllocation[12] = "not jefftep"; /* 0x00470d18 */
+char szBadViewport[12] = "bad vport"; /* 0x00470d24 */
+char szShapeRLEVersion[8] = "1.00"; /* 0x00470d30 */
+char szShapeRLEOverflow[20] = "qq copy overflow"; /* 0x00470d38 */
+char szBadShapeFlip[12] = "bad flip"; /* 0x00470d4c */
+char szCopyLine[12] = "__copyline"; /* 0x00470d58 */
+char szWipeLine[12] = "__wipeline"; /* 0x00470d64 */
+char szTriangle[12] = "triangle"; /* 0x00470d70 */
+char szShadedTriangle[16] = "shaded_triangle"; /* 0x00470d7c */
+char szShadowDraw[12] = "shadow_draw"; /* 0x00470d8c */
+char szFizzleFade[12] = "fizzle_fade"; /* 0x00470d98 */
+char szSnowViewport[16] = "snow_viewport"; /* 0x00470da4 */
 int nInsertKeyState; /* 0x00475b68 */
 int nClearedKeyboardState; /* 0x00475b6c */
 int nOemPeriodKeyState; /* 0x00475bf0 */
@@ -2513,7 +2513,7 @@ static unsigned int anAnimHyperspaceJumpFlash[22] = { /* 0x00466400 */
 };
 
 /* Child/hardpoint offsets at 0x004682F0. */
-const ShortVector aChildOffsets[56] = { /* 0x004682f0 */
+ShortVector aChildOffsets[56] = { /* 0x004682f0 */
     { 120, 10, 20 }, { -120, 10, 20 }, { 75, 45, -30 },
     { -75, 45, -30 }, { 0, 50, 10 }, { -100, 10, -40 },
     { -90, 0, 30 }, { -30, -40, -30 }, { 0, 0, 0 },
@@ -2535,7 +2535,7 @@ const ShortVector aChildOffsets[56] = { /* 0x004682f0 */
     { 0, 100, 350 }, { 0, 0, -300 }
 };
 
-const ShortPoint aWeaponDisplayPositions[32] = { /* 0x00468440 */
+ShortPoint aWeaponDisplayPositions[32] = { /* 0x00468440 */
     {64, 28}, {8, 28}, {45, 25}, {27, 25}, {36, 23},
     {20, 32}, {27, 24}, {31, 31}, {36, 22}, {41, 31},
     {51, 32}, {45, 24}, {8, 32}, {18, 32}, {25, 11},
@@ -2545,7 +2545,7 @@ const ShortPoint aWeaponDisplayPositions[32] = { /* 0x00468440 */
     {61, 35}, {0, 0}
 };
 
-const ShortPoint aWeaponDisplayOrigins[5] = { /* 0x004684c0 */
+ShortPoint aWeaponDisplayOrigins[5] = { /* 0x004684c0 */
     {0, 16}, {0, 16}, {0, 16}, {0, 16}, {0, 16}
 };
 
@@ -3100,7 +3100,7 @@ const char *apszCommMenuText[13] = { /* 0x0046af90 */
 
 /* Ordered display names transcribed from the image.  The Sega CD inspector
  * proves that these index ObjectType, not a ship-only class enum. */
-const char aszObjectTypeDisplayNames[0x18c] = /* 0x004684d4 */
+char aszObjectTypeDisplayNames[0x18c] = /* 0x004684d4 */
     "Hornet\0\0"
     "Rapier\0\0"
     "Scimitar\0\0\0\0"
@@ -3132,13 +3132,13 @@ const char aszObjectTypeDisplayNames[0x18c] = /* 0x004684d4 */
     "Spiculum IR\0\0\0\0\0"
     "Porcupine\0\0\0";
 
-const char aszKilrathiAceNames[32] = /* 0x0046afd4 */
+char aszKilrathiAceNames[32] = /* 0x0046afd4 */
     "Bhurak\0\0"
     "Dakhath\0"
     "Khajja\0\0"
     "Bakhtosh";
 
-const char aszCommMenuText[0xe8] = /* 0x0046aff8 */
+char aszCommMenuText[0xe8] = /* 0x0046aff8 */
     "Never mind...\0\0\0"
     "Attack my target!\0\0\0"
     "Help me out here\0\0\0\0"
@@ -3153,25 +3153,25 @@ const char aszCommMenuText[0xe8] = /* 0x0046aff8 */
     "Broadcast freely\0\0\0\0"
     "Request Landing";
 
-const char szIonDrive[12] = "Ion drive"; /* 0x0046a7c4 */
-const char szPowerPlant[12] = "Power plant"; /* 0x0046a7d0 */
-const char szShieldGenerator[16] = "Shield gen'r"; /* 0x0046a7dc */
-const char szComputerSystem[16] = "Computer sys"; /* 0x0046a7ec */
-const char szIntercomUnit[16] = "InterCom unit"; /* 0x0046a7fc */
-const char szTargetTracking[16] = "Target track"; /* 0x0046a80c */
-const char szAccelerationAbsorbers[16] = "Accel absorbers"; /* 0x0046a81c */
-const char szEjectorSystem[16] = "Ejector system"; /* 0x0046a82c */
-const char szRepairSystems[16] = "Repair systems"; /* 0x0046a83c */
-const char szDamageOk[4] = "Ok"; /* 0x0046a84c */
-const char szDamageLight[8] = "Light"; /* 0x0046a850 */
-const char szDamageModerate[12] = "Moderate"; /* 0x0046a858 */
-const char szDamageHeavy[8] = "Heavy"; /* 0x0046a864 */
-const char szDamageDestroyed[12] = "Destroyed"; /* 0x0046a86c */
-const char szDamageReport[16] = "DAMAGE REPORT"; /* 0x0046a878 */
-const char szNoInternalDamage[20] = /* 0x0046a888 */
+char szIonDrive[12] = "Ion drive"; /* 0x0046a7c4 */
+char szPowerPlant[12] = "Power plant"; /* 0x0046a7d0 */
+char szShieldGenerator[16] = "Shield gen'r"; /* 0x0046a7dc */
+char szComputerSystem[16] = "Computer sys"; /* 0x0046a7ec */
+char szIntercomUnit[16] = "InterCom unit"; /* 0x0046a7fc */
+char szTargetTracking[16] = "Target track"; /* 0x0046a80c */
+char szAccelerationAbsorbers[16] = "Accel absorbers"; /* 0x0046a81c */
+char szEjectorSystem[16] = "Ejector system"; /* 0x0046a82c */
+char szRepairSystems[16] = "Repair systems"; /* 0x0046a83c */
+char szDamageOk[4] = "Ok"; /* 0x0046a84c */
+char szDamageLight[8] = "Light"; /* 0x0046a850 */
+char szDamageModerate[12] = "Moderate"; /* 0x0046a858 */
+char szDamageHeavy[8] = "Heavy"; /* 0x0046a864 */
+char szDamageDestroyed[12] = "Destroyed"; /* 0x0046a86c */
+char szDamageReport[16] = "DAMAGE REPORT"; /* 0x0046a878 */
+char szNoInternalDamage[20] = /* 0x0046a888 */
     "NO INTERNAL\n\nDAMAGE";
-const char szDamagedUnitCountFormat[20] = /* 0x0046a89c */
+char szDamagedUnitCountFormat[20] = /* 0x0046a89c */
     "%d Unit%c Damaged";
-const char szDamageStatusFormat[16] = "%s\nDamage: %s"; /* 0x0046a8b0 */
-const char szDamageStatusFormatHighRes[16] = /* 0x0046a8c0 */
+char szDamageStatusFormat[16] = "%s\nDamage: %s"; /* 0x0046a8b0 */
+char szDamageStatusFormatHighRes[16] = /* 0x0046a8c0 */
     "%s\nDamage: %s";
