@@ -864,8 +864,12 @@ $(GLOBALS_AUDIT_SOURCE): bin/collectGlobalDefinitions.py include/wcdata.h $(GLOB
 		--constants-header include/wcdata.h \
 		$(GLOBALS_DEFINITION_SOURCES)
 
+# --bytes adds each function's byte-level status (EXACT, BYTES n/m, SIZE +-n)
+# to the mnemonic similarity.
+REPORT_FLAGS ?= --bytes
+
 report: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
-	@$(BINARY_COMP) report $(BC) $(if $(FILTER),--filter $(FILTER))
+	@$(BINARY_COMP) report $(BC) $(REPORT_FLAGS) $(if $(FILTER),--filter $(FILTER))
 
 # Compare a single rebuilt function against the original.  This is the inner
 # loop while implementing:  make compare-func FUNC=MinShort
