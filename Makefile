@@ -742,8 +742,13 @@ $(MSVCRT_SOURCE):
 		(rm -f "$@.tmp"; echo "Error: msvcrt40.dll checksum mismatch." >&2; exit 1)
 	@mv "$@.tmp" "$@"
 
+# LINK writes the current time into the header; stamp the original's link time
+# (1996-09-24 16:33:00 UTC) so a matching build is byte-identical.
+ORIGINAL_TIMESTAMP = 0x32480D3C
+
 $(TARGET): $(LINK_OBJS) $(IX_LIBS) | $(MSVCRT_DLL)
 	env LIB='$(GAME_LIBPATH)' $(LINK) $(LINKFLAGS) /MAP:$(MAPFILE) $(LINK_OBJS) $(GAME_LIBS) /OUT:$@
+	@python3 bin/stampPeTimestamp.py $@ $(ORIGINAL_TIMESTAMP)
 
 $(IX_LZO_LIB): $(call objects_of,$(SRCS_IX_LZO))
 $(IX_FILE_LIB): $(call objects_of,$(SRCS_IX_FILE))
