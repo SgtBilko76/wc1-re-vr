@@ -105,7 +105,7 @@ void * __stdcall PacketLoad(const char *filename, short section,
             SystemDebugPrintf("[SYSTEM] : Exiting prematurely\n");
             ClearDebugPauseFlags();
             PumpMessagesDuringWait();
-            _exit(0);
+            exit(0);
             packet = DecompressPacketSection(
                 &handle, destination, flags, decompressionWorkspace);
             break;

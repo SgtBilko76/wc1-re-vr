@@ -320,7 +320,7 @@ unsigned short __stdcall InitializeDIBScreenViewport(
     if (nVideoMode != 0x13) {
         SystemDebugPrintf("== BAD alloc_screen == : type: '%d'\n",
                           (int)(short)nVideoMode);
-        _exit(1);
+        exit(1);
     }
     viewport->pixels = GetDIBPixelBuffer();
     viewport->rowOffsets = awScreenRowOffsets;
