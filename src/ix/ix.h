@@ -438,6 +438,8 @@ extern "C" void ix_lzo1x_decompress(unsigned char *source,
                                      unsigned char *destination,
                                      unsigned int destinationBytes); /* 0x004614C0 */
 #endif
+extern "C" void ix_file_init_hook(void);         /* 0x00461630 */
+extern "C" void ix_file_shutdown_hook(void);     /* 0x00461640 */
 extern "C" FILE *ix_file_open(const char *path,
                                int mode); /* 0x00461650 */
 extern "C" void ix_file_close(FILE *file);       /* 0x004616BE */

@@ -91,9 +91,10 @@ LINKFLAGS = /nologo /SUBSYSTEM:WINDOWS /ALIGN:4096
 #     DSOUND, DDRAW, the order in which the import libraries were searched;
 #   - the DirectSound and DirectDraw call thunks follow the last ix member, so
 #     dsound.lib and ddraw.lib follow the ix libraries;
-#   - the LZO module follows the RtlUnwind thunk that kernel32.lib supplies on
-#     the second search pass, so its library follows kernel32.lib and precedes
-#     the ix libraries that reference it.
+#   - the LZO decoder and the file module follow the RtlUnwind thunk that
+#     kernel32.lib supplies on the second search pass, in that order, so their
+#     libraries follow kernel32.lib, decoder first, and precede the ix
+#     libraries that reference them.
 GAME_LIBPATH = $(MSVC_LIB)
 GAME_LIBS = \
 	kernel32.lib \
@@ -290,11 +291,12 @@ DREAMM_MOUNTS = -mount rw:C=hd \
 #     D:\Rnd\prj\ix\src\sound\      system.cpp sound.cpp sample.cpp
 # LINK pulls library members in the order their symbols are first needed, which
 # gives the address order above only with these three libraries searched in
-# turn.  The LZO and file module (0x004614C0) came from a fourth library that
-# was searched before them: it is pulled only on the second pass, after the
-# first round of CRT members.  ixlog.cpp is the one ix unit linked as an
-# object: its CRT references precede the entry point's, those of every library
-# member follow it.  See docs/ORDER.md.
+# turn.  The LZO decoder (0x004614C0) and the file module (0x00461630) came
+# from two more libraries searched before them, each pulled only on the second
+# pass, after the first round of CRT members; INT3 padding up to a 16-byte
+# boundary separates the two objects.  ixlog.cpp is the one ix unit linked as
+# an object: its CRT references precede the entry point's, those of every
+# library member follow it.  See docs/ORDER.md.
 #
 # SRCS_ORDERED_CORE is NOT yet known: no source-file anchors exist below
 # 0x00442750, so game-core module boundaries have to be recovered incrementally
@@ -344,6 +346,8 @@ SRCS_IX_LOG = src/ix/ixlog.cpp
 
 SRCS_IX_LZO = src/ix/lzo1x.cpp
 
+SRCS_IX_FILE = src/ix/ixfile.cpp
+
 SRCS_IX_STREAMER = \
 	src/ix/streamer.cpp \
 	src/ix/thread.cpp
@@ -361,6 +365,7 @@ SRCS_IX_SOUND = \
 
 SRCS_IX_LIBRARIES = \
 	$(SRCS_IX_LZO) \
+	$(SRCS_IX_FILE) \
 	$(SRCS_IX_STREAMER) \
 	$(SRCS_IX_DSP) \
 	$(SRCS_IX_SOUND)
@@ -380,11 +385,13 @@ objects_of = $(patsubst src/%,$(OUT_DIR)/%, \
 LINK_OBJS = $(call objects_of,$(filter-out $(SRCS_IX_LIBRARIES),$(SRCS)))
 
 IX_LZO_LIB = $(OUT_DIR)/ix/lzo.lib
+IX_FILE_LIB = $(OUT_DIR)/ix/file.lib
 IX_STREAMER_LIB = $(OUT_DIR)/ix/streamer.lib
 IX_DSP_LIB = $(OUT_DIR)/ix/dsp.lib
 IX_SOUND_LIB = $(OUT_DIR)/ix/sound.lib
 
-IX_LIBS = $(IX_LZO_LIB) $(IX_STREAMER_LIB) $(IX_DSP_LIB) $(IX_SOUND_LIB)
+IX_LIBS = $(IX_LZO_LIB) $(IX_FILE_LIB) $(IX_STREAMER_LIB) $(IX_DSP_LIB) \
+          $(IX_SOUND_LIB)
 
 # Platform-neutral recovered units.  This list grows as each Win32 boundary is
 # isolated; keeping it explicit makes native compile progress measurable.
@@ -440,7 +447,8 @@ MODERN_IX_SRCS = \
 	src/ix/system.cpp \
 	src/ix/sound.cpp \
 	src/ix/sample.cpp \
-	src/ix/lzo1x.cpp
+	src/ix/lzo1x.cpp \
+	src/ix/ixfile.cpp
 
 MODERN_BASE_HOST_SRCS = \
 	src/sdl/compat.c \
@@ -729,6 +737,7 @@ $(TARGET): $(LINK_OBJS) $(IX_LIBS) | $(MSVCRT_DLL)
 	env LIB='$(GAME_LIBPATH)' $(LINK) $(LINKFLAGS) /MAP:$(MAPFILE) $(LINK_OBJS) $(GAME_LIBS) /OUT:$@
 
 $(IX_LZO_LIB): $(call objects_of,$(SRCS_IX_LZO))
+$(IX_FILE_LIB): $(call objects_of,$(SRCS_IX_FILE))
 $(IX_STREAMER_LIB): $(call objects_of,$(SRCS_IX_STREAMER))
 $(IX_DSP_LIB): $(call objects_of,$(SRCS_IX_DSP))
 $(IX_SOUND_LIB): $(call objects_of,$(SRCS_IX_SOUND))

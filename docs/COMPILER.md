@@ -33,7 +33,7 @@ Evidence that constrains these settings:
 
 Linking uses `/SUBSYSTEM:WINDOWS /ALIGN:4096` without `/ENTRY`, so LINK
 supplies `WinMainCRTStartup` itself. The command line lists the core objects,
-`ixlog.obj`, then `kernel32`, `user32`, `gdi32`, `advapi32`, `winmm`, the four
+`ixlog.obj`, then `kernel32`, `user32`, `gdi32`, `advapi32`, `winmm`, the five
 `ix` libraries, `dsound` and `ddraw`; LIBCMTD and OLDNAMES follow as default
 libraries. Base relocations remain enabled. `docs/ORDER.md` records the
 evidence for each choice.

@@ -11,7 +11,7 @@ remain provisional.
 0x004492C6  DirectSound and DirectDraw call thunks
 0x004492E0  static debug CRT, first search pass (not reconstructed)
 0x004614B0  RtlUnwind call thunk, second search pass
-0x004614C0  LZO decoder and ix file module
+0x004614C0  LZO decoder, then the ix file module at 0x00461630
 0x004617C0  CRT members reached through OLDNAMES, second search pass
 ```
 
@@ -28,7 +28,8 @@ remain provisional.
 | `0x00447200`–`0x00447CD7` | `src/ix/system.cpp` | sound |
 | `0x00447CD8`–`0x0044879B` | `src/ix/sound.cpp` | sound |
 | `0x0044879C`–`0x004492DF` | `src/ix/sample.cpp` | sound |
-| `0x004614C0`–`0x004617BF` | `src/ix/lzo1x.cpp` | lzo |
+| `0x004614C0`–`0x0046162F` | `src/ix/lzo1x.cpp` | lzo |
+| `0x00461630`–`0x004617BF` | `src/ix/ixfile.cpp` | file |
 
 The assert anchors name three source trees, `D:\Rnd\Prj\ix\Src\Streamer\`,
 `D:\rnd\prj\ix\win95\dsp\` and `D:\Rnd\prj\ix\src\sound\`; each was a separate
@@ -50,13 +51,11 @@ line. The reference build reproduces all of them:
 | `wincrt0.obj` sits between `strncmp.obj` and the CRT members only ix needs | No `/ENTRY`; LINK adds the entry point after the objects |
 | `_CrtDbgReport` and `strncmp`, needed first by `ix_log_printf`, precede `wincrt0.obj` | `ixlog.obj` on the command line, the other ix units in libraries |
 | ix members appear streamer, thread, dsp, dsps, mixer, dspv, system, sound, sample | Streamer, dsp and sound libraries searched in that order |
-| LZO module after the second-pass `RtlUnwind` thunk, before the OLDNAMES members | Its own library, after `kernel32.lib` and before the other ix libraries |
+| LZO decoder after the second-pass `RtlUnwind` thunk, then INT3 padding and the file module, before the OLDNAMES members | The two in libraries of their own, decoder first, after `kernel32.lib` and before the other ix libraries |
 | `strupr`, `xtoa`, `flength`, `cprintf`, `chdir` are pulled on the second pass | The game calls the old names, resolved through OLDNAMES |
 
-With these choices every import table matches exactly, and the CRT members
-pulled on the first pass sit at one constant offset from the original. The
-members after the LZO module sit 0x20 bytes closer, because the inline-assembly
-LZO decoder encodes shorter than the original's.
+With these choices every import table matches exactly, and every CRT member
+sits at one constant offset from the original.
 
 ## Core placement windows
 
