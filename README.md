@@ -15,9 +15,7 @@ GitHub Sponsors](https://github.com/sponsors/neuromancer).
 
 ## Status
 
-All 1,474 identified functions are accounted for: 1,472 have source
-implementations and the remaining two are compiler-generated jump thunks that
-must not be recreated manually.
+All 1,474 identified functions have source implementations.
 
 `make report` calculates per-function machine-code similarity to the retail
 executable; those scores measure reconstruction fidelity, not gameplay

@@ -240,7 +240,7 @@
 0x0040C950 init_intelligence_data
 0x0040CAA0 HelperOf431A10A
 0x0040CAE0 InputRoutine01
-0x0040CB20 ThunkForwarder40CB20
+0x0040CB20 ReadJoystickButtons
 0x0040CB30 SampleActiveJoystickDevice
 0x0040CB60 HelperOf40DF70A
 0x0040CBB0 SetNavMapCoordinateScaling
@@ -1095,7 +1095,7 @@
 0x00434C70 chase_speed
 0x00434CD0 RandomBelow
 0x00434CF0 DoLocalFn4CF0
-0x00434D10 _rand
+0x00434D10 RandomWord
 0x00434D20 RandomInRange
 0x00434D50 RandomBelowOrEqual
 0x00434D80 FloatToLongA

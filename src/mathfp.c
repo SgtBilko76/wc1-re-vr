@@ -18,6 +18,12 @@ void __stdcall SeedRandomFromClock(void)
     srand((unsigned int)time(0));
 }
 
+/* Function start: 0x434D10 */
+unsigned short RandomWord(void)
+{
+    return (unsigned short)rand();
+}
+
 /* Function start: 0x434D20 */
 short __stdcall RandomInRange(short lo, short hi)
 {

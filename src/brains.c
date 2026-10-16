@@ -1128,7 +1128,7 @@ unsigned int PlayScrambleHangarScene(void)
     pScrambleHangarShape =
         FetchDiskPacketRetrying(1, 0, 0);
     cScrambleWalkerPair =
-        (signed char)(((unsigned short)rand() + 3) & 3);
+        (signed char)((RandomWord() + 3) % 4);
     PlaySfxWaveFileByNumber(14, -1, 0);
     bEscapePressed = 0;
 
@@ -4374,6 +4374,14 @@ int __stdcall SampleJoystickDevice(InputDeviceSample *samples,
     if (result != 0)
         nActiveInputDevice = -1;
     return result;
+}
+
+/* Function start: 0x40CB20 */
+/* No inbound reference is known in the shipped executable; this routine is
+ * believed unreachable. */
+short ReadJoystickButtons(void)
+{
+    return GetJoystickButtons();
 }
 
 /* Function start: 0x40CB30 */

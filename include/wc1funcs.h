@@ -279,6 +279,7 @@ short __stdcall SampleBothJoysticks(InputDeviceSample *samples,
 int __stdcall SampleJoystickDevice(InputDeviceSample *samples,
                                    short joystick,
                                    unsigned int fallback);              /* 0x0040CAE0 */
+short ReadJoystickButtons(void);                                        /* 0x0040CB20 */
 void SampleActiveJoystickDevice(void);                                 /* 0x0040CB30 */
 void DrawNavTextLine(unsigned char alignment, unsigned short colour,
                      const char *format, ...);                         /* 0x0040CB60 */
@@ -1337,6 +1338,7 @@ void intelligence_events(short obj);                                    /* 0x004
 unsigned int chase_speed(short obj, short range);                      /* 0x00434C70 */
 short RandomBelow(short n);                                           /* 0x00434CD0 */
 void __stdcall SeedRandomFromClock(void);                                               /* 0x00434CF0 */
+unsigned short RandomWord(void);                                        /* 0x00434D10 */
 short __stdcall RandomInRange(short lo, short hi);                      /* 0x00434D20 */
 short RandomBelowOrEqual(short n);                                      /* 0x00434D50 */
 long MultiplyFixed(int left, int right);                              /* 0x00434D80 */
