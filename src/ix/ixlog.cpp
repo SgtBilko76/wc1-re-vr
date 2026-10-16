@@ -1,9 +1,11 @@
 /*
  *  ix diagnostic printer.
  *
- *  MODULE BOUNDARY UNVERIFIED: ix_log_printf sits at 0x004426A0, below
- *  streamer.cpp (0x00442750), so it belongs to an earlier ix object file whose
- *  extent is not yet known.  Built /Od like the rest of ix.
+ *  ix_log_printf sits at 0x004426A0, below streamer.cpp (0x00442750).  Unlike
+ *  the rest of ix it was linked as an object, not from a library: its CRT
+ *  references (_CrtDbgReport, strncmp) are resolved before the entry point,
+ *  and those of every ix library member after it (docs/ORDER.md).  Built /Od
+ *  like the rest of ix.
  *
  *  Every ix diagnostic goes through here, 107 call sites, always in pairs:
  *      ix_log_printf("Fatal [%s - %d]:\n", __FILE__, __LINE__);

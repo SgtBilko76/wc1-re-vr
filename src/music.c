@@ -675,8 +675,8 @@ void DrawTargetRangeReadout(void)
         rangeText = szTargetOffscreenRange;
     } else if ((unsigned short)asObjectDistance[target] <=
                30000) {
-        strcat(_itoa((unsigned short)asObjectDistance[target],
-                     szTextScratchBuffer, 10), " m");
+        strcat(itoa((unsigned short)asObjectDistance[target],
+                    szTextScratchBuffer, 10), " m");
         goto draw_readout;
     } else {
         rangeText = szTargetTooFar;

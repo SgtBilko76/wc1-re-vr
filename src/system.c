@@ -108,7 +108,7 @@ short LogMemoryUsage(void)
     ShutdownHook(0x21, (void *)DAT_0059ab4c);
     EMShutDown();
     GetMessagePumpResult();
-    _chdir("..");
+    chdir("..");
     ShutdownVideoHook(3);
     if (nOriginDevUnlock != 0) {
         SystemDebugPrintf(

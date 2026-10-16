@@ -31,6 +31,9 @@ Evidence that constrains these settings:
   Other units must not gain C++ exception handling.
 - `src/sound.c` directly calls `ix` member functions and matches only as C++.
 
-Linking uses `/SUBSYSTEM:WINDOWS /ENTRY:WinMainCRTStartup /ALIGN:4096` with
-`ddraw`, `dsound`, `winmm`, `kernel32`, `user32`, `gdi32`, and `advapi32` import
-libraries. Base relocations remain enabled.
+Linking uses `/SUBSYSTEM:WINDOWS /ALIGN:4096` without `/ENTRY`, so LINK
+supplies `WinMainCRTStartup` itself. The command line lists the core objects,
+`ixlog.obj`, then `kernel32`, `user32`, `gdi32`, `advapi32`, `winmm`, the four
+`ix` libraries, `dsound` and `ddraw`; LIBCMTD and OLDNAMES follow as default
+libraries. Base relocations remain enabled. `docs/ORDER.md` records the
+evidence for each choice.

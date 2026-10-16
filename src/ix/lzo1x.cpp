@@ -4,6 +4,10 @@
  * The retail routine is hand-written x86: it keeps input/token state in EBX
  * and EDX and performs overlapping copies with REP MOVS.  Preserve that code
  * directly so packed stream chunks decode exactly as they did originally.
+ *
+ * The module (0x004614C0-0x004617BF) came from its own library: it is pulled
+ * only on LINK's second search pass, after the RtlUnwind thunk and before the
+ * CRT members reached through OLDNAMES (docs/ORDER.md).
  */
 #include "ix.h"
 #include <stdlib.h>

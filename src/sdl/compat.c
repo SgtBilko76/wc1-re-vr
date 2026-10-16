@@ -1,5 +1,9 @@
 #include "wc1sdl.h"
 
+/* SdlChangeDirectory is built on the host chdir, which wc1sdl.h renames for
+ * the game's own calls. */
+#undef chdir
+
 #include <string.h>
 
 #ifndef _WIN32

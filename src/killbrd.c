@@ -615,7 +615,7 @@ void ShowChalkBoard(void)
         for (; index < 9; index++, rowY = (short)(rowY + 16)) {
             pilot = asChalkBoardPilotOrder[index];
             DosStrcpy(pilotName, aPilotRecords[pilot].name);
-            _strupr(pilotName);
+            strupr(pilotName);
             rank = aPilotRecords[pilot].rank;
             if (rank < 0)
                 rank = 0;

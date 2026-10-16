@@ -295,8 +295,8 @@ void __stdcall PromptInsertNumberedDisk(short logicalFile)
         do {
             DiskPromptDrawHook();
             ResetDiskPromptTimer();
-            _cprintf("Please Insert Disk %d. Press any key to continue",
-                     (int)diskNumber);
+            cprintf("Please Insert Disk %d. Press any key to continue",
+                    (int)diskNumber);
             WaitForInputKey();
         } while (OpenDiskDataFile(logicalFile) == 0);
         return;

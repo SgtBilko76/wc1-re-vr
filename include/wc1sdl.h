@@ -375,6 +375,16 @@ char *SdlStrupr(char *text);
 #define _strupr SdlStrupr
 #endif
 
+/* The game calls the CRT's old names, which the original executable resolved
+ * through OLDNAMES.LIB; route them to the underscore spellings above. */
+#define strupr _strupr
+#define itoa _itoa
+#define ltoa _ltoa
+#define ultoa _ultoa
+#define filelength _filelength
+#define cprintf _cprintf
+#define chdir _chdir
+
 #define CREATE_ALWAYS 2
 #define DRIVE_CDROM 5
 #define ERROR_FILE_NOT_FOUND 2

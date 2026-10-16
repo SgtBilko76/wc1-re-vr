@@ -35,9 +35,9 @@ int main(short argc, char **argv)
     ShutdownHook(0x21, MouseIdleHook);
 
     argumentCount = LoadWingCmdrCfgFile(argc, argv);
-    _chdir("gamedat");
+    chdir("gamedat");
     LoadInstallDat();
-    _chdir("..");
+    chdir("..");
 #ifdef SDL_PORT
     if (SdlUsingDosData())
         DAT_0059ab34 = 1;

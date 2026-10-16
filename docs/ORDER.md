@@ -5,28 +5,55 @@ command-line order. Use `src/map` and `make sort`; uncertain core boundaries
 remain provisional.
 
 ```text
-0x00401000  game core and Win32 support
-0x004426A0  ix_log_printf
-0x00442750  ix audio objects
-0x004492E0  static debug CRT (not reconstructed)
+0x00401000  game core and Win32 support (command-line objects)
+0x004426A0  ix_log_printf (ixlog.obj, the last command-line object)
+0x00442750  ix library members
+0x004492C6  DirectSound and DirectDraw call thunks
+0x004492E0  static debug CRT, first search pass (not reconstructed)
+0x004614B0  RtlUnwind call thunk, second search pass
+0x004614C0  LZO decoder and ix file module
+0x004617C0  CRT members reached through OLDNAMES, second search pass
 ```
 
 ## Proven `ix` order
 
-| Range | Source |
-| --- | --- |
-| `0x00442750`–`0x00443DA5` | `src/ix/streamer.cpp` |
-| `0x00443DA6`–`0x0044490F` | `src/ix/thread.cpp` |
-| `0x00444910`–`0x004451B4` | `src/ix/dsp.cpp` |
-| `0x004451B5`–`0x00445F5F` | `src/ix/dsps.cpp` |
-| `0x00445F60`–`0x004467C4` | `src/ix/mixer.cpp` |
-| `0x004467C5`–`0x004471FF` | `src/ix/dspv.cpp` |
-| `0x00447200`–`0x00447CD7` | `src/ix/system.cpp` |
-| `0x00447CD8`–`0x0044879B` | `src/ix/sound.cpp` |
-| `0x0044879C`–`0x004492DF` | `src/ix/sample.cpp` |
+| Range | Source | Library |
+| --- | --- | --- |
+| `0x00442750`–`0x00443DA5` | `src/ix/streamer.cpp` | streamer |
+| `0x00443DA6`–`0x0044490F` | `src/ix/thread.cpp` | streamer |
+| `0x00444910`–`0x004451B4` | `src/ix/dsp.cpp` | dsp |
+| `0x004451B5`–`0x00445F5F` | `src/ix/dsps.cpp` | dsp |
+| `0x00445F60`–`0x004467C4` | `src/ix/mixer.cpp` | dsp |
+| `0x004467C5`–`0x004471FF` | `src/ix/dspv.cpp` | dsp |
+| `0x00447200`–`0x00447CD7` | `src/ix/system.cpp` | sound |
+| `0x00447CD8`–`0x0044879B` | `src/ix/sound.cpp` | sound |
+| `0x0044879C`–`0x004492DF` | `src/ix/sample.cpp` | sound |
+| `0x004614C0`–`0x004617BF` | `src/ix/lzo1x.cpp` | lzo |
 
-`src/ix/ixlog.cpp` contains `ix_log_printf` immediately before this sequence;
-its full original object extent is not proven.
+The assert anchors name three source trees, `D:\Rnd\Prj\ix\Src\Streamer\`,
+`D:\rnd\prj\ix\win95\dsp\` and `D:\Rnd\prj\ix\src\sound\`; each was a separate
+library. `src/ix/ixlog.cpp` is the one ix unit linked as an object.
+
+## Link line
+
+LINK 4.20 resolves symbols in the order they are first referenced: by each
+command-line object in turn, then the entry point, then each library member in
+the order it is pulled in. Library members are laid out in pull order, and a
+library is searched again on later passes when new references appear. The CRT
+member order, the call thunks and the import tables therefore record the link
+line. The reference build reproduces all of them:
+
+| Evidence in the original | Link-line choice |
+| --- | --- |
+| Import descriptors run KERNEL32, USER32, GDI32, ADVAPI32, WINMM, DSOUND, DDRAW | Import libraries in that order |
+| DirectSound and DirectDraw thunks follow `sample.cpp`, DSOUND first | `dsound.lib`, `ddraw.lib` after the ix libraries |
+| `wincrt0.obj` sits between `strncmp.obj` and the CRT members only ix needs | No `/ENTRY`; LINK adds the entry point after the objects |
+| `_CrtDbgReport` and `strncmp`, needed first by `ix_log_printf`, precede `wincrt0.obj` | `ixlog.obj` on the command line, the other ix units in libraries |
+| ix members appear streamer, thread, dsp, dsps, mixer, dspv, system, sound, sample | Streamer, dsp and sound libraries searched in that order |
+| LZO module after the second-pass `RtlUnwind` thunk, before the OLDNAMES members | Its own library, after `kernel32.lib` and before the other ix libraries |
+| `strupr`, `xtoa`, `flength`, `cprintf`, `chdir` are pulled on the second pass | The game calls the old names, resolved through OLDNAMES |
+
+With these choices every import table matches exactly.
 
 ## Core placement windows
 

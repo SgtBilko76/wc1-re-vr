@@ -131,7 +131,7 @@ void EnsureSaveGameFile(void)
         CreateEmptySaveGameFile();
         return;
     }
-    length = _filelength((int)file);
+    length = filelength((int)file);
     CloseDataFile((unsigned short)file);
     if (length != 0x19e0)
         CreateEmptySaveGameFile();

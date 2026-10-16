@@ -512,7 +512,7 @@ unsigned int LoadOriginFxDrivers(void)
     short requestedGraphicsMode;
 
     memoryThreshold = 100000;
-    _chdir("gamedat");
+    chdir("gamedat");
     nNearHeapMaxDescriptors = 0x80;
     IsSoundHardwarePresent(8);
     if (bExpandedMemoryAvailable == 0)

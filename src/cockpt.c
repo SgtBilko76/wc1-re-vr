@@ -141,9 +141,9 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                 break;
             case 'D':
 #ifdef SDL_PORT
-                text = _ltoa(va_arg(*arguments, long), number, 10);
+                text = ltoa(va_arg(*arguments, long), number, 10);
 #else
-                text = _ltoa((long)*arguments++, number, 10);
+                text = ltoa((long)*arguments++, number, 10);
 #endif
                 EmitTextString(writer, text);
                 break;
@@ -170,9 +170,9 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                 break;
             case 'U':
 #ifdef SDL_PORT
-                text = _ultoa(va_arg(*arguments, unsigned long), number, 10);
+                text = ultoa(va_arg(*arguments, unsigned long), number, 10);
 #else
-                text = _ultoa(*arguments++, number, 10);
+                text = ultoa(*arguments++, number, 10);
 #endif
                 EmitTextString(writer, text);
                 break;
@@ -203,9 +203,9 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                 break;
             case 'd':
 #ifdef SDL_PORT
-                text = _itoa((short)va_arg(*arguments, int), number, 10);
+                text = itoa((short)va_arg(*arguments, int), number, 10);
 #else
-                text = _itoa((int)(short)*arguments++, number, 10);
+                text = itoa((int)(short)*arguments++, number, 10);
 #endif
                 EmitTextString(writer, text);
                 break;
@@ -219,21 +219,21 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                 break;
             case 'u':
 #ifdef SDL_PORT
-                text = _ultoa((unsigned short)va_arg(*arguments, unsigned int),
-                              number, 10);
+                text = ultoa((unsigned short)va_arg(*arguments, unsigned int),
+                             number, 10);
 #else
-                text = _ultoa((unsigned short)*arguments++, number, 10);
+                text = ultoa((unsigned short)*arguments++, number, 10);
 #endif
                 EmitTextString(writer, text);
                 break;
             case 'x':
 #ifdef SDL_PORT
-                text = _ultoa((unsigned short)va_arg(*arguments, unsigned int),
-                              number, 16);
+                text = ultoa((unsigned short)va_arg(*arguments, unsigned int),
+                             number, 16);
 #else
-                text = _ultoa((unsigned short)*arguments++, number, 16);
+                text = ultoa((unsigned short)*arguments++, number, 16);
 #endif
-                EmitTextString(writer, _strupr(text));
+                EmitTextString(writer, strupr(text));
                 break;
             default:
                 writer((short)character);
@@ -793,15 +793,15 @@ void update_bars(void)
     SetCockpitLightBlink(0, forePercent);
     vdu_polygon(6, forePercent);
     DrawCockpitReadout(
-        4, _itoa((int)aasShipShield[0][0],
-                 szTextScratchBuffer, 10));
+        4, itoa((int)aasShipShield[0][0],
+                szTextScratchBuffer, 10));
     aftPercent = (short)((aasShipShield[0][1] * 100) /
                          typeData->shieldAft);
     SetCockpitLightBlink(1, aftPercent);
     vdu_polygon(7, aftPercent);
     DrawCockpitReadout(
-        5, _itoa((int)aasShipShield[0][1],
-                 szTextScratchBuffer, 10));
+        5, itoa((int)aasShipShield[0][1],
+                szTextScratchBuffer, 10));
 }
 
 /* Function start: 0x4147E0 */
@@ -923,13 +923,13 @@ unsigned int update_digital_readouts(void)
 
     SetTextContext(&stCockpitReadoutTextContext);
     DrawCockpitReadout(
-        2, _itoa((int)(short)((anShipSpeed[0] >> 8) * 10),
-                 szTextScratchBuffer, 10));
+        2, itoa((int)(short)((anShipSpeed[0] >> 8) * 10),
+                szTextScratchBuffer, 10));
     velocity = MultiplyFixed(
         Vector_magnitude(&aShipVelocity[0]), 0xa00);
     DrawCockpitReadout(
-        3, _itoa((int)(short)(velocity >> 8),
-                 szTextScratchBuffer, 10));
+        3, itoa((int)(short)(velocity >> 8),
+                szTextScratchBuffer, 10));
     return 0;
 }
 
@@ -1201,8 +1201,8 @@ void DrawCalculatingLabel(void)
         DrawCockpitReadout(0, szCalculating);
     } else {
         strcpy(szTextScratchBuffer +
-                   strlen(_ltoa((long)nCurrentObjectiveRange,
-                                szTextScratchBuffer, 10)),
+                   strlen(ltoa((long)nCurrentObjectiveRange,
+                               szTextScratchBuffer, 10)),
                " km");
         DrawCockpitReadout(0, szTextScratchBuffer);
     }

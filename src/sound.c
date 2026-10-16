@@ -76,7 +76,7 @@ void playWAVE(const char *filename, int looping, int volume)
                         filename, MB_ICONHAND);
             _exit(1);
         }
-        fileSize = _filelength(file);
+        fileSize = filelength(file);
         fileData = (unsigned char *)malloc((unsigned int)fileSize);
         _read(file, fileData, (unsigned int)fileSize);
         _close(file);
@@ -141,7 +141,7 @@ void PlaySnowStaticSound(void)
                             "Notice", MB_ICONHAND);
                 _exit(1);
             }
-            fileSize = _filelength(file);
+            fileSize = filelength(file);
             fileData = (unsigned char *)malloc((unsigned int)fileSize);
             _read(file, fileData, (unsigned int)fileSize);
             _close(file);
@@ -781,7 +781,7 @@ unsigned short LoadInstallDat(void)
         PumpMessagesDuringWait();
         exit(0);
     }
-    size = (unsigned int)_filelength(file);
+    size = (unsigned int)filelength(file);
     records = (DiskFileRecord *)AllocateTaggedMemory(size, 0);
     if (records == 0) {
         SystemDebugPrintf("Unable to load INSTALL.DAT\n");

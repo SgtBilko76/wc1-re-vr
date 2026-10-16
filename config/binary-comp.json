@@ -84,6 +84,17 @@
       }
     }
   },
+  "calls": {
+    "canonical_aliases": {
+      "chdir": "__chdir",
+      "cprintf": "__cprintf",
+      "filelength": "__filelength",
+      "itoa": "__itoa",
+      "ltoa": "__ltoa",
+      "strupr": "__strupr",
+      "ultoa": "__ultoa"
+    }
+  },
   "targets": {
     "full": {
       "original_exe": "../data/full/WC1.ORI.EXE",

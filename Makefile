@@ -24,6 +24,7 @@
 WIBO = ./wibo
 CC = $(WIBO) compilers/msvc420/bin/CL.EXE
 LINK = $(WIBO) compilers/msvc420/bin/LINK.EXE
+LIBRARIAN = $(WIBO) compilers/msvc420/bin/LIB.EXE
 
 # MSVC expects Windows-style include/library search paths.  The recipes pass
 # these through the host shell to wibo, so command-line /I paths use doubled
@@ -74,20 +75,35 @@ CFLAGS_IX   = $(CFLAGS_COMMON) /Od /Oi
 # Default for anything not covered by a more specific rule.
 CFLAGS = $(CFLAGS_CORE)
 
-LINKFLAGS = /nologo /SUBSYSTEM:WINDOWS /ENTRY:WinMainCRTStartup /ALIGN:4096
+# No /ENTRY.  Without it LINK adds WinMainCRTStartup as an undefined symbol
+# after reading every command-line object, so wincrt0.obj is pulled from
+# LIBCMTD between the CRT references of the objects and those of the library
+# members.  The original has it exactly there, right after strncmp.obj; an
+# explicit /ENTRY makes it the first CRT member instead.
+LINKFLAGS = /nologo /SUBSYSTEM:WINDOWS /ALIGN:4096
 
 # DDRAW.DLL and DSOUND.DLL are bound statically through the import table, so
 # import libraries are required at link time.  The MSVC420 submodule already
 # ships DDRAW.LIB/DSOUND.LIB and DDRAW.H/DSOUND.H, so no extra SDK is needed.
+#
+# The order is the original's (docs/ORDER.md):
+#   - the import descriptors run KERNEL32, USER32, GDI32, ADVAPI32, WINMM,
+#     DSOUND, DDRAW, the order in which the import libraries were searched;
+#   - the DirectSound and DirectDraw call thunks follow the last ix member, so
+#     dsound.lib and ddraw.lib follow the ix libraries;
+#   - the LZO module follows the RtlUnwind thunk that kernel32.lib supplies on
+#     the second search pass, so its library follows kernel32.lib and precedes
+#     the ix libraries that reference it.
 GAME_LIBPATH = $(MSVC_LIB)
 GAME_LIBS = \
-	ddraw.lib \
-	dsound.lib \
-	winmm.lib \
 	kernel32.lib \
 	user32.lib \
 	gdi32.lib \
-	advapi32.lib
+	advapi32.lib \
+	winmm.lib \
+	$(IX_LIBS) \
+	dsound.lib \
+	ddraw.lib
 
 # ---------------------------------------------------------------------------
 # Project inputs and generated outputs
@@ -263,12 +279,22 @@ DREAMM_MOUNTS = -mount rw:C=hd \
 # MSVC emits functions in source order and the linker concatenates objects in
 # command-line order, so address order == link order.
 #
-# SRCS_ORDERED_IX is EXACT, recovered from live assert __FILE__ anchors in the
+# The ix order is EXACT, recovered from live assert __FILE__ anchors in the
 # shipped debug build; each module occupies one contiguous address range:
 #     streamer.cpp 0x00442750   thread.cpp 0x00443da6   dsp.cpp    0x00444910
 #     dsps.cpp     0x004451b5   mixer.cpp  0x00445f60   dspv.cpp   0x004467c5
 #     system.cpp   0x00447200   sound.cpp  0x00447cd8   sample.cpp 0x0044879c
-# The ix library links AFTER the whole game core (it sits at higher addresses).
+# The anchors name three source trees, and each was a separate library:
+#     D:\Rnd\Prj\ix\Src\Streamer\   streamer.cpp thread.cpp
+#     D:\rnd\prj\ix\win95\dsp\      dsp.cpp dsps.cpp mixer.cpp dspv.cpp
+#     D:\Rnd\prj\ix\src\sound\      system.cpp sound.cpp sample.cpp
+# LINK pulls library members in the order their symbols are first needed, which
+# gives the address order above only with these three libraries searched in
+# turn.  The LZO and file module (0x004614C0) came from a fourth library that
+# was searched before them: it is pulled only on the second pass, after the
+# first round of CRT members.  ixlog.cpp is the one ix unit linked as an
+# object: its CRT references precede the entry point's, those of every library
+# member follow it.  See docs/ORDER.md.
 #
 # SRCS_ORDERED_CORE is NOT yet known: no source-file anchors exist below
 # 0x00442750, so game-core module boundaries have to be recovered incrementally
@@ -314,17 +340,32 @@ SRCS_ORDERED_CORE = \
 	src/gr.c \
 	src/globals.c
 
-SRCS_ORDERED_IX = \
-	src/ix/ixlog.cpp \
+SRCS_IX_LOG = src/ix/ixlog.cpp
+
+SRCS_IX_LZO = src/ix/lzo1x.cpp
+
+SRCS_IX_STREAMER = \
 	src/ix/streamer.cpp \
-	src/ix/thread.cpp \
+	src/ix/thread.cpp
+
+SRCS_IX_DSP = \
 	src/ix/dsp.cpp \
 	src/ix/dsps.cpp \
 	src/ix/mixer.cpp \
-	src/ix/dspv.cpp \
+	src/ix/dspv.cpp
+
+SRCS_IX_SOUND = \
 	src/ix/system.cpp \
 	src/ix/sound.cpp \
 	src/ix/sample.cpp
+
+SRCS_IX_LIBRARIES = \
+	$(SRCS_IX_LZO) \
+	$(SRCS_IX_STREAMER) \
+	$(SRCS_IX_DSP) \
+	$(SRCS_IX_SOUND)
+
+SRCS_ORDERED_IX = $(SRCS_IX_LOG) $(SRCS_IX_LIBRARIES)
 
 SRCS_ORDERED = $(SRCS_ORDERED_CORE) $(SRCS_ORDERED_IX)
 
@@ -332,8 +373,18 @@ ALL_SRCS = $(wildcard src/*.c) $(wildcard src/*.cpp) $(wildcard src/ix/*.cpp)
 SRCS = $(filter $(ALL_SRCS), $(SRCS_ORDERED)) \
        $(filter-out $(SRCS_ORDERED), $(ALL_SRCS))
 
-OBJS = $(patsubst src/%,$(OUT_DIR)/%, \
-         $(patsubst %.c,%.obj, $(patsubst %.cpp,%.obj, $(SRCS))))
+objects_of = $(patsubst src/%,$(OUT_DIR)/%, \
+               $(patsubst %.c,%.obj, $(patsubst %.cpp,%.obj, $(1))))
+
+# Everything except the ix library members is an object on the command line.
+LINK_OBJS = $(call objects_of,$(filter-out $(SRCS_IX_LIBRARIES),$(SRCS)))
+
+IX_LZO_LIB = $(OUT_DIR)/ix/lzo.lib
+IX_STREAMER_LIB = $(OUT_DIR)/ix/streamer.lib
+IX_DSP_LIB = $(OUT_DIR)/ix/dsp.lib
+IX_SOUND_LIB = $(OUT_DIR)/ix/sound.lib
+
+IX_LIBS = $(IX_LZO_LIB) $(IX_STREAMER_LIB) $(IX_DSP_LIB) $(IX_SOUND_LIB)
 
 # Platform-neutral recovered units.  This list grows as each Win32 boundary is
 # isolated; keeping it explicit makes native compile progress measurable.
@@ -674,8 +725,17 @@ $(MSVCRT_SOURCE):
 		(rm -f "$@.tmp"; echo "Error: msvcrt40.dll checksum mismatch." >&2; exit 1)
 	@mv "$@.tmp" "$@"
 
-$(TARGET): $(OBJS) | $(MSVCRT_DLL)
-	env LIB='$(GAME_LIBPATH)' $(LINK) $(LINKFLAGS) /MAP:$(MAPFILE) $^ $(GAME_LIBS) /OUT:$@
+$(TARGET): $(LINK_OBJS) $(IX_LIBS) | $(MSVCRT_DLL)
+	env LIB='$(GAME_LIBPATH)' $(LINK) $(LINKFLAGS) /MAP:$(MAPFILE) $(LINK_OBJS) $(GAME_LIBS) /OUT:$@
+
+$(IX_LZO_LIB): $(call objects_of,$(SRCS_IX_LZO))
+$(IX_STREAMER_LIB): $(call objects_of,$(SRCS_IX_STREAMER))
+$(IX_DSP_LIB): $(call objects_of,$(SRCS_IX_DSP))
+$(IX_SOUND_LIB): $(call objects_of,$(SRCS_IX_SOUND))
+
+$(IX_LIBS): | $(WIBO) $(MSVCRT_DLL)
+	@rm -f $@
+	$(LIBRARIAN) /nologo /OUT:$@ $^
 
 # The game-side wave module calls directly into IxSample and IxSound member
 # functions.  Those ECX-based calls at 0x42B4A0 and 0x42B680 prove this one
