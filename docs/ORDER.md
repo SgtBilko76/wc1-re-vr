@@ -75,10 +75,10 @@ sits at one constant offset from the original.
 | `src/geom.c` | `0x418000`–`0x41AD4F` |
 | `src/barracks.c` | `0x41ADA0`–`0x41C75F` |
 | `src/debug.cpp` | `0x41C760`–`0x41D0BF` |
-| `src/mathutil.c` | `0x41D000`–`0x41D24F` |
-| `src/disk.c` | `0x41D250`–`0x41EFFF` |
-| `src/ship.c` | `0x41F000`–`0x420FFF` |
-| `src/logic.c` | `0x421000`–`0x424FFF` |
+| `src/mathutil.c` | `0x41D0C0`–`0x41D11F` |
+| `src/disk.c` | `0x41D120`–`0x41DEDF` |
+| `src/ship.c` | `0x41DEE0`–`0x4219BF` |
+| `src/logic.c` | `0x4219C0`–`0x424FFF` |
 | `src/pilot.cpp` | `0x425000`–`0x426FFF` |
 | `src/system.c` | `0x427000`–`0x4274DF` |
 | `src/main.c` | `0x4274E0`–`0x427FFF` |

@@ -1,7 +1,7 @@
 /*
  *  Integer min/max used across the game core.
  *
- *  Address range 0x41d000-0x41d24f (provisional -- see docs/ORDER.md).
+ *  Address range 0x41d0c0-0x41d11f (provisional -- see docs/ORDER.md).
  *  Boundary evidence: MinShort/MaxShort pair, 94 call sites, no other content in the gap.
  */
 #include "wc1.h"

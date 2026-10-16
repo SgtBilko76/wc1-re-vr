@@ -2,9 +2,9 @@
  *  Ship object, damage, explosion, and weapon logic from the Mac `ship`
  *  compilation unit.
  *
- *  Address range 41f000-420fff (provisional -- see docs/ORDER.md).
- *  Boundary evidence: the ordered Mac `ship` symbols map across the larger
- *  41dee0-42193f Win32 run; this file currently owns its central tranche.
+ *  Address range 41dee0-4219bf (see docs/ORDER.md).
+ *  Boundary evidence: the Mac `ship` symbols, initialize_object through
+ *  your_afterburner, map in order onto this Win32 run.
  */
 #include "wc1.h"
 
@@ -36,6 +36,348 @@ static const enum ObjectType aaeExplosionDebris[4][7] = { /* 0x004698e0 */
     }
 };
 
+/* Function start: 0x41DEE0 */
+short initialize_object(short obj, enum ObjectType type, short owner)
+{
+    if (obj != -1) {
+        set_objects_data(obj, type, owner);
+        zero_vector(&aShipPosition[obj]);
+        zero_vector(&aShipVelocity[obj]);
+    }
+    return obj;
+}
+
+/* Function start: 0x41DF40 */
+short borrow_dust(void)
+{
+    short i = 0x22;
+
+    do {
+        if (aeObjectClass[i] == OBJECT_CLASS_DUST)
+            return i;
+        i = i + 1;
+    } while (i < 0x2a);
+    return -1;
+}
+
+/* Function start: 0x41DF70 */
+short new_object(enum ObjectType type, short owner)
+{
+    short obj;
+
+    obj = find_vacant_3d_object();
+    if (obj == -1 && owner == 0)
+        obj = borrow_dust();
+    return initialize_object(obj, type, owner);
+}
+
+/* Function start: 0x41DFA0 */
+short initialize_ship(enum ObjectType type, short owner)
+{
+    short obj = get_ship_slot();
+
+    if (obj != -1) {
+        initialize_object(obj, type, owner);
+        aeShipSide[obj] = SIDE_NEUTRAL;
+    }
+    return obj;
+}
+
+/* Function start: 0x41DFE0 */
+short any_selected(unsigned char *loadout, enum ObjectClass objectClass)
+{
+    enum ObjectClass selectedClass;
+    short selected;
+    short weapon;
+
+    selectedClass = objectClass;
+    selected = 0;
+    weapon = 0;
+    if ((signed char)loadout[0] > (signed char)selected)
+        for (; (short)(signed char)loadout[0] > weapon; weapon++) {
+            if (selected != 0)
+                break;
+            if (aObjectTypeData[
+                    ((ShipWeaponSlot *)(loadout + weapon * 7 + 1))->type]
+                    .objectClass ==
+                    selectedClass &&
+                ((ShipWeaponSlot *)(loadout + weapon * 7 + 1))->disabled == 0)
+                selected = 1;
+        }
+    return selected;
+}
+
+/* Function start: 0x41E040 */
+unsigned int remove_weapon(short obj, short weapon)
+{
+    short ship;
+    short currentWeapon;
+    int weaponOffset;
+    enum ObjectType preferredType;
+    enum ObjectClass objectClass;
+    unsigned char *loadout;
+
+#ifdef SDL_PORT
+    if (SdlSwcFlightActive()) {
+        /* CODE_05 remove_weapon +0x019a consumes the native slot's
+           quantity before removing it. WC1 has no quantity byte. */
+        if (obj < 0 || obj >= 10 || weapon < 0 ||
+            (signed char)aShipWeapons[obj][0] > 10 ||
+            weapon >= (signed char)aShipWeapons[obj][0])
+            return 0;
+        if (aSwcWeaponAmmo[obj][weapon] > 1) {
+            aSwcWeaponAmmo[obj][weapon]--;
+            return 0;
+        }
+        memmove(&aSwcWeaponAmmo[obj][weapon], &aSwcWeaponAmmo[obj][weapon + 1],
+                (signed char)aShipWeapons[obj][0] - weapon - 1);
+        aSwcWeaponAmmo[obj][(signed char)aShipWeapons[obj][0] - 1] = 0;
+    }
+#endif
+    ship = obj;
+    currentWeapon = weapon;
+    weaponOffset = (int)currentWeapon * sizeof(ShipWeaponSlot);
+    loadout = aShipWeapons[ship];
+    preferredType =
+        ((ShipWeaponSlot *)(loadout + weaponOffset + 1))->type;
+    objectClass = aObjectTypeData[preferredType].objectClass;
+    for (; currentWeapon < (signed char)loadout[0] - 1;
+         currentWeapon++) {
+        unsigned char *entry = loadout + currentWeapon * 7;
+
+#ifdef SDL_PORT
+        /* The seven-byte records are intentionally unaligned. */
+        memcpy(entry + 1, entry + 8, sizeof(ShipWeaponSlot));
+#else
+        *(int *)(entry + 1) = *(int *)(entry + 8);
+        *(short *)(entry + 5) = *(short *)(entry + 12);
+        entry[7] = entry[14];
+#endif
+    }
+#ifdef SDL_PORT
+    /* Mac +0x0250 guards this spare-slot write for full ten-slot loadouts. */
+    if (!SdlSwcFlightActive() || (signed char)loadout[0] < 10)
+#endif
+        loadout[(signed char)loadout[0] * 7 + 7] = 1;
+    loadout[0]--;
+    if (ship == 0) {
+        if (any_selected(loadout, objectClass) == 0) {
+            if (objectClass == OBJECT_CLASS_PROJECTILE) {
+                select_new_gun();
+            } else {
+                nSelectedReleaseWeaponIndex = -1;
+                select_new_release_weapon(preferredType);
+            }
+        }
+        if (get_mode(0) == 1)
+            InvalidateVduMode(0);
+    }
+    return 0;
+}
+
+/* Function start: 0x41E120 */
+void set_objects_data(short obj, enum ObjectType type, short owner)
+{
+    ObjectTypeData *typeData;
+    unsigned char *loadout;
+    enum ObjectClass objectClass;
+    short value;
+    short zero;
+    short weapon;
+
+    if (type == OBJECT_TYPE_SPACE_DUST) {
+        aeObjectType[obj] = type;
+        aeObjectClass[obj] = OBJECT_CLASS_DUST;
+        return;
+    }
+    if (aObjectTypeData[type].shapeSet == 0
+#ifdef SDL_PORT
+        /* SWC owns CMF textures instead of WC1 disk packets. */
+        && !SdlSwcFlightActive()
+#endif
+    ) {
+        switch (type) {
+        case OBJECT_TYPE_ASTEROID2:
+            type = OBJECT_TYPE_ASTEROID1;
+            break;
+        case OBJECT_TYPE_ASTEROID4:
+            type = OBJECT_TYPE_ASTEROID3;
+            break;
+        case OBJECT_TYPE_ASTEROID6:
+            type = OBJECT_TYPE_ASTEROID5;
+            break;
+        case OBJECT_TYPE_DEBRIS_METAL_SHEET:
+            type = OBJECT_TYPE_DEBRIS_SHIP_GIRDER_CHUNK;
+            break;
+        case OBJECT_TYPE_DEBRIS_WING:
+            type = OBJECT_TYPE_DEBRIS_PIPE;
+            break;
+        case OBJECT_TYPE_EXPLOSION1:
+        case OBJECT_TYPE_EXPLOSION2:
+            type = OBJECT_TYPE_EXPLOSION0;
+            break;
+        }
+    }
+    typeData = &aObjectTypeData[type];
+    aeObjectType[obj] = type;
+    aeObjectClass[obj] = typeData->objectClass;
+    if (type == OBJECT_TYPE_ROCK_CHUNK)
+        apObjectShape[obj] =
+            aObjectTypeData[OBJECT_TYPE_ASTEROID1].shapeSet;
+    else
+        apObjectShape[obj] = typeData->shapeSet;
+    init_ijk(obj);
+    asObjectCollisionRadius[obj] = typeData->collisionRadius;
+    zero = 0;
+    asObjectRadarRadius[obj] = typeData->radarRadius;
+    asObjectScale[obj] = typeData->scale;
+    asObjectAfterburnerVelocity[obj] =
+        typeData->afterburnerVelocity;
+    acObjectOwner[obj] = (signed char)owner;
+    asShipAccumulatedDamage[obj] = zero;
+    objectClass = aeObjectClass[obj];
+    asObjectFlip[obj] = zero;
+    acLastCollisionObject[obj] = -1;
+    asObjectScreenAngle[obj] = zero;
+
+    if (objectClass >= OBJECT_CLASS_MISSILE) {
+        asObjectViewFrame[obj] = zero;
+        acShipTarget[obj] = -1;
+        if (objectClass >= OBJECT_CLASS_SHIP) {
+            value = typeData->shieldFore;
+            aasShipShield[obj][0] = value;
+            aasShipMaximumShield[obj][0] = value;
+            value = typeData->shieldAft;
+            aasShipShield[obj][1] = value;
+            aasShipMaximumShield[obj][1] = value;
+            aasShipArmor[obj][0] = typeData->armorFront;
+            aasShipArmor[obj][2] = typeData->armorLeft;
+            aasShipArmor[obj][3] = typeData->armorRight;
+            aasShipArmor[obj][1] = typeData->armorRear;
+            anShipFuel[obj] = *(int *)&typeData->lifetime;
+            acShipIonDriveDamage[obj] = (signed char)zero;
+            acShipDamage[obj] = (signed char)zero;
+            recalc_max_velocity(obj);
+            acPilotHitPoints[obj] = 4;
+            loadout = aShipWeapons[obj];
+            memcpy(loadout, typeData->weaponLoadout,
+                   sizeof(typeData->weaponLoadout));
+#ifdef SDL_PORT
+            if (SdlSwcFlightActive() && obj >= 0 && obj < 10 && type >= 0 && type < 22)
+                memcpy(aSwcWeaponAmmo[obj], aSwcInitialWeaponAmmo[type],
+                        sizeof(aSwcWeaponAmmo[obj]));
+#endif
+
+            if (obj == 0) {
+                nSelectedReleaseWeaponIndex = -1;
+                eSelectedGunType = (enum ObjectType)-1;
+                for (weapon = (short)(signed char)loadout[0];
+                     weapon-- > 0;) {
+                    ShipWeaponSlot *slot;
+
+                    slot = (ShipWeaponSlot *)(loadout + weapon * 7 + 1);
+                    if (slot->disabled == 0) {
+                        if (aObjectTypeData[
+                                slot->type].objectClass ==
+                                OBJECT_CLASS_PROJECTILE)
+                            eSelectedGunType = slot->type;
+                        else
+                            nSelectedReleaseWeaponIndex = weapon;
+                    }
+                }
+            }
+            acLastAttacker[obj] = -1;
+            asShipWeaponEnergy[obj] = 100;
+        }
+        return;
+    }
+
+    if (typeData->animation == 0) {
+        asObjectViewFrame[obj] = typeData->yawRate;
+        return;
+    }
+    asObjectAnimationDelay[obj] = 1;
+    asObjectAnimationIndex[obj] = 0;
+    animate_shape(obj);
+}
+
+/* Function start: 0x41E400 */
+unsigned int match_rotation_goal(short *rotation, short *goal,
+                                 short totalError, short rate)
+{
+    short step;
+
+    if (totalError != 0) {
+        if (*goal > 180)
+            *goal = *goal - 360;
+        if (*goal < -180)
+            *goal = *goal + 360;
+        step = MaxShort(1, (short)(abs(*rotation - *goal) *
+                                  rate / totalError));
+        if (*goal != *rotation || step < abs(*rotation)) {
+            if (*goal < 1) {
+                *rotation = (short)(*rotation +
+                    MinShort(
+                        MaxShort(
+                            (short)(MaxShort(*goal, (short)-step) -
+                                    *rotation),
+                            (short)-step),
+                        step));
+            } else {
+                *rotation = (short)(*rotation +
+                    MaxShort(
+                        MinShort(
+                            (short)(MinShort(*goal, step) - *rotation),
+                            step),
+                        (short)-step));
+            }
+        }
+    }
+    if (*goal != 0) {
+        if (*goal > 0)
+            *goal = MaxShort((short)(*goal - *rotation), 0);
+        else
+            *goal = MinShort((short)(*goal - *rotation), 0);
+    }
+    return 0;
+}
+
+/* Function start: 0x41E520 */
+void rotate_object_to_goal(short obj)
+{
+    ObjectTypeData *typeData;
+    short totalError;
+
+    typeData = &aObjectTypeData[aeObjectType[obj]];
+    if (aeSpecialManeuver[obj] ==
+            SPECIAL_MANEUVER_BLOWING_UP) {
+        if ((short)alert_flag(obj, 1) != 0) {
+            set_special(obj, SPECIAL_MANEUVER_NONE);
+        } else {
+            if (asObjectCounter[obj] == -1 &&
+                skill_check(obj, 7) != 0)
+                aeSpecialManeuver[obj] =
+                    SPECIAL_MANEUVER_NONE;
+            return;
+        }
+    }
+    totalError = (short)(abs(anObjectYawRotation[obj] -
+                            anYawGoal[obj]) +
+                         abs(anObjectPitchRotation[obj] -
+                             anPitchGoal[obj]) +
+                         abs(anObjectRollRotation[obj] -
+                             anRollGoal[obj]));
+    match_rotation_goal(&anObjectPitchRotation[obj],
+                        &anPitchGoal[obj], totalError,
+                        typeData->yawRate);
+    match_rotation_goal(&anObjectYawRotation[obj],
+                        &anYawGoal[obj], totalError,
+                        typeData->pitchRate);
+    match_rotation_goal(&anObjectRollRotation[obj],
+                        &anRollGoal[obj], totalError,
+                        typeData->rollRate);
+}
+
 /* Function start: 0x41E650 */
 unsigned int check_for_lost_control(short obj)
 {
@@ -56,6 +398,104 @@ unsigned int check_for_lost_control(short obj)
             set_special(obj, SPECIAL_MANEUVER_BLOWING_UP);
             asObjectCounter[obj] =
                 (short)(RandomBelowOrEqual(6) + 5);
+        }
+    }
+    return 0;
+}
+
+/* Function start: 0x41E710 */
+unsigned int celerate(short ship, int delta)
+{
+    int maximumSpeed = (int)asShipMaximumSpeed[ship] << 8;
+    int speed;
+
+    speed = anShipSpeed[ship] + delta;
+    anShipSpeed[ship] = speed;
+    if (speed > maximumSpeed)
+        anShipSpeed[ship] = maximumSpeed;
+    if (anShipSpeed[ship] < 0)
+        anShipSpeed[ship] = 0;
+    return 0;
+}
+
+/* Function start: 0x41E750 */
+unsigned int approach_speed(short ship, int targetSpeed)
+{
+    int delta;
+    int acceleration;
+
+    acceleration = GetShipAccelerationRate(ship);
+    delta = targetSpeed - anShipSpeed[ship];
+
+    if ((short)alert_flag(ship, 1))
+        acceleration += acceleration;
+    if ((delta < 0 ? -delta : delta) > acceleration)
+        delta = MultiplyFixed(SignFixed(delta), acceleration);
+    celerate(ship, delta);
+    return 0;
+}
+
+/* Function start: 0x41E7C0 */
+unsigned int steady_object(short ship)
+{
+    anYawGoal[ship] = 0;
+    anPitchGoal[ship] = 0;
+    anRollGoal[ship] = 0;
+    return 0;
+}
+
+/* Function start: 0x41E7F0 */
+short real_velocity(short obj)
+{
+    return FixedToShortSaturating(
+        Vector_magnitude(&aShipVelocity[obj]));
+}
+
+/* Function start: 0x41E820 */
+unsigned int fix_velocity(short obj)
+{
+    ScaleFixedVector(&aShipForwardVector[obj],
+                     anShipSpeed[obj],
+                     &aShipVelocity[obj]);
+    return 0;
+}
+
+/* Function start: 0x41E860 */
+unsigned int sort_viable_target_list(void)
+{
+    short nextOuter;
+    signed char target;
+    short distance;
+    short outer;
+    short count;
+    short inner;
+
+    if (cViableTargetCount > 1) {
+        count = (short)cViableTargetCount;
+        outer = 0;
+        if (count - 1 > 0) {
+            do {
+                nextOuter = outer + 1;
+                inner = nextOuter;
+                if (inner < count) {
+                    for (; inner < count; inner++) {
+                        distance =
+                            asViableTargetDistance[outer];
+                        if (asViableTargetDistance[inner] <
+                            distance) {
+                            asViableTargetDistance[outer] =
+                                asViableTargetDistance[inner];
+                            target = acViableTarget[outer];
+                            asViableTargetDistance[inner] =
+                                distance;
+                            acViableTarget[outer] =
+                                acViableTarget[inner];
+                            acViableTarget[inner] = target;
+                        }
+                    }
+                }
+                outer = nextOuter;
+            } while ((int)outer < count - 1);
         }
     }
     return 0;
@@ -1595,4 +2035,434 @@ int fire_weapon(short obj, short weapon)
         PlaySfxWaveFileByNumber(sound, projectile, 0);
     }
     return projectile;
+}
+
+/* Function start: 0x421100 */
+short find_weapon(short obj, enum ObjectType weaponType)
+{
+    short weapon;
+
+    for (weapon = 0;
+         weapon < (signed char)aShipWeapons[obj][0];
+         weapon++) {
+        ShipWeaponSlot *weaponSlot =
+            &((ShipWeaponSlot *)&aShipWeapons[obj][1])[weapon];
+
+        if (weaponSlot->type == weaponType)
+            return weapon;
+    }
+    return -1;
+}
+
+/* Function start: 0x421150 */
+int fire_missile(short ship)
+{
+    short weapon;
+    ShipWeaponSlot *slot;
+    signed char weaponCount;
+
+    weapon = 0;
+    slot = (ShipWeaponSlot *)&aShipWeapons[ship][1];
+    weaponCount = (signed char)aShipWeapons[ship][0];
+    if (weaponCount > 0) {
+        for (; weapon < weaponCount; weapon++, slot++) {
+            if (aObjectTypeData[slot->type].objectClass ==
+                    OBJECT_CLASS_MISSILE) {
+                if (ship != 0)
+                    return fire_weapon(ship, weapon);
+                if (slot->disabled == 0) {
+                    if ((slot->type == OBJECT_TYPE_HEAT_SEEKING_MISSILE ||
+                         slot->type == OBJECT_TYPE_IMAGE_RECOGNITION_MISSILE) &&
+                        nTargetLockCountdown != 0) {
+                        if (get_mode(0) == 1)
+                            ShowComponentHitHudMessage(
+                                szNeedLock,
+                                cYellowColour, 3);
+                        return -1;
+                    }
+                    return fire_weapon(0, weapon);
+                }
+            }
+        }
+    }
+    return -1;
+}
+
+/* Function start: 0x421220 */
+int fire_fixed_projectile_weapon(short obj)
+{
+    int loadoutOffset;
+    short weapon;
+    ShipWeaponSlot *slot;
+
+    loadoutOffset = obj * sizeof(aShipWeapons[0]);
+    weapon = 0;
+    slot = (ShipWeaponSlot *)((unsigned char *)aShipWeapons +
+                              loadoutOffset + 1);
+    if (*(signed char *)((unsigned char *)aShipWeapons +
+                         loadoutOffset) <= 0)
+        return;
+    do {
+        if (aObjectTypeData[slot->type].objectClass ==
+                OBJECT_CLASS_PROJECTILE &&
+            slot->disabled == 0) {
+            if (fire_weapon(obj, weapon) == -1)
+                return -1;
+        }
+        weapon++;
+        slot++;
+    } while ((short)*(signed char *)((unsigned char *)aShipWeapons +
+                                     loadoutOffset) > weapon);
+    /* The original leaves EAX incidental on successful and empty paths. */
+}
+
+/* Function start: 0x4212A0 */
+int drop_mine(short obj, signed char weapon, enum ObjectType type,
+              short lifetime)
+{
+    ShipWeaponSlot *weaponSlot;
+    short mine;
+
+    mine = new_object(type, obj);
+    if (mine == -1)
+        return -1;
+    copy_frame(obj, mine);
+    weaponSlot =
+        &((ShipWeaponSlot *)&aShipWeapons[obj][1])[weapon];
+    child_object(weaponSlot->hardpoint, mine, obj);
+    if (lifetime == -1)
+        lifetime = 20;
+    acObjectCollisionGraceTicks[mine] =
+        (signed char)lifetime;
+    asObjectCounter[mine] = (short)(signed char)lifetime;
+    if (obj == 0)
+        RemovePlayerReleaseWeapon(weapon);
+    else
+        remove_weapon(obj, weapon);
+    return mine;
+}
+
+/* Function start: 0x421350 */
+void fire_afterburner(short obj, short time)
+{
+    short timer;
+    long velocity;
+
+    velocity = Vector_magnitude(&aShipVelocity[obj]);
+    if (get_ship_max_velocity(obj) * 0x500L > velocity) {
+        set_special(obj, SPECIAL_MANEUVER_AFTERBURNER);
+        timer = 0;
+        if (aeSpecialManeuver[obj] ==
+            SPECIAL_MANEUVER_AFTERBURNER)
+            timer = time;
+        asShipAfterburnerTimer[obj] = timer;
+    }
+}
+
+/* Function start: 0x4213B0 */
+unsigned int fire_super_brake(short ship)
+{
+    asShipAfterburnerTimer[ship] = 10;
+    set_special(ship, SPECIAL_MANEUVER_SUPER_BRAKE);
+    return 0;
+}
+
+/* Function start: 0x4213D0 */
+short flip_angle(short ship, short angle)
+{
+    short flip;
+
+    flip = asObjectFlip[ship];
+    if ((flip & 0x10) != 0)
+        angle = (short)(180 - angle);
+    if ((flip & 0x20) != 0)
+        angle = (short)-angle;
+    angle += asObjectScreenAngle[ship];
+    angle %= 360;
+    if (angle < 0)
+        angle += 360;
+    return angle;
+}
+
+/* Function start: 0x421430 */
+unsigned int place_exhaust_on_ships(void)
+{
+    int shipIndex;
+    short *animation;
+    short frame;
+    short scale;
+    short object;
+    short ship;
+
+    ship = 0;
+    do {
+        shipIndex = (int)ship;
+        if (aeObjectClass[shipIndex] >= OBJECT_CLASS_MISSILE &&
+            anShipSpeed[shipIndex] != 0 &&
+            aeSpecialManeuver[shipIndex] !=
+                SPECIAL_MANEUVER_KILL_ENGINES &&
+            asObjectScreenX[shipIndex] != (short)0x8001) {
+            animation = (short *)aObjectTypeData[
+                aeObjectType[shipIndex]].animation;
+            if (animation != 0) {
+                object = animation[asObjectViewFrame[shipIndex]];
+                if (object != -1) {
+                    animation = (short *)((unsigned char *)animation + object);
+                    while (*animation != -1) {
+                        object = find_vacant_3d_object();
+                        if (object == -1)
+                            return 0;
+                        set_objects_data(object, OBJECT_TYPE_THRUSTERS,
+                                         ship);
+                        frame = *animation++;
+                        scale = *animation++;
+                        scale -= RandomInRange(0, 32);
+                        if (abShipExhaustHeat[shipIndex] == 0)
+                            scale = (short)(scale - 32);
+                        asObjectScale[object] = scale;
+                        asObjectDistance[object] = *animation++;
+                        asObjectScreenAngle[object] =
+                            flip_angle(ship, *animation++);
+                        asObjectFlip[object] = 0;
+                        asObjectScreenX[object] = *animation++;
+                        asObjectScreenY[object] = *animation++;
+                        if (aeSpecialManeuver[shipIndex] ==
+                                SPECIAL_MANEUVER_AFTERBURNER) {
+                            asObjectViewFrame[object] =
+                                (short)(frame * 3 +
+                                        RandomInRange(0, 2));
+                        } else {
+                            asObjectViewFrame[object] =
+                                (short)(frame * 2 + 12 +
+                                        RandomInRange(0, 1));
+                        }
+                    }
+                }
+            }
+        }
+        ship++;
+    } while (ship < 10);
+    /* The original leaves EAX incidental after scanning every ship. */
+}
+
+/* Function start: 0x4215E0 */
+unsigned int reposition_fixed_child_objects(void)
+{
+    int objectIndex;
+    int parentIndex;
+    int right;
+    int up;
+    long sine;
+    long cosine;
+    short parentScale;
+    short angle;
+    short parent;
+    short object;
+#ifdef SDL_PORT
+    int fixedCosine;
+    int fixedSine;
+    float attachmentRight;
+    float attachmentUp;
+    float cosineFloat;
+    float parentScreenX;
+    float parentScreenY;
+    float sineFloat;
+#endif
+
+    object = 10;
+    do {
+        objectIndex = (int)object;
+        if (aeObjectClass[objectIndex] ==
+                OBJECT_CLASS_FIXED_OBJECT) {
+            parent = (short)acObjectOwner[objectIndex];
+            if (aeObjectType[objectIndex] ==
+                    OBJECT_TYPE_TURRET ||
+                aeObjectType[objectIndex] ==
+                    OBJECT_TYPE_THRUSTERS) {
+                parentIndex = (int)parent;
+                angle = asObjectScreenAngle[parentIndex];
+                sine = SinFixed(angle);
+                cosine = CosFixed(angle);
+                parentScale =
+                    asObjectScreenScale[parentIndex];
+                right = (int)asObjectScreenX[objectIndex] *
+                        (unsigned short)parentScale;
+                asObjectDistance[objectIndex] +=
+                    asObjectDistance[parentIndex];
+                if ((asObjectFlip[parentIndex] & 0x10) != 0)
+                    right = -right;
+                up = (int)asObjectScreenY[objectIndex] *
+                     (unsigned short)parentScale;
+                if ((asObjectFlip[parentIndex] & 0x20) != 0)
+                    up = -up;
+                asObjectScreenX[objectIndex] = (short)(
+                    (MultiplyFixed(right, (int)cosine) -
+                     MultiplyFixed(up, (int)sine)) >> 8);
+                asObjectScreenY[objectIndex] = (short)(
+                    (MultiplyFixed(up, (int)cosine) +
+                     MultiplyFixed(right, (int)sine)) >> 8);
+                asObjectScreenX[objectIndex] +=
+                    asObjectScreenX[parentIndex];
+                asObjectScreenY[objectIndex] +=
+                    asObjectScreenY[parentIndex];
+#ifdef SDL_PORT
+                if (aeObjectType[objectIndex] ==
+                        OBJECT_TYPE_THRUSTERS) {
+                    /* Match the anchor to the enhanced parent transform. */
+                    parentScreenX =
+                        (float)nViewCenterX +
+                        (float)(((double)(nScreenWidth & ~1) *
+                                 0.5 *
+                                 aObjectViewPosition[parentIndex].x) /
+                                aObjectViewPosition[parentIndex].z);
+                    parentScreenY =
+                        (float)nViewCenterY +
+                        (float)(((double)(nScreenWidth & ~1) *
+                                 0.5 *
+                                 aObjectViewPosition[parentIndex].y) /
+                                aObjectViewPosition[parentIndex].z);
+                    GetRLETransformTrig((int)angle * 10,
+                                        &fixedCosine, &fixedSine);
+                    cosineFloat = (float)fixedCosine / 65536.0f;
+                    sineFloat = (float)fixedSine / 65536.0f;
+                    attachmentRight = (float)right / 256.0f;
+                    attachmentUp = (float)up / 256.0f;
+                    SdlSetThrusterScreenPosition(
+                        object,
+                        parentScreenX + attachmentRight * cosineFloat -
+                            attachmentUp * sineFloat,
+                        parentScreenY + attachmentRight * sineFloat +
+                            attachmentUp * cosineFloat);
+                }
+#endif
+            }
+            parentIndex = (int)parent;
+            asObjectScreenScale[objectIndex] = (short)(
+                (unsigned short)
+                    asObjectScreenScale[parentIndex] *
+                (unsigned short)
+                    asObjectScale[objectIndex] >> 8);
+        }
+        object++;
+    } while (object <= SPACE_LAST_MOVING_OBJECT);
+    return 0;
+}
+
+/* Function start: 0x421760 */
+unsigned int housekeep_power_plant_and_fuel(short ship)
+{
+    if (0 < anShipSpeed[ship])
+        drain_fuel(ship, 5);
+    return 0;
+}
+
+/* Function start: 0x421780 */
+unsigned int replenish_shields(short ship)
+{
+    signed char shield;
+
+    if (ship == 0 && acPlayerComponentDamage[1] > 0 &&
+        nSpaceFrame %
+            (acPlayerComponentDamage[1] + 1) != 0)
+        return 0;
+    shield = 0;
+    do {
+        short maximum;
+        short current;
+
+        maximum = aasShipMaximumShield[ship][shield];
+        if (aasShipShield[ship][shield] > maximum)
+            aasShipShield[ship][shield] = maximum;
+        current = aasShipShield[ship][shield];
+        if (current < maximum &&
+            nSpaceFrame %
+                aObjectTypeData[
+                    aeObjectType[ship]].animationDelay == 0) {
+            aasShipShield[ship][shield] =
+                (short)(current + 1);
+        }
+        shield++;
+    } while (shield <= 1);
+    return 0;
+}
+
+/* Function start: 0x421830 */
+unsigned int replenish_weapon_energy_bank(short ship)
+{
+    short energy;
+    short shieldEnergy;
+    short maximumShield;
+
+    if (ship == 0 && acPlayerComponentDamage[1] != 0 &&
+        (int)(unsigned short)RandomInRange(0, 4) <
+            acPlayerComponentDamage[1])
+        return 0;
+    energy = asShipWeaponEnergy[ship];
+    if (energy < 100) {
+        shieldEnergy = aasShipShield[ship][1];
+        maximumShield = aasShipMaximumShield[ship][1];
+        shieldEnergy =
+            (short)(shieldEnergy + aasShipShield[ship][0]);
+        maximumShield =
+            (short)(maximumShield +
+                    aasShipMaximumShield[ship][0]);
+        if (shieldEnergy < maximumShield) {
+            asShipWeaponEnergy[ship] =
+                MinShort((short)(energy + 1), 100);
+        } else {
+            asShipWeaponEnergy[ship] =
+                MinShort((short)(energy + 2), 100);
+        }
+    }
+    return 0;
+}
+
+/* Function start: 0x4218D0 */
+void accelerate(short amount)
+{
+    if (malf(0) != 0) {
+        amount = (short)(amount - 2);
+        if (nSpaceFrame % 3 == 0)
+            PlaySfxWaveFileByNumber(3, -1, 0);
+    }
+#ifdef SDL_PORT
+    /* Negative throttle steps are valid; shifting them is undefined in C. */
+    celerate(0, (int)amount * 256);
+#else
+    celerate(0, (int)amount << 8);
+#endif
+}
+
+/* Function start: 0x421920 */
+void your_afterburner(void)
+{
+    short time;
+    int frame;
+    int nextSoundFrame;
+
+    if (anShipFuel[0] <= 0)
+        return;
+    if (malf(0) != 0) {
+        PlaySfxWaveFileByNumber(3, -1, 0);
+        return;
+    }
+    if (aeSpecialManeuver[0] !=
+            SPECIAL_MANEUVER_AFTERBURNER) {
+        time = 8;
+    } else if (asShipAfterburnerTimer[0] == 0) {
+        time = 8;
+    } else {
+        if (asShipAfterburnerTimer[0] > 2)
+            return;
+        time = 2;
+    }
+    fire_afterburner(0, time);
+    frame = (int)nSpaceFrame;
+    nextSoundFrame = frame + 6;
+    if (nextSoundFrame < nAfterburnerSoundDeadline)
+        nAfterburnerSoundDeadline = 0;
+    if (nAfterburnerSoundDeadline < frame) {
+        nAfterburnerSoundDeadline = nextSoundFrame;
+        PlaySfxWaveFileByNumber(12, -1, 0);
+    }
 }
