@@ -445,6 +445,8 @@ extern "C" void ix_file_seek(FILE *file, long position); /* 0x004616DA */
 extern "C" long ix_file_tell(FILE *file);        /* 0x004616FC */
 extern "C" unsigned int ix_file_read(FILE *file, void *destination,
                                       unsigned int bytes); /* 0x00461718 */
+extern "C" unsigned int ix_file_write(FILE *file, const void *source,
+                                       unsigned int bytes); /* 0x0046173E */
 extern "C" long ix_file_size(FILE *file);        /* 0x00461764 */
 
 extern unsigned int *pStreamerPacketOffsets;

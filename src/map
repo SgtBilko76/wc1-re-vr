@@ -600,6 +600,7 @@
 0x0041D650 SortSignedByteValuesAscending
 0x0041D6C0 OpenDiskDataFile
 0x0041D760 PromptInsertNumberedDisk
+0x0041D9B0 SetDiskFileNumber
 0x0041DA00 ReturnConst0
 0x0041DA10 CheckEscaped
 0x0041DAA0 WaitForInputKey

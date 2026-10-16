@@ -701,7 +701,7 @@ unsigned short RewriteDiskFileGraphicsExtensions(short videoMode)
     }
 
     while (record->name[0] != '\0') {
-        extensionPosition = strrchr(record->name, '.');
+        extensionPosition = strchr(record->name, '.');
 #ifdef SDL_PORT
         if (extensionPosition != 0) {
             extensionPosition++;

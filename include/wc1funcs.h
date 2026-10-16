@@ -747,6 +747,7 @@ unsigned int SortSignedByteValuesAscending(signed char *values,
                                            short count);                /* 0x0041D650 */
 short OpenDiskDataFile(short logicalFile);                              /* 0x0041D6C0 */
 void __stdcall PromptInsertNumberedDisk(short logicalFile);             /* 0x0041D760 */
+unsigned int SetDiskFileNumber(char *fileName, short diskNumber);        /* 0x0041D9B0 */
 unsigned int GetZeroUnused(void);                                        /* 0x0041DA00 */
 short CheckEscaped(void);                                               /* 0x0041DA10 */
 short WaitForInputKey(void);                                         /* 0x0041DAA0 */

@@ -240,6 +240,13 @@ extern "C" unsigned int ix_file_read(FILE *file, void *destination,
     return fread(destination, 1, bytes, file);
 }
 
+/* Function start: 0x0046173E */
+extern "C" unsigned int ix_file_write(FILE *file, const void *source,
+                                       unsigned int bytes)
+{
+    return fwrite(source, 1, bytes, file);
+}
+
 /* Function start: 0x00461764 */
 extern "C" long ix_file_size(FILE *file)
 {

@@ -53,7 +53,10 @@ line. The reference build reproduces all of them:
 | LZO module after the second-pass `RtlUnwind` thunk, before the OLDNAMES members | Its own library, after `kernel32.lib` and before the other ix libraries |
 | `strupr`, `xtoa`, `flength`, `cprintf`, `chdir` are pulled on the second pass | The game calls the old names, resolved through OLDNAMES |
 
-With these choices every import table matches exactly.
+With these choices every import table matches exactly, and the CRT members
+pulled on the first pass sit at one constant offset from the original. The
+members after the LZO module sit 0x20 bytes closer, because the inline-assembly
+LZO decoder encodes shorter than the original's.
 
 ## Core placement windows
 

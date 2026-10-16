@@ -9,8 +9,6 @@
 #include "wc1.h"
 #include <stdarg.h>
 
-#pragma function(memcpy)
-
 /* Function start: 0x41C760 */
 DebugOverlayConsole::DebugOverlayConsole(HINSTANCE module,
                                          HWND targetWindow,
@@ -239,7 +237,7 @@ void DebugOverlayConsole::Clear(void)
 /* Function start: 0x41CC50 */
 void DebugOverlayConsole::Scroll(void)
 {
-    memcpy(textBuffer, textBuffer + columns, (rows - 1) * columns);
+    memmove(textBuffer, textBuffer + columns, (rows - 1) * columns);
     cursorRow = rows - 1;
     memset(textBuffer + cursorRow * columns, ' ', columns);
     memset(dirtyLines, 1, rows);

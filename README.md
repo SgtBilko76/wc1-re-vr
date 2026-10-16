@@ -15,7 +15,7 @@ GitHub Sponsors](https://github.com/sponsors/neuromancer).
 
 ## Status
 
-All 1,472 identified functions are accounted for: 1,470 have source
+All 1,474 identified functions are accounted for: 1,472 have source
 implementations and the remaining two are compiler-generated jump thunks that
 must not be recreated manually.
 

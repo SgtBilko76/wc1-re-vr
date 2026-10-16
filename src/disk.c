@@ -385,6 +385,23 @@ void __stdcall PromptInsertNumberedDisk(short logicalFile)
     pCurrentTextContext = savedTextContext;
 }
 
+/* Function start: 0x41D9B0 */
+unsigned int SetDiskFileNumber(char *fileName, short diskNumber)
+{
+    char *number;
+
+    number = strchr(fileName, '.');
+    if (number++ == 0) {
+        *fileName = *apszGraphicsModeNames[bSlowSceneAnimation];
+        number = fileName + 1;
+    } else {
+        number++;
+    }
+    number[2] = '\0';
+    ConvertChar_Int(number, diskNumber, 2);
+    return 0;
+}
+
 /* Function start: 0x41DA00 */
 unsigned int GetZeroUnused(void)
 {

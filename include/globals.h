@@ -219,6 +219,7 @@ extern HHOOK hDebugKeyboardHook; /* 0x00469650 */
 extern const char szDebugOverlayFontName[8]; /* 0x00469654 */
 extern const char szDebugOverlaySpinner[5]; /* 0x0046965c */
 extern const char szDebugOverlayNewline[4]; /* 0x00469664 */
+extern const char *apszGraphicsModeNames[4]; /* 0x00469668 */
 extern char szDiskMarkerFile[9]; /* 0x00469688 */
 extern short nDiskPromptBorderColour; /* 0x00469694 */
 extern short nKeyboardPointerStep; /* 0x004696a4 */

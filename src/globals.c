@@ -428,6 +428,12 @@ HHOOK hDebugKeyboardHook; /* 0x00469650 */
 const char szDebugOverlayFontName[8] = "Courier"; /* 0x00469654 */
 const char szDebugOverlaySpinner[5] = "-\\|/"; /* 0x0046965c */
 const char szDebugOverlayNewline[4] = "\n"; /* 0x00469664 */
+const char *apszGraphicsModeNames[4] = { /* 0x00469668 */
+    "vga",
+    "ega",
+    "cga",
+    "tga",
+};
 char szDiskMarkerFile[9] = "DISK.000"; /* 0x00469688 */
 short nDiskPromptBorderColour = 0x50; /* 0x00469694 */
 short nKeyboardPointerStep = 4; /* 0x004696a4 */
