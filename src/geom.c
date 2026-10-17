@@ -1386,12 +1386,12 @@ void get_right_shape(short obj, FixedVector *direction)
     FixedVector eyeUp;
     FixedVector projectedUp;
     SphericalVector spherical;
-    enum ObjectClass objectClass;
-    enum ObjectType type;
+    short objectClass;
+    short type;
     short pitchBand;
     short yawSector;
     short directionIndex;
-    short frame;
+    signed char frame;
     short remainder;
     short angle;
     short slot;
@@ -1408,44 +1408,47 @@ void get_right_shape(short obj, FixedVector *direction)
     rectangular_to_spherical(&objectForward, &spherical);
     pitchBand = (short)(spherical.pitch / 30 + 3);
     remainder = (short)(spherical.pitch % 30);
-    if (remainder >= 16) {
-        pitchBand++;
-        if (pitchBand > 5)
-            pitchBand = 6;
+    if (remainder > 15) {
+        pitchBand = (short)(pitchBand + 1 < 6 ? pitchBand + 1 : 6);
     } else if (remainder < -15) {
-        pitchBand--;
-        if (pitchBand < 1)
-            pitchBand = 0;
+        pitchBand = (short)(pitchBand - 1 > 0 ? pitchBand - 1 : 0);
     }
     yawSector = (short)((12 - spherical.yaw / 30) % 12);
     remainder = (short)(spherical.yaw % 30);
-    if (remainder >= 16)
+    if (remainder > 15)
         yawSector = (short)((yawSector + 11) % 12);
     else if (remainder < -15)
         yawSector = (short)((yawSector + 1) % 12);
-    if (yawSector < 0)
-        yawSector += 12;
-    if (pitchBand == 0)
+    /* The original leaves directionIndex unset outside the seven pitch bands. */
+    switch (pitchBand) {
+    case 0:
         directionIndex = 0;
-    else if (pitchBand == 6)
-        directionIndex = 61;
-    else
+        break;
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
         directionIndex = (short)(pitchBand * 12 + yawSector - 11);
+        break;
+    case 6:
+        directionIndex = 61;
+        break;
+    }
 
+    projectedUp.z = 0;
     projectedUp.x = dot_product(
         &eyeUp, &aDirectionViewRightVector[directionIndex]);
     projectedUp.y = dot_product(
         &eyeUp, &aDirectionViewUpVector[directionIndex]);
-    projectedUp.z = 0;
     NormalizeFixedVector(&projectedUp);
     angle = (short)ArcCos(projectedUp.y);
     if (projectedUp.x >= 0)
         angle = (short)(360 - angle);
 
-    objectClass = aeObjectClass[obj];
-    type = aeObjectType[obj];
+    objectClass = (short)aeObjectClass[obj];
     if (objectClass == OBJECT_CLASS_MISSILE ||
-        type == OBJECT_TYPE_TURRET) {
+        (type = (short)aeObjectType[obj]) == OBJECT_TYPE_TURRET) {
         directionIndex += DIRECTION_VIEW_COUNT;
     } else if (type == OBJECT_TYPE_KILRATHI_BASE) {
         directionIndex += DIRECTION_VIEW_COUNT * 2;
@@ -1474,7 +1477,7 @@ void get_right_shape(short obj, FixedVector *direction)
         if (asCapitalShipViewFrame[obj] != frame) {
             for (slot = 1; slot < 3; slot++) {
                 if (aObjectResourceSlots[slot].type ==
-                    (signed char)type) {
+                    type) {
                     break;
                 }
             }
@@ -1485,9 +1488,9 @@ void get_right_shape(short obj, FixedVector *direction)
                     (unsigned short)apObjectShape[obj]) == 0) {
                 GetScreenUpdateFlag();
             }
-            if (aapPacketReferences[slot][frame] != 0) {
+            if (aapPacketReferences[slot][asCapitalShipViewFrame[obj]] != 0) {
                 apObjectShape[obj] =
-                    aapPacketReferences[slot][frame];
+                    aapPacketReferences[slot][asCapitalShipViewFrame[obj]];
             } else {
                 if (stSpaceBuffer.pixels != 0)
                     GetScreenUpdateFlag();

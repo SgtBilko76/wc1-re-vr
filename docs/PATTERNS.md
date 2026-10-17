@@ -104,6 +104,17 @@ for similarity decisions.
   the length local leaves this function's instructions unchanged but alters
   register allocation in later mission functions. Check the entire unit
   when changing locals, not just the edited function.
+- `get_right_shape` retains object class and type as short values and the
+  selected frame as a signed byte. Read the type only in the non-missile
+  branch. Its pitch rounding clamps the promoted increment or decrement
+  before narrowing back to short, and tests remainders against 15. Direction
+  selection uses seven switch cases; the out-of-range path leaves its local
+  unset, as the original stack load shows. Do not add a default direction or
+  an extra yaw-sector correction. Zero the projected vector's Z component
+  before the dot products, and reload the saved capital-ship frame after the
+  screen update before indexing packet references. These choices reproduce
+  the original 84-byte stack frame and complete 960-byte function span,
+  including four relocated switch targets, seven selector bytes, and padding.
 - `object_collision` reloads ownership, object classes, and its own mass
   after calls; caching their values across those calls removes original reads.
   Five vector workspaces suffice: one holds the projectile force, separation,
