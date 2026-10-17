@@ -9,6 +9,8 @@
  */
 #include "wc1.h"
 
+short nAutopilotFormationShipCount = 0; /* 0x00465544 */
+
 /* Function start: 0x403E50 */
 void visit_the_cinema(int view, int obj, short frames)
 {
@@ -319,4 +321,36 @@ void auto_pilot_sequence(void)
                 nViewCenterY);
         }
     }
+}
+
+/* Function start: 0x404610 */
+unsigned short __stdcall LoadPaletteTripletsFile(const char *path)
+{
+    unsigned char *palette;
+    FILE *file;
+#ifdef SDL_PORT
+    char resolvedPath[PATH_MAX];
+#endif
+
+    palette = AllocateTaggedMemory(0x300, 0);
+    if (palette == 0)
+        return 0;
+#ifdef SDL_PORT
+    if (SdlResolvePath(path, resolvedPath, sizeof(resolvedPath)))
+        file = fopen(resolvedPath, "rb");
+    else
+        file = 0;
+#else
+    file = fopen(path, "rb");
+#endif
+    if (file != 0) {
+        fseek(file, 0x30, SEEK_SET);
+        fread(palette, 0x300, 1, file);
+        SetWholePaletteFromTriplets(palette);
+        fclose(file);
+        ReleasePacketHandle(palette);
+        return 1;
+    }
+    ReleasePacketHandle(palette);
+    return 0;
 }

@@ -8,6 +8,8 @@
  */
 #include "wc1.h"
 
+short nPacketError = 0; /* 0x00465460 */
+
 /* Function start: 0x403500 */
 void __stdcall CloseDataFile(unsigned short fd)
 {

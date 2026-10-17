@@ -176,36 +176,6 @@ unsigned int bF1KeyLatch; /* 0x004650ac */
 GuardedAllocation *pGuardedAllocationHead; /* 0x004650b0 */
 char szJoystickDevCapsFailure[26] = /* 0x004652dc */
     "Joystick: !joyGetDevCaps\n";
-short nPacketError; /* 0x00465460 */
-short nAutopilotFormationShipCount; /* 0x00465544 */
-short asEjectionPrimaryFrames[8] = { /* 0x00465550 */
-    0, 1, 1, 3, 3, 0, 0, 0
-};
-short asEjectionSecondaryFrames[8] = { /* 0x00465560 */
-    -1, -1, 2, -1, 4, 0, 0, 0
-};
-short asEjectionViewScript[12] = { /* 0x00465570 */
-    3, 11, 14, 70, 3, 10, 14, 80, 3, 4, -1, 0
-};
-const char *pStrandedMessage = /* 0x00465588 */
-    szStrandedMessage;
-char szStrandedMessage[72] = /* 0x0046558c */
-    "\nWith your carrier\ndestroyed, you drift\nendlessly through\n"
-    "the void...";
-char szViewTemplates[16] = "View Templates"; /* 0x004655d4 */
-char szStrandedTheEnd[12] = "THE END"; /* 0x004655e4 */
-short asMouthFramesByPhoneme[26] = { /* 0x004655f0 */
-    0, 5, 4, 4, 1, 8, 4, 7, 0, 4, 4, 7, 5,
-    4, 2, 5, 6, 4, 4, 4, 3, 4, 6, 4, 4, 4
-};
-char szConversationIntegerFormat[4] = "%d"; /* 0x00465628 */
-char szConversationIntegerFormatAlt[4] = "%d"; /* 0x0046562c */
-char szCampaignDateFormat[12] = "%03d.%03d"; /* 0x00465630 */
-char szSavedCampaignDateFormat[12] = "%03d.%03d"; /* 0x0046563c */
-char szCampaignTimeFormat[12] = "%02d:%02d"; /* 0x00465648 */
-char szConversationTextFormat[12] = "%X%Y%F%s%P"; /* 0x00465654 */
-char szBriefingMapTextFormat[12] = "%X%Y%F%s%P"; /* 0x00465660 */
-char szCloseLookTextFormat[12] = "%X%Y%F%s%P"; /* 0x0046566c */
 signed char cScrambleLeftWalkerFrame = 7; /* 0x00465768 */
 signed char cScrambleRightWalkerFrame = 10; /* 0x0046576c */
 signed char acScrambleWalkerOverlayFrames[8] = { /* 0x00465770 */

@@ -44,14 +44,6 @@ extern char szStrandedMessage[72]; /* 0x0046558c */
 extern char szViewTemplates[16]; /* 0x004655d4 */
 extern char szStrandedTheEnd[12]; /* 0x004655e4 */
 extern short asMouthFramesByPhoneme[26]; /* 0x004655f0 */
-extern char szConversationIntegerFormat[4]; /* 0x00465628 */
-extern char szConversationIntegerFormatAlt[4]; /* 0x0046562c */
-extern char szCampaignDateFormat[12]; /* 0x00465630 */
-extern char szSavedCampaignDateFormat[12]; /* 0x0046563c */
-extern char szCampaignTimeFormat[12]; /* 0x00465648 */
-extern char szConversationTextFormat[12]; /* 0x00465654 */
-extern char szBriefingMapTextFormat[12]; /* 0x00465660 */
-extern char szCloseLookTextFormat[12]; /* 0x0046566c */
 extern signed char cScrambleLeftWalkerFrame; /* 0x00465768 */
 extern signed char cScrambleRightWalkerFrame; /* 0x0046576c */
 extern signed char acScrambleWalkerOverlayFrames[8]; /* 0x00465770 */

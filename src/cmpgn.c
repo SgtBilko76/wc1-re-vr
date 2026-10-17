@@ -7,6 +7,27 @@
  */
 #include "wc1.h"
 
+short asEjectionPrimaryFrames[8] = { /* 0x00465550 */
+    0, 1, 1, 3, 3, 0, 0, 0
+};
+short asEjectionSecondaryFrames[8] = { /* 0x00465560 */
+    -1, -1, 2, -1, 4, 0, 0, 0
+};
+short asEjectionViewScript[12] = { /* 0x00465570 */
+    3, 11, 14, 70, 3, 10, 14, 80, 3, 4, -1, 0
+};
+const char *pStrandedMessage = /* 0x00465588 */
+    szStrandedMessage;
+char szStrandedMessage[72] = /* 0x0046558c */
+    "\nWith your carrier\ndestroyed, you drift\nendlessly through\n"
+    "the void...";
+char szViewTemplates[16] = "View Templates"; /* 0x004655d4 */
+char szStrandedTheEnd[12] = "THE END"; /* 0x004655e4 */
+short asMouthFramesByPhoneme[26] = { /* 0x004655f0 */
+    0, 5, 4, 4, 1, 8, 4, 7, 0, 4, 4, 7, 5,
+    4, 2, 5, 6, 4, 4, 4, 3, 4, 6, 4, 4, 4
+};
+
 #pragma pack(push, 1)
 typedef struct MissionHeaderDisk {
     short entryNavPoint;
@@ -64,38 +85,6 @@ typedef char MissionObjectiveDisk_size_must_be_0x40[
     sizeof(MissionObjectiveDisk) == 0x40 ? 1 : -1];
 typedef char MissionShipDisk_size_must_be_0x2a[
     sizeof(MissionShipDisk) == 0x2a ? 1 : -1];
-
-/* Function start: 0x404610 */
-unsigned short __stdcall LoadPaletteTripletsFile(const char *path)
-{
-    unsigned char *palette;
-    FILE *file;
-#ifdef SDL_PORT
-    char resolvedPath[PATH_MAX];
-#endif
-
-    palette = AllocateTaggedMemory(0x300, 0);
-    if (palette == 0)
-        return 0;
-#ifdef SDL_PORT
-    if (SdlResolvePath(path, resolvedPath, sizeof(resolvedPath)))
-        file = fopen(resolvedPath, "rb");
-    else
-        file = 0;
-#else
-    file = fopen(path, "rb");
-#endif
-    if (file != 0) {
-        fseek(file, 0x30, SEEK_SET);
-        fread(palette, 0x300, 1, file);
-        SetWholePaletteFromTriplets(palette);
-        fclose(file);
-        ReleasePacketHandle(palette);
-        return 1;
-    }
-    ReleasePacketHandle(palette);
-    return 0;
-}
 
 /* Function start: 0x4046A0 */
 unsigned int ejection_sequence(void)
@@ -407,27 +396,27 @@ char *AddPCName(const char *text)
             DosStrcat(szTextScratchBuffer,
                       stCampaignState.currentPilot->callsign);
             break;
-        case 'D':
-            sprintf(formatted, szCampaignDateFormat,
-                    pCurrentCampaignDate->year,
-                    pCurrentCampaignDate->day);
-            DosStrcat(szTextScratchBuffer, formatted);
-            break;
-        case 'E':
-            sprintf(formatted, szSavedCampaignDateFormat,
-                    stSavedCampaignDate.year,
-                    stSavedCampaignDate.day);
-            DosStrcat(szTextScratchBuffer, formatted);
-            break;
         case 'K':
-            sprintf(formatted, szConversationIntegerFormat,
+            sprintf(formatted, "%d",
                     nPlayerKillCount);
             DosStrcat(szTextScratchBuffer, formatted);
             break;
         case 'L':
             sprintf(formatted,
-                    szConversationIntegerFormatAlt,
+                    "%d",
                     nWingmanKillCount);
+            DosStrcat(szTextScratchBuffer, formatted);
+            break;
+        case 'D':
+            sprintf(formatted, "%03d.%03d",
+                    pCurrentCampaignDate->year,
+                    pCurrentCampaignDate->day);
+            DosStrcat(szTextScratchBuffer, formatted);
+            break;
+        case 'E':
+            sprintf(formatted, "%03d.%03d",
+                    stSavedCampaignDate.year,
+                    stSavedCampaignDate.day);
             DosStrcat(szTextScratchBuffer, formatted);
             break;
         case 'N':
@@ -450,7 +439,7 @@ char *AddPCName(const char *text)
                       (char *)abSeriesAuxData);
             break;
         case 'T':
-            sprintf(formatted, szCampaignTimeFormat,
+            sprintf(formatted, "%02d:%02d",
                     (int)((signed char *)pElapsedCampaignDate)[0],
                     (int)((signed char *)pElapsedCampaignDate)[1]);
             DosStrcat(szTextScratchBuffer, formatted);
@@ -553,7 +542,7 @@ unsigned int LongTalk(unsigned char *talker, char *text,
     mouthFrame = 0;
     faceCountdown = 0;
     mouthCountdown = 0;
-    FormatTextBufferFromStart(szConversationTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
@@ -960,7 +949,7 @@ unsigned int UpdateMap(char *text, short duration)
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szBriefingMapTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
@@ -993,7 +982,7 @@ unsigned int CloseLook(unsigned char *shape, short shot,
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szCloseLookTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
