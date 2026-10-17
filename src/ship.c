@@ -234,7 +234,7 @@ void set_objects_data(short obj, enum ObjectType type, short owner)
         apObjectShape[obj] = typeData->shapeSet;
     init_ijk(obj);
     asObjectCollisionRadius[obj] = typeData->collisionRadius;
-    asObjectRadarRadius[obj] = typeData->radarRadius;
+    awObjectMass[obj] = typeData->mass;
     asObjectScale[obj] = typeData->scale;
     asObjectAfterburnerVelocity[obj] =
         typeData->afterburnerVelocity;

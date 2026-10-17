@@ -755,7 +755,7 @@ extern signed char acViableTarget[16]; /* 0x0059c920 */
 extern short asActionCount[10]; /* 0x0059c930 */
 extern FixedVector vPreviousStarFieldMotion; /* 0x0059c900 */
 extern short nHazardFieldCount; /* 0x0059c90c */
-extern short asObjectRadarRadius[SPACE_OBJECT_COUNT]; /* 0x0059c790 */
+extern unsigned short awObjectMass[SPACE_OBJECT_COUNT]; /* 0x0059c790 */
 extern short asObjectAfterburnerVelocity[SPACE_OBJECT_COUNT]; /* 0x0059c9d0 */
 extern short asObjectScreenScale[SPACE_OBJECT_COUNT]; /* 0x0059c950 */
 extern CampaignState stCampaignState; /* 0x0059ca50 */

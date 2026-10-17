@@ -1078,10 +1078,7 @@ void apply_force_to_objects_center(FixedVector *force, short obj)
 {
     FixedVector acceleration;
 
-    divide_vector(force,
-                  (unsigned short)asObjectRadarRadius[obj]
-                      << 8,
-                  &acceleration);
+    divide_vector(force, awObjectMass[obj] << 8, &acceleration);
     AddFixedVectors(&aShipVelocity[obj], &acceleration,
                     &aShipVelocity[obj]);
 }
@@ -1098,7 +1095,7 @@ void apply_force_to_object(FixedVector *point, FixedVector *force,
 
     transform_to_objects_frame(force, &localForce, obj);
     transform_to_objects_frame(point, &localPoint, obj);
-    mass = (unsigned short)asObjectRadarRadius[obj];
+    mass = awObjectMass[obj];
     rotationalMass = DivideFixed(
         (unsigned short)asObjectAfterburnerVelocity[obj]
             << 8,

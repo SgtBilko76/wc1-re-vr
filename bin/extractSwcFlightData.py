@@ -90,7 +90,7 @@ def generate(code, data, negative):
     ]
     records = []
     fields = {
-        "objectClass": 4, "collisionRadius": 8, "radarRadius": 12,
+        "objectClass": 4, "collisionRadius": 8, "mass": 12,
         "scale": 16, "animationDelay": 20, "damageCapacity": 28,
         "explosionDamage": 32, "maximumVelocity": 36, "cruiseVelocity": 40,
         "acceleration": 48, "pitchRate": 52, "yawRate": 56, "rollRate": 60,
@@ -118,7 +118,9 @@ def generate(code, data, negative):
                          ", ".join(hex(v) for v in animation) + "};")
         values = {field: number(offset) for field, offset in fields.items()}
         for field, value in values.items():
-            if field not in ("objectClass", "acceleration") and not -32768 <= value <= 32767:
+            if field == "mass" and not 0 <= value <= 65535:
+                raise ValueError(f"Object {index} {field} exceeds shared storage")
+            if field not in ("objectClass", "acceleration", "mass") and not -32768 <= value <= 32767:
                 raise ValueError(f"Object {index} {field} exceeds shared storage")
         records.append((name, values, number(24), animation_at, record))
     lines.append("\nstatic const ObjectTypeData swcObjectDefinitions[OBJECT_TYPE_COUNT] = {")

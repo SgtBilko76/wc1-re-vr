@@ -1481,233 +1481,218 @@ int object_collision(short obj)
 {
     SphericalVector impact;
     FixedVector relativeVelocity;
-    FixedVector separation;
-    FixedVector objectComponent;
+    FixedVector response;
     FixedVector partnerComponent;
     FixedVector componentDelta;
     FixedVector tangent;
-    FixedVector partnerTangent;
-    FixedVector impulse;
-    FixedVector force;
-    enum ObjectClass partnerClass;
     int separationScale;
     int responseScale;
     int forceMagnitude;
     int totalMass;
-    int objectMass;
-    int partnerMass;
-    int collisionSpeed;
     short partner;
+    short projectileDamage;
     short damage;
     short savedScale;
-    signed char owner;
 
     partner = check_for_collision(obj);
-    if (partner == -1) {
-        acLastCollisionObject[obj] = -1;
-        return 0;
-    }
-    if (bPlayerCollisionResponse == 0 && (obj == 0 || partner == 0))
-        return 0;
+    if (partner != -1) {
+        if (bPlayerCollisionResponse == 0 && (partner == 0 || obj == 0))
+            return 0;
 
-    NormalizeFixedVector(&vCollisionDelta);
-    ComputeVectorDelta(&aShipVelocity[partner],
-                       &aShipVelocity[obj],
-                       &relativeVelocity);
-    NormalizeFixedVector(&relativeVelocity);
-    owner = acObjectOwner[obj];
-    switch (aeObjectClass[obj]) {
-    case OBJECT_CLASS_PROJECTILE:
-        if (owner == partner)
-            break;
-        partnerClass = aeObjectClass[partner];
-        if (partnerClass > OBJECT_CLASS_MINE) {
-            if (partner == 0) {
-                rectangular_to_spherical(
-                    &aObjectViewPosition[obj], &impact);
-                if (abs(impact.pitch) < 45) {
-                    if (abs(impact.yaw) < 45)
-                        aPaletteFadeEntries[1][0] = 0x38;
-                    else if (abs(impact.yaw) < 136) {
-                        if (impact.yaw < 0)
-                            aPaletteFadeEntries[3][0] = 0x38;
-                        else
-                            aPaletteFadeEntries[5][0] = 0x38;
-                    }
+        NormalizeFixedVector(&vCollisionDelta);
+        ComputeVectorDelta(&aShipVelocity[partner],
+                           &aShipVelocity[obj],
+                           &relativeVelocity);
+        NormalizeFixedVector(&relativeVelocity);
+        switch (aeObjectClass[obj]) {
+        case OBJECT_CLASS_PROJECTILE:
+            if (acObjectOwner[obj] == partner)
+                break;
+            if (aeObjectClass[partner] >= OBJECT_CLASS_MISSILE) {
+                if (partner == 0) {
+                    rectangular_to_spherical(
+                        &aObjectViewPosition[obj], &impact);
+                    if (abs(impact.pitch) < 45) {
+                        if (abs(impact.yaw) < 45)
+                            aPaletteFadeEntries[1][0] = 0x38;
+                        else if (abs(impact.yaw) > 135)
+                            aPaletteFadeEntries[0][0] = 0x38;
+                        else {
+                            if (impact.yaw < 0)
+                                aPaletteFadeEntries[3][0] = 0x38;
+                            else
+                                aPaletteFadeEntries[5][0] = 0x38;
+                        }
+                    } else if (impact.pitch < 0)
+                        aPaletteFadeEntries[2][0] = 0x38;
                     else
-                        aPaletteFadeEntries[0][0] = 0x38;
-                } else if (impact.pitch < 0)
-                    aPaletteFadeEntries[2][0] = 0x38;
-                else
-                    aPaletteFadeEntries[4][0] = 0x38;
+                        aPaletteFadeEntries[4][0] = 0x38;
+                }
+                acLastAttacker[partner] = acObjectOwner[obj];
+                acShipAiCooldown[partner] += 4;
+                projectileDamage = (short)(asShipAccumulatedDamage[obj] -
+                                           asObjectCounter[obj] / 2);
+                response = aShipVelocity[obj];
+                NormalizeFixedVector(&response);
+                ScaleFixedVector(&response, (int)projectileDamage << 8,
+                                 &response);
+                negate_vector(&vCollisionDelta);
+                apply_force_to_object(&vCollisionDelta,
+                                      &response, partner);
+                inflict_damage(obj, partner, projectileDamage,
+                               &relativeVelocity);
             }
-            acLastAttacker[partner] = owner;
-            acShipAiCooldown[partner] += 4;
-            damage = (short)(asShipAccumulatedDamage[obj] -
-                             asObjectCounter[obj] / 2);
-            force = aShipVelocity[obj];
-            NormalizeFixedVector(&force);
-            ScaleFixedVector(&force, (int)damage << 8, &force);
-            negate_vector(&vCollisionDelta);
-            apply_force_to_object(&vCollisionDelta,
-                                  &force, partner);
-            inflict_damage(obj, partner, damage, &relativeVelocity);
-        }
-        savedScale = asObjectScale[obj];
-        set_objects_data(obj, OBJECT_TYPE_LASER_SPARK, owner);
-        asObjectScale[obj] = (short)(savedScale * 2);
-        aShipVelocity[obj] =
-            aShipVelocity[partner];
-        if (partnerClass == OBJECT_CLASS_ASTEROID)
-            hit_asteroid(partner, 3);
-        return 0;
+            savedScale = asObjectScale[obj];
+            set_objects_data(obj, OBJECT_TYPE_LASER_SPARK,
+                             acObjectOwner[obj]);
+            asObjectScale[obj] = (short)(savedScale * 2);
+            aShipVelocity[obj] =
+                aShipVelocity[partner];
+            if (aeObjectClass[partner] == OBJECT_CLASS_ASTEROID) {
+                hit_asteroid(partner, 3);
+                return 0;
+            }
+            break;
 
-    case OBJECT_CLASS_ASTEROID:
-        if (aeObjectClass[partner] ==
-                OBJECT_CLASS_ASTEROID) {
-            if (asObjectScreenX[obj] == (short)0x8001) {
+        case OBJECT_CLASS_ASTEROID:
+            if (aeObjectClass[partner] ==
+                    OBJECT_CLASS_ASTEROID) {
+                if (asObjectScreenX[obj] == (short)0x8001) {
+                    remove_object(obj);
+                    return 0;
+                }
+                hit_asteroid(obj, 0);
+                return 0;
+            }
+            break;
+
+        case OBJECT_CLASS_MINE:
+            if (acObjectOwner[obj] == partner ||
+                acObjectCollisionGraceTicks[obj] > 0)
+                return 0;
+            if (easy2see(obj) == 0 &&
+                (nCameraViewMode == 0 || partner != 0)) {
                 remove_object(obj);
                 return 0;
             }
-            hit_asteroid(obj, 0);
-            return 0;
-        }
-        break;
-
-    case OBJECT_CLASS_MINE:
-        if (owner == partner ||
-            acObjectCollisionGraceTicks[obj] > 0)
-            return 0;
-        if (easy2see(obj) == 0 &&
-            (nCameraViewMode == 0 || partner != 0)) {
-            remove_object(obj);
-            return 0;
-        }
-        explode(obj, obj);
-        return 0;
-
-    case OBJECT_CLASS_MISSILE:
-        if (owner != partner ||
-            acObjectCollisionGraceTicks[obj] < 1) {
-            ScaleFixedVector(&aShipVelocity[obj],
-                (unsigned short)asObjectRadarRadius[obj]
-                    << 8, &force);
-            negate_vector(&vCollisionDelta);
-            apply_force_to_object(&vCollisionDelta,
-                                  &force, partner);
             explode(obj, obj);
-            zero_vector(&aShipVelocity[obj]);
             return 0;
-        }
-        break;
 
-    case OBJECT_CLASS_SHIP:
-    case OBJECT_CLASS_CAPITAL_SHIP:
-        partnerClass = aeObjectClass[partner];
-        if ((partnerClass == OBJECT_CLASS_ASTEROID ||
-             (partnerClass == OBJECT_CLASS_MINE &&
-              acObjectOwner[partner] == -1)) &&
-            easy2see(partner) == 0 &&
-            (nCameraViewMode == 0 || obj != 0)) {
-            remove_object(partner);
-        }
-        partnerClass = aeObjectClass[partner];
-        if ((partnerClass == OBJECT_CLASS_ASTEROID ||
-             partnerClass == OBJECT_CLASS_SHIP ||
-             partnerClass == OBJECT_CLASS_CAPITAL_SHIP) &&
-            acLastCollisionObject[obj] != partner) {
-            PlaySfxWaveFileByNumber(0x1c, obj, 0);
-            acLastCollisionObject[obj] =
-                (signed char)partner;
-            acLastCollisionObject[partner] =
-                (signed char)obj;
-
-            separationScale = DivideFixed(
-                (asObjectCollisionRadius[obj] +
-                 asObjectCollisionRadius[partner]) << 8,
-                Vector_magnitude(&vCollisionDelta));
-            separationScale = MinInt(separationScale, 0x7d000);
-            ScaleFixedVector(&vCollisionDelta,
-                             separationScale, &separation);
-            AddFixedVectors(&aShipPosition[obj], &separation,
-                            &aShipPosition[partner]);
-
-            vector_component_in_dir(
-                &aShipVelocity[obj],
-                &vCollisionDelta, &objectComponent);
-            SubtractFixedVectors(&aShipVelocity[obj],
-                                 &objectComponent, &tangent);
-            vector_component_in_dir(
-                &aShipVelocity[partner],
-                &vCollisionDelta, &partnerComponent);
-            ComputeVectorDelta(&partnerComponent, &objectComponent,
-                               &componentDelta);
-            collisionSpeed =
-                (short)((unsigned int)Vector_magnitude(&componentDelta) >> 8);
-            damage = (short)((collisionSpeed * collisionSpeed) >> 1);
-#ifdef SDL_PORT
-            if (obj == 0 || partner == 0)
-                SdlQueueJoystickCollisionRumble(collisionSpeed);
-#endif
-
-            objectMass = (unsigned short)
-                asObjectRadarRadius[obj];
-            partnerMass = (unsigned short)
-                asObjectRadarRadius[partner];
-            totalMass = objectMass + partnerMass;
-            responseScale = ((objectMass - partnerMass) * 256) /
-                            totalMass;
-            responseScale = MaxInt(0x40, responseScale);
-            responseScale = MinInt(responseScale, 0x400);
-            ScaleFixedVector(&componentDelta, responseScale, &impulse);
-            AddFixedVectors(&impulse, &partnerComponent, &impulse);
-            forceMagnitude = MultiplyFixed(
-                objectMass * 0x600,
-                Vector_magnitude(&impulse)) + 0xa00;
-            AddFixedVectors(&impulse, &aShipVelocity[obj],
-                            &aShipVelocity[obj]);
-
-            if (aeObjectClass[obj] == OBJECT_CLASS_SHIP) {
-                NormalizeFixedVector(&tangent);
-                negate_vector(&tangent);
-                ScaleFixedVector(&tangent, forceMagnitude, &tangent);
-                rotational_acceleration(&vCollisionDelta,
-                                        &tangent, obj);
-                negate_vector(&relativeVelocity);
-                inflict_damage(partner, obj, damage, &relativeVelocity);
-                negate_vector(&relativeVelocity);
-            }
-
-            SubtractFixedVectors(&aShipVelocity[partner],
-                                 &partnerComponent, &partnerTangent);
-            responseScale = (objectMass << 9) / totalMass;
-            responseScale = MaxInt(0x40, responseScale);
-            responseScale = MinInt(responseScale, 0x400);
-            ScaleFixedVector(&componentDelta, responseScale, &impulse);
-            AddFixedVectors(&impulse, &partnerComponent, &impulse);
-            AddFixedVectors(&impulse,
-                            &aShipVelocity[partner],
-                            &aShipVelocity[partner]);
-            if (partnerClass == OBJECT_CLASS_SHIP) {
-                NormalizeFixedVector(&partnerTangent);
-                negate_vector(&partnerTangent);
-                ScaleFixedVector(&partnerTangent, forceMagnitude,
-                                 &partnerTangent);
+        case OBJECT_CLASS_MISSILE:
+            if (acObjectOwner[obj] != partner ||
+                acObjectCollisionGraceTicks[obj] < 1) {
+                ScaleFixedVector(&aShipVelocity[obj], awObjectMass[obj] << 8,
+                                 &response);
                 negate_vector(&vCollisionDelta);
-                rotational_acceleration(&vCollisionDelta,
-                                        &partnerTangent, partner);
-                inflict_damage(obj, partner, damage, &relativeVelocity);
+                apply_force_to_object(&vCollisionDelta,
+                                      &response, partner);
+                explode(obj, obj);
+                zero_vector(&aShipVelocity[obj]);
+                return 0;
             }
-            if (partnerClass == OBJECT_CLASS_CAPITAL_SHIP) {
-                SubtractFixedVectors(&aShipPosition[obj],
-                                     &aShipVelocity[obj],
-                                     &aShipPosition[obj]);
-                anShipSpeed[obj] = 0;
-                aShipVelocity[obj] =
-                    aShipVelocity[partner];
+            break;
+
+        case OBJECT_CLASS_SHIP:
+        case OBJECT_CLASS_CAPITAL_SHIP:
+            if ((aeObjectClass[partner] == OBJECT_CLASS_ASTEROID ||
+                 (aeObjectClass[partner] == OBJECT_CLASS_MINE &&
+                  acObjectOwner[partner] == -1)) &&
+                easy2see(partner) == 0 &&
+                (nCameraViewMode == 0 || obj != 0)) {
+                remove_object(partner);
             }
+            if ((aeObjectClass[partner] == OBJECT_CLASS_ASTEROID ||
+                 aeObjectClass[partner] == OBJECT_CLASS_SHIP ||
+                 aeObjectClass[partner] == OBJECT_CLASS_CAPITAL_SHIP) &&
+                acLastCollisionObject[obj] != partner) {
+                PlaySfxWaveFileByNumber(0x1c, obj, 0);
+                acLastCollisionObject[obj] =
+                    (signed char)partner;
+                acLastCollisionObject[partner] =
+                    (signed char)obj;
+
+                separationScale = DivideFixed(
+                    (asObjectCollisionRadius[obj] +
+                     asObjectCollisionRadius[partner]) << 8,
+                    Vector_magnitude(&vCollisionDelta));
+                separationScale = MinInt(separationScale, 0x7d000);
+                ScaleFixedVector(&vCollisionDelta,
+                                 separationScale, &response);
+                AddFixedVectors(&aShipPosition[obj], &response,
+                                &aShipPosition[partner]);
+
+                vector_component_in_dir(
+                    &aShipVelocity[obj],
+                    &vCollisionDelta, &response);
+                SubtractFixedVectors(&aShipVelocity[obj],
+                                     &response, &tangent);
+                vector_component_in_dir(
+                    &aShipVelocity[partner],
+                    &vCollisionDelta, &partnerComponent);
+                ComputeVectorDelta(&partnerComponent, &response,
+                                   &componentDelta);
+                damage = (short)(Vector_magnitude(&componentDelta) >> 8);
+#ifdef SDL_PORT
+                if (obj == 0 || partner == 0)
+                    SdlQueueJoystickCollisionRumble(damage);
+#endif
+                damage = (short)((damage * damage) >> 1);
+
+                totalMass = awObjectMass[obj] + awObjectMass[partner];
+                responseScale = MinInt(MaxInt(0x40,
+                    ((awObjectMass[obj] - awObjectMass[partner]) * 256) /
+                    totalMass), 0x400);
+                ScaleFixedVector(&componentDelta, responseScale, &response);
+                AddFixedVectors(&response, &partnerComponent, &response);
+                forceMagnitude = MultiplyFixed(
+                    awObjectMass[obj] * 0x600,
+                    Vector_magnitude(&response)) + 0xa00;
+                AddFixedVectors(&response, &aShipVelocity[obj],
+                                &aShipVelocity[obj]);
+
+                if (aeObjectClass[obj] == OBJECT_CLASS_SHIP) {
+                    NormalizeFixedVector(&tangent);
+                    negate_vector(&tangent);
+                    ScaleFixedVector(&tangent, forceMagnitude, &tangent);
+                    rotational_acceleration(&vCollisionDelta,
+                                            &tangent, obj);
+                    negate_vector(&relativeVelocity);
+                    inflict_damage(partner, obj, damage, &relativeVelocity);
+                    negate_vector(&relativeVelocity);
+                }
+
+                SubtractFixedVectors(&aShipVelocity[partner],
+                                     &partnerComponent, &tangent);
+                responseScale = MinInt(MaxInt(0x40,
+                    (awObjectMass[obj] << 9) / totalMass),
+                    0x400);
+                ScaleFixedVector(&componentDelta, responseScale, &response);
+                AddFixedVectors(&response, &partnerComponent, &response);
+                AddFixedVectors(&response,
+                                &aShipVelocity[partner],
+                                &aShipVelocity[partner]);
+                if (aeObjectClass[partner] == OBJECT_CLASS_SHIP) {
+                    NormalizeFixedVector(&tangent);
+                    negate_vector(&tangent);
+                    ScaleFixedVector(&tangent, forceMagnitude, &tangent);
+                    negate_vector(&vCollisionDelta);
+                    rotational_acceleration(&vCollisionDelta,
+                                            &tangent, partner);
+                    inflict_damage(obj, partner, damage, &relativeVelocity);
+                }
+                if (aeObjectClass[partner] == OBJECT_CLASS_CAPITAL_SHIP) {
+                    SubtractFixedVectors(&aShipPosition[obj],
+                                         &aShipVelocity[obj],
+                                         &aShipPosition[obj]);
+                    anShipSpeed[obj] = 0;
+                    aShipVelocity[obj] =
+                        aShipVelocity[partner];
+                }
+            }
+            break;
         }
-        break;
+    } else {
+        acLastCollisionObject[obj] = -1;
     }
     return 0;
 }

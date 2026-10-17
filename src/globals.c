@@ -1752,7 +1752,7 @@ signed char acShipDamage[10]; /* 0x0059c460 */
 signed char cMissionObjectiveCount; /* 0x0059c46a */
 short asViableTargetDistance[16]; /* 0x0059c470 */
 FixedVector aShipPosition[SPACE_OBJECT_COUNT]; /* 0x0059c490 */
-short asObjectRadarRadius[SPACE_OBJECT_COUNT]; /* 0x0059c790 */
+unsigned short awObjectMass[SPACE_OBJECT_COUNT]; /* 0x0059c790 */
 short asShipAfterburnerTimer[16]; /* 0x0059c810 */
 short nShipMissionIndices[10]; /* 0x0059c830 */
 signed char acShipCommunicator[16]; /* 0x0059c850 */

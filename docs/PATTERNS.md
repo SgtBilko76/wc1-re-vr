@@ -10,6 +10,12 @@ for similarity decisions.
   convention from the terminating `RET`. Core functions are normally
   `__cdecl`; `ix` methods receive the implicit object in ECX.
 - Prefer `short` when the original emits 16-bit operations.
+- The word array at `0x0059C790` is unsigned object mass, copied from
+  `ObjectTypeData.mass` at offset `0x0A`. Its only readers are the two
+  force-application routines and `object_collision`: they zero-extend it
+  before dividing force or computing mass ratios. The former `radarRadius`
+  name and signed type were misleading. `awObjectMass` preserves the original
+  storage while expressing those reads directly.
 - Preserve visible local-variable order, branch direction, fall-through, and
   epilogue placement. Equivalent C often emits different instructions.
 - In `/Od` code, keep explicit pointer locals when the original stores them.
@@ -64,6 +70,18 @@ for similarity decisions.
   same mnemonics with shorter displacements, changing the function's size.
   `ConfigureScrambleActor`, `NavMapPointInsideReservedArea`, and
   `ReserveNavMapArea` recover their original sizes with direct field accesses.
+- `object_collision` reloads ownership, object classes, and its own mass
+  after calls; caching their values across those calls removes original reads.
+  Five vector workspaces suffice: one holds the projectile force, separation,
+  object component, and successive impulses; a second holds each object's
+  tangent in turn. The other three retain relative velocity, the partner's
+  component, and their difference. Distinct projectile and collision damage
+  words reproduce the observed local lifetimes. Keep the no-collision update
+  in the final `else`, and nest the response limits as `MinInt(MaxInt(...), ...)`.
+  These choices recover most of the routine; its current 96-byte frame still
+  exceeds the original 92 bytes because the compiler spills the mass pointer.
+  An explicit mass pointer, a `register` qualifier, and a shared scale local
+  did not recover the original allocation and are not retained.
 - Check argument widths at callers even when the callee ignores an argument.
   `GetTransformedShapeBounds` takes a short flip value: widening it to `int`
   adds a sign extension in `easy2see` that the original does not contain.

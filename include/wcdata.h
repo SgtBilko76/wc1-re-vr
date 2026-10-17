@@ -370,7 +370,7 @@ typedef struct ObjectTypeData {
     const char *displayName;          /* +0x00 */
     enum ObjectClass objectClass;     /* +0x04 */
     short collisionRadius;            /* +0x08 */
-    short radarRadius;                /* +0x0A */
+    unsigned short mass;              /* +0x0A */
     short scale;                      /* +0x0C */
     short animationDelay;             /* +0x0E */
     short lifetime;                   /* +0x10 */
