@@ -43,43 +43,12 @@ extern char szStrandedMessage[72]; /* 0x0046558c */
 extern char szViewTemplates[16]; /* 0x004655d4 */
 extern char szStrandedTheEnd[12]; /* 0x004655e4 */
 extern short asMouthFramesByPhoneme[26]; /* 0x004655f0 */
-extern signed char cScrambleLeftWalkerFrame; /* 0x00465768 */
-extern signed char cScrambleRightWalkerFrame; /* 0x0046576c */
-extern signed char acScrambleWalkerOverlayFrames[8]; /* 0x00465770 */
-extern short nScrambleLeftWalkerX; /* 0x00465778 */
-extern short nScrambleRightWalkerX; /* 0x0046577c */
-extern short nScrambleBackgroundX; /* 0x00465780 */
-extern unsigned short ausScrambleActorAnimationA[8]; /* 0x00465788 */
-extern unsigned short ausScrambleActorAnimationB[11]; /* 0x00465798 */
-extern ScrambleAnimationActor aScrambleAnimationActors[5]; /* 0x004657b0 */
-extern ScrambleShipDetail aaScrambleShipDetails[4][32]; /* 0x00465828 */
-extern int anLandingDamageDetailCounts[4]; /* 0x00465aa8 */
-extern const char *apszLandingDamageComments[4]; /* 0x00465ab8 */
-extern signed char acLandingCanopyFramesHeavy[24]; /* 0x00465ac8 */
-extern signed char acLandingCanopyFramesLight[24]; /* 0x00465ae0 */
-extern signed char acLandingCanopyFramesModerate[16]; /* 0x00465af8 */
-extern const signed char *apLandingCanopyFrames[4]; /* 0x00465b08 */
-extern ShortPoint aFuneralParticleOrigins[7]; /* 0x00465b18 */
-extern short asFuneralSceneBySeries[15]; /* 0x00465b36 */
-extern int bFuneralShowTheEnd; /* 0x00465b54 */
-extern char szLandingCleanComment[32]; /* 0x00465b58 */
-extern char szLandingLightDamageComment[48]; /* 0x00465b78 */
-extern char szLandingHeavyDamageComment[36]; /* 0x00465ba8 */
-extern char szLandingSurvivalComment[44]; /* 0x00465bcc */
-extern char szLandingCommentFormat[12]; /* 0x00465bf8 */
-extern char szFuneralTheEnd[8]; /* 0x00465c04 */
-extern char szFuneralTextFormat[12]; /* 0x00465c0c */
-extern char szFuneralCompanyCommand[20]; /* 0x00465c18 */
-extern char szFuneralAttentionCommand[20]; /* 0x00465c2c */
-extern char szFuneralPrepareArmsCommand[20]; /* 0x00465c40 */
-extern char szFuneralFireCommand[16]; /* 0x00465c54 */
 extern short nEnemySighting; /* 0x00465c7c */
 extern short nDebriefingPersonality; /* 0x00465c80 */
 extern void *aapPacketReferences[4][0x25]; /* 0x00465c88 */
-extern int bInitialFormationSetup; /* 0x00465c84 */
+#ifdef SDL_PORT
 extern ShortVector aaFormationPositions[5][8]; /* 0x00465ed8 */
-extern int anPilotTurnInterval[18]; /* 0x00465fc8 */
-extern char szErrorLoadingPilotSpeech[32]; /* 0x00466010 */
+#endif
 extern short nNavMapCoordinateScaling; /* 0x00468660 */
 extern short nNavMapScale; /* 0x00468664 */
 extern int bInflightComputerActive; /* 0x00468754 */
@@ -320,8 +289,6 @@ extern char szWriteDataFileError[0x40]; /* 0x00475da0 */
 extern char szSeekDataFileError[0x80]; /* 0x00475de0 */
 extern int bMonoDebugInstalled; /* 0x00475e70 */
 extern HANDLE hMonoDebugDevice; /* 0x00475e74 */
-extern short DAT_00475e78;
-extern unsigned char bCurrentManeuverReroll; /* 0x00475e7c */
 extern int nFlightFrameTotalTicks; /* 0x004764f8 */
 extern int nFlightCockpitTicks; /* 0x004764fc */
 extern LARGE_INTEGER liFlightAfterInput; /* 0x00476500 */
@@ -877,8 +844,6 @@ extern ShortPoint aWeaponDisplayOrigins[5]; /* 0x004684c0 */
 extern char  szDIBErrorMessage[0x98]; /* 0x00486078 */
 
 extern unsigned char bMessageSpeed; /* 0x0046af68 */
-extern unsigned char abManeuverRerollChance[47]; /* 0x00465678 */
-extern void (*apShipAiManeuverHandlers[47])(short, short); /* 0x004656a8 */
 
 extern ShortVector aShipFormationOffset[10]; /* 0x0059b520 */
 

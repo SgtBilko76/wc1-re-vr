@@ -3,7 +3,7 @@
  *
  *  Address range 4046a0-40609f (provisional -- see docs/ORDER.md).
  *  Boundary evidence: the ejection tables follow auto.c's palette-file mode
- *  literal; brains.c begins at 4060a0. LoadMissionData is at 4059b0.
+ *  literal; fl.c begins at 4060a0. LoadMissionData is at 4059b0.
  */
 #include "wc1.h"
 

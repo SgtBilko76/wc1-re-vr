@@ -194,6 +194,8 @@ extern short nPendingMedalIndex; /* 0x004688e4 */
 extern short nPostSeriesSequence; /* 0x004688e8 */
 extern int bAlternateChaseView; /* 0x00468ffc */
 extern char szObjectiveStatusMessage[28];
+extern int bInitialFormationSetup; /* 0x00465c84 */
+extern int anPilotTurnInterval[18]; /* 0x00465fc8 */
 void SdlSetMouseGrab(int enabled);
 void SdlDrawViewportStatic(struct Viewport *viewport, int effect,
                               unsigned short colour);

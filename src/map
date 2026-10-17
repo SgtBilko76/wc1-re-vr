@@ -104,7 +104,7 @@
 0x004059B0 LoadMissionData
 0x00405CC0 UpdateMap
 0x00405DE0 CloseLook
-0x004060A0 HelperOf4075D0A
+0x004060A0 SetManeuverProximityRange
 0x004060B0 maneuver_complete
 0x004060D0 Mline_up_drop
 0x00406130 Mwabble

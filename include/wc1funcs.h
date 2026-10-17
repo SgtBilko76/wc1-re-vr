@@ -126,7 +126,7 @@ unsigned int UpdateMap(char *text, short duration);                     /* 0x004
 unsigned int CloseLook(unsigned char *shape, short shot,
                        short *animation, char *text, short duration,
                        short unused);                                  /* 0x00405DE0 */
-void SetShipAiScratchWord(unsigned short v);                                 /* 0x004060A0 */
+void SetManeuverProximityRange(unsigned short v);                                 /* 0x004060A0 */
 void maneuver_complete(short ship);                                     /* 0x004060B0 */
 void Mline_up_drop(short ship, short target);                            /* 0x004060D0 */
 void Mwabble(short ship);                                                /* 0x00406130 */

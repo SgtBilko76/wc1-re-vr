@@ -153,6 +153,18 @@ for similarity decisions.
   after the coordinate tables with four-byte literal alignment. The last empty
   literal ends the object; the following three zero bytes are linker alignment
   before navigation. A flattened character array incorrectly owns those bytes.
+- Recover biased array references from storage alignment and indexing together.
+  The funeral scene lookup's displacement is two bytes before its aligned
+  array. `asFuneralSceneBySeries[currentSeries - 1]` emits the original word
+  lookup while allowing the preceding particle array's four alignment bytes
+  and the following flag's alignment to come from the compiler.
+- `perform_maneuver` uses a switch for the three inactive-target cases, placing
+  their comparisons before the case bodies. Its proximity test compares the
+  global threshold against the saved range. Let the reroll byte promote to
+  `int` when comparing the random result: a cast to `short` produces a word
+  comparison instead of the original sign extension and dword comparison.
+  These forms improve the routine from 83.65% to 97.12%; scheduling and
+  registers in the radius calculation still differ.
 - `DIBupdate` is sensitive to shared-header declarations. An earlier build
   added the surface pointer before the horizontal offset, unlike the original.
   Parenthesizing the offset, writing it before the pointer, and separating

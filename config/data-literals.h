@@ -10,6 +10,15 @@
  */
 unsigned char abDiskStringLiterals[459]; /* 0x004696a8 */
 
+/* cutscene.c: landing comments, funeral subtitles and commands, and the
+ * animation-demo diagnostic. Both copies of the subtitle format stay distinct;
+ * the complete unit gate checks all eleven stored pointer targets. */
+unsigned char abCutsceneStringLiterals[289]; /* 0x00465b58 */
+
+/* mission.c: the pilot-speech loading diagnostic. The complete unit gate
+ * checks its position after the formation and pilot-timing tables. */
+unsigned char abPilotSpeechErrorLiteral[27]; /* 0x00466010 */
+
 /* objdata.c: the 56 object-name literals, including 26 separate empty names.
  * The complete unit gate verifies every name pointer, all animation pointers,
  * and the pool's position after the object and weapon-coordinate tables. */

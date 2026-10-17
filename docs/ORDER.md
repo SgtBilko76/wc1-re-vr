@@ -131,9 +131,12 @@ sits at one constant offset from the original.
 | `src/mono.c` | `0x403500`–`0x403E4F` |
 | `src/auto.c` | `0x403E50`–`0x40469F` |
 | `src/cmpgn.c` | `0x4046A0`–`0x40609F` |
-| `src/brains.c` | `0x4060A0`–`0x40CFFF` |
+| `src/fl.c` | `0x4060A0`–`0x40770F` |
+| `src/cutscene.c` | `0x407710`–`0x40975F` |
+| `src/brains.c` | `0x409760`–`0x40B66F` |
+| `src/mission.c` | `0x40B670`–`0x40D08F`; trailing joystick/navigation helpers remain provisional |
 | `src/objdata.c` | Data only; original code ownership is unresolved |
-| `src/nav.c` | `0x40D000`–`0x40E88F` |
+| `src/nav.c` | `0x40D090`–`0x40E88F` |
 | `src/nearheap.c` | `0x40E890`–`0x40EFDF` |
 | `src/gameflow.c` | `0x40EFE0`–`0x40FA2F` |
 | `src/title.c` | `0x40FA30`–`0x4102AF` |
@@ -201,6 +204,10 @@ ownership and qualifiers:
 | `0x004631C8`–`0x004631FF` | `gr.c`: constant registry-key and `Cheater` value-name arrays used by `ReadCheaterFlagFromRegistry` |
 | `0x00465040`–`0x00465057` | `winmain.c`: two initialized hazard counters and two writable eight-byte hazard tables |
 | `0x00465058`–`0x004650B3` | `winmain.c`: window/audio flags, heap counters, class/title arrays, and message-pump state; two intervening words remain unidentified |
+| `0x00465678`–`0x00465763` | `fl.c`: maneuver reroll weights and handler pointers |
+| `0x00465768`–`0x00465C78` | `cutscene.c`: scramble, landing, and funeral tables followed by their literals and the animation-demo diagnostic |
+| `0x00465C7C`–`0x00465C7D` | `brains.c`: enemy-sighting state |
+| `0x00465C80`–`0x0046602A` | `mission.c`: debriefing personality, formation state, packet references, formation/timing tables, and pilot-speech diagnostic |
 | `0x00466030`–`0x0046865C` | `objdata.c`: animation streams, object definitions, weapon coordinates, and object-name literals; original object name and associated code remain unknown |
 | `0x00468660`–`0x004688BF` | `nav.c`: map state, objective styles, mission-name pointers, and the following navigation literals |
 | `0x004688C0`–`0x004688CB` | `nearheap.c`: near-heap state and descriptor limit |
@@ -226,12 +233,46 @@ ownership and qualifiers:
 | `0x0046B168`–`0x0046B171` | `video.c`: video mode and the palette-allocation diagnostic literals |
 | `0x0046B178`–`0x0046B1A1` | `joycal.c`: graphics-mode table, two unused driver names, and both calibration-file literals |
 
+The former large brains window is divided into flight maneuvers, cutscenes,
+NPC intelligence, and mission setup. The Mac `fl` symbol run corroborates
+the maneuver group, including the dispatcher using both private tables.
+All 47 dispatch pointers must target the correct one of 42 named function
+entries; matching another handler or an interior byte is rejected. Its
+236-byte initialized section has four alignment bytes before the scene tables.
+
+All 19 cutscene declarations have only local original references. The four
+landing comments are now pointer-initializer literals, followed by the
+subtitle formats, commands, and animation-demo diagnostic. Their 289-byte
+pool ends at `0x00465C78`, establishing the boundary before the AI state.
+The seven funeral particle origins end at `0x00465B33`. Four compiler
+alignment bytes precede the scene-selection array at `0x00465B38`; the
+original lookup uses `series * 2 + 0x00465B36`, or `array[series - 1]`.
+Thirteen selections and two alignment bytes reproduce the following flag
+at `0x00465B54`. This declaration matches the observed bytes; the binary
+does not distinguish its final padding from an additional zero element.
+The former 15-element declaration started inside the preceding alignment.
+The SDL build preserves the zero results for series 0 and 14 explicitly.
+The complete 1,297-byte section and all eleven stored pointers match.
+
+The surviving WINGLEADER `BRAINS.C` and Mac `brain` run corroborate
+`cruise_home` through `FF_missile_intelligence`. Its enemy-sighting word
+is shared with mission setup. The following 939-byte mission section has
+the shared debriefing personality and packet-reference table, plus private
+formation state and formation/timing arrays. SDL adapters retain access to
+the last three through SDL-only declarations. The 27-byte pilot-speech
+diagnostic ends before object definitions, with five linker alignment bytes.
+The division between the AI word and mission definitions remains provisional:
+no intervening literal proves that internal boundary. The joystick helpers
+beginning at `0x0040CAA0` and navigation helpers at `0x0040CB60` also retain
+provisional ownership in `mission.c`. Its final `Build_objective_list` extends
+through `0x0040D08F`; the old window boundary at `0x0040D000` cut through it.
+
 The object-data block begins after the pilot-speech diagnostic at
 `0x00466010` and ends with its name literals before navigation state at
 `0x00468660`. Initialized declarations cannot follow compiler literals in
 one CL 4.20 object, so both edges establish data boundaries. `objdata.c`
 describes the recovered contents; the original filename and any associated
-functions remain unknown. It is linked after the provisional brains group
+functions remain unknown. It is linked after the provisional mission group
 and before navigation without assigning it invented function ownership.
 
 Its 21 private animation arrays occupy 1,064 bytes, followed by 58 packed
@@ -292,11 +333,11 @@ the next recovered function, `EmitTextString` at `0x00413A10`, begins the
 cockpit window. These windows no longer overlap the surviving space functions.
 
 The unit-data gate checks the complete reconstructed `.data` sections:
-object data (9,773 bytes), navigation (608), near-heap (12), campaign flow
-(64), title (1,522), joystick (238), and space state (12). It also checks the
-combined 12,240-byte run and all 128 pointer relocations, including three
-alignment bytes before navigation, four before title, and two each before
-joystick and space state. The six referenced colour
+maneuvers (236 bytes), cutscenes (1,297), AI (2), mission setup (939), object
+data (9,773), navigation (608), near-heap (12), campaign flow (64), title
+(1,522), joystick (238), and space state (12). It also checks the combined
+14,728-byte run and all 186 pointer relocations, including 25 inter-object
+alignment bytes. The six referenced colour
 variables and the two title resource-record pointers must resolve to their
 original globals and field offsets. This proves the data layout independently
 of the provisional internal code boundaries.
@@ -489,14 +530,22 @@ match with one address shift. The unreferenced word `10` at `0x00469DA0`
 and storage after the final simulator literal remain outside this recovered
 block; their ownership is not inferred from proximity.
 
+The maneuver proximity threshold at `0x00475E78` and reroll byte at
+`0x00475E7C` are private to `fl.c`. All references occur in the threshold
+setter, `Mveer_away`, and `perform_maneuver`. Their five-byte `.bss` contains
+two compiler alignment bytes between the declarations, followed by three
+linker alignment bytes before navigation. The threshold is named for its
+use in the proximity-based boost and maneuver-reset decisions.
+
 The navigation label and exclusion arrays at `0x00475E80` and `0x00475F48`
 have references only in `nav.c`. Their existing 20 packed ten-byte label
 records and 21 eight-byte rectangles now occupy a private 368-byte `.bss`
 section, with the rectangle array at offset `0xC8`. The separate 1,024-byte
 cockpit cursor background at `0x00475FF0` is used only by
 `overlay_head_up_display` and `RestoreTransientCockpitGraphics`; it now
-occupies `cockpt.c`'s `.bss`. Together with the following console pointer,
-these form a verified 1,396-byte run with no inter-object padding.
+occupies `cockpt.c`'s `.bss`. Together with the preceding maneuver state and
+following console pointer, these form a verified 1,404-byte run with three
+inter-object alignment bytes.
 
 Three more uninitialized-data blocks reside in their owners:
 `pDebugOverlay` at `0x004763F0` belongs to the console wrappers in `pilot.cpp`,

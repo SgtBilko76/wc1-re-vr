@@ -3,8 +3,8 @@
 
 Only one address shift is allowed per block. Identical literals must retain
 their separate locations, and empty-string pointers must remain correct.
-Pointers outside a block must target the declared globals at their original
-field offsets, using the rebuilt linker symbols.
+Pointers outside a block must target declared globals at their original
+field offsets or named function entries, using the rebuilt linker symbols.
 Read-only blocks must retain their COFF .rdata storage and declared size.
 Uninitialized blocks must retain their COFF .bss storage and declared size.
 """
@@ -40,6 +40,89 @@ class UnitData:
 
 
 UNITS = {
+    'fl': UnitData(0x00465678, 236, (
+        ('abManeuverRerollChance', 0x00),
+        ('apShipAiManeuverHandlers', 0x30),
+    ), frozenset(range(0x30, 0xEC, 4)), (
+        ('Mline_up_drop', 0x004060D0, 1),
+        ('Mwabble', 0x00406130, 1),
+        ('ShipAiState35', 0x00406200, 1),
+        ('Mfull_ahead', 0x00406310, 1),
+        ('Mchill', 0x00406350, 1),
+        ('Mdrop_a_mine', 0x004063B0, 1),
+        ('Mthink', 0x00406400, 1),
+        ('Mtight_loop', 0x00406440, 1),
+        ('Mhard_break', 0x004064F0, 1),
+        ('Msit_n_spin', 0x004065A0, 1),
+        ('Mturn_n_spin', 0x004067A0, 1),
+        ('Mburnout', 0x00406860, 1),
+        ('Mkickit', 0x004068D0, 1),
+        ('Mturn_n_kick', 0x00406910, 1),
+        ('Mroll_over', 0x00406990, 1),
+        ('Mhard_turn', 0x004069F0, 1),
+        ('Mfish_hook', 0x00406A50, 1),
+        ('Mtry2tail', 0x00406B60, 1),
+        ('Msplit_left', 0x00406BD0, 1),
+        ('Msplit_right', 0x00406C20, 1),
+        ('Mgloat', 0x00406C70, 1),
+        ('Mtail_fire', 0x00406D20, 1),
+        ('Mzip_past', 0x00406D80, 1),
+        ('Mtarget_missile', 0x00406E10, 1),
+        ('Mram_missile', 0x00406EC0, 1),
+        ('Mbuzz_debris', 0x00406F20, 1),
+        ('Mstrafe_enemy', 0x00406FB0, 1),
+        ('Mbest_strafe', 0x00407030, 1),
+        ('Msit_n_fire', 0x00407060, 1),
+        ('Mstrafe_n_roll', 0x004070D0, 1),
+        ('Mkill_missile', 0x00407100, 1),
+        ('Msuicide_run', 0x004071B0, 1),
+        ('Mget_distance', 0x004071E0, 1),
+        ('Mzig_zag', 0x00407350, 1),
+        ('Mzig_zag_pitch', 0x00407370, 1),
+        ('Mcorkscrew', 0x00407390, 1),
+        ('Mveer_away', 0x00407450, 1),
+        ('ShipAiState44', 0x00407560, 1),
+        ('Mtarget_laser', 0x00407580, 1),
+        ('Mrout_me', 0x004075A0, 1),
+        ('Mnone', 0x004075B0, 1),
+        ('Mreset', 0x004075C0, 1),
+    )),
+    'cutscene': UnitData(0x00465768, 1297, (
+        ('cScrambleLeftWalkerFrame', 0x000),
+        ('cScrambleRightWalkerFrame', 0x004),
+        ('acScrambleWalkerOverlayFrames', 0x008),
+        ('nScrambleLeftWalkerX', 0x010),
+        ('nScrambleRightWalkerX', 0x014),
+        ('nScrambleBackgroundX', 0x018),
+        ('ausScrambleActorAnimationA', 0x020),
+        ('ausScrambleActorAnimationB', 0x030),
+        ('aScrambleAnimationActors', 0x048),
+        ('aaScrambleShipDetails', 0x0C0),
+        ('anLandingDamageDetailCounts', 0x340),
+        ('apszLandingDamageComments', 0x350),
+        ('acLandingCanopyFramesHeavy', 0x360),
+        ('acLandingCanopyFramesLight', 0x378),
+        ('acLandingCanopyFramesModerate', 0x390),
+        ('apLandingCanopyFrames', 0x3A0),
+        ('aFuneralParticleOrigins', 0x3B0),
+        ('asFuneralSceneBySeries', 0x3D0),
+        ('bFuneralShowTheEnd', 0x3EC),
+    ), frozenset((0x053, 0x06B, 0x083,
+                  *range(0x350, 0x360, 4), *range(0x3A0, 0x3B0, 4)))),
+    'brains': UnitData(0x00465C7C, 2, (
+        ('nEnemySighting', 0x00),
+    ), frozenset()),
+    'mission': UnitData(0x00465C80, 939, (
+        ('nDebriefingPersonality', 0x000),
+        ('bInitialFormationSetup', 0x004),
+        ('aapPacketReferences', 0x008),
+        ('aaFormationPositions', 0x258),
+        ('anPilotTurnInterval', 0x348),
+    ), frozenset()),
+    'fl-bss': UnitData(0x00475E78, 5, (
+        ('nManeuverProximityRange', 0x00),
+        ('bCurrentManeuverReroll', 0x04),
+    ), frozenset(), storage='.bss', owner='fl.obj'),
     'objdata': UnitData(0x00466030, 9773, (
         ('anAnimExplosion0', 0x000),
         ('anAnimExplosion1', 0x030),
@@ -497,7 +580,8 @@ UNITS = {
 
 
 ADJACENT_UNITS = (
-    ('objdata', 'nav', 'nearheap', 'gameflow', 'title', 'joystick', 'spc'),
+    ('fl', 'cutscene', 'brains', 'mission', 'objdata', 'nav', 'nearheap',
+     'gameflow', 'title', 'joystick', 'spc'),
     ('spc', 'cockpt-prefix'),
     ('cockpt-tail', 'version', 'barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),
     ('barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),
@@ -506,7 +590,7 @@ ADJACENT_UNITS = (
     ('killbrd', 'gr'),
     ('sound', 'damage-bss', 'music-bss'),
     ('eventmgr-bss', 'gr-bss-prefix'),
-    ('nav-bss', 'cockpt-bss', 'pilot'),
+    ('fl-bss', 'nav-bss', 'cockpt-bss', 'pilot'),
 )
 
 

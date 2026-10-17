@@ -40,7 +40,8 @@ handwritten stand-ins and recovery of the two graphics diagnostic functions
 code bytes.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
-initialized-data sections recovered for objdata (9,773 bytes), nav (608), nearheap (12),
+initialized-data sections recovered for fl (236 bytes), cutscene (1,297),
+brains (2), mission (939), objdata (9,773), nav (608), nearheap (12),
 gameflow (64), title (1,522), joystick (238), spc (12), version (13),
 barracks (632), fade (2),
 debug (34), disk (523), ship (286), init (550), logic (447), trainsim (511),
@@ -61,7 +62,7 @@ bytes, and ending through joycal as a 1,050-byte run, including 15 alignment
 bytes. The room and graphics units form another 3,542-byte run, including
 four alignment bytes. These checks catch correct individual blocks linked
 at incorrect relative positions.
-The same gate checks the uninitialized blocks owned by nav (368 bytes),
+The same gate checks the uninitialized blocks owned by fl (5 bytes), nav (368),
 cockpt (1,024), pilot (4),
 sound (8), damage (4), music (200), and eventmgr (4,096).
 These must be genuine COFF `.bss` sections with no raw data
@@ -79,15 +80,19 @@ buffer and graphics prefix must form one 68,120-byte run. Both require the origi
 unit positions with no inter-object padding. Pointer-free runs use
 binary-comp's direct address comparison, while runs containing pointers use
 its relocation-aware comparison.
-Navigation, cockpit cursor storage, and the console pointer form another
-1,396-byte run with no padding; the gate checks both navigation array offsets
-and all three owner positions.
+Maneuver state, navigation, cockpit cursor storage, and the console pointer
+form another 1,404-byte run with three alignment bytes. The gate checks both
+maneuver-state offsets, both navigation array offsets, and all four owners.
 `make verify-barracks-data` retains the barracks-only check.
 
-The object-data, navigation, near-heap, campaign-flow, title, joystick, and
-space `.data` sections are checked as complete blocks of 9,773, 608, 12, 64,
-1,522, 238, and 12 bytes and as one 12,240-byte run. The combined check includes
-11 alignment bytes and 128 pointer relocations.
+The maneuver, cutscene, AI, mission, object-data, navigation, near-heap,
+campaign-flow, title, joystick, and space sections form one 14,728-byte run.
+The combined check includes 25 alignment bytes and 186 pointer relocations.
+The 47 maneuver dispatch entries must target the correct one of 42 named
+function entries, each represented by a one-byte external range. This rejects
+both a different handler and an interior address in the correct handler.
+The cutscene and mission literal metadata covers 289 and 27 bytes; complete
+unit checks additionally require their positions and all cutscene pointers.
 The object block contains 21 animation arrays, 58 object records, three
 coordinate tables, and 56 separate name literals. Its 80 pointers remain
 inside the block. The gate rejects a name pointer redirected to another
