@@ -738,7 +738,7 @@ static const GlCachedFrame *CacheShapeFrame(
 
     memset(g_renderer.decodeScratch, 0xff, pixelCount);
     DecodeShapeFrame(shape, frame, g_renderer.decodeScratch, width,
-                     (short)height, leftExtent, topExtent);
+                     height, leftExtent, topExtent);
     g_renderer.gl.ActiveTexture(GL_TEXTURE0);
     g_renderer.gl.BindTexture(GL_TEXTURE_2D_ARRAY,
                               g_renderer.spriteAtlasTexture);

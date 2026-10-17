@@ -67,7 +67,6 @@ void SetSolidColourTranslation(unsigned char colour)
 /* Function start: 0x440D50 */
 void PrepareShapeRLEData(unsigned char *shape)
 {
-    RLEFrameHeader *frameHeader;
     unsigned char *bitmap;
     unsigned char *pixel;
     unsigned char *output;
@@ -95,10 +94,9 @@ void PrepareShapeRLEData(unsigned char *shape)
     *(int *)abShapeRLEScratch =
         *(const int *)szShapeRLEVersion;
     frameCount = GetShapeFrameCount(shape);
-    *(int *)(abShapeRLEScratch + 4) = frameCount;
-    memset(abShapeRLEScratch + 8, 0,
-           (unsigned int)(frameCount << 3));
+    memcpy(abShapeRLEScratch + 4, &frameCount, sizeof(frameCount));
     frameOffset = (int *)(abShapeRLEScratch + 8);
+    memset(frameOffset, 0, frameCount * 8);
     output = abShapeRLEScratch + 8 + (frameCount << 3);
 
     for (frame = 0; frame < frameCount; frame++) {
@@ -106,20 +104,26 @@ void PrepareShapeRLEData(unsigned char *shape)
         frameOffset += 2;
         GetShapeFrameExtents(shape, (short)frame, &width, &height,
                              &leftExtent, &topExtent);
-        frameHeader = (RLEFrameHeader *)output;
-        frameHeader->height = height;
-        frameHeader->width = width;
-        frameHeader->topExtent = topExtent;
-        frameHeader->leftExtent = leftExtent;
+        memcpy(output, &height, sizeof(height));
+        output += sizeof(height);
+        memcpy(output, &width, sizeof(width));
+        output += sizeof(width);
+        memcpy(output, &topExtent, sizeof(topExtent));
+        output += sizeof(topExtent);
+        memcpy(output, &leftExtent, sizeof(leftExtent));
+        output += sizeof(leftExtent);
         frameLeft = -leftExtent;
         frameTop = -topExtent;
         frameRight = width - leftExtent - 1;
         frameBottom = height - topExtent - 1;
-        frameHeader->left = frameLeft;
-        frameHeader->top = frameTop;
-        frameHeader->right = frameRight;
-        frameHeader->bottom = frameBottom;
-        output += sizeof(RLEFrameHeader);
+        memcpy(output, &frameLeft, sizeof(frameLeft));
+        output += sizeof(frameLeft);
+        memcpy(output, &frameTop, sizeof(frameTop));
+        output += sizeof(frameTop);
+        memcpy(output, &frameRight, sizeof(frameRight));
+        output += sizeof(frameRight);
+        memcpy(output, &frameBottom, sizeof(frameBottom));
+        output += sizeof(frameBottom);
 
         bitmap = AllocateTaggedMemory(
             (unsigned int)((int)width * height), 0);
@@ -167,9 +171,11 @@ void PrepareShapeRLEData(unsigned char *shape)
     preparedShape = AllocateTaggedMemory(preparedSize, 0);
     memcpy(preparedShape, abShapeRLEScratch, preparedSize);
 #ifdef SDL_PORT
-    *(unsigned char **)(shape - 8 - sizeof(unsigned char *)) = preparedShape;
+    memcpy(shape - 8 - sizeof(unsigned char *), &preparedShape,
+           sizeof(preparedShape));
 #else
-    *(unsigned char **)(shape - 4) = preparedShape;
+    memcpy(shape - sizeof(preparedShape), &preparedShape,
+           sizeof(preparedShape));
 #endif
 }
 

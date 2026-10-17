@@ -204,6 +204,33 @@ for similarity decisions.
   score expressions, reversed comparisons, and extra cached indices did not
   resolve them. Removing the viewport copy also removes the extra `stScreen`
   read reported by the global-access audit.
+- `DecodeShapeFrame` receives a full-width height argument and narrows its
+  maximum coordinate locally. Its caller sign-extends the height before
+  pushing it. Read the two signed coordinate words into short locals before
+  promoting them, advancing the command pointer after each read. The row
+  command is an ordinary unsigned short, not volatile; the original tests
+  the loaded register without an intervening memory reload. Clipped copy
+  lengths are signed shorts. Adjust the length before calculating the left
+  skip, and advance the destination and X coordinate inside each encoded-run
+  branch. CL merges the common tail while preserving separate run-length
+  promotions. Initialize both maximum coordinates before the command pointer.
+  These forms recover the original 640-byte span and 94.90% mnemonic
+  similarity; 34 of 196 instructions still differ in the byte comparison,
+  principally in clipping registers and scheduling.
+- `PrepareShapeRLEData` serializes the four short extents and four integer
+  bounds with individual copies through an advancing byte pointer. Taking
+  the bounds' addresses preserves their four stack slots. Copy the frame
+  count and final prepared-shape pointer from their locals as well: direct
+  typed stores lose the pointer's stack slot and change the offset-table
+  clear from the original `REP STOSD` to a sequence with a byte remainder.
+  The copies restore the 44-byte local frame and 656-byte function span at
+  97.70% mnemonic similarity. Local slot ordering and register scheduling
+  remain different. Reordering the prepared pointer's declaration did not
+  help; assigning the initial cached-shape lookup to it adds an absent store.
+  Removing the unused header pointer also changes allocation in the later
+  `RestoreSpriteBackground` and `GetShapeFrameCorners` routines. Keep checking
+  the complete unit rather than retaining an unused declaration to influence
+  the compiler.
 - `ReadTextInput` dispatches both the input byte and the input mode with
   switches. This retains the zero-extended key for character classification
   and places Enter/Escape and uppercase/numeric branches after their defaults.

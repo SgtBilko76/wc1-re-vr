@@ -804,27 +804,25 @@ void GetShapeFrameExtents(unsigned char *shape, short frame,
 
 /* Function start: 0x440960 */
 void DecodeShapeFrame(unsigned char *shape, short frame,
-                      unsigned char *bitmap, int width, short height,
+                      unsigned char *bitmap, int width, int height,
                       int leftExtent, int topExtent)
 {
     unsigned char *commands;
-    unsigned char *runData;
     unsigned char *destination;
     unsigned char code;
     unsigned char colour;
-    volatile unsigned short rowCode;
+    unsigned short rowCode;
     unsigned short runLength;
-    unsigned short copyLength;
+    short copyLength;
     short maximumX;
     short maximumY;
+    short sourceX;
+    short sourceY;
     int frameOffset;
     int x;
     int y;
     int runRight;
     int skip;
-#ifdef SDL_PORT
-    short coordinate;
-#endif
 
     if (shape == 0 || frame < 0)
         return;
@@ -833,26 +831,30 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
         return;
 
     maximumX = (short)(width - 1);
-    commands = shape + *(int *)(shape + frameOffset) + 8;
     maximumY = (short)(height - 1);
+    commands = shape + *(int *)(shape + frameOffset) + 8;
 #ifdef SDL_PORT
-    memcpy((void *)&rowCode, commands, sizeof(rowCode));
+    memcpy(&rowCode, commands, sizeof(rowCode));
 #else
     rowCode = *(unsigned short *)commands;
 #endif
     commands += 2;
     while (rowCode != 0) {
 #ifdef SDL_PORT
-        memcpy(&coordinate, commands, sizeof(coordinate));
-        x = leftExtent + coordinate;
-        memcpy(&coordinate, commands + 2, sizeof(coordinate));
-        y = topExtent + coordinate;
+        memcpy(&sourceX, commands, sizeof(sourceX));
 #else
-        x = leftExtent + *(short *)commands;
-        y = topExtent + *(short *)(commands + 2);
+        sourceX = *(short *)commands;
 #endif
+        commands += 2;
+#ifdef SDL_PORT
+        memcpy(&sourceY, commands, sizeof(sourceY));
+#else
+        sourceY = *(short *)commands;
+#endif
+        commands += 2;
+        x = leftExtent + sourceX;
+        y = topExtent + sourceY;
         destination = bitmap + y * width + x;
-        commands += 4;
         if ((rowCode & 1) != 0) {
             rowCode >>= 1;
             while (rowCode != 0) {
@@ -868,45 +870,46 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
                         runRight = x + runLength - 1;
                         if (x <= maximumX && runRight >= 0) {
                             skip = 0;
-                            copyLength = runLength;
+                            copyLength = (short)runLength;
                             if (x < 0) {
-                                skip = -x;
                                 copyLength =
-                                    (unsigned short)(copyLength + x);
+                                    (short)(copyLength + (short)x);
+                                skip = -x;
                             }
                             if (maximumX < runRight)
-                                copyLength = (unsigned short)(copyLength -
+                                copyLength = (short)(copyLength -
                                                        runRight + maximumX);
                             memset(destination + skip, colour,
                                    (short)copyLength);
                         }
                     }
+                    x += runLength;
+                    destination += runLength;
                 } else {
                     code >>= 1;
                     runLength = code;
                     rowCode = (unsigned short)(rowCode - runLength);
-                    runData = commands;
                     if (y >= 0 && y <= maximumY) {
                         runRight = x + runLength - 1;
                         if (x <= maximumX && runRight >= 0) {
                             skip = 0;
-                            copyLength = runLength;
+                            copyLength = (short)runLength;
                             if (x < 0) {
-                                skip = -x;
                                 copyLength =
-                                    (unsigned short)(copyLength + x);
+                                    (short)(copyLength + (short)x);
+                                skip = -x;
                             }
                             if (maximumX < runRight)
-                                copyLength = (unsigned short)(copyLength -
+                                copyLength = (short)(copyLength -
                                                        runRight + maximumX);
-                            memcpy(destination + skip, runData + skip,
+                            memcpy(destination + skip, commands + skip,
                                    (short)copyLength);
                         }
                     }
-                    commands = runData + runLength;
+                    commands += runLength;
+                    x += runLength;
+                    destination += runLength;
                 }
-                x += runLength;
-                destination += runLength;
             }
         } else {
             rowCode >>= 1;
@@ -914,13 +917,13 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
                 runRight = x + rowCode - 1;
                 if (x <= maximumX && runRight >= 0) {
                     skip = 0;
-                    copyLength = rowCode;
+                    copyLength = (short)rowCode;
                     if (x < 0) {
+                        copyLength = (short)(copyLength + (short)x);
                         skip = -x;
-                        copyLength = (unsigned short)(copyLength + x);
                     }
                     if (maximumX < runRight)
-                        copyLength = (unsigned short)(copyLength -
+                        copyLength = (short)(copyLength -
                                                      runRight + maximumX);
                     memcpy(destination + skip, commands + skip,
                            (short)copyLength);
@@ -929,7 +932,7 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
             commands += rowCode;
         }
 #ifdef SDL_PORT
-        memcpy((void *)&rowCode, commands, sizeof(rowCode));
+        memcpy(&rowCode, commands, sizeof(rowCode));
 #else
         rowCode = *(unsigned short *)commands;
 #endif
