@@ -203,36 +203,22 @@ extern unsigned char cRedColour; /* 0x004699ac */
 extern unsigned char cDarkGreenColour; /* 0x004699b0 */
 extern unsigned char cPrimaryTextColour; /* 0x004699b4 */
 extern unsigned char cOrangeColour; /* 0x004699b8 */
-extern unsigned char cDarkBlueColour; /* 0x004699bc */
 extern unsigned char cDarkGreyColour; /* 0x004699c0 */
 extern unsigned char cLightGreyColour; /* 0x004699c4 */
 extern unsigned char cMagentaColour; /* 0x004699c8 */
 extern unsigned char cDefaultTextColour; /* 0x004699cc */
-extern unsigned char cBrownColour; /* 0x004699d0 */
 extern unsigned char cAsteroidColour; /* 0x004699d4 */
 extern unsigned char cPrimaryViewBufferColour; /* 0x004699d8 */
-extern unsigned char abLegacyVideoModeColours[14]; /* 0x004699e0 */
 extern short asConversationTextColours[24]; /* 0x004699f0 */
 extern int bGraphicsActive; /* 0x00469a20 */
-extern int anBaseMemoryReservationByVideoMode[4]; /* 0x00469a90 */
-extern int anFullMusicMemoryReservationByVideoMode[4]; /* 0x00469aa0 */
-extern int anExpandedMemoryReservationByVideoMode[3]; /* 0x00469ab0 */
 extern PacketResourceDescriptor aCommon3SpaceResources[12]; /* 0x00469bc0 */
 extern int nCapitalShipViewDistance; /* 0x00468ff4 */
 extern unsigned char bLandingAuthorized; /* 0x00468ff8 */
 extern int bAlternateChaseView; /* 0x00468ffc */
 extern unsigned char *pCockpitPilotShape; /* 0x0046905c */
 extern unsigned int bIntroSceneResourcesActive; /* 0x00469d48 */
-extern short asConstellationObjectIndices[4]; /* 0x00469d50 */
-extern int b3SpaceObjectsActive; /* 0x00469d5c */
-extern int bCockpitResourcesActive; /* 0x00469d58 */
-extern short asSceneAnimationLogicalFiles[8]; /* 0x00469d60 */
-extern short bSceneAnimationWaitCommand; /* 0x00469d70 */
-extern char szSceneAnimationTextFormat[12]; /* 0x00469d74 */
 extern PacketResourceDescriptor aMissionResourceDescriptors[5]; /* 0x00469c20 */
 extern PacketResourceDescriptor aCockpitResourceDescriptors[19]; /* 0x00469c48 */
-extern PacketResourceDescriptor aCockpitSecondaryResources[5]; /* 0x00469ce0 */
-extern PacketResourceDescriptor aCockpitPrimaryResources[8]; /* 0x00469d08 */
 extern char szMeanwhile[16]; /* 0x00469d80 */
 extern char szEmptyAnswerInput[4]; /* 0x00469d90 */
 extern char szAnswerLabel[9]; /* 0x00469d94 */

@@ -3,6 +3,8 @@
 
 Only one address shift is allowed per block. Identical literals must retain
 their separate locations, and empty-string pointers must remain correct.
+Pointers outside a block must target the declared globals at their original
+field offsets, using the rebuilt linker symbols.
 """
 from __future__ import annotations
 
@@ -26,6 +28,7 @@ class UnitData:
     size: int
     globals: tuple[tuple[str, int], ...]
     pointers: frozenset[int]
+    external_globals: tuple[tuple[str, int, int], ...] = ()
 
 
 UNITS = {
@@ -63,6 +66,63 @@ UNITS = {
         ('aeShipHitDebrisTypes', 0xD8),
         ('acGunRefireDelay', 0xE4),
     ), frozenset()),
+    'init': UnitData(0x00469998, 550, (
+        ('bSlowSceneAnimation', 0x00),
+        ('cBlackColour', 0x04),
+        ('cViewportClearColour', 0x08),
+        ('cBlueColour', 0x0C),
+        ('cYellowColour', 0x10),
+        ('cRedColour', 0x14),
+        ('cDarkGreenColour', 0x18),
+        ('cPrimaryTextColour', 0x1C),
+        ('cOrangeColour', 0x20),
+        ('cDarkBlueColour', 0x24),
+        ('cDarkGreyColour', 0x28),
+        ('cLightGreyColour', 0x2C),
+        ('cMagentaColour', 0x30),
+        ('cDefaultTextColour', 0x34),
+        ('cBrownColour', 0x38),
+        ('cAsteroidColour', 0x3C),
+        ('cPrimaryViewBufferColour', 0x40),
+        ('abLegacyVideoModeColours', 0x48),
+        ('asConversationTextColours', 0x58),
+        ('bGraphicsActive', 0x88),
+        ('szInsufficientMemory', 0x90),
+        ('anBaseMemoryReservationByVideoMode', 0xF8),
+        ('anFullMusicMemoryReservationByVideoMode', 0x108),
+        ('anExpandedMemoryReservationByVideoMode', 0x118),
+    ), frozenset()),
+    'logic': UnitData(0x00469BC0, 447, (
+        ('aCommon3SpaceResources', 0x000),
+        ('aMissionResourceDescriptors', 0x060),
+        ('aCockpitResourceDescriptors', 0x088),
+        ('aCockpitSecondaryResources', 0x120),
+        ('aCockpitPrimaryResources', 0x148),
+        ('bIntroSceneResourcesActive', 0x188),
+        ('asConstellationObjectIndices', 0x190),
+        ('bCockpitResourcesActive', 0x198),
+        ('b3SpaceObjectsActive', 0x19C),
+        ('asSceneAnimationLogicalFiles', 0x1A0),
+        ('bSceneAnimationWaitCommand', 0x1B0),
+    ), frozenset((*range(0x000, 0x058, 8), *range(0x060, 0x080, 8),
+                  *range(0x088, 0x118, 8), *range(0x120, 0x140, 8),
+                  *range(0x148, 0x180, 8))), (
+        ('aObjectTypeData', 0x00466458, 58 * 0x87),
+        ('pCockpitPilotShape', 0x0046905C, 4),
+        ('pCockpitExplosionShape', 0x00469064, 4),
+        ('pConfedCommBackground', 0x00469278, 4),
+        ('pCommStaticShape', 0x0046927C, 4),
+        ('pKilrathiCommBackground', 0x00469280, 4),
+        ('apCommPortraitShapes', 0x0059E180, 16 * 4),
+        ('pTargetLockShape', 0x005A6BF4, 4),
+        ('pCockpitWeaponShape', 0x005A7564, 4),
+        ('pCockpitIndicatorShape', 0x005A7658, 4),
+        ('pPilotHandShape', 0x005A7684, 4),
+        ('pCockpitDamageShape', 0x005A76F4, 4),
+        ('apCockpitShapes', 0x005A7C80, 4 * 4),
+        ('pCinematicViewBackdrop', 0x005A7C90, 4),
+        ('pRearViewBackdrop', 0x005A7C94, 4),
+    )),
 }
 
 
@@ -100,10 +160,11 @@ def main() -> int:
     rebuilt = PEImage(args.rebuilt)
     symbols = parse_msvc_map_symbols(args.map_path)
 
-    def address(owner: str, name: str) -> int:
+    def address(owner: str | None, name: str) -> int:
         matches = [entry.va for entry in symbols
                    if normalize_compiled(entry.symbol) == name
-                   and (entry.object_file or '').split(':')[-1] == owner]
+                   and (owner is None or
+                        (entry.object_file or '').split(':')[-1] == owner)]
         require(len(matches) == 1, f'expected one {owner}:{name} in map')
         return matches[0]
 
@@ -133,6 +194,8 @@ def main() -> int:
                 f'cannot read {unit} data')
         ranges = (RelocatedAddressRange(block.original_start,
                                        block.original_start + block.size, start),)
+        ranges += tuple(RelocatedAddressRange(base, base + size, address(None, name))
+                        for name, base, size in block.external_globals)
         # Do not supply PE images: string-content fallback would accept a
         # pointer to another, byte-identical literal at an incorrect offset.
         if block.pointers:

@@ -17,6 +17,10 @@ for similarity decisions.
   Distinguish literals from named arrays: `CreateMainWindow` references the
   same writable class-name array three times, plus a separate title array.
   Four independent literals reproduce the text but not the original storage.
+  Both low-memory branches in `LoadOriginFxDrivers` likewise reference one
+  100-byte writable message array before its memory-reservation tables.
+  Repeating the message at the call sites adds a duplicate to the literal
+  pool and loses the original declaration order.
 - Initialize structure fields individually when the original does so.
   `CreateMainWindow` assigns every `WNDCLASSA` field; a preliminary `memset`
   adds a `REP STOSD` absent from the original. The field order also controls
@@ -37,6 +41,8 @@ for similarity decisions.
 - Put a global's address comment before its declaration or after its final
   semicolon. A comment inside a multiline initializer is recognized by the
   layout audit but missed by the linked-data comparison's simpler parser.
+  Put it before the declaration when interior comments contain semicolons,
+  as in `aObjectTypeData`; those can terminate the simpler parser's scan.
 - Keep direct array-field accesses when the original repeatedly uses an index
   plus an absolute field address. A cached structure pointer can produce the
   same mnemonics with shorter displacements, changing the function's size.

@@ -141,8 +141,9 @@ sits at one constant offset from the original.
 | `src/mathutil.c` | `0x41D0C0`–`0x41D11F` |
 | `src/disk.c` | `0x41D120`–`0x41DEDF` |
 | `src/ship.c` | `0x41DEE0`–`0x4219BF` |
-| `src/logic.c` | `0x4219C0`–`0x424FFF` |
-| `src/pilot.cpp` | `0x425000`–`0x426FFF` |
+| `src/init.c` | `0x4219C0`–`0x42200F` |
+| `src/logic.c` | `0x422010`–`0x42572F` |
+| `src/pilot.cpp` | `0x425730`–`0x426FFF` |
 | `src/system.c` | `0x427000`–`0x4274DF` |
 | `src/main.c` | `0x4274E0`–`0x427FFF` |
 | `src/hudmsg.c` | `0x428000`–`0x42AFFF` |
@@ -183,6 +184,8 @@ ownership and qualifiers:
 | `0x00469644`–`0x00469667` | `debug.cpp`: console count, keyboard state/hook, font name, spinner, and newline arrays |
 | `0x00469668`–`0x00469872` | `disk.c`: graphics-mode and error-message pointers, disk marker, prompt settings, and the complete following literal pool |
 | `0x00469878`–`0x00469995` | `ship.c`: damage-system and debris tables, gun refire delays, and the following four HUD literals |
+| `0x00469998`–`0x00469BBD` | `init.c`: graphics defaults, the shared low-memory message, reservation tables, and startup literals |
+| `0x00469BC0`–`0x00469D7E` | `logic.c`: resource descriptors, scene state, and the scene text-format literal |
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
 DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
@@ -265,6 +268,36 @@ including its padding, with no relocations. Two linker padding bytes
 precede the next unit's scene-animation flag at `0x00469998`.
 `make verify-unit-data` covers this block as well, including the private
 explosion table that is absent from the linker's public-symbol list.
+
+The following startup block establishes a separate initialization unit.
+Its declarations end with the expanded-memory reservation table at
+`0x00469AB0`; the literals from `LoadGamePaletteFile`, `EMStartUp`, and
+`LoadOriginFxDrivers` follow at `0x00469ABC`–`0x00469BBD`. The resource
+descriptor tables begin after this literal pool, at `0x00469BC0`.
+A controlled VC4.20 core-profile probe confirms that named declarations,
+including function-static arrays, precede the unit's literal pool even
+when they appear after functions in source. These two data groups therefore
+require separate objects. `init.c` contains the twelve startup functions
+through `GetFxDriverStatus`; the following ace and mission routines remain
+in `logic.c`. Interior boundaries within `logic.c` remain provisional.
+
+The two low-memory branches both push `0x00469A28`. This 100-byte message
+precedes the reservation tables, so it is a shared writable array rather
+than a pair of compiler literals. `szInsufficientMemory` restores that
+storage and both references without string pooling. The complete
+550-byte initialized-data section in `init.obj` matches literally, including
+the spacing between colour bytes and every startup string.
+
+The next 447-byte block contains five resource tables, their active flags,
+constellation indices, scene-file numbers, a scene-wait flag, and the final
+`"%X%Y%F%s%P"` literal used by `PlaySceneAnimation`. Its 44 relocated pointers
+address shape fields and pointer slots in other units. `verify-unit-data`
+checks each against the corresponding rebuilt global and original field
+offset; null contents at the destination cannot stand in for the correct
+address. All other bytes and relative global positions match exactly.
+The initialization and logic checks also enforce each object's complete
+data size. Two alignment bytes separate the blocks, and one follows the
+scene-format literal before the pilot unit's data at `0x00469D80`.
 
 The registry arrays occupy read-only data, whereas the same routine's
 `"reg cheating\n"` and `"reg not cheating\n"` diagnostic literals occupy

@@ -2,8 +2,9 @@
  *  Pilot name entry, high scores, inter-scene transitions and ownership of
  *  the Win32 developer overlay console.
  *
- *  Address range 0x425000-0x426fff (provisional -- see docs/ORDER.md).
- *  Boundary evidence: EnterPilotNameAndCallsign/ShowTrainSimHighScores; string band 0x469D74-0x469F98.
+ *  Address range 425730-426fff (see docs/ORDER.md).
+ *  Boundary evidence: EnterPilotNameAndCallsign/ShowTrainSimHighScores;
+ *  the preceding scene-animation format closes logic.c's literal pool.
  */
 #include "wc1.h"
 

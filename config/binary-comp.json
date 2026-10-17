@@ -103,6 +103,7 @@
         "CODE_GLOBAL_NOT_IN_SRC:0x00469974": "Compiler-emitted Fuel tanks hit literal in your_internal_damage, src/ship.c. Its bytes and relative position are checked by verify-unit-data's complete 286-byte ship block.",
         "CODE_GLOBAL_NOT_IN_SRC:0x00469984": "Compiler-emitted %s FIXD literal in ReportComponentRepaired, src/ship.c. Its bytes and relative position are checked by verify-unit-data's complete 286-byte ship block.",
         "CODE_GLOBAL_NOT_IN_SRC:0x0046998c": "Compiler-emitted Need Lock literal in fire_missile, src/ship.c. Its bytes and relative position are checked by verify-unit-data's complete 286-byte ship block.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00469d74": "Compiler-emitted %X%Y%F%s%P literal in PlaySceneAnimation, src/logic.c. Its bytes and relative position are checked by verify-unit-data's complete 447-byte logic block.",
         "CODE_GLOBAL_NOT_IN_SRC:0x0046e6d0": "szRasterDriverName (\"MCGA.DLL\") is defined by the hand-written raster library in src/raster.asm; its C definition serves only the SDL build.",
         "CODE_GLOBAL_NOT_IN_SRC:0x0046e6d1": "szRasterDriverName (\"MCGA.DLL\") is defined by the hand-written raster library in src/raster.asm; its C definition serves only the SDL build.",
         "ORIGINAL_INDEXED_GLOBAL_ESCAPE:0x004699a4": "LoadGamePaletteFile intentionally copies the 14-byte legacy colour map across the four-byte-aligned colour globals beginning here; the rebuilt globals retain the same declaration order and spacing."

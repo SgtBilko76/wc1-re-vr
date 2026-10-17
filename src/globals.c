@@ -329,115 +329,6 @@ int anPilotTurnInterval[18] = { /* 0x00465fc8 */
 char szErrorLoadingPilotSpeech[32] = /* 0x00466010 */
     "Error loading pilot speech";
 short nPaletteTransitionInitialise = 1; /* 0x00469640 */
-short bSlowSceneAnimation = 0; /* 0x00469998 */
-unsigned char cBlackColour = 0; /* 0x0046999c */
-unsigned char cViewportClearColour = 15; /* 0x004699a0 */
-unsigned char cBlueColour = 0x25; /* 0x004699a4 */
-unsigned char cYellowColour = 0x47; /* 0x004699a8 */
-unsigned char cRedColour = 0x50; /* 0x004699ac */
-unsigned char cDarkGreenColour = 0xaa; /* 0x004699b0 */
-unsigned char cPrimaryTextColour = 0xa6; /* 0x004699b4 */
-unsigned char cOrangeColour = 0x85; /* 0x004699b8 */
-unsigned char cDarkBlueColour = 0x27; /* 0x004699bc */
-unsigned char cDarkGreyColour = 7; /* 0x004699c0 */
-unsigned char cLightGreyColour = 0x0b; /* 0x004699c4 */
-unsigned char cMagentaColour = 0xb6; /* 0x004699c8 */
-unsigned char cDefaultTextColour = 0xa8; /* 0x004699cc */
-unsigned char cBrownColour = 0xfd; /* 0x004699d0 */
-unsigned char cAsteroidColour = 0xf5; /* 0x004699d4 */
-unsigned char cPrimaryViewBufferColour = 0xbf; /* 0x004699d8 */
-unsigned char abLegacyVideoModeColours[14] = { /* 0x004699e0 */
-    9, 14, 4, 2, 10, 12, 15, 8, 7, 5, 2, 6, 7, 0
-};
-short asConversationTextColours[24] = { /* 0x004699f0 */
-    0x25, 0xb6, 0x9a, 0x50, 0x94, 0x85, 0x27, 0xa6,
-    0xfd, 0x47, 0xaa, 0x0b, 0x09, 0x0d, 0x03, 0x04,
-    0x0b, 0x0c, 0x01, 0x0a, 0x06, 0x0e, 0x02, 0x07
-};
-int bGraphicsActive = 0; /* 0x00469a20 */
-int anBaseMemoryReservationByVideoMode[4] = { /* 0x00469a90 */
-    280000, 260000, 280000, 0
-};
-int anFullMusicMemoryReservationByVideoMode[4] = { /* 0x00469aa0 */
-    306000, 286000, 306000, 0
-};
-int anExpandedMemoryReservationByVideoMode[3] = { /* 0x00469ab0 */
-    258000, 238000, 258000
-};
-PacketResourceDescriptor aCommon3SpaceResources[12] = { /* 0x00469bc0 */
-    { &aObjectTypeData[OBJECT_TYPE_THRUSTERS].shapeSet, 3, 0 },
-    { &aObjectTypeData[OBJECT_TYPE_EXPLOSION0].shapeSet, 3, 1 },
-    { &aObjectTypeData[OBJECT_TYPE_LASER_CANNON].shapeSet, 3, 6 },
-    { &aObjectTypeData[OBJECT_TYPE_MASS_DRIVER_CANNON].shapeSet,
-      3, 7 },
-    { &aObjectTypeData[OBJECT_TYPE_NEUTRON_PARTICLE_GUN].shapeSet,
-      3, 8 },
-    { &aObjectTypeData[OBJECT_TYPE_LASER_SPARK].shapeSet, 3, 9 },
-    { &aObjectTypeData[OBJECT_TYPE_DEBRIS_PIPE].shapeSet, 3, 4 },
-    { &aObjectTypeData[OBJECT_TYPE_BLUE_SPARK].shapeSet, 3, 10 },
-    { &aObjectTypeData[OBJECT_TYPE_RED_SPARK].shapeSet, 3, 11 },
-    { &aObjectTypeData[OBJECT_TYPE_SPARK_TRAIL].shapeSet, 3, 12 },
-    { &aObjectTypeData[OBJECT_TYPE_SPACE_MINE].shapeSet, 3, 15 },
-    { 0, 0, 0 }
-};
-PacketResourceDescriptor aMissionResourceDescriptors[5] = { /* 0x00469c20 */
-    { &aObjectTypeData[OBJECT_TYPE_HYPERSPACE_JUMP_FLASH].shapeSet,
-      3, 14 },
-    { &aObjectTypeData[OBJECT_TYPE_EXPLOSION1].shapeSet, 3, 2 },
-    { &aObjectTypeData[OBJECT_TYPE_EXPLOSION2].shapeSet, 3, 3 },
-    { &aObjectTypeData[OBJECT_TYPE_DEBRIS_METAL_SHEET].shapeSet,
-      3, 5 },
-    { 0, 0, 0 }
-};
-PacketResourceDescriptor aCockpitResourceDescriptors[19] = { /* 0x00469c48 */
-    { &pTargetLockShape, 8, 0 },
-    { &pPilotHandShape, 2, 3 },
-    { &pConfedCommBackground, 11, 0 },
-    { &pCommStaticShape, 11, 11 },
-    { &pKilrathiCommBackground, 11, 9 },
-    { (unsigned char **)&pCockpitExplosionShape, 8, 5 },
-    { &pCockpitIndicatorShape, 8, 4 },
-    { &pCinematicViewBackdrop, 8, 6 },
-    { &pRearViewBackdrop, 8, 7 },
-    { &apCommPortraitShapes[0], 11, 1 },
-    { &apCommPortraitShapes[1], 11, 2 },
-    { &apCommPortraitShapes[2], 11, 3 },
-    { &apCommPortraitShapes[3], 11, 4 },
-    { &apCommPortraitShapes[4], 11, 5 },
-    { &apCommPortraitShapes[5], 11, 6 },
-    { &apCommPortraitShapes[6], 11, 7 },
-    { &apCommPortraitShapes[7], 11, 8 },
-    { &apCommPortraitShapes[8], 11, 10 },
-    { 0, 0, 0 }
-};
-PacketResourceDescriptor aCockpitSecondaryResources[5] = { /* 0x00469ce0 */
-    { &pCockpitDamageShape, -1, 7 },
-    { &pCockpitWeaponShape, -1, 9 },
-    { &pCockpitIndicatorShape, 8, 4 },
-    { &pTargetLockShape, 8, 0 },
-    { 0, 0, 0 }
-};
-PacketResourceDescriptor aCockpitPrimaryResources[8] = { /* 0x00469d08 */
-    { &pCockpitPilotShape, -1, 4 },
-    { &pCockpitDamageShape, -1, 7 },
-    { &pCockpitWeaponShape, -1, 9 },
-    { &apCockpitShapes[0], -1, 0 },
-    { &apCockpitShapes[1], -1, 1 },
-    { &apCockpitShapes[2], -1, 2 },
-    { &apCockpitShapes[3], -1, 3 },
-    { 0, 0, 0 }
-};
-unsigned int bIntroSceneResourcesActive = 1; /* 0x00469d48 */
-short asConstellationObjectIndices[4] = { /* 0x00469d50 */
-    -1, -1, -1, -1
-};
-int bCockpitResourcesActive = 0; /* 0x00469d58 */
-int b3SpaceObjectsActive = 0; /* 0x00469d5c */
-short asSceneAnimationLogicalFiles[8] = { /* 0x00469d60 */
-    63, 64, 65, 66, 67, 68, 69, 70
-};
-short bSceneAnimationWaitCommand = 0; /* 0x00469d70 */
-char szSceneAnimationTextFormat[12] = "%X%Y%F%s%P"; /* 0x00469d74 */
 char szMeanwhile[16] = "Meanwhile..."; /* 0x00469d80 */
 char szEmptyAnswerInput[4] = ""; /* 0x00469d90 */
 char szAnswerLabel[9] = "Answer: "; /* 0x00469d94 */
@@ -2311,78 +2202,78 @@ HINSTANCE hAppInstance; /* 0x005a8a40 */
 unsigned int nSessionStartTime; /* 0x005a8a44 */
 unsigned short awPaletteRgbWords[0x300]; /* 0x005a8a50 */
 
-/* Embedded animation command streams at 0x00466030-0x00466400.  Each
- * command occupies the low word of a four-byte source record. */
-static unsigned int anAnimExplosion0[12] = { /* 0x00466030 */
+/* Embedded animation command streams. Each command occupies the low word
+ * of a four-byte source record. The 21 arrays form one contiguous data run. */
+static unsigned int anAnimExplosion0[12] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa000, 0
-};
-static unsigned int anAnimExplosion1[22] = { /* 0x00466060 */
+}; /* 0x00466030 */
+static unsigned int anAnimExplosion1[22] = {
     0, 0x406, 1, 0x406, 2, 0x406, 0x406, 3, 0x406, 0x406,
     4, 0x406, 0x406, 0x406, 5, 0x406, 0x406, 0x406, 0x406,
     0x406, 0xa000, 0
-};
-static unsigned int anAnimExplosion2[14] = { /* 0x004660b8 */
+}; /* 0x00466060 */
+static unsigned int anAnimExplosion2[14] = {
     0, 0x406, 1, 0x406, 2, 0x406, 3, 0x406, 4, 0x406, 5,
     6, 7, 0xa000
-};
-static unsigned int anAnimLaserSpark[8] = { /* 0x004660f0 */
+}; /* 0x004660b8 */
+static unsigned int anAnimLaserSpark[8] = {
     0, 1, 2, 3, 4, 5, 0xa000, 0
-};
-static unsigned int anAnimBlueSpark[6] = { /* 0x00466110 */
+}; /* 0x004660f0 */
+static unsigned int anAnimBlueSpark[6] = {
     0, 1, 2, 3, 0xa000, 0
-};
-static unsigned int anAnimRedSpark[6] = { /* 0x00466128 */
+}; /* 0x00466110 */
+static unsigned int anAnimRedSpark[6] = {
     0, 1, 2, 3, 0xa000, 0
-};
-static unsigned int anAnimSparkTrail[6] = { /* 0x00466140 */
+}; /* 0x00466128 */
+static unsigned int anAnimSparkTrail[6] = {
     0, 1, 2, 3, 0xa000, 0
-};
-static unsigned int anAnimGirder[8] = { /* 0x00466158 */
+}; /* 0x00466140 */
+static unsigned int anAnimGirder[8] = {
     0, 1, 2, 3, 4, 5, 0x9000, 0
-};
-static unsigned int anAnimTubing[8] = { /* 0x00466178 */
+}; /* 0x00466158 */
+static unsigned int anAnimTubing[8] = {
     6, 7, 8, 9, 10, 11, 0x9000, 0
-};
-static unsigned int anAnimGlass[18] = { /* 0x00466198 */
+}; /* 0x00466178 */
+static unsigned int anAnimGlass[18] = {
     12, 13, 14, 15, 16, 17, 18, 19, 0x92, 0x91, 0x90,
     0x8f, 0x8e, 0x8d, 0x8c, 20, 0x9000, 0
-};
-static unsigned int anAnimORing[8] = { /* 0x004661e0 */
+}; /* 0x00466198 */
+static unsigned int anAnimORing[8] = {
     21, 22, 23, 24, 25, 26, 0x9000, 0
-};
-static unsigned int anAnimPipe[8] = { /* 0x00466200 */
+}; /* 0x004661e0 */
+static unsigned int anAnimPipe[8] = {
     27, 28, 29, 30, 31, 32, 0x9000, 0
-};
-static unsigned int anAnimMetalSheet[14] = { /* 0x00466220 */
+}; /* 0x00466200 */
+static unsigned int anAnimMetalSheet[14] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0x9000
-};
-static unsigned int anAnimWing[18] = { /* 0x00466258 */
+}; /* 0x00466220 */
+static unsigned int anAnimWing[18] = {
     13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
     27, 28, 0x9000, 0
-};
-static unsigned int anAnimMine[14] = { /* 0x004662a0 */
+}; /* 0x00466258 */
+static unsigned int anAnimMine[14] = {
     0, 1, 2, 0x41, 0x9000, 0, 0, 1, 2, 3, 4, 5, 0x9000, 0
-};
-static unsigned int anAnimAsteroidForward[16] = { /* 0x004662d8 */
+}; /* 0x004662a0 */
+static unsigned int anAnimAsteroidForward[16] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0x9000, 0
-};
-static unsigned int anAnimAsteroidShortForward[14] = { /* 0x00466318 */
+}; /* 0x004662d8 */
+static unsigned int anAnimAsteroidShortForward[14] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0x9000
-};
-static unsigned int anAnimAsteroidReverse[16] = { /* 0x00466350 */
+}; /* 0x00466318 */
+static unsigned int anAnimAsteroidReverse[16] = {
     13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0x9000, 0
-};
-static unsigned int anAnimAsteroidShortReverse[14] = { /* 0x00466390 */
+}; /* 0x00466350 */
+static unsigned int anAnimAsteroidShortReverse[14] = {
     12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0x9000
-};
-static unsigned int anAnimEjectedPilot[14] = { /* 0x004663c8 */
+}; /* 0x00466390 */
+static unsigned int anAnimEjectedPilot[14] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0x9000
-};
-static unsigned int anAnimHyperspaceJumpFlash[22] = { /* 0x00466400 */
+}; /* 0x004663c8 */
+static unsigned int anAnimHyperspaceJumpFlash[22] = {
     0, 0x402, 0x404, 0x404, 0x408, 0x408, 0x408, 0x410,
     0x410, 0x410, 0x410, 0x820, 0x820, 0x810, 0x808, 0x804,
     1, 0x804, 0x804, 0x804, 0x804, 0xa000
-};
+}; /* 0x00466400 */
 
 /* Child/hardpoint offsets at 0x004682F0. */
 ShortVector aChildOffsets[56] = { /* 0x004682f0 */
@@ -2421,7 +2312,8 @@ ShortPoint aWeaponDisplayOrigins[5] = { /* 0x004684c0 */
     {0, 16}, {0, 16}, {0, 16}, {0, 16}, {0, 16}
 };
 
-ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = { /* 0x00466458 */
+/* 0x00466458 */
+ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 0: Hornet */
     {
         &aszObjectTypeDisplayNames[0x00],
@@ -2972,7 +2864,8 @@ const char *apszCommMenuText[13] = { /* 0x0046af90 */
 
 /* Ordered display names transcribed from the image.  The Sega CD inspector
  * proves that these index ObjectType, not a ship-only class enum. */
-char aszObjectTypeDisplayNames[0x18c] = /* 0x004684d4 */
+/* 0x004684d4 */
+char aszObjectTypeDisplayNames[0x18c] =
     "Hornet\0\0"
     "Rapier\0\0"
     "Scimitar\0\0\0\0"

@@ -1,280 +1,85 @@
 /*
- *  Ship mission logic (Mac `logic` compilation unit), with adjacent Win32
- *  ship and game-mode initialization routines.
+ *  Ship mission logic, resource ownership, and scene animation.
  *
- *  Address range 0x4219c0-0x424fff (provisional -- see docs/ORDER.md).
- *  Boundary evidence: exact nested Mac CODE 5 `logic` unit at
- *  0x422010-0x423cdf; LoadOriginFxDrivers/EMStartUp and string band
- *  0x469A28-0x469B9C anchor the provisional enclosing file.
+ *  Address range 422010-42572f (see docs/ORDER.md). Interior boundaries
+ *  remain provisional; the preceding startup unit has a separate pool
+ *  of initialized data and string literals.
  */
 #include "wc1.h"
 
-/* Function start: 0x4219C0 */
-unsigned int LoadGamePaletteFile(void)
-{
-    short index;
-
-    PromptInsertNumberedDisk(0);
-    switch ((int)(short)nVideoMode) {
-    case 9:
-    case 13:
-        index = 0;
-        do {
-            ((unsigned char *)&cBlueColour)[index] =
-                abLegacyVideoModeColours[index];
-            index++;
-        } while ((unsigned int)(int)index < 14);
-        index = 0;
-        do {
-            asConversationTextColours[index] =
-                asConversationTextColours[index + 12];
-            index++;
-        } while ((unsigned int)(int)index < 12);
-        return 0;
-    case 0x13:
-        LoadPaletteTripletsFile("game.pal");
-        ResetCockpitPaletteEntries();
-        SaveGamePalette();
-        return 0;
-    }
-    return 0;
-}
-
-/* Function start: 0x421A40 */
-unsigned int EMShutDown(void)
-{
-    if (nEventManagerActive != 0)
-        ShutdownEventManager();
-    return 0;
-}
-
-/* Function start: 0x421A60 */
-unsigned short InitializeEventManagerResources(void)
-{
-    DAT_0059a9f0 = 20;
-    nInputTickScale = 20;
-    DAT_0059ab64 = 1;
-    stMouseCursorState.shape = pMouseCursorResource =
-        FetchDiskPacketRetrying(14, 0, 0x10);
-    stMouseCursorState.frame = 0;
-    stMouseCursorState.viewport = &stScreen;
-    return 0;
-}
-
-/* Function start: 0x421AB0 */
-unsigned int EMStartUp(void)
-{
-    PromptInsertNumberedDisk(0);
-    RegisterEventManagerShutdown((void (*)(void))LogMemoryUsage);
-    if (InitializeEventManager(20, InitializeEventManagerResources, 0) == 0)
-        exit_squadron("EMStartUp Failed");
-    ConfigureEventManagerPointer(stMouseCursorState.shape, 0);
-    SetEventManagerPump(PollJoystickButtonEvents);
-    nMenuInputRepeatDelay = 6;
-    return 0;
-}
-
-/* Function start: 0x421B10 */
-unsigned int LoadOriginFxDrivers(void)
-{
-    int memoryThreshold;
-    int videoModeMemory;
-
-    memoryThreshold = 100000;
-    chdir("gamedat");
-    nNearHeapMaxDescriptors = 0x80;
-    IsSoundHardwarePresent(8);
-    if (bExpandedMemoryAvailable == 0)
-        SystemDebugPrintf("No ");
-    SystemDebugPrintf("Expanded Memory Detected.\n");
-    bGraphicsActive = 0;
-    PromptInsertNumberedDisk(0x38);
-    if (GetMusicDriverPresent(bSlowSceneAnimation) == 0)
-        exit_squadron("Failed to load Origin-FX drivers");
-    RewriteDiskFileGraphicsExtensions(bSlowSceneAnimation);
-    LoadJoystickCalibrationFile(9, 9, 1, 1);
-    nInputDoubleClickInterval = 2;
-    EMStartUp();
-    GetFxDriverInitResult();
-    dwOriginalFreeMemory = GetFixedOneMillionThunkAlt(0);
-    if (nMusicPlaybackMode != 0 && nMusicPlaybackMode != 3)
-        memoryThreshold = 210000;
-    SetFrameTimerPeriodDirect(0x78);
-    if ((int)GetFixedOneMillionThunk(4) > memoryThreshold) {
-        nAvailableGameMemory =
-            (int)dwOriginalFreeMemory -
-            anExpandedMemoryReservationByVideoMode[
-                bSlowSceneAnimation];
-        if (nAvailableGameMemory < 0)
-            exit_squadron(
-                "You do not have enough memory to play Wing Commander.\n"
-                "Refer to your reference guide for assistance.");
-        nMemoryConfiguration = 2;
-        SystemDebugPrintf("Expanded Memory fully used.\n");
-    } else {
-        nAvailableGameMemory =
-            (int)dwOriginalFreeMemory -
-            anBaseMemoryReservationByVideoMode[
-                bSlowSceneAnimation];
-        if (nAvailableGameMemory < 0)
-            exit_squadron(
-                "You do not have enough memory to play Wing Commander.\n"
-                "Refer to your reference guide for assistance.");
-        nMemoryConfiguration = 0;
-        if (nMusicPlaybackMode == 1 || nMusicPlaybackMode == 2) {
-            videoModeMemory =
-                anFullMusicMemoryReservationByVideoMode[
-                    bSlowSceneAnimation];
-            if ((int)dwOriginalFreeMemory > videoModeMemory) {
-                nMemoryConfiguration = 1;
-                nAvailableGameMemory =
-                    (int)dwOriginalFreeMemory - videoModeMemory;
-                SystemDebugPrintf("Full");
-            } else {
-                SystemDebugPrintf("Limited");
-            }
-            SystemDebugPrintf(" music will play.");
-        }
-    }
-
-    LoadSpaceflightResources();
-    FxDriverShutdownHook();
-    SetEventManagerPump(PollJoystickButtonEvents);
-    PromptInsertNumberedDisk(0);
-    ShutdownVideoHook(
-        acGraphicsModeByAnimationSpeed[
-            bSlowSceneAnimation]);
-    if (acGraphicsModeByAnimationSpeed[bSlowSceneAnimation] !=
-        GetTargetColourIndex())
-        exit_squadron("Requested graphics display mode not available.");
-    LoadGamePaletteFile();
-    InitializeGameTextContexts();
-    InitializeDiskPromptTextContext();
-    GetEventManagerStatus();
-    nFrameSkip = 1;
-    if (nMusicPlaybackMode != 0 && nMusicPlaybackMode != 3)
-        GetFxDriverStatus();
-    initialize_direction_view_frames();
-    pConstellationDefinitions =
-        LoadPacketAllocated(0x3a, 0);
-    pMissionCampaignData = LoadPacketAllocated(0x3a, 1);
-    SystemDebugPrintf("\n[SYSTEM] : Exiting initialize()\n");
-    return 0;
-}
-
-/* Function start: 0x421D80 */
-unsigned int InitializeGameTextContexts(void)
-{
-    InitializeDIBScreenViewport(&stScreen,
-                                (unsigned char)cBlackColour);
-    stModalSourceViewport = stScreen;
-    stDefaultTextContext.viewport =
-        &stModalSourceViewport;
-    stDefaultTextContext.text =
-        szDefaultTextBuffer;
-    InitializeTextContextFromFont(&stDefaultTextContext, 1,
-                                  (unsigned char)cPrimaryTextColour,
-                                  cBlackColour);
-    SetTextContext(&stDefaultTextContext);
-
-    stHudMessageTextContext.viewport = &stSpaceBuffer;
-    stHudMessageTextContext.text = szDefaultTextBuffer;
-    stHudMessageTextContext.alignment = 2;
-    InitializeTextContextFromFont(&stHudMessageTextContext, 1,
-                                  (unsigned char)cRedColour, -1);
-    return 0;
-}
-
-/* Function start: 0x421E20 */
-unsigned int initialize_direction_view_frame(short yaw, short pitch,
-                                             signed char frame)
-{
-    FixedVector right = { 0x100, 0, 0 };
-    FixedVector up = { 0, 0x100, 0 };
-    FixedVector forward = { 0, 0, 0x100 };
-    short index;
-
-    rotate_about_j(yaw, &right, &forward);
-    rotate_about_i(pitch, &up, &forward);
-    index = (short)frame;
-    aDirectionViewRightVector[index] = right;
-    aDirectionViewUpVector[index] = up;
-    aDirectionViewForwardVector[index] = forward;
-    return 0;
-}
-
-/* Function start: 0x421EF0 */
-unsigned int initialize_direction_view_frames(void)
-{
-    signed char frame;
-    signed char pitchBand;
-    signed char yawSector;
-    short yaw;
-    short pitch;
-
-    frame = 1;
-    pitch = 90;
-    initialize_direction_view_frame(0, pitch, 0);
-    for (pitchBand = 0; pitchBand < 5; pitchBand++) {
-        pitch -= 30;
-        yaw = 0;
-        for (yawSector = 0; yawSector < 12; yawSector++) {
-            initialize_direction_view_frame(yaw, pitch, frame++);
-            yaw += 30;
-        }
-    }
-    initialize_direction_view_frame(0, -90, frame);
-    return 0;
-}
-
-/* Function start: 0x421F50 */
-unsigned int LoadSpaceflightResources(void)
-{
-    unsigned char *debrisShapeSet;
-
-    if (bExpandedMemoryAvailable == 0)
-        return 0;
-    if (LoadShapeSet(aCommon3SpaceResources, 4, -1) == 0)
-        return 0;
-    LoadShapeSet(aMissionResourceDescriptors, 4, -1);
-    aObjectTypeData[OBJECT_TYPE_DEBRIS_WING].shapeSet =
-        aObjectTypeData[OBJECT_TYPE_DEBRIS_METAL_SHEET].shapeSet;
-    debrisShapeSet =
-        aObjectTypeData[OBJECT_TYPE_DEBRIS_PIPE].shapeSet;
-    aObjectTypeData[OBJECT_TYPE_DEBRIS_O_RING].shapeSet =
-        debrisShapeSet;
-    aObjectTypeData[OBJECT_TYPE_DEBRIS_GLASS].shapeSet =
-        debrisShapeSet;
-    aObjectTypeData[OBJECT_TYPE_DEBRIS_SHIP_TUBING].shapeSet =
-        debrisShapeSet;
-    aObjectTypeData[OBJECT_TYPE_DEBRIS_SHIP_GIRDER_CHUNK].shapeSet =
-        debrisShapeSet;
-    LoadShapeSet(aCockpitResourceDescriptors, 4, -1);
-    apCommPortraitShapes[8] = 0;
-    apCommPortraitShapes[9] = 0;
-    apCommPortraitShapes[10] = 0;
-    apCommPortraitShapes[11] = 0;
-    apCommPortraitShapes[13] = 0;
-    return 0;
-}
-
-/* Function start: 0x421FE0 */
-unsigned int GetFxDriverInitResult(void)
-{
-    return 0;
-}
-
-/* Function start: 0x421FF0 */
-unsigned int GetMessagePumpResult(void)
-{
-    return 0;
-}
-
-/* Function start: 0x422000 */
-unsigned int GetFxDriverStatus(void)
-{
-    return 0;
-}
+PacketResourceDescriptor aCommon3SpaceResources[12] = {
+    { &aObjectTypeData[OBJECT_TYPE_THRUSTERS].shapeSet, 3, 0 },
+    { &aObjectTypeData[OBJECT_TYPE_EXPLOSION0].shapeSet, 3, 1 },
+    { &aObjectTypeData[OBJECT_TYPE_LASER_CANNON].shapeSet, 3, 6 },
+    { &aObjectTypeData[OBJECT_TYPE_MASS_DRIVER_CANNON].shapeSet,
+      3, 7 },
+    { &aObjectTypeData[OBJECT_TYPE_NEUTRON_PARTICLE_GUN].shapeSet,
+      3, 8 },
+    { &aObjectTypeData[OBJECT_TYPE_LASER_SPARK].shapeSet, 3, 9 },
+    { &aObjectTypeData[OBJECT_TYPE_DEBRIS_PIPE].shapeSet, 3, 4 },
+    { &aObjectTypeData[OBJECT_TYPE_BLUE_SPARK].shapeSet, 3, 10 },
+    { &aObjectTypeData[OBJECT_TYPE_RED_SPARK].shapeSet, 3, 11 },
+    { &aObjectTypeData[OBJECT_TYPE_SPARK_TRAIL].shapeSet, 3, 12 },
+    { &aObjectTypeData[OBJECT_TYPE_SPACE_MINE].shapeSet, 3, 15 },
+    { 0, 0, 0 }
+}; /* 0x00469bc0 */
+PacketResourceDescriptor aMissionResourceDescriptors[5] = {
+    { &aObjectTypeData[OBJECT_TYPE_HYPERSPACE_JUMP_FLASH].shapeSet,
+      3, 14 },
+    { &aObjectTypeData[OBJECT_TYPE_EXPLOSION1].shapeSet, 3, 2 },
+    { &aObjectTypeData[OBJECT_TYPE_EXPLOSION2].shapeSet, 3, 3 },
+    { &aObjectTypeData[OBJECT_TYPE_DEBRIS_METAL_SHEET].shapeSet,
+      3, 5 },
+    { 0, 0, 0 }
+}; /* 0x00469c20 */
+PacketResourceDescriptor aCockpitResourceDescriptors[19] = {
+    { &pTargetLockShape, 8, 0 },
+    { &pPilotHandShape, 2, 3 },
+    { &pConfedCommBackground, 11, 0 },
+    { &pCommStaticShape, 11, 11 },
+    { &pKilrathiCommBackground, 11, 9 },
+    { (unsigned char **)&pCockpitExplosionShape, 8, 5 },
+    { &pCockpitIndicatorShape, 8, 4 },
+    { &pCinematicViewBackdrop, 8, 6 },
+    { &pRearViewBackdrop, 8, 7 },
+    { &apCommPortraitShapes[0], 11, 1 },
+    { &apCommPortraitShapes[1], 11, 2 },
+    { &apCommPortraitShapes[2], 11, 3 },
+    { &apCommPortraitShapes[3], 11, 4 },
+    { &apCommPortraitShapes[4], 11, 5 },
+    { &apCommPortraitShapes[5], 11, 6 },
+    { &apCommPortraitShapes[6], 11, 7 },
+    { &apCommPortraitShapes[7], 11, 8 },
+    { &apCommPortraitShapes[8], 11, 10 },
+    { 0, 0, 0 }
+}; /* 0x00469c48 */
+PacketResourceDescriptor aCockpitSecondaryResources[5] = {
+    { &pCockpitDamageShape, -1, 7 },
+    { &pCockpitWeaponShape, -1, 9 },
+    { &pCockpitIndicatorShape, 8, 4 },
+    { &pTargetLockShape, 8, 0 },
+    { 0, 0, 0 }
+}; /* 0x00469ce0 */
+PacketResourceDescriptor aCockpitPrimaryResources[8] = {
+    { &pCockpitPilotShape, -1, 4 },
+    { &pCockpitDamageShape, -1, 7 },
+    { &pCockpitWeaponShape, -1, 9 },
+    { &apCockpitShapes[0], -1, 0 },
+    { &apCockpitShapes[1], -1, 1 },
+    { &apCockpitShapes[2], -1, 2 },
+    { &apCockpitShapes[3], -1, 3 },
+    { 0, 0, 0 }
+}; /* 0x00469d08 */
+unsigned int bIntroSceneResourcesActive = 1; /* 0x00469d48 */
+short asConstellationObjectIndices[4] = {
+    -1, -1, -1, -1
+}; /* 0x00469d50 */
+int bCockpitResourcesActive = 0; /* 0x00469d58 */
+int b3SpaceObjectsActive = 0; /* 0x00469d5c */
+short asSceneAnimationLogicalFiles[8] = {
+    63, 64, 65, 66, 67, 68, 69, 70
+}; /* 0x00469d60 */
+short bSceneAnimationWaitCommand = 0; /* 0x00469d70 */
 
 /* Function start: 0x422010 */
 short ace_status(short ace, unsigned char bits)
@@ -2538,7 +2343,7 @@ void PlaySceneAnimation(char *text, short animation, short duration)
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szSceneAnimationTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
