@@ -390,6 +390,41 @@ for similarity decisions.
   Additional short casts introduce zero extensions absent from the original.
   A separate `HANDLE` result from `GetCurrentProcess` also preserves the
   original call-before-priority-push order in the window procedure and pump.
+- Both joystick pollers shift the full 32-bit button sample before narrowing
+  the second button's mask to a word. Narrowing first emits `SHR AX` instead
+  of `SHR EAX`. Store the host secondary-button byte before the primary byte.
+  `PollMenuInputDevices` also writes each selected coordinate bound on both
+  paths: conditional expressions assigned back to the fields reproduce these
+  stores; conditional stores do not. Its change flag is sign-extended from a
+  byte for the queued event. These forms recover its 672-byte span at 97.35%
+  mnemonic similarity; `PollJoystickButtonEvents` reaches 96.08%. The menu's
+  initial zero register, movement temporary, and cursor-copy scheduling remain
+  different. A separate horizontal-step local and reordered cursor assignments
+  did not improve them and are not retained.
+- `LoadJoystickCalibrationFile` keeps both promoted input ranges in 32-bit
+  locals through the scale divisions and coordinate bounds. This recovers the
+  original register pressure and scale reloads. Choose the adjusted calibration
+  bounds in an `if`/`else`, rather than writing the centres first, and increment
+  each zero scale. Together these choices restore the 784-byte span at 98.35%
+  similarity. The only call to `SampleBothJoysticks` pushes signed -1, while
+  the callee reads its fallback as a word. A signed-short fallback parameter
+  reproduces both; the callee remains exact. Its final conversion to the
+  unsigned fallback of `GetJoystickPosition` preserves the low 16 bits.
+- `ReadCalibratedJoystick` reads Y inside the short-circuit failure condition,
+  after X passes its check. Chain the three sample-field clears to retain the
+  original shared zero register. Compare the minimum X bound with the sampled
+  field so CL loads the bound before storing the raw coordinates. These changes
+  reach 87.60% and remove sixteen excess bytes; sixteen remain. Explicit cached
+  failure/centre locals, long raw-value locals, reversed failure comparisons,
+  and folding the device assignment into its test did not recover the remaining
+  register-held comparisons and divisors.
+- Check neighbouring functions after input changes. The unit's allocation
+  changes also affect `ReserveContiguousPaletteEntries`. Reusing its count for
+  the fill loop restores the original branch direction and all mnemonics, but
+  nine of 39 instructions now differ at byte level, versus three before these
+  input changes. Initial zeroing and fill-loop registers remain different;
+  restoring the menu's cached index did not resolve them. No previously exact
+  function loses its exact match in this change.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

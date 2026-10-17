@@ -4281,7 +4281,7 @@ unsigned int init_intelligence_data(short obj)
 
 /* Function start: 0x40CAA0 */
 short __stdcall SampleBothJoysticks(InputDeviceSample *samples,
-                                    unsigned short fallback)
+                                    short fallback)
 {
     GetJoystickPosition((unsigned int *)&samples[0].x,
                         (unsigned int *)&samples[0].y,

@@ -1102,22 +1102,22 @@ void PollJoystickButtonEvents(void)
                 [nActiveInputDevice] != 0)
             doubleClick = 3;
         QueueInputEventAtCursor(
-            (((unsigned short)aInputDeviceSamples
+            ((unsigned short)(aInputDeviceSamples
                 [nActiveInputDevice].buttons >> 1) & 1) + 1,
             1, doubleClick);
     }
     bInputPollingGuard--;
-    stHostMouseState.primaryButton =
+    stHostMouseState.secondaryButton =
         (unsigned char)aInputDeviceSamples
             [nActiveInputDevice].buttons;
-    stHostMouseState.secondaryButton =
-        stHostMouseState.primaryButton;
+    stHostMouseState.primaryButton =
+        stHostMouseState.secondaryButton;
 }
 
 /* Function start: 0x430920 */
 void PollMenuInputDevices(void)
 {
-    unsigned char changes;
+    signed char changes;
     char doubleClick;
     short movementX;
     short movementY;
@@ -1150,7 +1150,7 @@ void PollMenuInputDevices(void)
         QueueInputEventAtCursor(
             ((unsigned short)aInputDeviceSamples
                 [deviceIndex].buttons & 1) + 1,
-            0, (short)(signed char)changes);
+            0, (short)changes);
         changes = 1;
     }
     deviceIndex = (int)nActiveInputDevice;
@@ -1167,7 +1167,7 @@ void PollMenuInputDevices(void)
         if (asInputButton1DoubleClick[deviceIndex] != 0)
             doubleClick = 3;
         QueueInputEventAtCursor(
-            (((unsigned short)aInputDeviceSamples
+            ((unsigned short)(aInputDeviceSamples
                 [deviceIndex].buttons >> 1) & 1) + 1,
             1, (short)doubleClick);
         changes++;
@@ -1184,32 +1184,32 @@ void PollMenuInputDevices(void)
         changes = (unsigned char)movementY | (unsigned char)movementX;
         if (changes != 0) {
             FlushInputEvents();
-            if (stHostMouseState.x <= 0)
-                stHostMouseState.x = 0;
-            if (stHostMouseState.x >= 319)
-                stHostMouseState.x = 319;
-            if (stHostMouseState.y <= 0)
-                stHostMouseState.y = 0;
-            if (stHostMouseState.y >= 199)
-                stHostMouseState.y = 199;
+            stHostMouseState.x = stHostMouseState.x > 0 ?
+                stHostMouseState.x : 0;
+            stHostMouseState.x = stHostMouseState.x < 319 ?
+                stHostMouseState.x : 319;
+            stHostMouseState.y = stHostMouseState.y > 0 ?
+                stHostMouseState.y : 0;
+            stHostMouseState.y = stHostMouseState.y < 199 ?
+                stHostMouseState.y : 199;
             SetMousePosition(stHostMouseState.x,
                              stHostMouseState.y);
         }
     }
 
-    stHostMouseState.primaryButton =
+    stHostMouseState.secondaryButton =
         (unsigned char)aInputDeviceSamples
             [nActiveInputDevice].buttons;
-    stHostMouseState.secondaryButton =
-        stHostMouseState.primaryButton;
-    if (stHostMouseState.x <= 0)
-        stHostMouseState.x = 0;
-    if (stHostMouseState.x >= 319)
-        stHostMouseState.x = 319;
-    if (stHostMouseState.y <= 0)
-        stHostMouseState.y = 0;
-    if (stHostMouseState.y >= 199)
-        stHostMouseState.y = 199;
+    stHostMouseState.primaryButton =
+        stHostMouseState.secondaryButton;
+    stHostMouseState.x = stHostMouseState.x > 0 ?
+        stHostMouseState.x : 0;
+    stHostMouseState.x = stHostMouseState.x < 319 ?
+        stHostMouseState.x : 319;
+    stHostMouseState.y = stHostMouseState.y > 0 ?
+        stHostMouseState.y : 0;
+    stHostMouseState.y = stHostMouseState.y < 199 ?
+        stHostMouseState.y : 199;
     if (changes != 0) {
         LeaveAllocationScope();
         stMouseCursorState.primaryButton =
@@ -1817,7 +1817,6 @@ short __stdcall ReserveContiguousPaletteEntries(short entryCount)
     short entry;
     short freeEntries;
     short firstEntry;
-    short fillEntry;
 
     freeEntries = 0;
     entry = 0;
@@ -1835,11 +1834,11 @@ short __stdcall ReserveContiguousPaletteEntries(short entryCount)
             return -1;
     }
 
-    fillEntry = 0;
-    while (fillEntry < entryCount) {
-        awPaletteEntryAllocation[firstEntry + fillEntry] =
+    freeEntries = 0;
+    while (freeEntries < entryCount) {
+        awPaletteEntryAllocation[firstEntry + freeEntries] =
             entryCount;
-        fillEntry++;
+        freeEntries++;
     }
     return firstEntry;
 }
@@ -1903,6 +1902,8 @@ void LoadJoystickCalibrationFile(short horizontalRange,
     int failed;
     int centreX;
     int centreY;
+    int rangeX;
+    int rangeY;
 
     activeDevice = -1;
     failed = 1;
@@ -1911,7 +1912,7 @@ void LoadJoystickCalibrationFile(short horizontalRange,
     if (verticalRange == 0)
         verticalRange++;
     nJoystickFailureValue = -1;
-    SampleBothJoysticks(samples, 0xffff);
+    SampleBothJoysticks(samples, -1);
     if (samples[0].x != -1 && samples[0].y != -1)
         activeDevice = 0;
     else if (samples[1].x != -1 && samples[1].y != -1)
@@ -1953,50 +1954,46 @@ void LoadJoystickCalibrationFile(short horizontalRange,
             centreY = nJoystickCentreY;
         }
 
-        nJoystickCalibrationMinimumX = centreX;
-        nJoystickCalibrationMaximumX = centreX;
         if (centreX > 10) {
             nJoystickCalibrationMinimumX = centreX - 10;
             nJoystickCalibrationMaximumX = centreX + 10;
+        } else {
+            nJoystickCalibrationMinimumX = centreX;
+            nJoystickCalibrationMaximumX = centreX;
         }
-        nJoystickCalibrationMinimumY = centreY;
-        nJoystickCalibrationMaximumY = centreY;
         if (centreY > 10) {
             nJoystickCalibrationMinimumY = centreY - 10;
             nJoystickCalibrationMaximumY = centreY + 10;
+        } else {
+            nJoystickCalibrationMaximumY = centreY;
+            nJoystickCalibrationMinimumY = centreY;
         }
 
-        nJoystickLeftScale =
-            nJoystickCalibrationMinimumX /
-            (int)horizontalRange;
-        nJoystickUpScale =
-            nJoystickCalibrationMinimumY /
-            (int)verticalRange;
+        rangeX = horizontalRange;
+        rangeY = verticalRange;
+        nJoystickLeftScale = nJoystickCalibrationMinimumX / rangeX;
+        nJoystickUpScale = nJoystickCalibrationMinimumY / rangeY;
         if (nJoystickLeftScale == 0)
-            nJoystickLeftScale = 1;
+            nJoystickLeftScale++;
         if (nJoystickUpScale == 0)
-            nJoystickUpScale = 1;
-        nJoystickRightScale =
-            nJoystickCalibrationMinimumX /
-            (int)horizontalRange;
+            nJoystickUpScale++;
+        nJoystickRightScale = nJoystickCalibrationMinimumX / rangeX;
         if (nJoystickRightScale == 0)
-            nJoystickRightScale = 1;
-        nJoystickDownScale =
-            nJoystickCalibrationMinimumY /
-            (int)verticalRange;
+            nJoystickRightScale++;
+        nJoystickDownScale = nJoystickCalibrationMinimumY / rangeY;
         if (nJoystickDownScale == 0)
-            nJoystickDownScale = 1;
+            nJoystickDownScale++;
 
         nJoystickCentreX = centreX;
         nJoystickCentreY = centreY;
         nJoystickMinimumX =
-            centreX - horizontalRange * nJoystickLeftScale;
+            centreX - rangeX * nJoystickLeftScale;
         nJoystickMinimumY =
-            centreY - verticalRange * nJoystickUpScale;
+            centreY - rangeY * nJoystickUpScale;
         nJoystickMaximumX =
-            horizontalRange * nJoystickLeftScale + centreX;
+            rangeX * nJoystickLeftScale + centreX;
         nJoystickMaximumY =
-            verticalRange * nJoystickUpScale + centreY;
+            rangeY * nJoystickUpScale + centreY;
         nJoystickHorizontalDeadZone = horizontalDeadZone;
         nJoystickVerticalDeadZone = verticalDeadZone;
     }
@@ -2010,7 +2007,6 @@ short ReadCalibratedJoystick(void)
     int sampleResult;
     int rawX;
     int rawY;
-    int deviceIndex;
     short normalizedX;
     short normalizedY;
     short device;
@@ -2018,36 +2014,33 @@ short ReadCalibratedJoystick(void)
     device = nActiveInputDevice;
     if (device == -1)
         return 0;
-    deviceIndex = (int)device;
-    sample = &aInputDeviceSamples[deviceIndex];
+    sample = &aInputDeviceSamples[device];
     sampleResult = SampleJoystickDevice(
         sample, device,
         nJoystickFailureValue);
     rawX = sample->x;
-    rawY = aInputDeviceSamples[deviceIndex].y;
     if (rawX == nJoystickFailureValue ||
-        rawY == nJoystickFailureValue ||
+        (rawY = aInputDeviceSamples[device].y) == nJoystickFailureValue ||
         sampleResult != 0) {
         nActiveInputDevice = -1;
-        aInputDeviceSamples[deviceIndex].buttons = 0;
-        aInputDeviceSamples[deviceIndex].y = 0;
-        sample->x = 0;
+        sample->x = aInputDeviceSamples[device].y =
+            aInputDeviceSamples[device].buttons = 0;
         return 0;
     }
 
     nJoystickRawX = rawX;
     nJoystickRawY = rawY;
-    if (rawX < nJoystickMinimumX)
+    if (nJoystickMinimumX > sample->x)
         sample->x = nJoystickMinimumX;
     if (sample->x > nJoystickMaximumX)
         sample->x = nJoystickMaximumX;
-    if (aInputDeviceSamples[deviceIndex].y <
+    if (aInputDeviceSamples[device].y <
         nJoystickMinimumY)
-        aInputDeviceSamples[deviceIndex].y =
+        aInputDeviceSamples[device].y =
             nJoystickMinimumY;
-    if (aInputDeviceSamples[deviceIndex].y >
+    if (aInputDeviceSamples[device].y >
         nJoystickMaximumY)
-        aInputDeviceSamples[deviceIndex].y =
+        aInputDeviceSamples[device].y =
             nJoystickMaximumY;
 
     normalizedY = 0;
@@ -2069,7 +2062,7 @@ short ReadCalibratedJoystick(void)
             normalizedX = 0;
     }
 
-    rawY = aInputDeviceSamples[deviceIndex].y;
+    rawY = aInputDeviceSamples[device].y;
     if (nJoystickCentreY > rawY) {
         normalizedY = (short)((nJoystickCentreY - rawY) /
                               nJoystickUpScale);
@@ -2086,7 +2079,7 @@ short ReadCalibratedJoystick(void)
             normalizedY = 0;
     }
     sample->x = (int)normalizedX;
-    aInputDeviceSamples[deviceIndex].y = (int)normalizedY;
+    aInputDeviceSamples[device].y = (int)normalizedY;
     return 1;
 }
 

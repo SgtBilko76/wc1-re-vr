@@ -275,7 +275,7 @@ unsigned int find_next_ship_turn_slot(short obj);                     /* 0x0040C
 short init_ship(short missionShip, short navPoint);                    /* 0x0040C800 */
 unsigned int init_intelligence_data(short obj);                       /* 0x0040C950 */
 short __stdcall SampleBothJoysticks(InputDeviceSample *samples,
-                                    unsigned short fallback);           /* 0x0040CAA0 */
+                                    short fallback);                    /* 0x0040CAA0 */
 int __stdcall SampleJoystickDevice(InputDeviceSample *samples,
                                    short joystick,
                                    unsigned short fallback);            /* 0x0040CAE0 */
