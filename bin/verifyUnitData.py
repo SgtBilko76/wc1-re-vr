@@ -171,6 +171,25 @@ UNITS = {
         ('pszTheEnd', 0x40),
         ('pszForNow', 0x44),
     ), frozenset((0x08, 0x0C, 0x10, 0x18, 0x1C, 0x20, 0x40, 0x44))),
+    'input': UnitData(0x0046AF54, 6, (
+        ('nInputDoubleClickInterval', 0x00),
+        ('nMenuPointerSpeed', 0x04),
+    ), frozenset()),
+    'comm': UnitData(0x0046AF60, 520, (
+        ('nCommMenuChoiceCount', 0x00),
+        ('nCommMenuReuseMode', 0x04),
+        ('bMessageSpeed', 0x08),
+        ('cPendingCommMenuAction', 0x0C),
+        ('bRadioSilence', 0x10),
+        ('bVideoImagesSuppressed', 0x14),
+        ('bCommVideoEnabled', 0x18),
+        ('apszKilrathiAceNames', 0x20),
+        ('apszCommMenuText', 0x30),
+        ('cCommMenuRecipient', 0x64),
+        ('nCommSpeakerObject', 0x68),
+        ('nCommSpeakerRating', 0x6C),
+        ('nCommPortraitIndex', 0x70),
+    ), frozenset(range(0x20, 0x64, 4))),
     'damage-bss': UnitData(0x00476554, 4, (
         ('nDisplayedComponentDamage', 0x00),
     ), frozenset(), storage='.bss', owner='damage.obj'),
@@ -180,6 +199,7 @@ UNITS = {
 ADJACENT_UNITS = (
     ('barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),
     ('damage', 'view'),
+    ('ending', 'input', 'comm'),
 )
 
 

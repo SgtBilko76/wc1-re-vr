@@ -1,222 +1,45 @@
 /*
- *  Communication menus, input polling, and graphics-mode setup.
+ *  Communication menus and video transmissions.
  *
- *  Address range 430710-431eff (see docs/ORDER.md).
- *  Internal boundaries remain provisional.
+ *  Address range 430bc0-4318ef (see docs/ORDER.md).
  */
 #include "wc1.h"
 
-/* Function start: 0x430710 */
-short __stdcall UpdateInputDeviceTransitions(short raw)
-{
-    unsigned int now;
-    unsigned short buttons;
-    unsigned short changed;
-    unsigned short previous;
-    short device;
+short nCommMenuChoiceCount = -1; /* 0x0046af60 */
+short nCommMenuReuseMode = 0; /* 0x0046af64 */
+unsigned char bMessageSpeed = 2; /* 0x0046af68 */
+static signed char cPendingCommMenuAction = 1; /* 0x0046af6c */
+unsigned char bRadioSilence = 0; /* 0x0046af70 */
+unsigned char bVideoImagesSuppressed = 0; /* 0x0046af74 */
+unsigned char bCommVideoEnabled = 1; /* 0x0046af78 */
 
-    device = nActiveInputDevice;
-    if (raw == 0)
-        ReadCalibratedJoystick();
-    else
-        SampleJoystickDevice(&aInputDeviceSamples[device],
-                             device, 0);
-
-    asInputButton2DoubleClick[device] = 0;
-    asInputButton1DoubleClick[device] = 0;
-    asInputButton2Changed[device] = 0;
-    asInputButton1Changed[device] = 0;
-    buttons = (unsigned short)aInputDeviceSamples[device].buttons;
-    previous = (unsigned short)asPreviousInputButtons[device];
-    if (buttons != previous) {
-        changed = buttons ^ previous;
-        now = nTickCount60Hz;
-        if ((changed & 1) != 0) {
-            asInputButton1Changed[device] = 1;
-            if ((buttons & 1) != 0) {
-                if ((int)(now -
-                    anInputButton1PressTime[device]) <=
-                        nInputDoubleClickInterval *
-                        nInputTickScale)
-                    asInputButton1DoubleClick[device] = 1;
-                anInputButton1PressTime[device] = now;
-            }
-        }
-        if ((changed & 2) != 0) {
-            asInputButton2Changed[device] = 1;
-            if ((buttons & 2) != 0) {
-                if ((int)(now -
-                    anInputButton2PressTime[device]) <=
-                        nInputDoubleClickInterval *
-                        nInputTickScale)
-                    asInputButton2DoubleClick[device] = 1;
-                anInputButton2PressTime[device] = now;
-            }
-        }
-        asPreviousInputButtons[device] = (short)buttons;
-    }
-    return 1;
-}
-
-/* Function start: 0x430830 */
-/* Empty, and nothing in the shipped executable calls it, so its purpose
- * cannot be recovered; it sits among the joystick input routines. */
-void JoystickInputHook(void)
-{
-}
-
-/* Function start: 0x430840 */
-void PollJoystickButtonEvents(void)
-{
-    short doubleClick;
-
-    if (nActiveInputDevice == -1 ||
-        bInputPollingGuard != 0)
-        return;
-    bInputPollingGuard++;
-    UpdateInputDeviceTransitions(1);
-    if (asInputButton1Changed
-            [nActiveInputDevice] != 0) {
-        doubleClick = 0;
-        if (asInputButton1DoubleClick
-                [nActiveInputDevice] != 0)
-            doubleClick = 3;
-        QueueInputEventAtCursor(
-            ((unsigned short)aInputDeviceSamples
-                [nActiveInputDevice].buttons & 1) + 1,
-            0, doubleClick);
-    }
-    if (asInputButton2Changed
-            [nActiveInputDevice] != 0) {
-        doubleClick = 0;
-        if (asInputButton2DoubleClick
-                [nActiveInputDevice] != 0)
-            doubleClick = 3;
-        QueueInputEventAtCursor(
-            ((unsigned short)(aInputDeviceSamples
-                [nActiveInputDevice].buttons >> 1) & 1) + 1,
-            1, doubleClick);
-    }
-    bInputPollingGuard--;
-    stHostMouseState.secondaryButton =
-        (unsigned char)aInputDeviceSamples
-            [nActiveInputDevice].buttons;
-    stHostMouseState.primaryButton =
-        stHostMouseState.secondaryButton;
-}
-
-/* Function start: 0x430920 */
-void PollMenuInputDevices(void)
-{
-    signed char changes;
-    char doubleClick;
-    short movementX;
-    short movementY;
-    int deviceIndex;
-
-    changes = 0;
-    if (nActiveInputDevice == -1)
-        return;
-    stHostMouseState.x =
-        stMouseCursorState.x;
-    stHostMouseState.y =
-        stMouseCursorState.y;
-    if (bInputPollingGuard != 0)
-        return;
-    bInputPollingGuard++;
-    UpdateInputDeviceTransitions(0);
-
-    deviceIndex = (int)nActiveInputDevice;
-    if (asInputButton1Changed[deviceIndex] != 0) {
-        stHostMouseState.x +=
-            (short)aInputDeviceSamples
-                [deviceIndex].x *
-            nMenuPointerSpeed;
-        stHostMouseState.y +=
-            (short)aInputDeviceSamples
-                [deviceIndex].y *
-            nMenuPointerSpeed;
-        if (asInputButton1DoubleClick[deviceIndex] != 0)
-            changes = 3;
-        QueueInputEventAtCursor(
-            ((unsigned short)aInputDeviceSamples
-                [deviceIndex].buttons & 1) + 1,
-            0, (short)changes);
-        changes = 1;
-    }
-    deviceIndex = (int)nActiveInputDevice;
-    if (asInputButton2Changed[deviceIndex] != 0) {
-        stHostMouseState.x +=
-            (short)aInputDeviceSamples
-                [deviceIndex].x *
-            nMenuPointerSpeed;
-        stHostMouseState.y +=
-            (short)aInputDeviceSamples
-                [deviceIndex].y *
-            nMenuPointerSpeed;
-        doubleClick = 0;
-        if (asInputButton1DoubleClick[deviceIndex] != 0)
-            doubleClick = 3;
-        QueueInputEventAtCursor(
-            ((unsigned short)(aInputDeviceSamples
-                [deviceIndex].buttons >> 1) & 1) + 1,
-            1, (short)doubleClick);
-        changes++;
-    }
-    if (changes == 0) {
-        movementX = (short)aInputDeviceSamples
-            [nActiveInputDevice].x;
-        movementY = (short)aInputDeviceSamples
-            [nActiveInputDevice].y;
-        stHostMouseState.x +=
-            nMenuPointerSpeed * movementX;
-        stHostMouseState.y +=
-            nMenuPointerSpeed * movementY;
-        changes = (unsigned char)movementY | (unsigned char)movementX;
-        if (changes != 0) {
-            FlushInputEvents();
-            stHostMouseState.x = stHostMouseState.x > 0 ?
-                stHostMouseState.x : 0;
-            stHostMouseState.x = stHostMouseState.x < 319 ?
-                stHostMouseState.x : 319;
-            stHostMouseState.y = stHostMouseState.y > 0 ?
-                stHostMouseState.y : 0;
-            stHostMouseState.y = stHostMouseState.y < 199 ?
-                stHostMouseState.y : 199;
-            SetMousePosition(stHostMouseState.x,
-                             stHostMouseState.y);
-        }
-    }
-
-    stHostMouseState.secondaryButton =
-        (unsigned char)aInputDeviceSamples
-            [nActiveInputDevice].buttons;
-    stHostMouseState.primaryButton =
-        stHostMouseState.secondaryButton;
-    stHostMouseState.x = stHostMouseState.x > 0 ?
-        stHostMouseState.x : 0;
-    stHostMouseState.x = stHostMouseState.x < 319 ?
-        stHostMouseState.x : 319;
-    stHostMouseState.y = stHostMouseState.y > 0 ?
-        stHostMouseState.y : 0;
-    stHostMouseState.y = stHostMouseState.y < 199 ?
-        stHostMouseState.y : 199;
-    if (changes != 0) {
-        LeaveAllocationScope();
-        stMouseCursorState.primaryButton =
-            stHostMouseState.primaryButton;
-        stMouseCursorState.x =
-            stHostMouseState.x;
-        stMouseCursorState.y =
-            stHostMouseState.y;
-        stMouseCursorState.secondaryButton =
-            stHostMouseState.secondaryButton;
-        stMouseCursorState.flags =
-            stHostMouseState.flags;
-        EnterAllocationScope();
-    }
-    bInputPollingGuard--;
-}
+/* 0x0046af80 */
+const char *apszKilrathiAceNames[4] = {
+    "Bhurak",
+    "Dakhath",
+    "Khajja",
+    "Bakhtosh"
+};
+/* 0x0046af90 */
+static const char *apszCommMenuText[13] = {
+    "Never mind...",
+    "Attack my target!",
+    "Help me out here",
+    "Return to base.",
+    "Die furball!",
+    "Slag off!",
+    "Bite it cat face.",
+    "Break and attack.",
+    "Keep formation!",
+    "Form on my wing.",
+    "Keep radio silence",
+    "Broadcast freely",
+    "Request Landing"
+};
+signed char cCommMenuRecipient = -1; /* 0x0046afc4 */
+short nCommSpeakerObject = 0; /* 0x0046afc8 */
+short nCommSpeakerRating = 0; /* 0x0046afcc */
+short nCommPortraitIndex = -1; /* 0x0046afd0 */
 
 /* Function start: 0x430BC0 */
 short get_face(short rating, unsigned int side)
@@ -764,7 +587,7 @@ void real_vid_transmit(short obj, short message)
                     nCommSpeakerRating]->callsign,
                 speech);
 #else
-        sprintf(text, szConfedCommFormat,
+        sprintf(text, "%s: %Fs",
                 apWingmanPilots[
                     nCommSpeakerRating]->callsign,
                 speech);
@@ -777,7 +600,7 @@ void real_vid_transmit(short obj, short message)
                     nCommSpeakerRating - 9],
                 speech);
 #else
-        sprintf(text, szKilrathiAceCommFormat,
+        sprintf(text, "%s: %Fs",
                 apszKilrathiAceNames[
                     nCommSpeakerRating - 9],
                 speech);
@@ -788,304 +611,11 @@ void real_vid_transmit(short obj, short message)
                 aObjectTypeData[aeObjectType[obj]].displayName,
                 speech);
 #else
-        sprintf(text, szShipCommFormat,
+        sprintf(text, "%s: %Fs",
                 aObjectTypeData[aeObjectType[obj]].displayName,
                 speech);
 #endif
     }
     expandedText = ExpandCommMessageTokens(text);
     ShowCentredPrompt(expandedText, (unsigned short)MeasureMessageWidth(text));
-}
-
-/* Function start: 0x4318F0 */
-void __stdcall ShutdownVideoHook(short mode)
-{
-    ReleaseVideoResourcesHook();
-}
-
-/* Function start: 0x431900 */
-short __stdcall ReserveContiguousPaletteEntries(short entryCount)
-{
-    short entry;
-    short freeEntries;
-    short firstEntry;
-
-    freeEntries = 0;
-    entry = 0;
-    firstEntry = 0;
-    for (;;) {
-        if (awPaletteEntryAllocation[entry] != 0) {
-            freeEntries = 0;
-            firstEntry = (short)(entry + 1);
-        } else
-            freeEntries++;
-        if (freeEntries == entryCount)
-            break;
-        entry++;
-        if (entry >= 256)
-            return -1;
-    }
-
-    freeEntries = 0;
-    while (freeEntries < entryCount) {
-        awPaletteEntryAllocation[firstEntry + freeEntries] =
-            entryCount;
-        freeEntries++;
-    }
-    return firstEntry;
-}
-
-/* Function start: 0x431970 */
-void __stdcall ReleaseContiguousPaletteEntries(short firstEntry)
-{
-    short entry;
-    short entryCount;
-
-    entry = 0;
-    entryCount = awPaletteEntryAllocation[firstEntry];
-    while (entry < entryCount) {
-        awPaletteEntryAllocation[firstEntry + entry] = 0;
-        entry++;
-    }
-}
-
-/* Function start: 0x4319B0 */
-void PrintPaletteAllocationMap(void)
-{
-    short index;
-    short row;
-    short column;
-
-    index = 0;
-    row = 4;
-    do {
-        column = 0x40;
-        do {
-#if !defined(SDL_PORT) || defined(SDL_PORT_LEGACY_DEBUG_OUTPUT)
-            printf("%c", awPaletteEntryAllocation[index++] < 1 ?
-                   '_' : '.');
-#else
-            index++;
-#endif
-            column--;
-        } while (column != 0);
-#if !defined(SDL_PORT) || defined(SDL_PORT_LEGACY_DEBUG_OUTPUT)
-        printf("\n");
-#endif
-        row--;
-    } while (row != 0);
-}
-
-/* Function start: 0x431A10 */
-void LoadJoystickCalibrationFile(short horizontalRange,
-                                 short verticalRange,
-                                 short horizontalDeadZone,
-                                 short verticalDeadZone)
-{
-    unsigned short storedCentreX;
-    unsigned short storedCentreY;
-    unsigned short minimumX;
-    unsigned short maximumX;
-    unsigned short maximumY;
-    unsigned short minimumY;
-    short activeDevice;
-    InputDeviceSample samples[2];
-    int file;
-    int failed;
-    int centreX;
-    int centreY;
-    int rangeX;
-    int rangeY;
-
-    activeDevice = -1;
-    failed = 1;
-    if (horizontalRange == 0)
-        horizontalRange += (short)failed;
-    if (verticalRange == 0)
-        verticalRange++;
-    nJoystickFailureValue = -1;
-    SampleBothJoysticks(samples, -1);
-    if (samples[0].x != -1 && samples[0].y != -1)
-        activeDevice = 0;
-    else if (samples[1].x != -1 && samples[1].y != -1)
-        activeDevice = 1;
-
-    if (activeDevice != -1) {
-        file = _open("j.cal", 0x8000);
-        if (file != -1) {
-            failed = _read(file, &activeDevice, 2) <= 0;
-            if (failed == 0)
-                failed = _read(file, &minimumX, 2) <= 0;
-            if (failed == 0)
-                failed = _read(file, &minimumY, 2) <= 0;
-            if (failed == 0)
-                failed = _read(file, &maximumX, 2) <= 0;
-            if (failed == 0)
-                failed = _read(file, &maximumY, 2) <= 0;
-            if (failed == 0)
-                failed = _read(file, &storedCentreX, 2) <= 0;
-            if (failed == 0)
-                failed = _read(file, &storedCentreY, 2) <= 0;
-            nJoystickCentreX = (unsigned int)storedCentreX;
-            nJoystickCentreY = (unsigned int)storedCentreY;
-            _close(file);
-            if (failed != 0)
-                _unlink("j.cal");
-        }
-
-        if (failed != 0) {
-            GetJoystickDevCaps(activeDevice,
-                               (short *)&minimumX,
-                               (short *)&maximumX,
-                               (short *)&minimumY,
-                               (short *)&maximumY);
-            centreX = ((int)minimumX + (int)maximumX) / 2;
-            centreY = ((int)maximumY + (int)minimumY) / 2;
-        } else {
-            centreX = nJoystickCentreX;
-            centreY = nJoystickCentreY;
-        }
-
-        if (centreX > 10) {
-            nJoystickCalibrationMinimumX = centreX - 10;
-            nJoystickCalibrationMaximumX = centreX + 10;
-        } else {
-            nJoystickCalibrationMinimumX = centreX;
-            nJoystickCalibrationMaximumX = centreX;
-        }
-        if (centreY > 10) {
-            nJoystickCalibrationMinimumY = centreY - 10;
-            nJoystickCalibrationMaximumY = centreY + 10;
-        } else {
-            nJoystickCalibrationMaximumY = centreY;
-            nJoystickCalibrationMinimumY = centreY;
-        }
-
-        rangeX = horizontalRange;
-        rangeY = verticalRange;
-        nJoystickLeftScale = nJoystickCalibrationMinimumX / rangeX;
-        nJoystickUpScale = nJoystickCalibrationMinimumY / rangeY;
-        if (nJoystickLeftScale == 0)
-            nJoystickLeftScale++;
-        if (nJoystickUpScale == 0)
-            nJoystickUpScale++;
-        nJoystickRightScale = nJoystickCalibrationMinimumX / rangeX;
-        if (nJoystickRightScale == 0)
-            nJoystickRightScale++;
-        nJoystickDownScale = nJoystickCalibrationMinimumY / rangeY;
-        if (nJoystickDownScale == 0)
-            nJoystickDownScale++;
-
-        nJoystickCentreX = centreX;
-        nJoystickCentreY = centreY;
-        nJoystickMinimumX =
-            centreX - rangeX * nJoystickLeftScale;
-        nJoystickMinimumY =
-            centreY - rangeY * nJoystickUpScale;
-        nJoystickMaximumX =
-            rangeX * nJoystickLeftScale + centreX;
-        nJoystickMaximumY =
-            rangeY * nJoystickUpScale + centreY;
-        nJoystickHorizontalDeadZone = horizontalDeadZone;
-        nJoystickVerticalDeadZone = verticalDeadZone;
-    }
-    nActiveInputDevice = activeDevice;
-}
-
-/* Function start: 0x431D20 */
-short ReadCalibratedJoystick(void)
-{
-    InputDeviceSample *sample;
-    int sampleResult;
-    int rawX;
-    int rawY;
-    short normalizedX;
-    short normalizedY;
-    short device;
-
-    device = nActiveInputDevice;
-    if (device == -1)
-        return 0;
-    sample = &aInputDeviceSamples[device];
-    sampleResult = SampleJoystickDevice(
-        sample, device,
-        nJoystickFailureValue);
-    rawX = sample->x;
-    if (rawX == nJoystickFailureValue ||
-        (rawY = aInputDeviceSamples[device].y) == nJoystickFailureValue ||
-        sampleResult != 0) {
-        nActiveInputDevice = -1;
-        sample->x = aInputDeviceSamples[device].y =
-            aInputDeviceSamples[device].buttons = 0;
-        return 0;
-    }
-
-    nJoystickRawX = rawX;
-    nJoystickRawY = rawY;
-    if (nJoystickMinimumX > sample->x)
-        sample->x = nJoystickMinimumX;
-    if (sample->x > nJoystickMaximumX)
-        sample->x = nJoystickMaximumX;
-    if (aInputDeviceSamples[device].y <
-        nJoystickMinimumY)
-        aInputDeviceSamples[device].y =
-            nJoystickMinimumY;
-    if (aInputDeviceSamples[device].y >
-        nJoystickMaximumY)
-        aInputDeviceSamples[device].y =
-            nJoystickMaximumY;
-
-    normalizedY = 0;
-    normalizedX = 0;
-    rawX = sample->x;
-    if (nJoystickCentreX > rawX) {
-        normalizedX = (short)((nJoystickCentreX - rawX) /
-                              nJoystickLeftScale);
-        if (nJoystickHorizontalDeadZone < normalizedX) {
-            if (normalizedX != 0)
-                normalizedX = (short)-normalizedX;
-        } else {
-            normalizedX = 0;
-        }
-    } else if (nJoystickCentreX < rawX) {
-        normalizedX = (short)((rawX - nJoystickCentreX) /
-                              nJoystickRightScale);
-        if (normalizedX <= nJoystickHorizontalDeadZone)
-            normalizedX = 0;
-    }
-
-    rawY = aInputDeviceSamples[device].y;
-    if (nJoystickCentreY > rawY) {
-        normalizedY = (short)((nJoystickCentreY - rawY) /
-                              nJoystickUpScale);
-        if (nJoystickVerticalDeadZone < normalizedY) {
-            if (normalizedY != 0)
-                normalizedY = (short)-normalizedY;
-        } else {
-            normalizedY = 0;
-        }
-    } else if (nJoystickCentreY < rawY) {
-        normalizedY = (short)((rawY - nJoystickCentreY) /
-                              nJoystickDownScale);
-        if (normalizedY <= nJoystickVerticalDeadZone)
-            normalizedY = 0;
-    }
-    sample->x = (int)normalizedX;
-    aInputDeviceSamples[device].y = (int)normalizedY;
-    return 1;
-}
-
-/* Function start: 0x431EA0 */
-void __stdcall UnionRectBounds(ShortRect *destination,
-                               const ShortRect *first,
-                               const ShortRect *second)
-{
-    destination->left = first->left < second->left ?
-        first->left : second->left;
-    destination->top = first->top < second->top ?
-        first->top : second->top;
-    destination->right = first->right > second->right ?
-        first->right : second->right;
-    destination->bottom = first->bottom > second->bottom ?
-        first->bottom : second->bottom;
 }

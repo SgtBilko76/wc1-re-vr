@@ -156,7 +156,9 @@ sits at one constant offset from the original.
 | `src/music.c` | `0x42E320`–`0x42EFBF` |
 | `src/screen.c` | `0x42EFC0`–`0x42FA8F` |
 | `src/ending.c` | `0x42FA90`–`0x43070F` |
-| `src/comm.c` | `0x430710`–`0x431EFF` |
+| `src/input.c` | `0x430710`–`0x430BBF` |
+| `src/comm.c` | `0x430BC0`–`0x4318EF` |
+| `src/video.c` | `0x4318F0`–`0x431EFF` |
 | `src/dib.c` | `0x431F00`–`0x43390F` |
 | `src/text.c` | `0x433910`–`0x433ABF` |
 | `src/smart.c` | `0x433AC0`–`0x434CCF` |
@@ -203,6 +205,8 @@ ownership and qualifiers:
 | `0x0046A748`–`0x0046A8CD` | `damage.c`: cockpit damage tables and the following report literals |
 | `0x0046A8D0`–`0x0046A9F0` | `view.c`: scripted-view state, constellation tables, packet settings, target armor rectangles, and the following target/display literals |
 | `0x0046AD88`–`0x0046AF50` | `ending.c`: allocation tag, campaign-ending pointers and projectile origins, subtitle literals, and four separate text formats |
+| `0x0046AF54`–`0x0046AF59` | `input.c`: double-click interval and menu-pointer speed |
+| `0x0046AF60`–`0x0046B167` | `comm.c`: menu/video state, ace and menu-label pointers, and the complete communication literal pool |
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
 DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
@@ -447,13 +451,34 @@ bytes, ending with the last format's terminator at `0x0046AF50`.
 `verify-unit-data` checks the complete block, all variable offsets, and all
 eight pointer targets with one address shift and no string fallback.
 
-The input state at `0x0046AF54` follows those literals and precedes the
-communication data. This separates the ending scenes from the subsequent
-input/menu code. `screen.c` now ends with `MapPacketHandleToBlock`, and
-`comm.c` begins with `UpdateInputDeviceTransitions` at `0x00430710`.
-The internal boundaries between the allocation helpers and ending scenes,
-and between input, communications, and graphics setup, remain provisional;
-these grouped placement windows do not establish original source filenames.
+The input state at `0x0046AF54` follows those literals. The two initialized
+words occupy six bytes in `input.obj`, with the second at offset four.
+The communication block starts at `0x0046AF60`, after six bytes of linker
+alignment. A single object's two-word prefix would place the first menu
+word only eight bytes after the input state, instead of the observed twelve.
+The separate objects reproduce this spacing without inventing a variable
+in the gap. `input.c` contains the four functions from
+`UpdateInputDeviceTransitions` through `PollMenuInputDevices`; `comm.c`
+begins with `get_face` at `0x00430BC0`.
+
+The communication declarations occupy 116 bytes, followed by a 404-byte
+literal pool. The ace and menu tables contain 17 pointers to separate
+literals. In particular, `"Bakhtosh"` requires nine bytes including its
+terminator; the former 32-byte packed ace-name array truncated that zero.
+The three identical `"%s: %Fs"` formats are separate literals in
+`real_vid_transmit`. The pending menu action and menu-label table are private
+to this unit. Other declarations remain shared with their original or SDL
+callers. `verify-unit-data` checks the complete 520-byte `.data` section,
+all 13 declaration offsets, and all 17 pointer targets with one address shift.
+It also checks ending, input, and communication data as one 992-byte run,
+including nine bytes of inter-object alignment.
+
+Video mode state follows the communication formats at `0x0046B168`, so the
+video/calibration group begins separately at `ShutdownVideoHook`,
+`0x004318F0`. Its initialized-data layout is not yet recovered; the existing
+definitions remain in `globals.c`. The internal boundaries within the video
+group and between the allocation helpers and ending scenes remain
+provisional. These placement windows do not establish original filenames.
 
 Private C definitions require separate evidence: a trial moving the two
 MONODEBG variables to `static` storage in `mono.c` emitted the device handle

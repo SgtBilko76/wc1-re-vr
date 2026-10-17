@@ -400,21 +400,6 @@ short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
 };
 char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
     "Press any key when ready";
-short nInputDoubleClickInterval = 1; /* 0x0046af54 */
-short nMenuPointerSpeed = 2; /* 0x0046af58 */
-short nCommMenuChoiceCount = -1; /* 0x0046af60 */
-short nCommMenuReuseMode = 0; /* 0x0046af64 */
-signed char cPendingCommMenuAction = 1; /* 0x0046af6c */
-unsigned char bRadioSilence = 0; /* 0x0046af70 */
-unsigned char bVideoImagesSuppressed = 0; /* 0x0046af74 */
-unsigned char bCommVideoEnabled = 1; /* 0x0046af78 */
-signed char cCommMenuRecipient = -1; /* 0x0046afc4 */
-short nCommSpeakerObject = 0; /* 0x0046afc8 */
-short nCommSpeakerRating = 0; /* 0x0046afcc */
-short nCommPortraitIndex = -1; /* 0x0046afd0 */
-char szConfedCommFormat[8] = "%s: %Fs"; /* 0x0046b150 */
-char szKilrathiAceCommFormat[8] = "%s: %Fs"; /* 0x0046b158 */
-char szShipCommFormat[8] = "%s: %Fs"; /* 0x0046b160 */
 unsigned short nVideoMode = 0xffff; /* 0x0046b168 */
 signed char acGraphicsModeByAnimationSpeed[8] = { /* 0x0046b178 */
     0x13, 0x0d, 4, 9, 7, 0, 0, 0
@@ -2599,7 +2584,6 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
       0, 0, (unsigned char *)anAnimHyperspaceJumpFlash,
       0, 0, 1, 0 }
 };
-unsigned char bMessageSpeed = 2; /* 0x0046af68 */
 unsigned char abManeuverRerollChance[47] = { /* 0x00465678 */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2655,29 +2639,6 @@ ShipManeuverHandler apShipAiManeuverHandlers[47] = {
     /* 46 */ (void (*)(short, short))Mreset
 }; /* 0x004656a8 */
 
-const char *apszKilrathiAceNames[4] = { /* 0x0046af80 */
-    &aszKilrathiAceNames[0x00],
-    &aszKilrathiAceNames[0x08],
-    &aszKilrathiAceNames[0x10],
-    &aszKilrathiAceNames[0x18]
-};
-
-const char *apszCommMenuText[13] = { /* 0x0046af90 */
-    &aszCommMenuText[0x00],
-    &aszCommMenuText[0x10],
-    &aszCommMenuText[0x24],
-    &aszCommMenuText[0x38],
-    &aszCommMenuText[0x48],
-    &aszCommMenuText[0x58],
-    &aszCommMenuText[0x64],
-    &aszCommMenuText[0x78],
-    &aszCommMenuText[0x8c],
-    &aszCommMenuText[0x9c],
-    &aszCommMenuText[0xb0],
-    &aszCommMenuText[0xc4],
-    &aszCommMenuText[0xd8]
-};
-
 /* Ordered display names transcribed from the image.  The Sega CD inspector
  * proves that these index ObjectType, not a ship-only class enum. */
 /* 0x004684d4 */
@@ -2712,24 +2673,3 @@ char aszObjectTypeDisplayNames[0x18c] =
     "Pilum FF\0\0\0\0"
     "Spiculum IR\0\0\0\0\0"
     "Porcupine\0\0\0";
-
-char aszKilrathiAceNames[32] = /* 0x0046afd4 */
-    "Bhurak\0\0"
-    "Dakhath\0"
-    "Khajja\0\0"
-    "Bakhtosh";
-
-char aszCommMenuText[0xe8] = /* 0x0046aff8 */
-    "Never mind...\0\0\0"
-    "Attack my target!\0\0\0"
-    "Help me out here\0\0\0\0"
-    "Return to base.\0"
-    "Die furball!\0\0\0\0"
-    "Slag off!\0\0\0"
-    "Bite it cat face.\0\0\0"
-    "Break and attack.\0\0\0"
-    "Keep formation!\0"
-    "Form on my wing.\0\0\0\0"
-    "Keep radio silence\0\0"
-    "Broadcast freely\0\0\0\0"
-    "Request Landing";

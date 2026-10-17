@@ -279,7 +279,6 @@ extern int nInFlightMusicActive; /* 0x0046aa40 */
 extern unsigned char aabSoundEffectDescriptors[37][8]; /* 0x0046aa50 */
 extern short nCommMenuChoiceCount; /* 0x0046af60 */
 extern short nCommMenuReuseMode; /* 0x0046af64 */
-extern signed char cPendingCommMenuAction; /* 0x0046af6c */
 extern unsigned char bRadioSilence; /* 0x0046af70 */
 extern unsigned char bVideoImagesSuppressed; /* 0x0046af74 */
 extern unsigned char bCommVideoEnabled; /* 0x0046af78 */
@@ -287,9 +286,6 @@ extern signed char cCommMenuRecipient; /* 0x0046afc4 */
 extern short nCommSpeakerObject; /* 0x0046afc8 */
 extern short nCommSpeakerRating; /* 0x0046afcc */
 extern short nCommPortraitIndex; /* 0x0046afd0 */
-extern char szConfedCommFormat[8]; /* 0x0046b150 */
-extern char szKilrathiAceCommFormat[8]; /* 0x0046b158 */
-extern char szShipCommFormat[8]; /* 0x0046b160 */
 extern short nInputDoubleClickInterval; /* 0x0046af54 */
 extern short nMenuPointerSpeed; /* 0x0046af58 */
 extern unsigned short nVideoMode; /* 0x0046b168 */
@@ -1030,9 +1026,7 @@ extern const char *PTR_s_MISSILE_LOCKED_004691d4;
 extern unsigned char bTargetBracketVisible; /* 0x004691d8 */
 extern unsigned char abTargetBracketPadding[7]; /* 0x004691d9 */
 extern short asHudMessageOrigins[10]; /* 0x004691e0 */
-extern const char *apszCommMenuText[13]; /* 0x0046af90 */
 extern const char *apszKilrathiAceNames[4]; /* 0x0046af80 */
-extern char aszCommMenuText[0xe8]; /* 0x0046aff8 */
 extern ShortPoint aaCockpitDamagePositions[5][4]; /* 0x00469228 */
 extern unsigned long dwGameClockBase; /* 0x005a89a8 */
 
@@ -1110,10 +1104,9 @@ extern void (*apShipAiManeuverHandlers[47])(short, short); /* 0x004656a8 */
 
 extern ShortVector aShipFormationOffset[10]; /* 0x0059b520 */
 
-/* Ordered name tables read directly out of the image; see include/wcdata.h.
- * Both are packed variable-length strings, not fixed-stride arrays, so the
+/* Ordered object names read directly out of the image; see include/wcdata.h.
+ * These are packed variable-length strings, not fixed-stride entries, so the
  * game indexes them through a pointer table rather than by multiplication. */
 extern char aszObjectTypeDisplayNames[]; /* Hornet .. Star post, then weapons */ /* 0x004684d4 */
-extern char aszKilrathiAceNames[];  /* Bhurak, Dakhath, Khajja, Bakhtosh */ /* 0x0046afd4 */
 
 #endif /* GAME_GLOBALS_H */

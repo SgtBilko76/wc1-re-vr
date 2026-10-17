@@ -227,7 +227,8 @@ GLOBALS_MISSING_MAX_ADDRESS = 0x004751ff
 GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/cmpgn.c \
 	src/nav.c src/spc.c src/cockpt.c src/barracks.c src/fade.c src/debug.cpp \
 	src/disk.c src/ship.c src/init.c src/logic.c src/pilot.cpp src/trainsim.c \
-	src/sound.c src/damage.c src/view.c src/music.c src/ending.c src/dib.c src/gr.c \
+	src/sound.c src/damage.c src/view.c src/music.c src/ending.c src/input.c \
+	src/comm.c src/dib.c src/gr.c \
 	src/ix/dsp.cpp src/ix/dsps.cpp src/ix/dspv.cpp
 GLOBALS_DEFINITION_SOURCES = src/globals.c $(GLOBALS_DISTRIBUTED_SOURCES)
 GLOBALS_AUDIT_SOURCE = $(OUT_DIR)/globals-audit.c
@@ -351,7 +352,9 @@ SRCS_ORDERED_CORE = \
 	src/music.c \
 	src/screen.c \
 	src/ending.c \
+	src/input.c \
 	src/comm.c \
+	src/video.c \
 	src/dib.c \
 	src/text.c \
 	src/smart.c \
@@ -441,6 +444,7 @@ MODERN_GAMEPLAY_SRCS = \
 	src/globals.c \
 	src/hudmsg.c \
 	src/init.c \
+	src/input.c \
 	src/killbrd.c \
 	src/logic.c \
 	src/main.c \
@@ -459,6 +463,7 @@ MODERN_GAMEPLAY_SRCS = \
 	src/system.c \
 	src/trainsim.c \
 	src/text.c \
+	src/video.c \
 	src/winmain.c
 
 MODERN_GAMEPLAY_CXX_SRCS = \
@@ -777,7 +782,7 @@ $(TARGET): $(LINK_OBJS) $(IX_LIBS) Makefile bin/appendStaticSymbols.py | $(MSVCR
 	env LIB='$(GAME_LIBPATH)' $(LINK) $(LINKFLAGS) /MAP:$(LINKMAPFILE) $(LINK_OBJS) $(GAME_LIBS) /OUT:$@
 	@python3 bin/stampPeTimestamp.py $@ $(ORIGINAL_TIMESTAMP)
 	@python3 bin/appendStaticSymbols.py --map $(LINKMAPFILE) \
-		--rebuilt $@ --output $(MAPFILE) $(OUT_DIR)/damage.obj $(OUT_DIR)/view.obj $(OUT_DIR)/music.obj $(OUT_DIR)/ending.obj
+		--rebuilt $@ --output $(MAPFILE) $(OUT_DIR)/damage.obj $(OUT_DIR)/view.obj $(OUT_DIR)/music.obj $(OUT_DIR)/ending.obj $(OUT_DIR)/comm.obj
 
 $(IX_LZO_LIB): $(call objects_of,$(SRCS_IX_LZO))
 $(IX_FILE_LIB): $(call objects_of,$(SRCS_IX_FILE))
