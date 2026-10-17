@@ -1,7 +1,7 @@
 /* Comparison metadata only; this file is never compiled or included by the
- * game. These declarations describe contiguous compiler-emitted literals,
- * not named globals. binary-comp locates each complete byte sequence uniquely
- * in the rebuilt image and uses its range to verify pointers into the pool.
+ * game. These declarations describe contiguous literal pools and table runs,
+ * not additional named globals. binary-comp locates each complete byte sequence
+ * uniquely in the rebuilt image and uses its range to verify pointers into it.
  *
  * disk.c: graphics-mode names, packet-error messages, the unreferenced
  * "(OVR)"/empty strings, packet-load tags, and both disk-insertion prompts.
@@ -51,3 +51,9 @@ unsigned char abRoomStringLiterals[328]; /* 0x0047052c */
  * four-character shape version and the streamer's separate empty string.
  * The graphics unit gate checks their complete layout after the tables. */
 unsigned char abGraphicsDiagnosticLiterals[334]; /* 0x00470d18 */
+
+/* The shared direction-frame, cockpit-light, bar, layout, and pilot-hand
+ * tables, followed by ten unidentified -400 words. These remain in globals.c
+ * until their original ownership is established. This run includes alignment
+ * between the tables; it excludes the unresolved gaps before its first table. */
+unsigned char abSharedRendererTableRun[1572]; /* 0x0046db28 */

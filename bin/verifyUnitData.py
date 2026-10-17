@@ -341,6 +341,13 @@ UNITS = {
         ('szGameRegistryKey', 0x00),
         ('szCheaterRegistryValue', 0x30),
     ), frozenset(), storage='.rdata', owner='gr.obj'),
+    # The original owner is unresolved. This verifies the constants and
+    # their relative layout in the temporary globals object's .rdata only.
+    'globals-angular': UnitData(0x004630DC, 12, (
+        ('DAT_004630dc', 0x00),
+        ('DAT_004630e0', 0x04),
+        ('DAT_004630e4', 0x08),
+    ), frozenset(), storage='.rdata', owner='globals.obj'),
     'damage-bss': UnitData(0x00476554, 4, (
         ('nDisplayedComponentDamage', 0x00),
     ), frozenset(), storage='.bss', owner='damage.obj'),

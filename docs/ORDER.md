@@ -570,6 +570,23 @@ loop still uses only 48 samples. Keeping ten explicit zero initializers for
 literal produced by `char active[10] = ""`; the complete 262-byte literal
 pool now has the original contents, duplicate formats, and alignment.
 
+The earlier shared-data range contains input state at `0x0046DA90`, six
+viewport geometry records at `0x0046DAB8`, and direction/cockpit tables from
+`0x0046DB28`. Its direct users span several existing source units, and its
+position before the text diagnostic at `0x0046E14C` does not establish an
+owner. These definitions remain in the temporary `globals.c`, now ordered
+by original address. Moving their annotations outside the initializers also
+lets the linked-data audit check ten previously omitted tables.
+
+The 1,572-byte run from `0x0046DB28` through `0x0046E14B` matches with one
+address shift, including all table alignment. Its final twenty bytes contain
+ten signed words initialized to `-400`, now retained as `DAT_0046e138[10]`.
+No identified direct reference establishes their name or purpose; the scalar
+width follows the repeated two-byte values, without claiming the original
+array declaration. The earlier 26-byte input-state and 96-byte geometry runs
+also match individually. Twelve unexplained zero bytes at `0x0046DAAC` and
+sixteen at `0x0046DB18` prevent a complete-range match. They remain unresolved.
+
 The room/kill-board initialized-data block runs from `0x00470090` through
 `0x00470673`, after the raster library. Its 25 declarations now reside in
 `killbrd.c`; 22 are private, while the pilot-rank names, initial campaign
@@ -622,9 +639,15 @@ at `0x004631C8` with one address shift and the value-name array at offset
 `0x30`. The same routine's `"reg cheating\n"` and `"reg not cheating\n"`
 diagnostic literals occupy
 writable data. Changing the whole unit's string-storage policy would therefore
-be incorrect. The read-only layout still has three unresolved float constants
-at `0x004630DC`–`0x004630E7`. Their ownership or declaration form must be
-recovered from evidence; do not fill these gaps with padding variables.
+be incorrect. The three single-precision constants at `0x004630DC`–`0x004630E7`
+encode approximately pi, degrees per radian, and radians per degree. Their
+names and owner remain unidentified, and no base-relocated pointer targets
+this range. Three `const float` definitions in the temporary `globals.c`
+preserve their bytes and four-byte spacing; the read-only gate verifies all
+twelve bytes and their storage flags. Their absolute placement is still wrong:
+the original precedes the DirectDraw GUIDs, while temporary storage follows
+the graphics registry arrays. The complete read-only section now has the
+original size, which alone does not establish a section match.
 
 The raster library is the one assembled object, and its edges are proven.
 CL pads every optimized function with NOPs to a 16-byte boundary, so the

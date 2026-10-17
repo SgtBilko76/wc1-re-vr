@@ -131,6 +131,18 @@ and absolute sine/cosine tables. It includes the four-character shape version
 and the streamer's separate empty string. The unit gate checks this entire
 pool and all three tables together as one 2,030-byte initialized section.
 
+The shared-renderer metadata checks the 1,572-byte run of direction-frame,
+cockpit-light, cockpit-layout, and pilot-hand tables through the ten
+unidentified `-400` words. Their owner remains unresolved, so storage stays
+in `globals.c`; this check proves the run's bytes and internal alignment,
+not an original compilation-unit boundary. The preceding twelve- and
+sixteen-byte gaps remain outside the verified run.
+
+`verify-unit-data` also checks the three angular constants in the temporary
+globals object's 12-byte read-only section. It verifies their original
+values, offsets, and storage flags. It does not establish their original
+owner or their placement relative to other read-only objects.
+
 Keep address annotations outside initializers so the linked-data inventory
 can see them. For the 7,830-byte object-type table, the annotation precedes
 the declaration: a semicolon in an interior comment ends the small inventory

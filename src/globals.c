@@ -9,6 +9,15 @@
 
 typedef void (*ShipManeuverHandler)(short, short);
 
+/* Original single-precision angular constants, with no identified direct
+ * references. Keep their names and ownership unresolved. */
+/* 0x004630dc */
+const float DAT_004630dc = 3.1415927410125732421875f;
+/* 0x004630e0 */
+const float DAT_004630e0 = 57.295780181884765625f;
+/* 0x004630e4 */
+const float DAT_004630e4 = 0.01745329238474369049072265625f;
+
 /* The raster library's tables and variables.  The Win32 build takes them
  * from src/raster.asm, which keeps these first tables in its code segment;
  * the SDL build defines them here for the portable routines. */
@@ -400,35 +409,116 @@ short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
 };
 char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
     "Press any key when ready";
-short aasCockpitLightX[5][7] = { /* 0x0046dca8 */
+
+/* 0x0046da90 */
+InputEvent *pInputEventHead = 0;
+
+/* 0x0046da94 */
+InputEvent *pInputEventTail = 0;
+
+/* 0x0046da98 */
+int bInputEventPoolInitialized = 0;
+
+/* 0x0046da9c */
+unsigned char *pDrawnMouseCursorShape = 0;
+
+/* 0x0046daa0 */
+int nMouseCursorShowCount = 0;
+
+/* 0x0046daa4 */
+short nScreenWidth = 320;
+
+/* 0x0046daa8 */
+short nScreenHeight = 200;
+
+/* 0x0046dab8 */
+ScreenViewportGeometry aScreenViewportGeometry[6] = {
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 320, 128, 0, 24, 0, 24, -24576, -1 },
+    { 320, 200, 0, 0, 0, 0, -1536, -1 }
+};
+
+/* 0x0046db28 */
+signed char acDirectionShapeFrame[DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2,
+    14, 13, 12, 11, 10, 9, 8, 9, 10, 11, 12, 13,
+    15, 16, 17, 18, 19, 20, 21, 20, 19, 18, 17, 16,
+    28, 27, 26, 25, 24, 23, 22, 23, 24, 25, 26, 27,
+    29, 30, 31, 32, 33, 34, 35, 34, 33, 32, 31, 30,
+    36,
+    0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2,
+    14, 13, 12, 11, 10, 9, 8, 9, 10, 11, 12, 13,
+    15, 16, 17, 18, 19, 20, 21, 20, 19, 18, 17, 16,
+    14, 13, 12, 11, 10, 9, 8, 9, 10, 11, 12, 13,
+    1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 0,
+    0, 1, 2, 3, 1, 3, 2, 1, 2, 3, 1, 3, 2,
+    4, 5, 6, 4, 6, 5, 4, 5, 6, 4, 6, 5,
+    7, 8, 9, 7, 9, 8, 7, 8, 9, 7, 9, 8,
+    10, 11, 12, 10, 12, 11, 10, 11, 12, 10, 12, 11,
+    13, 14, 15, 13, 15, 14, 13, 14, 15, 13, 15, 14, 16
+};
+
+/* 0x0046dbe8 */
+signed char acDirectionShapeFlip[DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0,
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3,
+    2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 2,
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0
+};
+
+/* 0x0046dca8 */
+short aasCockpitLightX[5][7] = {
     {101, 101, 189, 137, 265, -99, 203},
     {198, 198, 133, 145, 234, 234, -99},
     {76, 76, 139, 257, 20, 20, -99},
     {194, 194, 96, 137, 96, 96, -99},
     {-99, -99, 179, 133, -99, -99, -99}
 };
-short aasCockpitLightY[5][7] = { /* 0x0046dcf0 */
+
+/* 0x0046dcf0 */
+short aasCockpitLightY[5][7] = {
     {122, 145, 121, 7, 121, -99, 147},
     {120, 139, 114, 114, 179, 188, -99},
     {164, 183, 22, 181, 162, 178, -99},
     {119, 142, 136, 15, 126, 116, -99},
     {-99, -99, 115, 114, -99, -99, -99}
 };
-signed char aacCockpitLightOffFrame[5][7] = { /* 0x0046dd38 */
+
+/* 0x0046dd38 */
+signed char aacCockpitLightOffFrame[5][7] = {
     {14, 14, 14, 11, 13, 14, 14},
     {12, 12, 12, 13, 12, 12, 12},
     {9, 9, 9, 14, 9, 9, 9},
     {15, 15, 13, 11, 13, 13, 13},
     {5, 5, 5, 5, 5, 5, 5}
 };
-signed char aacCockpitLightOnFrame[5][7] = { /* 0x0046dd60 */
+
+/* 0x0046dd60 */
+signed char aacCockpitLightOnFrame[5][7] = {
     {3, 3, 3, 0, 2, 3, 3},
     {2, 2, 2, 3, 2, 2, 2},
     {1, 1, 1, 6, 1, 1, 1},
     {4, 4, 2, 0, 2, 2, 2},
     {1, 1, 1, 1, 1, 1, 1}
 };
-CockpitBarDefinition aaCockpitBars[5][8] = { /* 0x0046dd88 */
+
+/* 0x0046dd88 */
+CockpitBarDefinition aaCockpitBars[5][8] = {
     {
         {0, 215, 122, 219, 152, 31, 16, 5},
         {2, 143, 97, 175, 99, 33, 12, 1},
@@ -480,7 +570,9 @@ CockpitBarDefinition aaCockpitBars[5][8] = { /* 0x0046dd88 */
         {0, -99, -99, 0, 0, 0, 0, 0}
     }
 };
-CockpitLayout stCockpitLayout = { /* 0x0046e008 */
+
+/* 0x0046e008 */
+CockpitLayout stCockpitLayout = {
     {
         {{99, 130}, {227, 122}, {38, 164}, {192, 126},
          {-99, -99}, {0, 0}},
@@ -514,63 +606,20 @@ CockpitLayout stCockpitLayout = { /* 0x0046e008 */
         {120, 152, 203, 199}
     }
 };
-signed char acDirectionShapeFrame[ /* 0x0046db28 */
-    DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2,
-    14, 13, 12, 11, 10, 9, 8, 9, 10, 11, 12, 13,
-    15, 16, 17, 18, 19, 20, 21, 20, 19, 18, 17, 16,
-    28, 27, 26, 25, 24, 23, 22, 23, 24, 25, 26, 27,
-    29, 30, 31, 32, 33, 34, 35, 34, 33, 32, 31, 30,
-    36,
-    0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2,
-    14, 13, 12, 11, 10, 9, 8, 9, 10, 11, 12, 13,
-    15, 16, 17, 18, 19, 20, 21, 20, 19, 18, 17, 16,
-    14, 13, 12, 11, 10, 9, 8, 9, 10, 11, 12, 13,
-    1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 0,
-    0, 1, 2, 3, 1, 3, 2, 1, 2, 3, 1, 3, 2,
-    4, 5, 6, 4, 6, 5, 4, 5, 6, 4, 6, 5,
-    7, 8, 9, 7, 9, 8, 7, 8, 9, 7, 9, 8,
-    10, 11, 12, 10, 12, 11, 10, 11, 12, 10, 12, 11,
-    13, 14, 15, 13, 15, 14, 13, 14, 15, 13, 15, 14, 16
-};
-signed char acDirectionShapeFlip[ /* 0x0046dbe8 */
-    DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0,
-    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3,
-    2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 2,
-    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0
-};
 
-InputEvent *pInputEventHead = 0; /* 0x0046da90 */
-InputEvent *pInputEventTail = 0; /* 0x0046da94 */
-int bInputEventPoolInitialized = 0; /* 0x0046da98 */
-unsigned char *pDrawnMouseCursorShape = 0; /* 0x0046da9c */
-int nMouseCursorShowCount = 0; /* 0x0046daa0 */
-short nScreenWidth = 320; /* 0x0046daa4 */
-short nScreenHeight = 200; /* 0x0046daa8 */
-ScreenViewportGeometry aScreenViewportGeometry[6] = { /* 0x0046dab8 */
-    { 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 320, 128, 0, 24, 0, 24, -24576, -1 },
-    { 320, 200, 0, 0, 0, 0, -1536, -1 }
-};
-short asPilotHandOrigins[10] = { /* 0x0046e120 */
+/* 0x0046e120 */
+short asPilotHandOrigins[10] = {
     154, 187, 154, 187, 154, 187, 154, 187, 154, 187
 };
+
+/* The original contains ten initialized signed words here. Their
+ * owner and purpose are not established by any identified reference. */
+/* 0x0046e138 */
+short DAT_0046e138[10] = {
+    -400, -400, -400, -400, -400,
+    -400, -400, -400, -400, -400
+};
+
 #ifdef SDL_PORT
 void *apRasterDriverCallbacks[13]; /* 0x0046e69c */
 char szRasterDriverName[13] = "MCGA.DLL"; /* 0x0046e6d0 */
