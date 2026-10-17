@@ -328,7 +328,6 @@ int anPilotTurnInterval[18] = { /* 0x00465fc8 */
 };
 char szErrorLoadingPilotSpeech[32] = /* 0x00466010 */
     "Error loading pilot speech";
-short nPaletteTransitionInitialise = 1; /* 0x00469640 */
 char szMeanwhile[16] = "Meanwhile..."; /* 0x00469d80 */
 char szEmptyAnswerInput[4] = ""; /* 0x00469d90 */
 char szAnswerLabel[9] = "Answer: "; /* 0x00469d94 */
@@ -1992,11 +1991,6 @@ Viewport stDiskPromptViewport; /* 0x005a7d40 */
 int bPointerMovedByKeyboard; /* 0x005a7d54 */
 TextContext stDiskPromptTextContext; /* 0x005a7d60 */
 ShortRect stDiskPromptBounds; /* 0x005a7d80 */
-short *pPaletteTransitionDirection; /* 0x005a7d88 */
-short *pPaletteTransitionDelta; /* 0x005a7d8c */
-short nPaletteTransitionMaxDelta; /* 0x005a7d90 */
-short *pPaletteTransitionAccumulator; /* 0x005a7d94 */
-short nPaletteTransitionCountdown; /* 0x005a7d98 */
 int DAT_005a7d9c;
 signed char cCapitalShipLogicalFile; /* 0x005a7da0 */
 FixedVector vNormalizedToTarget; /* 0x005a7db0 */

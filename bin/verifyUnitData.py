@@ -42,14 +42,14 @@ UNITS = {
         ('asCampaignBriefingFiles', 0x90),
         ('asMissionDataFiles', 0x98),
     ), frozenset((0x20, 0x24, 0x68, 0x6C, 0x70, 0x74))),
-    'debug': UnitData(0x00469644, 36, (
+    'fade': UnitData(0x00469640, 2, (
+        ('nPaletteTransitionInitialise', 0x00),
+    ), frozenset()),
+    'debug': UnitData(0x00469644, 34, (
         ('nDebugOverlayConsoleCount', 0x00),
         ('dwDebugOverlayKey', 0x04),
         ('dwDebugOverlayKeyLatch', 0x08),
         ('hDebugKeyboardHook', 0x0C),
-        ('szDebugOverlayFontName', 0x10),
-        ('szDebugOverlaySpinner', 0x18),
-        ('szDebugOverlayNewline', 0x20),
     ), frozenset()),
     'disk': UnitData(0x00469668, 523, (
         ('apszGraphicsModeNames', 0x00),
@@ -136,6 +136,11 @@ UNITS = {
 }
 
 
+ADJACENT_UNITS = (
+    ('barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),
+)
+
+
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise ValueError(message)
@@ -178,10 +183,12 @@ def main() -> int:
         require(len(matches) == 1, f'expected one {owner}:{name} in map')
         return matches[0]
 
+    starts = {}
     for unit in args.unit or UNITS:
         block = UNITS[unit]
         owner = unit + '.obj'
         start = address(owner, block.globals[0][0])
+        starts[unit] = start
         require(data_section_size(str(args.objects_root / owner)) == block.size,
                 f'{owner}: .data must contain exactly {block.size} bytes')
         for name, offset in block.globals:
@@ -221,6 +228,38 @@ def main() -> int:
         print(f'{owner}: {block.size} data bytes match with one address shift; '
               f'{len(block.globals)} globals and {len(block.pointers)} '
               'pointer relocations verified')
+    for group in ADJACENT_UNITS:
+        if not all(unit in starts for unit in group):
+            continue
+        first, last = UNITS[group[0]], UNITS[group[-1]]
+        original_start = first.original_start
+        rebuilt_start = starts[group[0]]
+        size = last.original_start + last.size - original_start
+        for unit in group:
+            require(starts[unit] - rebuilt_start ==
+                    UNITS[unit].original_start - original_start,
+                    f'{unit}: incorrect position in adjacent data run')
+        pointers = {UNITS[unit].original_start - original_start + offset
+                    for unit in group for offset in UNITS[unit].pointers}
+        for image, base in ((original, original_start), (rebuilt, rebuilt_start)):
+            offsets = {va - base for va in image.relocations()
+                       if base <= va < base + size}
+            require(offsets == pointers,
+                    f'{image.path}: incorrect relocations in adjacent data run')
+        ranges = (RelocatedAddressRange(original_start, original_start + size,
+                                       rebuilt_start),)
+        ranges += tuple(RelocatedAddressRange(base, base + length, address(None, name))
+                        for unit in group
+                        for name, base, length in UNITS[unit].external_globals)
+        original_bytes = original.read(original_start, size)
+        rebuilt_bytes = rebuilt.read(rebuilt_start, size)
+        require(original_bytes is not None and rebuilt_bytes is not None,
+                'cannot read adjacent data run')
+        require(relocated_pointer_match(original_bytes, rebuilt_bytes, {}, ranges),
+                'adjacent data run differs, including inter-object alignment bytes')
+        padding = size - sum(UNITS[unit].size for unit in group)
+        print(f'{group[0]} through {group[-1]}: {size} adjacent data bytes match; '
+              f'{len(group)} unit positions and {padding} alignment bytes verified')
     return 0
 
 

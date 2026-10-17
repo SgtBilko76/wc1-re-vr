@@ -13,9 +13,6 @@ int nDebugOverlayConsoleCount = 0; /* 0x00469644 */
 DWORD dwDebugOverlayKey = 0; /* 0x00469648 */
 DWORD dwDebugOverlayKeyLatch = 0; /* 0x0046964c */
 HHOOK hDebugKeyboardHook = 0; /* 0x00469650 */
-char szDebugOverlayFontName[8] = "Courier"; /* 0x00469654 */
-char szDebugOverlaySpinner[5] = "-\\|/"; /* 0x0046965c */
-char szDebugOverlayNewline[4] = "\n"; /* 0x00469664 */
 
 /* Function start: 0x41C760 */
 DebugOverlayConsole::DebugOverlayConsole(HINSTANCE module,
@@ -49,7 +46,7 @@ DebugOverlayConsole::DebugOverlayConsole(HINSTANCE module,
     deviceContext = GetDC(window);
     SelectObject(deviceContext,
                  CreateFontA(10, 10, 0, 0, 400, 0, 0, 0, 0, 2, 0, 0,
-                             0x30, szDebugOverlayFontName));
+                             0x30, "Courier"));
 #endif
     backgroundColor = 0;
     textColor = 0xffffff;
@@ -77,7 +74,7 @@ DebugOverlayConsole::DebugOverlayConsole(HINSTANCE module,
     spinnerIndex = 0;
     animationState = 1;
     spinnerCharacters = (char *)malloc(5);
-    strcpy(spinnerCharacters, szDebugOverlaySpinner);
+    strcpy(spinnerCharacters, "-\\|/");
 }
 
 /* Function start: 0x41C910 */
@@ -183,7 +180,7 @@ extern "C" void DebugOverlayPrintf(DebugOverlayConsole *console,
         vsprintf(console->formatBuffer, format, arguments);
         va_end(arguments);
     } else {
-        strcpy(console->formatBuffer, szDebugOverlayNewline);
+        strcpy(console->formatBuffer, "\n");
     }
     length = strlen(console->formatBuffer);
     index = 0;

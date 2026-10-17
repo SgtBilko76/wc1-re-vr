@@ -1,9 +1,10 @@
 /*
  *  Barracks and campaign save/load room.
  *
- *  Address range 41a9d0-41c75f (provisional -- see docs/ORDER.md).
+ *  Address range 41a9d0-41c50f (see docs/ORDER.md).
  *  Boundary evidence: the menu tables precede the modal renderer's "%P"
- *  literal, then the SAVEGAME.WLD literals; the debug overlay starts at 41c760.
+ *  literal, then the SAVEGAME.WLD literals; the following palette flag
+ *  starts a separate unit after this file's string pool.
  */
 #include "wc1.h"
 
@@ -1147,94 +1148,4 @@ redraw:
     StopMusicUnlessSuppressed();
     ReleaseMusicTrackHook(35);
     return result;
-}
-
-/* Function start: 0x41C510 */
-unsigned short __stdcall StepPaletteTransition(short *current,
-                                                const short *target,
-                                                short componentCount)
-{
-    unsigned int byteCount;
-    short difference;
-    short index;
-    short previousCountdown;
-
-    if (nPaletteTransitionInitialise != 0) {
-        byteCount = (unsigned int)(componentCount * 2);
-        pPaletteTransitionAccumulator =
-            AllocateTaggedMemory(byteCount, 0);
-        pPaletteTransitionDelta =
-            AllocateTaggedMemory(byteCount, 0);
-        pPaletteTransitionDirection =
-            AllocateTaggedMemory(byteCount, 0);
-        if (pPaletteTransitionAccumulator == 0 ||
-            pPaletteTransitionDelta == 0 ||
-            pPaletteTransitionDirection == 0) {
-            if (pPaletteTransitionAccumulator != 0)
-                ReleasePacketHandle(pPaletteTransitionAccumulator);
-            if (pPaletteTransitionDelta != 0)
-                ReleasePacketHandle(pPaletteTransitionDelta);
-            if (pPaletteTransitionDirection != 0)
-                ReleasePacketHandle(pPaletteTransitionDirection);
-            return 0;
-        }
-
-        nPaletteTransitionMaxDelta = 0;
-        for (index = 0; index < componentCount; index++) {
-            difference = (short)(current[index] - target[index]);
-            if (difference < 0) {
-                difference = (short)-difference;
-                pPaletteTransitionDirection[index] = 4;
-            } else {
-                pPaletteTransitionDirection[index] = -4;
-            }
-            pPaletteTransitionDelta[index] = difference;
-            if (nPaletteTransitionMaxDelta < difference)
-                nPaletteTransitionMaxDelta = difference;
-        }
-
-        for (index = 0; index < componentCount; index++) {
-            pPaletteTransitionAccumulator[index] =
-                (short)(nPaletteTransitionMaxDelta / 4);
-        }
-        nPaletteTransitionInitialise = 0;
-        nPaletteTransitionCountdown =
-            (short)(nPaletteTransitionMaxDelta / 4);
-    }
-
-    previousCountdown = nPaletteTransitionCountdown;
-    nPaletteTransitionCountdown--;
-    if (previousCountdown == 0) {
-        ReleasePacketHandle(pPaletteTransitionAccumulator);
-        ReleasePacketHandle(pPaletteTransitionDelta);
-        ReleasePacketHandle(pPaletteTransitionDirection);
-        nPaletteTransitionInitialise = 1;
-        return 0;
-    }
-
-    for (index = 0; index < componentCount; index++) {
-        pPaletteTransitionAccumulator[index] =
-            (short)(pPaletteTransitionAccumulator[index] +
-                    pPaletteTransitionDelta[index]);
-        if (pPaletteTransitionAccumulator[index] >
-            nPaletteTransitionMaxDelta) {
-            pPaletteTransitionAccumulator[index] =
-                (short)(pPaletteTransitionAccumulator[index] -
-                        nPaletteTransitionMaxDelta);
-            current[index] =
-                (short)(current[index] +
-                        pPaletteTransitionDirection[index]);
-        }
-    }
-    return 1;
-}
-
-/* Function start: 0x41C740 */
-char *__stdcall DosStrcat(char *destination, const char *source)
-{
-    char *end;
-
-    end = DosStrchr(destination, 0);
-    DosStrcpy(end, source);
-    return destination;
 }

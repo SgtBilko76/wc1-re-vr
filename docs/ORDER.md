@@ -136,7 +136,8 @@ sits at one constant offset from the original.
 | `src/spc.c` | `0x410000`–`0x412FFF` |
 | `src/cockpt.c` | `0x413000`–`0x417FFF` |
 | `src/geom.c` | `0x418000`–`0x41A9CF` |
-| `src/barracks.c` | `0x41A9D0`–`0x41C75F` |
+| `src/barracks.c` | `0x41A9D0`–`0x41C50F` |
+| `src/fade.c` | `0x41C510`–`0x41C75F` |
 | `src/debug.cpp` | `0x41C760`–`0x41D0BF` |
 | `src/mathutil.c` | `0x41D0C0`–`0x41D11F` |
 | `src/disk.c` | `0x41D120`–`0x41DEDF` |
@@ -182,7 +183,8 @@ ownership and qualifiers:
 | `0x00465040`–`0x00465057` | `winmain.c`: two initialized hazard counters and two writable eight-byte hazard tables |
 | `0x00465058`–`0x004650B3` | `winmain.c`: window/audio flags, heap counters, class/title arrays, and message-pump state; two intervening words remain unidentified |
 | `0x004693C8`–`0x0046963F` | `barracks.c`: bunk origins, menu pointers, modal bounds/state, campaign file numbers, and the following string literals |
-| `0x00469644`–`0x00469667` | `debug.cpp`: console count, keyboard state/hook, font name, spinner, and newline arrays |
+| `0x00469640`–`0x00469641` | `fade.c`: palette-transition initialization flag |
+| `0x00469644`–`0x00469665` | `debug.cpp`: console count, keyboard state/hook, and font, spinner, and newline literals |
 | `0x00469668`–`0x00469872` | `disk.c`: graphics-mode and error-message pointers, disk marker, prompt settings, and the complete following literal pool |
 | `0x00469878`–`0x00469995` | `ship.c`: damage-system and debris tables, gun refire delays, and the following four HUD literals |
 | `0x00469998`–`0x00469BBD` | `init.c`: graphics defaults, the shared low-memory message, reservation tables, and startup literals |
@@ -233,13 +235,33 @@ exactly 632 initialized-data bytes through the airlock message. The entire
 block matches through binary-comp with one address shift, including its six
 internal pointers, literal order, and padding; `make verify-barracks-data`
 enforces this. Its absolute address remains displaced until preceding units'
-data ownership is recovered. The palette flag at `0x00469640` remains in
-`globals.c` because its original unit boundary is still uncertain.
+data ownership is recovered.
 
-The debug-console data is a complete 36-byte block. Both keyboard words have
-users outside `debug.cpp`; the count, hook, and character arrays are private
-to that unit. Moving these definitions preserves all 36 bytes, including
-the padding after the five-byte spinner array.
+The palette initialization flag follows that literal pool at `0x00469640`.
+Named declarations precede compiler literals in VC4.20, including function-static
+declarations, so the flag cannot be another barracks declaration. `fade.c`
+begins at its sole user, `StepPaletteTransition`. The adjacent `DosStrcat`
+entry remains in this range provisionally; its exact original ownership is
+not established. Both retain their observed callee-cleanup conventions. The
+five palette scratch variables are private to this unit, but their common-symbol
+storage still differs from the original uninitialized-data layout.
+
+The flag occupies two initialized bytes, followed by two linker alignment bytes.
+The debug-console unit then has four initialized words and three literals:
+`"Courier"`, the spinner sequence, and `"\n"`. Each string has one use site.
+Named arrays reproduced their contents but required eight-byte object alignment,
+placing the console count four bytes too late. Literals restore four-byte
+alignment and preserve the exact constructor instructions, including the original
+string copy. The complete `debug.obj` data section is 34 bytes; two alignment
+bytes follow before the disk tables. Both keyboard words have external users;
+the count and hook are private declarations.
+
+The complete initialized-data run from `0x004693C8` through `0x00469D7E` now
+matches with one address shift across barracks, fade, debug, disk, ship, init,
+and logic. `verify-unit-data` checks all 2,487 bytes, the seven unit positions,
+59 relocated pointers, and 13 inter-object alignment bytes. It does not insert
+padding or claim the absolute addresses are restored. The training-simulator
+block remains separate because ownership of the intervening scene data is open.
 
 The disk unit begins with the graphics-mode pointer table. The next three
 pointers at `0x00469678`, `0x0046967C`, and `0x00469680` are loaded directly

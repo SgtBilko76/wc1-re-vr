@@ -21,6 +21,15 @@ for similarity decisions.
   100-byte writable message array before its memory-reservation tables.
   Repeating the message at the call sites adds a duplicate to the literal
   pool and loses the original declaration order.
+- Single-use console strings are literals: the constructor's font and spinner,
+  and the formatted logger's newline. Their offsets alone also fit named arrays,
+  but arrays impose eight-byte object alignment. Literal storage reproduces the
+  four-byte alignment required immediately after the palette flag.
+- `StepPaletteTransition` computes one quarter of the maximum component delta
+  before filling its accumulator array, then divides the maximum again for the
+  countdown. Keep the first result in a real local; division inside the fill
+  loop repeats work absent from the original. Making the maximum private static
+  storage does not reproduce this sequence with VC4.20.
 - Initialize structure fields individually when the original does so.
   `CreateMainWindow` assigns every `WNDCLASSA` field; a preliminary `memset`
   adds a `REP STOSD` absent from the original. The field order also controls

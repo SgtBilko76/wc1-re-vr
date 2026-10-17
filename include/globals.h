@@ -190,7 +190,6 @@ extern short asMissionDataFiles[3]; /* 0x00469460 */
 extern unsigned char cEmptyHudMessage; /* 0x004693b0 */
 extern char *pGameVersion; /* 0x004693b4 */
 extern char szGameVersion[9]; /* 0x004693b8 */
-extern short nPaletteTransitionInitialise; /* 0x00469640 */
 extern DWORD dwDebugOverlayKey; /* 0x00469648 */
 extern DWORD dwDebugOverlayKeyLatch; /* 0x0046964c */
 extern short nDiskPromptBorderColour; /* 0x00469694 */
@@ -1026,11 +1025,6 @@ extern unsigned char abDiskPromptDriveState[2]; /* 0x005a7d20 */
 extern Viewport stDiskPromptViewport; /* 0x005a7d40 */
 extern TextContext stDiskPromptTextContext; /* 0x005a7d60 */
 extern ShortRect stDiskPromptBounds; /* 0x005a7d80 */
-extern short *pPaletteTransitionDirection; /* 0x005a7d88 */
-extern short *pPaletteTransitionDelta; /* 0x005a7d8c */
-extern short nPaletteTransitionMaxDelta; /* 0x005a7d90 */
-extern short *pPaletteTransitionAccumulator; /* 0x005a7d94 */
-extern short nPaletteTransitionCountdown; /* 0x005a7d98 */
 extern signed char cCapitalShipLogicalFile; /* 0x005a7da0 */
 extern signed char cObjectResourceLogicalFile; /* 0x005a86b0 */
 extern CampaignDate *pCurrentCampaignDate; /* 0x005a86a8 */

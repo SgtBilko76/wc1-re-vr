@@ -38,14 +38,17 @@ report therefore counts 1,519 source entries after removal of their four
 handwritten stand-ins; the separate gate covers the 74 generated code bytes.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
-initialized-data sections recovered for barracks (632 bytes), debug (36),
-disk (523), ship (286), init (550), logic (447), and trainsim (511). It delegates
-byte matching to binary-comp, allowing one address shift per block, and verifies
-object sizes, global positions, and pointer relocations. String-content fallback
-is disabled so duplicate or empty literals cannot conceal incorrect pointer targets. Resource pointers
-outside their unit must resolve to the named global at the original field
-offset. These checks prove relative layout; final absolute addresses remain
-a whole-executable task.
+initialized-data sections recovered for barracks (632 bytes), fade (2),
+debug (34), disk (523), ship (286), init (550), logic (447), and trainsim (511).
+It delegates byte matching to binary-comp, allowing one address shift per
+block, and verifies object sizes, global positions, and pointer relocations.
+String-content fallback is disabled so duplicate or empty literals cannot
+conceal incorrect pointer targets. Resource pointers outside their unit must
+resolve to the named global at the original field offset. These checks prove
+relative layout; final absolute addresses remain a whole-executable task.
+The default check also verifies the seven adjacent units from barracks through
+logic as one 2,487-byte run, including all 13 inter-object alignment bytes.
+This catches correct individual blocks linked at incorrect relative positions.
 `make verify-barracks-data` retains the barracks-only check.
 
 `config/data-literals.h` contains comparison metadata for anonymous literal
