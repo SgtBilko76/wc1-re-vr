@@ -844,4 +844,3 @@ void __stdcall AlignSpriteFrameToRectCorner(
         return;
     }
 }
-
