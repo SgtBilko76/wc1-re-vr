@@ -82,62 +82,14 @@ extern int anPilotTurnInterval[18]; /* 0x00465fc8 */
 extern char szErrorLoadingPilotSpeech[32]; /* 0x00466010 */
 extern short nNavMapCoordinateScaling; /* 0x00468660 */
 extern short nNavMapScale; /* 0x00468664 */
-extern NavMapObjectiveStyle aNavMapObjectiveStyles[10]; /* 0x00468668 */
-extern unsigned char *pNavMapShape; /* 0x00468708 */
-extern short nNavMapLabelCount; /* 0x0046870c */
-extern short nNavMapReservedAreaCount; /* 0x00468710 */
-extern char szCampaignSector[16]; /* 0x00468718 */
-extern char *apszShipMissionTypeNames[11]; /* 0x00468728 */
-extern char szMissionPatrol[8]; /* 0x00468758 */
-extern char szMissionEscort[8]; /* 0x00468760 */
-extern char szMissionStrike[8]; /* 0x00468768 */
-extern char szMissionDefend[8]; /* 0x00468770 */
-extern char szMissionWingman[8]; /* 0x00468778 */
-extern char szMissionFlee[8]; /* 0x00468780 */
-extern char szMissionGotoWarp[12]; /* 0x00468788 */
-extern char szMissionWarpArriveError[4]; /* 0x00468794 */
-extern char szMissionCannedSequenceError[4]; /* 0x00468798 */
-extern char szMissionRendezvous[12]; /* 0x0046879c */
-extern char szMissionComeHomeError[4]; /* 0x004687a8 */
-extern char szNavLabelTextFormat[12]; /* 0x004687ac */
-extern char szNavAsteroids[12]; /* 0x004687b8 */
-extern char szNavMines[8]; /* 0x004687c4 */
-extern char szInflightTimeFieldFormat[8]; /* 0x004687cc */
-extern char szStandardTimeFormat[24]; /* 0x004687d4 */
-extern char szStandardTimeBlank[4]; /* 0x004687ec */
-extern char szInflightTimeSuffixFormat[8]; /* 0x004687f0 */
-extern char szStandardTimeColon[4]; /* 0x004687f8 */
-extern char szNavLegendNewline[4]; /* 0x004687fc */
-extern char szNavMissionFlightPath[20]; /* 0x00468800 */
-extern char szNavHomeBase[12]; /* 0x00468814 */
-extern char szNavBlankLine[4]; /* 0x00468820 */
-extern char szNavTitleFormat[8]; /* 0x00468824 */
-extern char szNavSectorFormat[12]; /* 0x0046882c */
-extern char szNavSystemFormat[16]; /* 0x00468838 */
-extern char szNavMissionFormat[8]; /* 0x00468848 */
-extern char szNavShipFormat[8]; /* 0x00468850 */
-extern char szNavNotesHeading[8]; /* 0x00468858 */
-extern char szNavNoteFormat[4]; /* 0x00468860 */
-extern char szNavLocationFormat[48]; /* 0x00468864 */
-extern char szNavViewportName[8]; /* 0x00468894 */
-extern char szBriefingNavMapTitle[20]; /* 0x0046889c */
-extern char szConfedNavScan[16]; /* 0x004688b0 */
 extern int bInflightComputerActive; /* 0x00468754 */
-extern volatile short nNearHeapActive; /* 0x004688c0 */
 extern short nNearHeapMaxDescriptors; /* 0x004688c4 */
-extern volatile int nNearHeapRelocationBytes; /* 0x004688c8 */
 extern int bOfficeVisitPending; /* 0x004688cc */
 extern int bPromotionPending; /* 0x004688d0 */
 extern int bPlayerEjectedThisMission; /* 0x004688d4 */
 extern int bPlayerShipTypeChanged; /* 0x004688d8 */
 extern short nPreviousPlayerShipType; /* 0x004688dc */
 extern int bCampaignActive; /* 0x004688f0 */
-extern short nPendingMedalIndex; /* 0x004688e4 */
-extern short nPostSeriesSequence; /* 0x004688e8 */
-extern unsigned short bSeriesFailed; /* 0x004688ec */
-extern char *pszIntroOpeningText; /* 0x00468910 */
-extern int nIntroCreditCount; /* 0x00468a30 */
-extern char *apszIntroCredits[20]; /* 0x00468a38 */
 extern char szCalculating[12]; /* 0x0046931c */
 extern char szRangeKilometresSuffix[4]; /* 0x00469328 */
 extern char szNoObjective[8]; /* 0x0046932c */
@@ -146,9 +98,6 @@ extern char szCompNavigation[16]; /* 0x0046933c */
 extern char szDestinationFormat[20]; /* 0x0046934c */
 extern char szNavigationRangeLabel[12]; /* 0x00469360 */
 extern char szNewObjectivePrompt[20]; /* 0x0046936c */
-extern TitleMenuRegion aTitleMenuRegions[5]; /* 0x00468a88 */
-extern PacketResourceDescriptor aIntroResourceDescriptors[3]; /* 0x00468ac0 */
-extern int bTitleMenuSceneInitialized; /* 0x00468ad8 */
 extern short asVduSelectionSound[2]; /* 0x00469000 */
 extern char *pszPendingHudMessage; /* 0x00469004 */
 extern char *pszDisplayedHudMessage; /* 0x00469008 */
@@ -410,7 +359,6 @@ extern int bMonoDebugInstalled; /* 0x00475e70 */
 extern HANDLE hMonoDebugDevice; /* 0x00475e74 */
 extern short DAT_00475e78;
 extern unsigned char bCurrentManeuverReroll; /* 0x00475e7c */
-extern unsigned char abMouseCursorBackground[0x400]; /* 0x00475ff0 */
 extern int nFlightFrameTotalTicks; /* 0x004764f8 */
 extern int nFlightCockpitTicks; /* 0x004764fc */
 extern LARGE_INTEGER liFlightAfterInput; /* 0x00476500 */
@@ -921,8 +869,6 @@ extern int nFrameIntervalMs; /* 0x0046b1b8 */
 extern unsigned int dwStreamerState; /* 0x00597cd0 */
 extern short bExpandedMemoryAvailable; /* 0x0059a856 */
 extern int bCampaignStartupMode; /* 0x004688e0 */
-extern NavMapLabel aNavMapLabels[20]; /* 0x00475e80 */
-extern ShortRect aNavMapExclusionRects[21]; /* 0x00475f48 */
 extern short nScriptedViewObject; /* 0x0046a8d0 */
 extern int bScriptedView; /* 0x0046a8d4 */
 extern int nSfxVolumeSetting; /* 0x00469fbc */

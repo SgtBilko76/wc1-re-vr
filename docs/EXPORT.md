@@ -40,7 +40,8 @@ handwritten stand-ins and recovery of the two graphics diagnostic functions
 code bytes.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
-initialized-data sections recovered for barracks (632 bytes), fade (2),
+initialized-data sections recovered for nav (608 bytes), nearheap (12),
+gameflow (64), title (1,522), barracks (632), fade (2),
 debug (34), disk (523), ship (286), init (550), logic (447), trainsim (511),
 damage (390), view (289), ending (457), input (6), comm (520), video (10),
 joycal (42), killbrd (1,508), and gr (2,030). It also checks gr's complete
@@ -59,7 +60,8 @@ bytes, and ending through joycal as a 1,050-byte run, including 15 alignment
 bytes. The room and graphics units form another 3,542-byte run, including
 four alignment bytes. These checks catch correct individual blocks linked
 at incorrect relative positions.
-The same gate checks the uninitialized blocks owned by pilot (4 bytes),
+The same gate checks the uninitialized blocks owned by nav (368 bytes),
+cockpt (1,024), pilot (4),
 sound (8), damage (4), music (200), and eventmgr (4,096).
 These must be genuine COFF `.bss` sections with no raw data
 or relocations, and their linker symbols must belong to the expected object
@@ -76,7 +78,20 @@ buffer and graphics prefix must form one 68,120-byte run. Both require the origi
 unit positions with no inter-object padding. Pointer-free runs use
 binary-comp's direct address comparison, while runs containing pointers use
 its relocation-aware comparison.
+Navigation, cockpit cursor storage, and the console pointer form another
+1,396-byte run with no padding; the gate checks both navigation array offsets
+and all three owner positions.
 `make verify-barracks-data` retains the barracks-only check.
+
+The navigation, near-heap, campaign-flow, and title `.data` sections are checked
+as complete blocks of 608, 12, 64, and 1,522 bytes and as one 2,210-byte run.
+The combined check includes four alignment bytes and 48 pointer relocations.
+The title block includes the restored 279-byte Secret Missions message.
+The navigation and title literal metadata covers 360 and 1,062 bytes, allowing
+the linked-data audit to resolve the individual string pointers. The full
+unit checks retain their stricter positional checks for duplicate strings.
+The internal near-heap/campaign and viewport-helper boundaries remain
+provisional as described in `docs/ORDER.md`.
 
 Three explicitly marked partial-section checks cover `game.c`: two scalar
 state runs of 112 and 21 bytes, and the 6,652-byte run of scripts, mission
@@ -118,10 +133,13 @@ still prevent a complete-unit layout claim for `dib.c`.
 
 LINK 4.20 omits private C data symbols from its public map. The build preserves
 that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
-`WC1.map` with the four private damage symbols, seven private view symbols,
-five private music symbols, eight private ending symbols, two private
+`WC1.map` with eight private nav symbols, two private nearheap symbols,
+three private gameflow symbols, six private title symbols, one private cockpt
+symbol, four private damage symbols, seven private view symbols,
+six private music symbols, eight private ending symbols, two private
 comm symbols, two private joycal symbols, ten private dib symbols,
-eighteen private game symbols, seventeen private screens symbols,
+eighteen private game symbols, one private eventmgr symbol,
+seventeen private screens symbols,
 twenty-two private killbrd symbols, and five private gr symbols added.
 Their addresses come from the object's COFF symbols, public section anchors,
 and linked `DIR32`

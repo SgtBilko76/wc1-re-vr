@@ -132,8 +132,11 @@ sits at one constant offset from the original.
 | `src/auto.c` | `0x403E50`–`0x40469F` |
 | `src/cmpgn.c` | `0x4046A0`–`0x40609F` |
 | `src/brains.c` | `0x4060A0`–`0x40CFFF` |
-| `src/nav.c` | `0x40D000`–`0x40FFFF` |
-| `src/spc.c` | `0x410000`–`0x412FFF` |
+| `src/nav.c` | `0x40D000`–`0x40E88F` |
+| `src/nearheap.c` | `0x40E890`–`0x40EFDF` |
+| `src/gameflow.c` | `0x40EFE0`–`0x40FA2F` |
+| `src/title.c` | `0x40FA30`–`0x4102AF` |
+| `src/spc.c` | `0x4102B0`–`0x412FFF` |
 | `src/cockpt.c` | `0x413000`–`0x417FFF` |
 | `src/geom.c` | `0x418000`–`0x41A9CF` |
 | `src/barracks.c` | `0x41A9D0`–`0x41C50F` |
@@ -195,6 +198,10 @@ ownership and qualifiers:
 | `0x004631C8`–`0x004631FF` | `gr.c`: constant registry-key and `Cheater` value-name arrays used by `ReadCheaterFlagFromRegistry` |
 | `0x00465040`–`0x00465057` | `winmain.c`: two initialized hazard counters and two writable eight-byte hazard tables |
 | `0x00465058`–`0x004650B3` | `winmain.c`: window/audio flags, heap counters, class/title arrays, and message-pump state; two intervening words remain unidentified |
+| `0x00468660`–`0x004688BF` | `nav.c`: map state, objective styles, mission-name pointers, and the following navigation literals |
+| `0x004688C0`–`0x004688CB` | `nearheap.c`: near-heap state and descriptor limit |
+| `0x004688CC`–`0x0046890B` | `gameflow.c`: campaign state and the following viewport-disposal diagnostic; the helper's unit ownership remains provisional |
+| `0x00468910`–`0x00468F01` | `title.c`: opening-text pointer, Secret Missions message, credits, title-menu and resource records, and the following cinematic literals |
 | `0x004693C8`–`0x0046963F` | `barracks.c`: bunk origins, menu pointers, modal bounds/state, campaign file numbers, and the following string literals |
 | `0x00469640`–`0x00469641` | `fade.c`: palette-transition initialization flag |
 | `0x00469644`–`0x00469665` | `debug.cpp`: console count, keyboard state/hook, and font, spinner, and newline literals |
@@ -210,6 +217,40 @@ ownership and qualifiers:
 | `0x0046AF60`–`0x0046B167` | `comm.c`: menu/video state, ace and menu-label pointers, and the complete communication literal pool |
 | `0x0046B168`–`0x0046B171` | `video.c`: video mode and the palette-allocation diagnostic literals |
 | `0x0046B178`–`0x0046B1A1` | `joycal.c`: graphics-mode table, two unused driver names, and both calibration-file literals |
+
+The navigation unit's 360-byte literal pool follows its map state and pointer
+tables, ending immediately before the initialized near-heap state at
+`0x004688C0`. This establishes a boundary before `MergeAdjacentNearHeapBlocks`
+at `0x0040E890`: those initialized definitions cannot follow function literals
+in one CL 4.20 object. The 34 former named navigation string arrays are now
+single-use literals, including the three separate `"err"` mission names.
+Six initialized variables and the two uninitialized navigation arrays have
+only local original references. The SDL mission-name consumer retains access
+through the SDL-only header.
+
+The near-heap routines occupy the next nine-function run, followed by campaign
+scoring and mission flow. Their internal division into `nearheap.c` and
+`gameflow.c` follows their distinct state and call groups; no intervening
+literal pool proves that particular boundary. The adjacent `free_viewport`
+helper remains in `gameflow.c` provisionally. Its diagnostic ends before the
+title's initialized data at `0x00468910`, proving another object boundary.
+The unreferenced constant helper at `0x0040FA30` remains with title provisionally.
+
+The title data includes the previously omitted 279-byte Secret Missions
+message at `0x00468918`, including its terminator. No surviving code or data
+relocation targets it. A writable named character array reproduces those
+bytes and the single alignment byte before the credit count. Its descriptive
+name does not claim recovery of the original identifier. The opening-text
+pointer and all nineteen non-null credit pointers target the following
+1,062-byte literal pool, which retains the original spelling and newlines.
+
+The unit-data gate checks the complete reconstructed `.data` sections:
+navigation (608 bytes), near-heap (12), campaign flow (64), and title (1,522).
+It also checks the combined 2,210-byte run and all 48 pointer relocations,
+including the four alignment bytes before title. The six referenced colour
+variables and the two title resource-record pointers must resolve to their
+original globals and field offsets. This proves the data layout independently
+of the provisional internal code boundaries.
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
 DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
@@ -361,7 +402,16 @@ match with one address shift. The unreferenced word `10` at `0x00469DA0`
 and storage after the final simulator literal remain outside this recovered
 block; their ownership is not inferred from proximity.
 
-Three early uninitialized-data blocks now reside in their owners:
+The navigation label and exclusion arrays at `0x00475E80` and `0x00475F48`
+have references only in `nav.c`. Their existing 20 packed ten-byte label
+records and 21 eight-byte rectangles now occupy a private 368-byte `.bss`
+section, with the rectangle array at offset `0xC8`. The separate 1,024-byte
+cockpit cursor background at `0x00475FF0` is used only by
+`overlay_head_up_display` and `RestoreTransientCockpitGraphics`; it now
+occupies `cockpt.c`'s `.bss`. Together with the following console pointer,
+these form a verified 1,396-byte run with no inter-object padding.
+
+Three more uninitialized-data blocks reside in their owners:
 `pDebugOverlay` at `0x004763F0` belongs to the console wrappers in `pilot.cpp`,
 `pSnowStaticWave` and `pSnowStaticSound` occupy `0x0047654C`–`0x00476553`
 in `sound.c`, and `nDisplayedComponentDamage` at `0x00476554` belongs to

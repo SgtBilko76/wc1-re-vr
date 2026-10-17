@@ -1,0 +1,470 @@
+/*
+ * Campaign scoring and mission flow, followed by viewport disposal.
+ * The viewport helper remains here provisionally.
+ * Placement and boundary evidence are recorded in docs/ORDER.md.
+ */
+#include "wc1.h"
+
+int bOfficeVisitPending = 0; /* 0x004688cc */
+int bPromotionPending = 0; /* 0x004688d0 */
+int bPlayerEjectedThisMission = 0; /* 0x004688d4 */
+int bPlayerShipTypeChanged = 0; /* 0x004688d8 */
+short nPreviousPlayerShipType = 0; /* 0x004688dc */
+int bCampaignStartupMode = 0; /* 0x004688e0 */
+#ifndef SDL_PORT
+static
+#endif
+short nPendingMedalIndex = -1; /* 0x004688e4 */
+#ifndef SDL_PORT
+static
+#endif
+short nPostSeriesSequence = -1; /* 0x004688e8 */
+static unsigned short bSeriesFailed = 1; /* 0x004688ec */
+int bCampaignActive = 0; /* 0x004688f0 */
+
+/* Function start: 0x40EFE0 */
+void add_statistics(short pilot, short missions, short kills)
+{
+    apWingmanPilots[pilot]->missions += missions;
+    apWingmanPilots[pilot]->kills += kills;
+}
+
+/* Function start: 0x40F010 */
+void PostMission(void)
+{
+    short oldKills;
+    short pilot;
+    short missions;
+    short kills;
+
+    oldKills = stCampaignState.currentPilot->kills;
+    if (oldKills < 5 && oldKills + nPlayerKillCount > 4)
+        stCampaignState.badges[
+            CAMPAIGN_BADGE_FIVE_KILLS] = 1;
+    else if (oldKills < 25 &&
+             oldKills + nPlayerKillCount > 24)
+        stCampaignState.badges[
+            CAMPAIGN_BADGE_TWENTY_FIVE_KILLS] = 1;
+
+    if (stCampaignState.badges[
+            CAMPAIGN_BADGE_SHIP_TYPE_BASE +
+            stCampaignState.playerShipType] == 0)
+        stCampaignState.badges[
+            CAMPAIGN_BADGE_SHIP_TYPE_BASE +
+            stCampaignState.playerShipType] = 1;
+
+    stCampaignState.currentPilot->missions++;
+    switch (stCampaignState.currentPilot->missions) {
+    case 1:
+        stCampaignState.badges[
+            CAMPAIGN_BADGE_FIRST_MISSION] = 1;
+        /* The retail switch deliberately falls through. */
+    case 5:
+        stCampaignState.badges[
+            CAMPAIGN_BADGE_FIVE_MISSIONS] = 1;
+        break;
+    case 10:
+        stCampaignState.badges[
+            CAMPAIGN_BADGE_TEN_MISSIONS] = 1;
+        break;
+    case 15:
+        stCampaignState.badges[
+            CAMPAIGN_BADGE_FIFTEEN_MISSIONS] = 1;
+        break;
+    }
+
+    stCampaignState.currentPilot->kills +=
+        nPlayerKillCount;
+    if (oldKills / 5 <
+        stCampaignState.currentPilot->kills / 5)
+        stCampaignState.promotionScore++;
+
+    for (pilot = 0; pilot < 8; pilot++) {
+        if (nYourWingman == -1 ||
+            acShipRating[nYourWingman] != pilot) {
+            if (stCampaignState.personalityDeathMission[
+                    pilot] != 0) {
+                continue;
+            }
+            missions = RandomInRange(0, 2);
+            if (missions == 0)
+                kills = 0;
+            else
+                kills = RandomInRange(
+                    0, nPlayerKillCount);
+        } else {
+            missions = 1;
+            kills = nWingmanKillCount;
+        }
+        add_statistics(pilot, missions, kills);
+    }
+}
+
+/* Function start: 0x40F190 */
+int FullMissionScore(void)
+{
+    signed char *scores;
+    short objective;
+    short score;
+
+    score = 0;
+    scores = (signed char *)(pMissionCampaignData +
+        (int)stCampaignState.currentMission * 0x14 +
+        (int)stCampaignState.currentSeries * 0x5a - 0x50);
+    objective = 0;
+    do {
+        score = (short)(score + scores[objective + 4]);
+        objective++;
+    } while (objective < 16);
+    return score;
+}
+
+/* Function start: 0x40F1E0 */
+int PlayersMissionScore(void)
+{
+    signed char *scores;
+    short objective;
+    short score;
+
+    scores = (signed char *)(pMissionCampaignData +
+        (int)stCampaignState.currentSeries * 0x5a +
+        (int)stCampaignState.currentMission * 0x14 - 0x50);
+    score = 0;
+    for (objective = 0; objective < 16; objective++) {
+        if (achieved(objective) != 0)
+            score = (short)(score + scores[objective + 4]);
+    }
+    return score;
+}
+
+/* Function start: 0x40F240 */
+unsigned int UpdateSeries(void)
+{
+    unsigned char *seriesData;
+    short *medalData;
+    short fullScore;
+    short playerScore;
+    int failed;
+
+    stSavedCampaignDate = *pCurrentCampaignDate;
+    seriesData = pMissionCampaignData +
+        (int)stCampaignState.currentSeries * 0x5a - 0x5a;
+    medalData = (short *)(pMissionCampaignData +
+        (int)stCampaignState.currentSeries * 0x5a +
+        (int)stCampaignState.currentMission * 0x14 - 0x50);
+
+    fullScore = (short)FullMissionScore();
+    playerScore = (short)PlayersMissionScore();
+    if (playerScore == fullScore)
+        stCampaignState.promotionScore++;
+    stCampaignState.seriesScore = (short)(
+        stCampaignState.seriesScore + playerScore);
+    stCampaignState.currentMission++;
+
+    if (stCampaignState.currentMission >=
+        (signed char)seriesData[2]) {
+        nPreviousPlayerShipType =
+            (short)stCampaignState.playerShipType;
+        nPostSeriesSequence =
+            (short)(signed char)seriesData[5];
+        stCampaignState.seriesHistory[
+            stCampaignState.seriesHistoryCount] =
+            stCampaignState.currentSeries;
+        stCampaignState.seriesHistoryCount++;
+        failed = stCampaignState.seriesScore <
+            *(short *)(seriesData + 3);
+        if (failed != 0) {
+            stCampaignState.currentSeries =
+                (signed char)seriesData[8];
+            stCampaignState.playerShipType =
+                (enum ObjectType)(signed char)seriesData[9];
+        } else {
+            stCampaignState.currentSeries =
+                (signed char)seriesData[6];
+            stCampaignState.playerShipType =
+                (enum ObjectType)(signed char)seriesData[7];
+        }
+        bSeriesFailed = (unsigned short)failed;
+        if (nPreviousPlayerShipType !=
+            (short)stCampaignState.playerShipType) {
+            bPlayerShipTypeChanged = 1;
+            bOfficeVisitPending = 1;
+        }
+        stCampaignState.seriesScore = 0;
+        stCampaignState.currentMission = 0;
+        if ((signed char)pMissionCampaignData[
+                (int)stCampaignState.currentSeries *
+                0x5a + 5] ==
+                nPostSeriesSequence &&
+            nPostSeriesSequence < 0x40)
+            nPostSeriesSequence = -1;
+    }
+
+    if (nWingmanKilledThisMission != 0)
+        nMissionMedalScore =
+            MaxShort(0, (short)(
+                stCampaignState.missionScore - 15));
+    if (medalData[1] <= nMissionMedalScore &&
+        nPendingMedalIndex == -1) {
+        stSavedCampaignDate =
+            *pCurrentCampaignDate;
+        nPendingMedalIndex = medalData[0];
+    }
+    return 0;
+}
+
+/* Function start: 0x40F3F0 */
+unsigned int MoveNewCampaign(void)
+{
+    short days;
+
+    if (stCampaignState.currentMission != 0)
+        days = RandomInRange(0, 1);
+    else
+        days = (short)(RandomInRange(0, 1) + 5);
+    pCurrentCampaignDate->day =
+        (short)(pCurrentCampaignDate->day + days);
+    if (pCurrentCampaignDate->day >= 366) {
+        pCurrentCampaignDate->day =
+            (short)(pCurrentCampaignDate->day - 365);
+        pCurrentCampaignDate->year++;
+    }
+    return 0;
+}
+
+/* Function start: 0x40F440 */
+unsigned int StartNewCampaign(short campaign)
+{
+    bCampaignActive = 1;
+    ResetCampaignData();
+    bCampaignStartupMode = 1;
+    RunTrainSim();
+    stCampaignState.campaignIndex = campaign;
+    nCampaignDataSet = campaign;
+    bCampaignStartupMode = 0;
+    LoadPacketIntoBuffer(asCampaignPilotFiles[campaign], 1,
+                         pMissionCampaignData);
+    bPanRoomTransition = 0;
+    nPendingCampaignIndex = -1;
+    return 0;
+}
+
+/* Function start: 0x40F4B0 */
+short GameFlow(void)
+{
+    short roomSelection;
+    int barracksSelection;
+    short launchMission;
+    short flownSeries;
+    short flownMission;
+    short nextSeries;
+    short nextMission;
+    int flightResult;
+
+    launchMission = 0;
+    FrameStartHook(0);
+    if (nPendingCampaignIndex != -1) {
+        stCampaignState.campaignIndex = nPendingCampaignIndex;
+        nCampaignDataSet = nPendingCampaignIndex;
+    }
+
+    bKeyEventQueueEnabled = 0;
+    do {
+        roomSelection = 0;
+        bPlayerEjectedThisMission = 0;
+        nPostSeriesSequence = -1;
+        bPromotionPending = 0;
+        nPendingMedalIndex = -1;
+        bOfficeVisitPending = 0;
+        bPlayerShipTypeChanged = 0;
+        if (bCampaignStartupMode == 0)
+            roomSelection = RecRoom();
+        bPanRoomTransition = 0;
+        if (roomSelection == 5) {
+            RunTrainSim();
+        } else {
+            barracksSelection = BarracksScreen();
+            bCampaignStartupMode = 0;
+            if (barracksSelection == 6)
+                return 0;
+            if (barracksSelection == 7)
+                launchMission++;
+        }
+        PumpWindowMessages();
+    } while (launchMission == 0);
+
+    bKeyEventQueueEnabled = 1;
+    nDebriefingPersonality = *(short *)(
+        pMissionCampaignData +
+        (short)stCampaignState.currentSeries * 0x5a - 0x5a);
+    Briefing((short)stCampaignState.currentSeries,
+             (short)stCampaignState.currentMission);
+    PlayScrambleHangarScene();
+    stCampaignState.playerShipType =
+        aMissionShips[
+            nPlayerMissionShipIndex].type;
+    scramble();
+    flownSeries = (short)stCampaignState.currentSeries;
+    flownMission = (short)stCampaignState.currentMission;
+    init_mission(flownSeries, flownMission);
+    LaunchPlayerShip();
+    flightResult = RunSpaceFlight(-1);
+
+    switch (flightResult) {
+    case 1:
+        free_cockpit();
+        ShowCarrierLaunchSequence(
+            (signed char)nPlayerCollisionObject);
+        nArcadeState = 0;
+        nPlayerCollisionObject = -1;
+        free_3Space();
+        flightResult = calculate_damage_level();
+        landing((signed char)flightResult);
+        break;
+    case 2:
+        ejection_sequence();
+        check_stranded();
+        if (nArcadeState == 3)
+            stranded_sequence();
+        free_3Space();
+        if (nArcadeState == 3)
+            return 0;
+        nArcadeState = 0;
+        bPlayerEjectedThisMission = 1;
+        stCampaignState.promotionScore = MaxShort(
+            0, (short)(stCampaignState.promotionScore - 1));
+        stCampaignState.elapsedDate.year++;
+        if (stCampaignState.elapsedDate.year == 1)
+            nPendingMedalIndex = 3;
+        bOfficeVisitPending = 1;
+        break;
+    case 3:
+        stranded_sequence();
+        free_3Space();
+        return 0;
+    case 4:
+        death_sequence();
+        free_3Space();
+        funeral_sequence(1);
+        bCampaignActive = 0;
+        return 0;
+    default:
+        free_cockpit();
+        free_all_slots();
+        free_3Space();
+        return 0;
+    }
+
+    PostMission();
+    UpdateSeries();
+    nextSeries = (short)stCampaignState.currentSeries;
+    nextMission = (short)stCampaignState.currentMission;
+    stCampaignState.currentSeries = (signed char)flownSeries;
+    stCampaignState.currentMission = (signed char)flownMission;
+
+    if (bPlayerEjectedThisMission == 0) {
+        if ((unsigned short)RandomInRange(0, 5) +
+                stCampaignState.promotionScore > 7) {
+            stCampaignState.promotionScore = 0;
+            if (nCampaignDataSet == 0) {
+                bPromotionPending =
+                    stCampaignState.currentPilot->rank < 3;
+            } else if (nCampaignDataSet > 0) {
+                bPromotionPending =
+                    stCampaignState.currentPilot->rank < 4;
+            } else {
+                bPromotionPending = 0;
+            }
+            bOfficeVisitPending =
+                bOfficeVisitPending != 0 ||
+                bPromotionPending != 0;
+        }
+    }
+
+    DeBriefing(flownSeries, flownMission);
+    if (bPromotionPending != 0)
+        stCampaignState.currentPilot->rank++;
+
+    if (nextSeries == -1) {
+        if (nPendingMedalIndex != -1)
+            AwardCampaignMedal(nPendingMedalIndex);
+
+        if (nPostSeriesSequence == -1) {
+            flightResult = 0;
+        } else if (nPostSeriesSequence == 0x40) {
+            ShowCampaignVictorySequence();
+            flightResult = 1;
+        } else if (nPostSeriesSequence == 0x41) {
+            ShowTigerClawEscapeScene();
+            flightResult = 0;
+        } else {
+            ShowMeanwhileTransition(nPostSeriesSequence,
+                                    (short)bSeriesFailed);
+            flightResult = bSeriesFailed >= 1;
+        }
+        ShowTheEndScreen((short)flightResult);
+        bCampaignActive = 0;
+        return 0;
+    }
+
+    if (nWingmanKilledThisMission != 0)
+        funeral_sequence(0);
+    if (bOfficeVisitPending == 1)
+        Office();
+    if (nPendingMedalIndex != -1) {
+        AwardCampaignMedal(nPendingMedalIndex);
+        nPendingMedalIndex = -1;
+    }
+    if (nPostSeriesSequence != -1)
+        ShowMeanwhileTransition(nPostSeriesSequence,
+                                (short)bSeriesFailed);
+    stCampaignState.currentSeries = (signed char)nextSeries;
+    stCampaignState.currentMission = (signed char)nextMission;
+    MoveNewCampaign();
+    AddRandomTrainSimHighScores();
+    bPanRoomTransition = 1;
+    return 1;
+}
+
+/* Function start: 0x40F940 */
+void __stdcall free_viewport(Viewport *viewport)
+{
+    unsigned char *allocation;
+    int i;
+    int oldCount;
+
+    nFreeViewportCalls++;
+    allocation = viewport->allocation;
+    if (allocation != 0) {
+        i = 0;
+        while (i < nViewportAllocationCount) {
+            if (apViewportAllocations[i] == allocation) {
+                oldCount = nViewportAllocationCount;
+                nViewportAllocationCount--;
+                apViewportAllocations[i] =
+                    apViewportAllocations[oldCount];
+                break;
+            }
+            i++;
+        }
+        if (viewport->rowOffsets != 0) {
+            ReleasePacketHandle(viewport->rowOffsets);
+            viewport->rowOffsets = 0;
+        }
+#if !defined(SDL_PORT) || defined(SDL_PORT_LEGACY_DEBUG_OUTPUT)
+        if (nVideoMode != 0x13)
+            printf("free_viewport not mcga\n");
+#endif
+        ReleasePacketHandle(allocation);
+        viewport->pixels = 0;
+        viewport->allocation = 0;
+        if (stScreen.pixels == allocation)
+            stScreen.pixels = 0;
+        if (stScreen.allocation == allocation)
+            stScreen.allocation = 0;
+        if (stSceneBuffer.pixels == allocation)
+            stSceneBuffer.pixels = 0;
+        if (stSceneBuffer.allocation == allocation)
+            stSceneBuffer.allocation = 0;
+    }
+}

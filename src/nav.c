@@ -1,14 +1,13 @@
 /*
- *  Nav map, location readouts and the virtual screen.
- *
- *  Address range 40d000-40ffff (provisional -- see docs/ORDER.md).
- *  Boundary evidence: DrawNav* family; string band 4687AC-4688F4.
+ * Navigation map, objective labels, and the in-flight computer.
+ * Placement and boundary evidence are recorded in docs/ORDER.md.
  */
 #include "wc1.h"
 
 short nNavMapCoordinateScaling = 0; /* 0x00468660 */
 short nNavMapScale = 1; /* 0x00468664 */
-NavMapObjectiveStyle aNavMapObjectiveStyles[10] = { /* 0x00468668 */
+/* 0x00468668 */
+static NavMapObjectiveStyle aNavMapObjectiveStyles[10] = {
     { 1, 2, &cPrimaryTextColour, &cDefaultTextColour,
       &cDefaultTextColour },
     { 3, 2, &cBlackColour, &cViewportClearColour,
@@ -25,117 +24,33 @@ NavMapObjectiveStyle aNavMapObjectiveStyles[10] = { /* 0x00468668 */
     { 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0 }
 };
-unsigned char *pNavMapShape = 0; /* 0x00468708 */
-short nNavMapLabelCount = 0; /* 0x0046870c */
-short nNavMapReservedAreaCount = 0; /* 0x00468710 */
-char szCampaignSector[16] = "Vega XR-231.3"; /* 0x00468718 */
-char *apszShipMissionTypeNames[11] = { /* 0x00468728 */
-    szMissionPatrol,
-    szMissionEscort,
-    szMissionStrike,
-    szMissionDefend,
-    szMissionWingman,
-    szMissionFlee,
-    szMissionGotoWarp,
-    szMissionWarpArriveError,
-    szMissionCannedSequenceError,
-    szMissionRendezvous,
-    szMissionComeHomeError
+static unsigned char *pNavMapShape = 0; /* 0x00468708 */
+static short nNavMapLabelCount = 0; /* 0x0046870c */
+static short nNavMapReservedAreaCount = 0; /* 0x00468710 */
+static char szCampaignSector[16] = "Vega XR-231.3"; /* 0x00468718 */
+#ifndef SDL_PORT
+static
+#endif
+/* 0x00468728 */
+char *apszShipMissionTypeNames[11] = {
+    "Patrol",
+    "Escort",
+    "Strike",
+    "Defend",
+    "Wingman",
+    "Flee",
+    "Goto Warp",
+    "err",
+    "err",
+    "Rendezvous",
+    "err"
 };
 int bInflightComputerActive = 0; /* 0x00468754 */
-char szMissionPatrol[8] = "Patrol"; /* 0x00468758 */
-char szMissionEscort[8] = "Escort"; /* 0x00468760 */
-char szMissionStrike[8] = "Strike"; /* 0x00468768 */
-char szMissionDefend[8] = "Defend"; /* 0x00468770 */
-char szMissionWingman[8] = "Wingman"; /* 0x00468778 */
-char szMissionFlee[8] = "Flee"; /* 0x00468780 */
-char szMissionGotoWarp[12] = "Goto Warp"; /* 0x00468788 */
-char szMissionWarpArriveError[4] = "err"; /* 0x00468794 */
-char szMissionCannedSequenceError[4] = "err"; /* 0x00468798 */
-char szMissionRendezvous[12] = "Rendezvous"; /* 0x0046879c */
-char szMissionComeHomeError[4] = "err"; /* 0x004687a8 */
-char szNavLabelTextFormat[12] = "%X%Y%F%s"; /* 0x004687ac */
-char szNavAsteroids[12] = "Asteroids"; /* 0x004687b8 */
-char szNavMines[8] = "Mines"; /* 0x004687c4 */
-char szInflightTimeFieldFormat[8] = "%02d"; /* 0x004687cc */
-char szStandardTimeFormat[24] = /* 0x004687d4 */
-    "%X%YStandard time %s";
-char szStandardTimeBlank[4] = " "; /* 0x004687ec */
-char szInflightTimeSuffixFormat[8] = "%02d  "; /* 0x004687f0 */
-char szStandardTimeColon[4] = ":"; /* 0x004687f8 */
-char szNavLegendNewline[4] = "\n"; /* 0x004687fc */
-char szNavMissionFlightPath[20] = "MISSION FLIGHT PATH"; /* 0x00468800 */
-char szNavHomeBase[12] = "HOME BASE"; /* 0x00468814 */
-char szNavBlankLine[4] = "\n"; /* 0x00468820 */
-char szNavTitleFormat[8] = "%s\n\n"; /* 0x00468824 */
-char szNavSectorFormat[12] = "Sector: %s\n"; /* 0x0046882c */
-char szNavSystemFormat[16] = "System: %s\n\n"; /* 0x00468838 */
-char szNavMissionFormat[8] = "* %s *\n"; /* 0x00468848 */
-char szNavShipFormat[8] = "* %s *\n"; /* 0x00468850 */
-char szNavNotesHeading[8] = "\nNotes\n"; /* 0x00468858 */
-char szNavNoteFormat[4] = "%s\n"; /* 0x00468860 */
-char szNavLocationFormat[48] = /* 0x00468864 */
-    "%X%Y                         Location: %d.%d.%d";
-char szNavViewportName[8] = "VSCREEN"; /* 0x00468894 */
-char szBriefingNavMapTitle[20] = "Briefing Nav Map"; /* 0x0046889c */
-char szConfedNavScan[16] = "ConFed Nav Scan"; /* 0x004688b0 */
-volatile short nNearHeapActive = 0; /* 0x004688c0 */
-short nNearHeapMaxDescriptors = 0x80; /* 0x004688c4 */
-volatile int nNearHeapRelocationBytes = 0; /* 0x004688c8 */
-int bOfficeVisitPending = 0; /* 0x004688cc */
-int bPromotionPending = 0; /* 0x004688d0 */
-int bPlayerEjectedThisMission = 0; /* 0x004688d4 */
-int bPlayerShipTypeChanged = 0; /* 0x004688d8 */
-short nPreviousPlayerShipType = 0; /* 0x004688dc */
-int bCampaignStartupMode = 0; /* 0x004688e0 */
-short nPendingMedalIndex = -1; /* 0x004688e4 */
-short nPostSeriesSequence = -1; /* 0x004688e8 */
-unsigned short bSeriesFailed = 1; /* 0x004688ec */
-int bCampaignActive = 0; /* 0x004688f0 */
-char *pszIntroOpeningText = /* 0x00468910 */
-    "In the distant future,\n"
-    "mankind is locked in a deadly war...";
-int nIntroCreditCount = 11; /* 0x00468a30 */
-char *apszIntroCredits[20] = { /* 0x00468a38 */
-    "Design\nby\nChris Roberts",
-    "Software Engineers\nChris Roberts\nKen Demarest III\nPaul C. Isaac\nSteve Muchow\nHerman Miller\nSteve Beeman\n",
-    "Dogfight Intelligence\nKen Demarest III\n\nDogfight Choreography\nSteve Beeman\nErin Roberts",
-    "3Space System\nby\nChris Roberts\n\nOriginFX Graphic System\nChris Roberts\nJohn Miles",
-    "OriginFX Sound System\nby\nHerman Miller",
-    "Artwork\nDenis Loubet\nGlen Johnson\nDaniel Bourbonnais\nKeith Berdak\nJohn Watson",
-    "Screenplay by Jeff George\n\nAdditional Writing\nSteve Cantrell\nPhilip Brogden",
-    "Soundtrack by\nGeorge A. Sanger and Dave Govett",
-    "Sound Effects by Marc Schaefgen",
-    "Produced by\nChris Roberts and Warren Spector",
-    "Directed by\nChris Roberts",
-    "Windows 95 Team",
-    "Combat Programmers\n\nJeff Mangler Everett\nJeff jefftep Grills\nChuck Bishop Karpiak\nKris Goblin Pelley",
-    "Sound System\n\nRichard Cupcake Lyle",
-    "Soundtrack Rescored by\n\nI Need Names",
-    "Head Whiner\n\nAnthony Sommers",
-    "Whiners\n\nMonte Mathis\nHal Milton\nDieter Martin",
-    "Richard Zinser\nKanon Lillemon\n",
-    "Special Thanks To\n\nSocks\nand\nCaffeine",
-    0
-};
 
-TitleMenuRegion aTitleMenuRegions[5] = { /* 0x00468a88 */
-    { 1, 49, 48, 283, 99 },
-    { 1, 49, 91, 283, 149 },
-    { 1, 49, 134, 283, 149 },
-    { 1, 49, 177, 283, 209 },
-    { -1, 0, 0, 0, 0 }
-};
-
-PacketResourceDescriptor aIntroResourceDescriptors[3] = { /* 0x00468ac0 */
-    { &aObjectTypeData[OBJECT_TYPE_EXPLOSION1].shapeSet,
-      3, 2 },
-    { &aObjectTypeData[OBJECT_TYPE_DEBRIS_METAL_SHEET].shapeSet,
-      3, 5 },
-    { 0, 0, 0 }
-};
-
-int bTitleMenuSceneInitialized = 0; /* 0x00468ad8 */
+/* 0x00475e80 */
+static NavMapLabel aNavMapLabels[20];
+/* 0x00475f48 */
+static ShortRect aNavMapExclusionRects[21];
 
 /* Function start: 0x40D090 */
 short NavMapPointInsideReservedArea(short area, short x, short y)
@@ -323,7 +238,7 @@ void DrawNavMapLabels(void)
 
     label = 0;
     while (label < (short)nNavMapLabelCount) {
-        DrawFormattedText(szNavLabelTextFormat,
+        DrawFormattedText("%X%Y%F%s",
                           aNavMapLabels[label].x,
                           aNavMapLabels[label].y,
                           aNavMapLabels[label].colour,
@@ -506,13 +421,13 @@ void BuildMap(short showPlayer)
                                         missionShip->position,
                                         missionShip->speed,
                                         cAsteroidColour, cAsteroidColour,
-                                        szNavAsteroids);
+                                        "Asteroids");
                 } else if (missionShip->type == OBJECT_TYPE_MINE_FIELD) {
                     DrawNavHazardMarker(navPoint->position,
                                         missionShip->position,
                                         missionShip->speed,
                                         cRedColour, cRedColour,
-                                        szNavMines);
+                                        "Mines");
                 }
             }
         }
@@ -583,26 +498,26 @@ void UpdateInflightNavText(short showColon)
     short cursorX;
 
     SetTextContext(&stNavMapTextContext);
-    sprintf(time, szInflightTimeFieldFormat,
+    sprintf(time, "%02d",
             (int)((signed char *)pElapsedCampaignDate)[0]);
     DrawFormattedText(
-        szStandardTimeFormat,
+        "%X%YStandard time %s",
         (int)(short)(stNavMapTextContext.viewport->left + 150),
         (int)(short)(stNavMapTextContext.viewport->top + 140),
         time);
     cursorX = stNavMapTextContext.cursorX;
     if (showColon == 0) {
-        DrawFormattedText(szStandardTimeBlank);
+        DrawFormattedText(" ");
     } else {
         stNavMapTextContext.cursorX =
             (short)(stNavMapTextContext.cursorX + 4);
     }
-    sprintf(time, szInflightTimeSuffixFormat,
+    sprintf(time, "%02d  ",
             (int)((signed char *)pElapsedCampaignDate)[1]);
     DrawFormattedText(time);
     stNavMapTextContext.cursorX = cursorX;
     if (showColon != 0)
-        DrawFormattedText(szStandardTimeColon);
+        DrawFormattedText(":");
 }
 
 /* Function start: 0x40DE70 */
@@ -621,7 +536,7 @@ void DrawSelectedNavLegendEntry(const char *text, short navPoint)
     if ((short)cCurrentNavPointIndex == navPoint) {
         DrawNavTextLine(0, (unsigned short)cYellowColour, text);
         DrawNavTextLine(0, (unsigned short)cYellowColour,
-                        szNavLegendNewline);
+                        "\n");
     }
 }
 
@@ -637,10 +552,10 @@ void DrawNavMapLegend(void)
         objective++;
     }
     SetTextCursor((unsigned short)stSceneBuffer.left, 120);
-    DrawSelectedNavLegendEntry(szNavMissionFlightPath,
+    DrawSelectedNavLegendEntry("MISSION FLIGHT PATH",
                                objective);
     DrawSelectedNavLegendEntry(
-        szNavHomeBase,
+        "HOME BASE",
         (short)((short)cMissionObjectiveCount - 1));
 }
 
@@ -671,28 +586,28 @@ void DrawNavLocationReadout(const char *title, short showFlightData)
     stNavMapTextContext.cursorY = 0;
     SetTextContext(&stNavMapTextContext);
     DrawNavTextLine(0, cDefaultTextColour,
-                    szNavBlankLine);
+                    "\n");
     DrawNavTextLine(2, cDefaultTextColour,
-                    szNavTitleFormat, title);
+                    "%s\n\n", title);
     DrawNavTextLine(0, cDefaultTextColour,
-                    szNavSectorFormat,
+                    "Sector: %s\n",
                     szCampaignSector);
     DrawNavTextLine(0, cDefaultTextColour,
-                    szNavSystemFormat,
+                    "System: %s\n\n",
                     abSeriesAuxData);
     DrawNavTextLine(2, cDefaultTextColour,
-                    szNavMissionFormat,
+                    "* %s *\n",
                     abMissionAuxData);
     playerMissionType = aMissionShips[
         nPlayerMissionShipIndex].missionType;
     DrawNavTextLine(2, cDefaultTextColour,
-                    szNavShipFormat,
+                    "* %s *\n",
                     apszShipMissionTypeNames[
                         playerMissionType]);
     DrawNavTextLine(2, cDefaultTextColour,
-                    szNavNotesHeading);
+                    "\nNotes\n");
     DrawNavTextLine(0, cDefaultTextColour,
-                    szNavNoteFormat,
+                    "%s\n",
                     nav_note((short)cCurrentObjective));
     if (showFlightData != 0)
         DrawNavMapLegend();
@@ -701,7 +616,7 @@ void DrawNavLocationReadout(const char *title, short showFlightData)
         SetScreenClipRect(0, 0, 259, 155);
         SetTextContext(&stNavMapTextContext);
         DrawNavTextLine(0, cDefaultTextColour,
-                        szNavLocationFormat,
+                        "%X%Y                         Location: %d.%d.%d",
                         8, 142,
                         aShipPosition[0].x,
                         aShipPosition[0].y,
@@ -722,7 +637,7 @@ void BriefingMap_LoadShapes(void)
     SetScreenClipRect(0, 0, 259, 155);
     if (AllocateViewport(&stSceneBuffer,
                          (short)cBlackColour, 0) == 0)
-        ReportOutOfMemoryAndExit(szNavViewportName);
+        ReportOutOfMemoryAndExit("VSCREEN");
     objective = 0;
     while (objective < (short)cMissionObjectiveCount) {
         LocateMobileObjective(objective);
@@ -739,7 +654,7 @@ void BriefingMap_DisplayMap(void)
     free_viewport(&stSceneBuffer);
     BriefingMap_LoadShapes();
     stScreen.top = 4;
-    DrawNavLocationReadout(szBriefingNavMapTitle, 0);
+    DrawNavLocationReadout("Briefing Nav Map", 0);
     free_viewport(&stSceneBuffer);
     ReleasePacketHandle(pNavMapShape);
     ReleaseTextFont(2);
@@ -812,7 +727,7 @@ void ShowConfedNavScan(void)
 {
     SetRectBounds(&stScreen, 30, 22, 289, 177);
     LeaveAllocationScope();
-    DrawNavLocationReadout(szConfedNavScan, 1);
+    DrawNavLocationReadout("ConFed Nav Scan", 1);
     EnterAllocationScope();
     SetRectBounds(&stScreen, 0, 0, 319, 199);
 }
@@ -978,1217 +893,4 @@ void InflightComputer(void)
         initialize_view_buffer();
     }
     bInflightComputerActive = 0;
-}
-
-/* Function start: 0x40E890 */
-unsigned short MergeAdjacentNearHeapBlocks(int descriptorAddress)
-{
-    NearHeapBlock *block;
-
-    block = DosNearPtrToFar(descriptorAddress);
-    if ((block->sizeAndFlags & 0x80000000) == 0 &&
-        (block[1].sizeAndFlags & 0x80000000) == 0 &&
-        block->address + (block->sizeAndFlags & 0xfffff) ==
-            block[1].address) {
-        block[1].address = block->address;
-        block[1].sizeAndFlags += block->sizeAndFlags & 0xfffff;
-        while (descriptorAddress > nNearHeapFirstDescriptor) {
-            descriptorAddress -= 8;
-            block = DosNearPtrToFar(descriptorAddress);
-            block[1].address = block->address;
-            block[1].sizeAndFlags = block->sizeAndFlags;
-        }
-        nNearHeapFirstDescriptor += 8;
-        return 1;
-    }
-    return 0;
-}
-
-/* Function start: 0x40E900 */
-int ReleaseNearHeapBlock(int descriptorAddress)
-{
-    NearHeapBlock *block;
-    int nextDescriptorAddress;
-
-    block = DosNearPtrToFar(descriptorAddress);
-    block->sizeAndFlags &= 0x7fffffff;
-    nextDescriptorAddress = descriptorAddress + 8;
-    if (nextDescriptorAddress <
-            nNearHeapBase + nNearHeapSize &&
-        MergeAdjacentNearHeapBlocks(descriptorAddress) != 0)
-        descriptorAddress = nextDescriptorAddress;
-    if (descriptorAddress > nNearHeapFirstDescriptor)
-        MergeAdjacentNearHeapBlocks(descriptorAddress - 8);
-    return descriptorAddress;
-}
-
-/* Function start: 0x40E950 */
-void PurgeNearHeapBlocks(unsigned short flags)
-{
-    NearHeapBlock *block;
-    int descriptorAddress;
-    int descriptorBytes;
-
-    if (nNearHeapActive != 0) {
-        if ((flags & 0x10) != 0) {
-            descriptorAddress = nNearHeapBase;
-            descriptorAddress += nNearHeapSize;
-            descriptorAddress -= 8;
-            nNearHeapFirstDescriptor = descriptorAddress;
-            block = DosNearPtrToFar(descriptorAddress);
-            block->address = nNearHeapBase;
-            descriptorBytes = nNearHeapMaxDescriptors * 8;
-            block->sizeAndFlags =
-                nNearHeapSize - descriptorBytes;
-            return;
-        }
-        descriptorAddress = nNearHeapBase +
-                            nNearHeapSize - 8;
-        for (; descriptorAddress >= nNearHeapFirstDescriptor;
-             descriptorAddress -= 8) {
-            block = DosNearPtrToFar(descriptorAddress);
-            if ((block->sizeAndFlags & 0x40000000) == 0)
-                descriptorAddress = ReleaseNearHeapBlock(descriptorAddress);
-        }
-    }
-}
-
-/* Function start: 0x40E9E0 */
-unsigned short InitializeNearHeap(void)
-{
-    short initialSize;
-    int adjustedSize;
-
-    if (nNearHeapActive == 0) {
-        initialSize = (short)GetNavRangeSentinel();
-        pNearHeapAllocation = 0;
-        nNearHeapSize = initialSize;
-        if (nNearHeapMaxDescriptors * 8 < nNearHeapSize)
-            pNearHeapAllocation =
-                AllocateTaggedMemory(nNearHeapSize, 0);
-        if (pNearHeapAllocation != 0) {
-            nNearHeapActive++;
-            nNearHeapBase =
-                DosFarPtrToNear(pNearHeapAllocation);
-            if (*(unsigned short *)0x00400013 == 0x270) {
-                adjustedSize = 0x9c000 - nNearHeapSize;
-                adjustedSize -= nNearHeapBase;
-                nNearHeapRelocationBytes = adjustedSize;
-                adjustedSize =
-                    0x98000 - nNearHeapRelocationBytes;
-                adjustedSize -= nNearHeapBase;
-                nNearHeapSize = adjustedSize;
-                if (nNearHeapMaxDescriptors * 8 <
-                    nNearHeapSize) {
-                    DosMemcpy(
-                        DosNearPtrToFar(
-                            nNearHeapBase +
-                            nNearHeapSize),
-                        DosNearPtrToFar(
-                            0x9c000 -
-                            nNearHeapRelocationBytes),
-                        nNearHeapRelocationBytes);
-                } else {
-                    FreeIfNotNull(pNearHeapAllocation);
-                    nNearHeapActive = 0;
-                }
-            }
-            if (nNearHeapActive != 0)
-                PurgeNearHeapBlocks(0x10);
-        }
-    }
-    return nNearHeapActive;
-}
-
-/* Function start: 0x40EB10 */
-/* Nothing in the shipped executable calls this. It undoes
-   InitializeNearHeap: copies the relocated bytes back below 0x9C000 and
-   frees the heap's allocation. */
-void ShutdownNearHeap(void)
-{
-    int relocationBytes;
-
-    relocationBytes = nNearHeapRelocationBytes;
-    if (relocationBytes != 0)
-        DosMemcpy(DosNearPtrToFar(0x9c000 - relocationBytes),
-                  DosNearPtrToFar(nNearHeapBase + nNearHeapSize),
-                  relocationBytes);
-    if (nNearHeapActive != 0)
-        FreeIfNotNull(pNearHeapAllocation);
-    nNearHeapActive = 0;
-}
-
-/* Function start: 0x40EB70 */
-void *AllocateNearHeapBlockFromEnd(int size, unsigned short flags)
-{
-    NearHeapBlock *block;
-    NearHeapBlock *lastBlock;
-    int descriptorAddress;
-    int shiftAddress;
-    int allocationAddress;
-    int blockSize;
-    unsigned int allocationFlags;
-    unsigned short alignment;
-
-    if (size <= 0)
-        return 0;
-    allocationFlags = 0x80000000;
-    alignment = flags & 3;
-    if (alignment == 1) {
-        allocationFlags = 0x90000000;
-        size++;
-    } else if (alignment == 2) {
-        allocationFlags = 0xa0000000;
-        size += 0xf;
-    }
-    if ((flags & 0x10) != 0)
-        allocationFlags |= 0x40000000;
-
-    allocationAddress = 0;
-    descriptorAddress =
-        nNearHeapBase + nNearHeapSize - 8;
-    for (; descriptorAddress >= nNearHeapFirstDescriptor;
-         descriptorAddress -= 8) {
-        block = DosNearPtrToFar(descriptorAddress);
-        blockSize = block->sizeAndFlags & 0xfffff;
-        if ((block->sizeAndFlags & 0x80000000) != 0)
-            continue;
-        if ((int)blockSize < size)
-            continue;
-        if ((int)blockSize > size) {
-            if (nNearHeapBase -
-                    nNearHeapMaxDescriptors * 8 +
-                    nNearHeapSize >=
-                nNearHeapFirstDescriptor) {
-                lastBlock = DosNearPtrToFar(
-                    nNearHeapBase +
-                    nNearHeapSize - 8);
-                if ((lastBlock->sizeAndFlags & 0x80000000) == 0) {
-                    blockSize = lastBlock->sizeAndFlags & 0xfffff;
-                    if (lastBlock->address + blockSize ==
-                            nNearHeapFirstDescriptor &&
-                        (int)blockSize > 8) {
-                        lastBlock->sizeAndFlags -= 8;
-                        nNearHeapMaxDescriptors++;
-                    }
-                }
-            }
-
-            if (nNearHeapBase -
-                    nNearHeapMaxDescriptors * 8 +
-                    nNearHeapSize >=
-                nNearHeapFirstDescriptor)
-                continue;
-
-            nNearHeapFirstDescriptor -= 8;
-            shiftAddress = nNearHeapFirstDescriptor;
-            for (; descriptorAddress > shiftAddress; shiftAddress += 8) {
-                block = DosNearPtrToFar(shiftAddress);
-                block->address = block[1].address;
-                block->sizeAndFlags = block[1].sizeAndFlags;
-            }
-            descriptorAddress -= 8;
-            block = DosNearPtrToFar(descriptorAddress);
-            blockSize = block->sizeAndFlags - size;
-            block->sizeAndFlags = blockSize;
-            block[1].address += blockSize & 0xffffff;
-            blockSize = allocationFlags + size;
-            block[1].sizeAndFlags = blockSize;
-            allocationAddress = block[1].address;
-            break;
-        }
-        block->sizeAndFlags |= allocationFlags;
-        allocationAddress = block->address;
-        break;
-    }
-
-    if (allocationAddress != 0) {
-        if (alignment == 1)
-            allocationAddress = (allocationAddress + 1) & 0xfffffffe;
-        else if (alignment == 2)
-            allocationAddress = (allocationAddress + 0xf) & 0xfffffff0;
-    }
-    return DosNearPtrToFar(allocationAddress);
-}
-
-/* Function start: 0x40ED30 */
-void *AllocateNearHeapBlockByFlags(int size, unsigned short flags)
-{
-    NearHeapBlock *block;
-    NearHeapBlock *lastBlock;
-    int descriptorAddress;
-    int shiftAddress;
-    int allocationAddress;
-    unsigned int blockSize;
-    unsigned int allocationFlags;
-    unsigned short alignment;
-
-    if ((flags & 0x20) != 0)
-        return AllocateNearHeapBlockFromEnd(size, flags);
-    if (size <= 0)
-        return 0;
-    allocationFlags = 0x80000000;
-    alignment = flags & 3;
-    if (alignment == 1) {
-        allocationFlags = 0x90000000;
-        size++;
-    } else if (alignment == 2) {
-        allocationFlags = 0xa0000000;
-        size += 0xf;
-    }
-    if ((flags & 0x10) != 0)
-        allocationFlags |= 0x40000000;
-
-    allocationAddress = 0;
-    descriptorAddress = nNearHeapFirstDescriptor;
-    for (; descriptorAddress <
-               nNearHeapBase + nNearHeapSize;
-         descriptorAddress += 8) {
-        block = DosNearPtrToFar(descriptorAddress);
-        blockSize = block->sizeAndFlags & 0xfffff;
-        if ((block->sizeAndFlags & 0x80000000) != 0)
-            continue;
-        if ((int)blockSize < size)
-            continue;
-        if ((int)blockSize > size) {
-            if (nNearHeapBase -
-                    nNearHeapMaxDescriptors * 8 +
-                    nNearHeapSize >=
-                nNearHeapFirstDescriptor) {
-                lastBlock = DosNearPtrToFar(
-                    nNearHeapBase +
-                    nNearHeapSize - 8);
-                if ((lastBlock->sizeAndFlags & 0x80000000) == 0) {
-                    blockSize = lastBlock->sizeAndFlags & 0xfffff;
-                    if (lastBlock->address + blockSize ==
-                            nNearHeapFirstDescriptor &&
-                        (int)blockSize > 8) {
-                        lastBlock->sizeAndFlags -= 8;
-                        nNearHeapMaxDescriptors++;
-                    }
-                }
-            }
-
-            if (nNearHeapBase -
-                    nNearHeapMaxDescriptors * 8 +
-                    nNearHeapSize >=
-                nNearHeapFirstDescriptor)
-                continue;
-
-            nNearHeapFirstDescriptor -= 8;
-            shiftAddress = nNearHeapFirstDescriptor;
-            for (; descriptorAddress > shiftAddress; shiftAddress += 8) {
-                block = DosNearPtrToFar(shiftAddress);
-                block->address = block[1].address;
-                block->sizeAndFlags = block[1].sizeAndFlags;
-            }
-            descriptorAddress -= 8;
-            block = DosNearPtrToFar(descriptorAddress);
-            block->sizeAndFlags = allocationFlags + size;
-            block[1].address += size;
-            block[1].sizeAndFlags -= size;
-            allocationAddress = block->address;
-            break;
-        }
-        block->sizeAndFlags |= allocationFlags;
-        allocationAddress = block->address;
-        break;
-    }
-
-    if (allocationAddress != 0) {
-        if (alignment == 1)
-            allocationAddress = (allocationAddress + 1) & 0xfffffffe;
-        else if (alignment == 2)
-            allocationAddress = (allocationAddress + 0xf) & 0xfffffff0;
-    }
-    return DosNearPtrToFar(allocationAddress);
-}
-
-/* Function start: 0x40EF00 */
-/* Nothing in the shipped executable calls this. Releases the near heap
-   block that contains the given pointer. */
-void FreeNearHeapBlock(void *pointer)
-{
-    NearHeapBlock *block;
-    int address;
-    int descriptorAddress;
-
-    address = DosFarPtrToNear(pointer);
-    descriptorAddress =
-        nNearHeapBase + nNearHeapSize - 8;
-    for (; descriptorAddress >= nNearHeapFirstDescriptor;
-         descriptorAddress -= 8) {
-        block = DosNearPtrToFar(descriptorAddress);
-        if (block->address <= address &&
-            block->address + (int)(block->sizeAndFlags & 0xfffff) >
-                address) {
-            ReleaseNearHeapBlock(descriptorAddress);
-            break;
-        }
-    }
-}
-
-/* Function start: 0x40EF60 */
-/* Nothing in the shipped executable calls this. Returns the usable size of
-   the near heap block that contains the given pointer, or 0. */
-int GetNearHeapBlockSize(void *pointer)
-{
-    NearHeapBlock *block;
-    int address;
-    int descriptorAddress;
-    int size;
-
-    size = 0;
-    address = DosFarPtrToNear(pointer);
-    descriptorAddress =
-        nNearHeapBase + nNearHeapSize - 8;
-    for (; descriptorAddress >= nNearHeapFirstDescriptor;
-         descriptorAddress -= 8) {
-        block = DosNearPtrToFar(descriptorAddress);
-        if (address >= block->address &&
-            block->address + (int)(block->sizeAndFlags & 0xfffff) >
-                address) {
-            size = block->sizeAndFlags & 0xfffff;
-            if ((block->sizeAndFlags & 0x10000000) != 0)
-                size--;
-            else if ((block->sizeAndFlags & 0x20000000) != 0)
-                size -= 0xf;
-            break;
-        }
-    }
-    return size;
-}
-
-/* Function start: 0x40EFE0 */
-void add_statistics(short pilot, short missions, short kills)
-{
-    apWingmanPilots[pilot]->missions += missions;
-    apWingmanPilots[pilot]->kills += kills;
-}
-
-/* Function start: 0x40F010 */
-void PostMission(void)
-{
-    short oldKills;
-    short pilot;
-    short missions;
-    short kills;
-
-    oldKills = stCampaignState.currentPilot->kills;
-    if (oldKills < 5 && oldKills + nPlayerKillCount > 4)
-        stCampaignState.badges[
-            CAMPAIGN_BADGE_FIVE_KILLS] = 1;
-    else if (oldKills < 25 &&
-             oldKills + nPlayerKillCount > 24)
-        stCampaignState.badges[
-            CAMPAIGN_BADGE_TWENTY_FIVE_KILLS] = 1;
-
-    if (stCampaignState.badges[
-            CAMPAIGN_BADGE_SHIP_TYPE_BASE +
-            stCampaignState.playerShipType] == 0)
-        stCampaignState.badges[
-            CAMPAIGN_BADGE_SHIP_TYPE_BASE +
-            stCampaignState.playerShipType] = 1;
-
-    stCampaignState.currentPilot->missions++;
-    switch (stCampaignState.currentPilot->missions) {
-    case 1:
-        stCampaignState.badges[
-            CAMPAIGN_BADGE_FIRST_MISSION] = 1;
-        /* The retail switch deliberately falls through. */
-    case 5:
-        stCampaignState.badges[
-            CAMPAIGN_BADGE_FIVE_MISSIONS] = 1;
-        break;
-    case 10:
-        stCampaignState.badges[
-            CAMPAIGN_BADGE_TEN_MISSIONS] = 1;
-        break;
-    case 15:
-        stCampaignState.badges[
-            CAMPAIGN_BADGE_FIFTEEN_MISSIONS] = 1;
-        break;
-    }
-
-    stCampaignState.currentPilot->kills +=
-        nPlayerKillCount;
-    if (oldKills / 5 <
-        stCampaignState.currentPilot->kills / 5)
-        stCampaignState.promotionScore++;
-
-    for (pilot = 0; pilot < 8; pilot++) {
-        if (nYourWingman == -1 ||
-            acShipRating[nYourWingman] != pilot) {
-            if (stCampaignState.personalityDeathMission[
-                    pilot] != 0) {
-                continue;
-            }
-            missions = RandomInRange(0, 2);
-            if (missions == 0)
-                kills = 0;
-            else
-                kills = RandomInRange(
-                    0, nPlayerKillCount);
-        } else {
-            missions = 1;
-            kills = nWingmanKillCount;
-        }
-        add_statistics(pilot, missions, kills);
-    }
-}
-
-/* Function start: 0x40F190 */
-int FullMissionScore(void)
-{
-    signed char *scores;
-    short objective;
-    short score;
-
-    score = 0;
-    scores = (signed char *)(pMissionCampaignData +
-        (int)stCampaignState.currentMission * 0x14 +
-        (int)stCampaignState.currentSeries * 0x5a - 0x50);
-    objective = 0;
-    do {
-        score = (short)(score + scores[objective + 4]);
-        objective++;
-    } while (objective < 16);
-    return score;
-}
-
-/* Function start: 0x40F1E0 */
-int PlayersMissionScore(void)
-{
-    signed char *scores;
-    short objective;
-    short score;
-
-    scores = (signed char *)(pMissionCampaignData +
-        (int)stCampaignState.currentSeries * 0x5a +
-        (int)stCampaignState.currentMission * 0x14 - 0x50);
-    score = 0;
-    for (objective = 0; objective < 16; objective++) {
-        if (achieved(objective) != 0)
-            score = (short)(score + scores[objective + 4]);
-    }
-    return score;
-}
-
-/* Function start: 0x40F240 */
-unsigned int UpdateSeries(void)
-{
-    unsigned char *seriesData;
-    short *medalData;
-    short fullScore;
-    short playerScore;
-    int failed;
-
-    stSavedCampaignDate = *pCurrentCampaignDate;
-    seriesData = pMissionCampaignData +
-        (int)stCampaignState.currentSeries * 0x5a - 0x5a;
-    medalData = (short *)(pMissionCampaignData +
-        (int)stCampaignState.currentSeries * 0x5a +
-        (int)stCampaignState.currentMission * 0x14 - 0x50);
-
-    fullScore = (short)FullMissionScore();
-    playerScore = (short)PlayersMissionScore();
-    if (playerScore == fullScore)
-        stCampaignState.promotionScore++;
-    stCampaignState.seriesScore = (short)(
-        stCampaignState.seriesScore + playerScore);
-    stCampaignState.currentMission++;
-
-    if (stCampaignState.currentMission >=
-        (signed char)seriesData[2]) {
-        nPreviousPlayerShipType =
-            (short)stCampaignState.playerShipType;
-        nPostSeriesSequence =
-            (short)(signed char)seriesData[5];
-        stCampaignState.seriesHistory[
-            stCampaignState.seriesHistoryCount] =
-            stCampaignState.currentSeries;
-        stCampaignState.seriesHistoryCount++;
-        failed = stCampaignState.seriesScore <
-            *(short *)(seriesData + 3);
-        if (failed != 0) {
-            stCampaignState.currentSeries =
-                (signed char)seriesData[8];
-            stCampaignState.playerShipType =
-                (enum ObjectType)(signed char)seriesData[9];
-        } else {
-            stCampaignState.currentSeries =
-                (signed char)seriesData[6];
-            stCampaignState.playerShipType =
-                (enum ObjectType)(signed char)seriesData[7];
-        }
-        bSeriesFailed = (unsigned short)failed;
-        if (nPreviousPlayerShipType !=
-            (short)stCampaignState.playerShipType) {
-            bPlayerShipTypeChanged = 1;
-            bOfficeVisitPending = 1;
-        }
-        stCampaignState.seriesScore = 0;
-        stCampaignState.currentMission = 0;
-        if ((signed char)pMissionCampaignData[
-                (int)stCampaignState.currentSeries *
-                0x5a + 5] ==
-                nPostSeriesSequence &&
-            nPostSeriesSequence < 0x40)
-            nPostSeriesSequence = -1;
-    }
-
-    if (nWingmanKilledThisMission != 0)
-        nMissionMedalScore =
-            MaxShort(0, (short)(
-                stCampaignState.missionScore - 15));
-    if (medalData[1] <= nMissionMedalScore &&
-        nPendingMedalIndex == -1) {
-        stSavedCampaignDate =
-            *pCurrentCampaignDate;
-        nPendingMedalIndex = medalData[0];
-    }
-    return 0;
-}
-
-/* Function start: 0x40F3F0 */
-unsigned int MoveNewCampaign(void)
-{
-    short days;
-
-    if (stCampaignState.currentMission != 0)
-        days = RandomInRange(0, 1);
-    else
-        days = (short)(RandomInRange(0, 1) + 5);
-    pCurrentCampaignDate->day =
-        (short)(pCurrentCampaignDate->day + days);
-    if (pCurrentCampaignDate->day >= 366) {
-        pCurrentCampaignDate->day =
-            (short)(pCurrentCampaignDate->day - 365);
-        pCurrentCampaignDate->year++;
-    }
-    return 0;
-}
-
-/* Function start: 0x40F440 */
-unsigned int StartNewCampaign(short campaign)
-{
-    bCampaignActive = 1;
-    ResetCampaignData();
-    bCampaignStartupMode = 1;
-    RunTrainSim();
-    stCampaignState.campaignIndex = campaign;
-    nCampaignDataSet = campaign;
-    bCampaignStartupMode = 0;
-    LoadPacketIntoBuffer(asCampaignPilotFiles[campaign], 1,
-                         pMissionCampaignData);
-    bPanRoomTransition = 0;
-    nPendingCampaignIndex = -1;
-    return 0;
-}
-
-/* Function start: 0x40F4B0 */
-short GameFlow(void)
-{
-    short roomSelection;
-    int barracksSelection;
-    short launchMission;
-    short flownSeries;
-    short flownMission;
-    short nextSeries;
-    short nextMission;
-    int flightResult;
-
-    launchMission = 0;
-    FrameStartHook(0);
-    if (nPendingCampaignIndex != -1) {
-        stCampaignState.campaignIndex = nPendingCampaignIndex;
-        nCampaignDataSet = nPendingCampaignIndex;
-    }
-
-    bKeyEventQueueEnabled = 0;
-    do {
-        roomSelection = 0;
-        bPlayerEjectedThisMission = 0;
-        nPostSeriesSequence = -1;
-        bPromotionPending = 0;
-        nPendingMedalIndex = -1;
-        bOfficeVisitPending = 0;
-        bPlayerShipTypeChanged = 0;
-        if (bCampaignStartupMode == 0)
-            roomSelection = RecRoom();
-        bPanRoomTransition = 0;
-        if (roomSelection == 5) {
-            RunTrainSim();
-        } else {
-            barracksSelection = BarracksScreen();
-            bCampaignStartupMode = 0;
-            if (barracksSelection == 6)
-                return 0;
-            if (barracksSelection == 7)
-                launchMission++;
-        }
-        PumpWindowMessages();
-    } while (launchMission == 0);
-
-    bKeyEventQueueEnabled = 1;
-    nDebriefingPersonality = *(short *)(
-        pMissionCampaignData +
-        (short)stCampaignState.currentSeries * 0x5a - 0x5a);
-    Briefing((short)stCampaignState.currentSeries,
-             (short)stCampaignState.currentMission);
-    PlayScrambleHangarScene();
-    stCampaignState.playerShipType =
-        aMissionShips[
-            nPlayerMissionShipIndex].type;
-    scramble();
-    flownSeries = (short)stCampaignState.currentSeries;
-    flownMission = (short)stCampaignState.currentMission;
-    init_mission(flownSeries, flownMission);
-    LaunchPlayerShip();
-    flightResult = RunSpaceFlight(-1);
-
-    switch (flightResult) {
-    case 1:
-        free_cockpit();
-        ShowCarrierLaunchSequence(
-            (signed char)nPlayerCollisionObject);
-        nArcadeState = 0;
-        nPlayerCollisionObject = -1;
-        free_3Space();
-        flightResult = calculate_damage_level();
-        landing((signed char)flightResult);
-        break;
-    case 2:
-        ejection_sequence();
-        check_stranded();
-        if (nArcadeState == 3)
-            stranded_sequence();
-        free_3Space();
-        if (nArcadeState == 3)
-            return 0;
-        nArcadeState = 0;
-        bPlayerEjectedThisMission = 1;
-        stCampaignState.promotionScore = MaxShort(
-            0, (short)(stCampaignState.promotionScore - 1));
-        stCampaignState.elapsedDate.year++;
-        if (stCampaignState.elapsedDate.year == 1)
-            nPendingMedalIndex = 3;
-        bOfficeVisitPending = 1;
-        break;
-    case 3:
-        stranded_sequence();
-        free_3Space();
-        return 0;
-    case 4:
-        death_sequence();
-        free_3Space();
-        funeral_sequence(1);
-        bCampaignActive = 0;
-        return 0;
-    default:
-        free_cockpit();
-        free_all_slots();
-        free_3Space();
-        return 0;
-    }
-
-    PostMission();
-    UpdateSeries();
-    nextSeries = (short)stCampaignState.currentSeries;
-    nextMission = (short)stCampaignState.currentMission;
-    stCampaignState.currentSeries = (signed char)flownSeries;
-    stCampaignState.currentMission = (signed char)flownMission;
-
-    if (bPlayerEjectedThisMission == 0) {
-        if ((unsigned short)RandomInRange(0, 5) +
-                stCampaignState.promotionScore > 7) {
-            stCampaignState.promotionScore = 0;
-            if (nCampaignDataSet == 0) {
-                bPromotionPending =
-                    stCampaignState.currentPilot->rank < 3;
-            } else if (nCampaignDataSet > 0) {
-                bPromotionPending =
-                    stCampaignState.currentPilot->rank < 4;
-            } else {
-                bPromotionPending = 0;
-            }
-            bOfficeVisitPending =
-                bOfficeVisitPending != 0 ||
-                bPromotionPending != 0;
-        }
-    }
-
-    DeBriefing(flownSeries, flownMission);
-    if (bPromotionPending != 0)
-        stCampaignState.currentPilot->rank++;
-
-    if (nextSeries == -1) {
-        if (nPendingMedalIndex != -1)
-            AwardCampaignMedal(nPendingMedalIndex);
-
-        if (nPostSeriesSequence == -1) {
-            flightResult = 0;
-        } else if (nPostSeriesSequence == 0x40) {
-            ShowCampaignVictorySequence();
-            flightResult = 1;
-        } else if (nPostSeriesSequence == 0x41) {
-            ShowTigerClawEscapeScene();
-            flightResult = 0;
-        } else {
-            ShowMeanwhileTransition(nPostSeriesSequence,
-                                    (short)bSeriesFailed);
-            flightResult = bSeriesFailed >= 1;
-        }
-        ShowTheEndScreen((short)flightResult);
-        bCampaignActive = 0;
-        return 0;
-    }
-
-    if (nWingmanKilledThisMission != 0)
-        funeral_sequence(0);
-    if (bOfficeVisitPending == 1)
-        Office();
-    if (nPendingMedalIndex != -1) {
-        AwardCampaignMedal(nPendingMedalIndex);
-        nPendingMedalIndex = -1;
-    }
-    if (nPostSeriesSequence != -1)
-        ShowMeanwhileTransition(nPostSeriesSequence,
-                                (short)bSeriesFailed);
-    stCampaignState.currentSeries = (signed char)nextSeries;
-    stCampaignState.currentMission = (signed char)nextMission;
-    MoveNewCampaign();
-    AddRandomTrainSimHighScores();
-    bPanRoomTransition = 1;
-    return 1;
-}
-
-/* Function start: 0x40F940 */
-void __stdcall free_viewport(Viewport *viewport)
-{
-    unsigned char *allocation;
-    int i;
-    int oldCount;
-
-    nFreeViewportCalls++;
-    allocation = viewport->allocation;
-    if (allocation != 0) {
-        i = 0;
-        while (i < nViewportAllocationCount) {
-            if (apViewportAllocations[i] == allocation) {
-                oldCount = nViewportAllocationCount;
-                nViewportAllocationCount--;
-                apViewportAllocations[i] =
-                    apViewportAllocations[oldCount];
-                break;
-            }
-            i++;
-        }
-        if (viewport->rowOffsets != 0) {
-            ReleasePacketHandle(viewport->rowOffsets);
-            viewport->rowOffsets = 0;
-        }
-#if !defined(SDL_PORT) || defined(SDL_PORT_LEGACY_DEBUG_OUTPUT)
-        if (nVideoMode != 0x13)
-            printf("free_viewport not mcga\n");
-#endif
-        ReleasePacketHandle(allocation);
-        viewport->pixels = 0;
-        viewport->allocation = 0;
-        if (stScreen.pixels == allocation)
-            stScreen.pixels = 0;
-        if (stScreen.allocation == allocation)
-            stScreen.allocation = 0;
-        if (stSceneBuffer.pixels == allocation)
-            stSceneBuffer.pixels = 0;
-        if (stSceneBuffer.allocation == allocation)
-            stSceneBuffer.allocation = 0;
-    }
-}
-
-/* Function start: 0x40FA30 */
-unsigned short GetPaletteReadyUnused(void)
-{
-    return 1;
-}
-
-/* Function start: 0x40FA40 */
-void DrawTitleLogo(short distance, short y)
-{
-    short bounds[4];
-    short scale;
-
-    if (distance <= 10)
-        return;
-    scale = (short)(0x1000 / distance);
-    GetTransformedShapeBounds(&stSpaceBuffer,
-                              (short)(nScreenWidth >> 1), y,
-                              pTitleShape, 1, 0, scale, 0,
-                              bounds);
-#ifdef SDL_PORT
-    if (!SdlRecordSpaceSprite(
-            &stSpaceBuffer, (short)(bounds[0] - 1), y,
-            pTitleShape, 0, 0, scale, 0))
-#endif
-        DrawSpriteScaled(&stSpaceBuffer, (short)(bounds[0] - 1), y,
-                         pTitleShape, 0, 0, scale, 0);
-#ifdef SDL_PORT
-    if (!SdlRecordSpaceSprite(
-            &stSpaceBuffer,
-            (short)(nScreenWidth >> 1), y,
-            pTitleShape, 1, 0, scale, 0))
-#endif
-        DrawSpriteScaled(&stSpaceBuffer,
-                         (short)(nScreenWidth >> 1), y,
-                         pTitleShape, 1, 0, scale, 0);
-#ifdef SDL_PORT
-    if (!SdlRecordSpaceSprite(
-            &stSpaceBuffer, bounds[2], y,
-            pTitleShape, 2, 0, scale, 0))
-#endif
-        DrawSpriteScaled(&stSpaceBuffer, bounds[2], y,
-                         pTitleShape, 2, 0, scale, 0);
-}
-
-/* Function start: 0x40FB10 */
-void UpdateTitleMenuCursor(void)
-{
-    short frame;
-    short mouseX;
-    short mouseY;
-    TitleMenuRegion *region;
-
-    frame = 0;
-    mouseX = stHostMouseState.x;
-    mouseY = stHostMouseState.y;
-    region = aTitleMenuRegions;
-    while (region->frame != -1) {
-        if (IsPointInRect(mouseX, mouseY,
-                          &region->left) != 0)
-            frame = region->frame;
-        region++;
-    }
-    SetMouseCursorShape(stMouseCursorState.shape, frame);
-}
-
-/* Function start: 0x40FB70 */
-int Title_Sequence(void)
-{
-    short frame;
-    short credit;
-    short titleDistance;
-    short missionShip;
-    short menuIndex;
-    int optionCount;
-    short eventType;
-    short menuOptions[4];
-    unsigned char *menuShape;
-    unsigned char *alternateMenuShape;
-    InputEventState event;
-    int activate;
-    signed char state;
-    signed char selectedIndex;
-
-    state = 0;
-    if (bShowKilrathiSagaCredits != 0)
-        nIntroCreditCount += 9;
-    if (bEscapePressed == 0) {
-        PreloadMusicTrackHook(0x17);
-        SetEventManagerPump(PollJoystickButtonEvents);
-        bIntroSceneResourcesActive = 0;
-        init_3Space_objects(0);
-        nCannedSceneMode = 2;
-        pIntroFont =
-            FetchDiskPacketRetrying(9, 1, 0);
-        nSceneResourceBudget = 0x3e8000;
-        nSceneResourceBudget = LoadPacketResourceList(
-            aIntroResourceDescriptors, 0, 0x3e8000);
-        aObjectTypeData[OBJECT_TYPE_DEBRIS_WING].shapeSet =
-            aObjectTypeData[
-                OBJECT_TYPE_DEBRIS_METAL_SHEET].shapeSet;
-        ClearInputKeyStatePreservingModifiers();
-        FlushInputEvents();
-        bEscapePressed = 0;
-
-        while (state == 0) {
-            PumpWindowMessages();
-            missionShip = 32;
-            do {
-                aMissionShips[missionShip].state = 0;
-                missionShip++;
-            } while (missionShip < 46);
-            titleDistance = 200;
-            remove_all_hazards();
-            bIntroSecondaryScene = 0;
-            set_up_action_sphere(16);
-            pTitleShape =
-                FetchDiskPacketRetrying(9, 0, 0);
-            spacetrack(0x17, 2, 1);
-            initialize_scripted_view(asIntroCameraSequence);
-            nFrameSkipCounter = 1;
-
-            frame = 0;
-            do {
-                Update_3Space();
-                if (Draw_3Space_Frame() != 0) {
-                    print_subtitle(&stSpaceBuffer, 0x32,
-                                   pszIntroOpeningText);
-                    dump_buffer_to_screen();
-                    DIBslam();
-                    DIBslamReal();
-                    intro_drawbackgroundships();
-                    if (CheckEscaped() != 0) {
-                        state++;
-                        break;
-                    }
-                }
-                frame++;
-            } while (frame < 25);
-            clear_view_buffer();
-            if (state != 0)
-                break;
-
-            frame = 0;
-            do {
-                Update_3Space();
-                RenderSpaceViewFrame();
-                if (CheckEscaped() != 0) {
-                    state++;
-                    break;
-                }
-                frame++;
-                DIBslam();
-                DIBslamReal();
-            } while (frame < 110);
-            if (state != 0)
-                break;
-
-            frame = 0;
-            do {
-                Update_3Space();
-                if (Draw_3Space_Frame() != 0) {
-                    DrawTitleLogo(titleDistance,
-                                  (short)(nViewCenterY - 6));
-                    dump_buffer_to_screen();
-                    DIBslam();
-                    DIBslamReal();
-                    clear_view_buffer();
-                }
-                if (titleDistance > 16)
-                    titleDistance -= 4;
-                if (CheckEscaped() != 0) {
-                    state++;
-                    break;
-                }
-                frame++;
-            } while (frame < 100);
-            FreePacketAndClear(&pTitleShape, 0);
-            if (state != 0)
-                break;
-
-            ScaleFixedVector(&aShipForwardVector[61], 0x9600,
-                             &aShipVelocity[61]);
-            set_up_action_sphere(17);
-            bIntroSecondaryScene = 1;
-            anObjectPitchRotation[0] = 0;
-            anObjectYawRotation[0] = 0;
-            anObjectRollRotation[0] = 0;
-            start_hazard_field(0);
-
-            credit = 0;
-            for (; credit < nIntroCreditCount; credit++) {
-                frame = 0;
-                do {
-                    Update_3Space();
-                    if (Draw_3Space_Frame() != 0) {
-                        print_subtitle(&stSpaceBuffer, 0x32,
-                            apszIntroCredits[credit]);
-                        dump_buffer_to_screen();
-                        DIBslam();
-                        DIBslamReal();
-                        clear_view_buffer();
-                    }
-                    if (CheckEscaped() != 0) {
-                        state++;
-                        break;
-                    }
-                    frame++;
-                } while (frame < 70);
-                if (state != 0)
-                    break;
-
-                frame = 0;
-                do {
-                    Update_3Space();
-                    RenderSpaceViewFrame();
-                    DIBslam();
-                    DIBslamReal();
-                    if (CheckEscaped() != 0) {
-                        state++;
-                        break;
-                    }
-                    frame++;
-                } while (frame < 40);
-            }
-            if (state != 0)
-                break;
-
-            frame = 0;
-            do {
-                Update_3Space();
-                RenderSpaceViewFrame();
-                DIBslam();
-                DIBslamReal();
-                if (CheckEscaped() != 0) {
-                    state++;
-                    break;
-                }
-                frame++;
-            } while (frame < 150);
-        }
-
-        state = 0;
-        StopMusicUnlessSuppressed();
-        ResetSoundState();
-        ReleasePacketHandle(pIntroFont);
-        ReleasePacketHandle(pTitleShape);
-        FreeShapeSet(aIntroResourceDescriptors, 0);
-        aObjectTypeData[OBJECT_TYPE_DEBRIS_WING].shapeSet =
-            aObjectTypeData[
-                OBJECT_TYPE_DEBRIS_METAL_SHEET].shapeSet;
-        free_all_slots();
-        free_3Space();
-        bIntroSecondaryScene = 0;
-        nCannedSceneMode = 0;
-        bScriptedView = 0;
-        bIntroSceneResourcesActive = 1;
-        ReleaseMusicTrackHook(0x17);
-    }
-
-    bEscapePressed = 0;
-    if (bTitleMenuSceneInitialized == 0) {
-        SceneEnterHook();
-        bTitleMenuSceneInitialized = 1;
-    }
-    menuShape = FetchDiskPacketRetrying(9, 4, 0);
-    optionCount = 1;
-    alternateMenuShape =
-        FetchDiskPacketRetrying(0x4b, 0, 0);
-    menuOptions[0] = 0;
-    if (AnySavedGames() != 0) {
-        optionCount = 2;
-        menuOptions[1] = 1;
-    }
-    for (; optionCount < 4; optionCount++)
-        menuOptions[optionCount] = -1;
-
-    menuIndex = 0;
-    do {
-        if (menuOptions[menuIndex] != -1) {
-            aTitleMenuRegions[menuIndex].frame = 1;
-            if (menuOptions[menuIndex] < 3) {
-                GetShapeFrameBounds(
-                    &aTitleMenuRegions[menuIndex].left,
-                    aTitleMenuRegions[menuIndex].left,
-                    aTitleMenuRegions[menuIndex].top,
-                    menuShape, menuOptions[menuIndex]);
-            } else {
-                GetShapeFrameBounds(
-                    &aTitleMenuRegions[menuIndex].left,
-                    aTitleMenuRegions[menuIndex].left,
-                    aTitleMenuRegions[menuIndex].top,
-                    alternateMenuShape, 0);
-            }
-        } else {
-            aTitleMenuRegions[menuIndex].frame = -1;
-        }
-        menuIndex++;
-    } while (menuIndex < 4);
-
-    ClearViewport(&stScreen, cBlackColour);
-    menuIndex = 0;
-    do {
-        if (menuOptions[menuIndex] != -1) {
-            if (menuOptions[menuIndex] < 3) {
-                DrawSpriteDefault(&stScreen,
-                    aTitleMenuRegions[menuIndex].left,
-                    aTitleMenuRegions[menuIndex].top,
-                    menuShape, menuOptions[menuIndex]);
-            } else {
-                DrawSpriteDefault(&stScreen,
-                    aTitleMenuRegions[menuIndex].left,
-                    aTitleMenuRegions[menuIndex].top,
-                    alternateMenuShape, 0);
-            }
-        }
-        menuIndex++;
-    } while (menuIndex < 4);
-    DIBslam();
-    DIBslamReal();
-
-    stMouseCursorState.viewport = &stScreen;
-    SetEventManagerPump(PollMenuInputDevices);
-    nMenuInputRepeatDelay = 6;
-    WarpMouseTo(160, 100);
-    EnterAllocationScope();
-    bInputMode = 1;
-    bKeyEventQueueEnabled = 0;
-    while (state == 0) {
-        selectedIndex = -1;
-        activate = 0;
-        UpdateTitleMenuCursor();
-        eventType = PollInputEvent(&event, 0xff);
-        if (eventType == 2) {
-            activate = 1;
-        } else if (eventType == 3 || eventType == 5) {
-            ClearInputKeyStatePreservingModifiers();
-            switch ((short)event.value) {
-            case 0x1c:
-            case 0x1f:
-            case 0x2e:
-            case 0x39:
-                if ((short)event.value == 0x1f)
-                    selectedIndex = 0;
-                if ((short)event.value == 0x2e &&
-                    menuOptions[2] != -1)
-                    selectedIndex = 1;
-                if ((short)event.value == 0x32 &&
-                    menuOptions[2] != -1)
-                    selectedIndex = 2;
-                activate = 1;
-                break;
-            case 0x24:
-                CalibrateJoystickInteractive(9, 9, 1, 1);
-                break;
-            default:
-                MoveMenuPointerFromKeyboard(&event);
-                break;
-            }
-        }
-        if (activate != 0) {
-            if (selectedIndex == -1)
-                selectedIndex = FindMenuRegionAtPoint(
-                    event.x, event.y, aTitleMenuRegions);
-            if (selectedIndex < 0 || selectedIndex > 3)
-                state = 0;
-            else
-                state = (signed char)(menuOptions[selectedIndex] + 1);
-        }
-        DIBslam();
-        DIBslamReal();
-    }
-
-    bKeyEventQueueEnabled = 1;
-    ClearDebugPauseFlags();
-    ReleasePacketHandle(menuShape);
-    ReleasePacketHandle(alternateMenuShape);
-    SetEventManagerPump(0);
-    EventManagerHook(0);
-    LeaveAllocationScope();
-    FadeViewportPaletteToColour(&stScreen, cBlackColour, 1);
-    ClearViewport(&stScreen, cBlackColour);
-    DIBslam();
-    DIBslamReal();
-    RestoreGamePalette();
-    return state - 1;
 }

@@ -673,9 +673,6 @@ int bMonoDebugInstalled; /* 0x00475e70 */
 HANDLE hMonoDebugDevice; /* 0x00475e74 */
 short DAT_00475e78;
 unsigned char bCurrentManeuverReroll; /* 0x00475e7c */
-NavMapLabel aNavMapLabels[20]; /* 0x00475e80 */
-ShortRect aNavMapExclusionRects[21]; /* 0x00475f48 */
-unsigned char abMouseCursorBackground[0x400]; /* 0x00475ff0 */
 int nFlightFrameTotalTicks; /* 0x004764f8 */
 int nFlightCockpitTicks; /* 0x004764fc */
 LARGE_INTEGER liFlightAfterInput; /* 0x00476500 */

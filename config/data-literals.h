@@ -10,6 +10,16 @@
  */
 unsigned char abDiskStringLiterals[459]; /* 0x004696a8 */
 
+/* nav.c: mission names, map labels, legend formats, and viewport titles.
+ * The complete unit gate also checks the three distinct "err" literals and
+ * all 26 pointer targets, including the shared colour variables. */
+unsigned char abNavStringLiterals[360]; /* 0x00468758 */
+
+/* title.c: opening text and all nineteen credit strings, including their
+ * internal alignment. The separate Secret Missions array is a named global.
+ * The complete unit gate also checks the opening-text and credit pointers. */
+unsigned char abTitleStringLiterals[1062]; /* 0x00468adc */
+
 /* damage.c: component and severity names, report headings, and both distinct
  * status-format literals. The complete pool also resolves the short "Ok"
  * pointer; verify-unit-data independently checks every position in its unit.

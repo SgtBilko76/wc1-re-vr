@@ -99,6 +99,9 @@ unsigned char cEmptyHudMessage = 0; /* 0x004693b0 */
 char *pGameVersion = szGameVersion; /* 0x004693b4 */
 char szGameVersion[9] = "1.03F-95"; /* 0x004693b8 */
 
+/* 0x00475ff0 */
+static unsigned char abMouseCursorBackground[0x400];
+
 /* Function start: 0x413A10 */
 void EmitTextString(void (__stdcall *writer)(int), const char *text)
 {

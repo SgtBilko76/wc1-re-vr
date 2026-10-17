@@ -189,6 +189,9 @@ void SdlPumpEvents(void);
 /* Buffers private to the original units, shared with SDL adapters here. */
 extern char szSfxWavePath[0xc8]; /* 0x00476558 */
 extern unsigned char abCursorSaveArea[0x1000]; /* 0x004865a8 */
+extern char *apszShipMissionTypeNames[11]; /* 0x00468728 */
+extern short nPendingMedalIndex; /* 0x004688e4 */
+extern short nPostSeriesSequence; /* 0x004688e8 */
 void SdlSetMouseGrab(int enabled);
 void SdlDrawViewportStatic(struct Viewport *viewport, int effect,
                               unsigned short colour);

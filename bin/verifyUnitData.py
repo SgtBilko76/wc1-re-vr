@@ -38,6 +38,54 @@ class UnitData:
 
 
 UNITS = {
+    'nav': UnitData(0x00468660, 608, (
+        ('nNavMapCoordinateScaling', 0x00),
+        ('nNavMapScale', 0x04),
+        ('aNavMapObjectiveStyles', 0x08),
+        ('pNavMapShape', 0xA8),
+        ('nNavMapLabelCount', 0xAC),
+        ('nNavMapReservedAreaCount', 0xB0),
+        ('szCampaignSector', 0xB8),
+        ('apszShipMissionTypeNames', 0xC8),
+        ('bInflightComputerActive', 0xF4),
+    ), frozenset((*[0x0C + row * 16 + column * 4
+                    for row in range(5) for column in range(3)],
+                  *range(0xC8, 0xF4, 4))), (
+        ('cBlackColour', 0x0046999C, 1),
+        ('cViewportClearColour', 0x004699A0, 1),
+        ('cRedColour', 0x004699AC, 1),
+        ('cPrimaryTextColour', 0x004699B4, 1),
+        ('cMagentaColour', 0x004699C8, 1),
+        ('cDefaultTextColour', 0x004699CC, 1),
+    )),
+    'nearheap': UnitData(0x004688C0, 12, (
+        ('nNearHeapActive', 0x00),
+        ('nNearHeapMaxDescriptors', 0x04),
+        ('nNearHeapRelocationBytes', 0x08),
+    ), frozenset()),
+    'gameflow': UnitData(0x004688CC, 64, (
+        ('bOfficeVisitPending', 0x00),
+        ('bPromotionPending', 0x04),
+        ('bPlayerEjectedThisMission', 0x08),
+        ('bPlayerShipTypeChanged', 0x0C),
+        ('nPreviousPlayerShipType', 0x10),
+        ('bCampaignStartupMode', 0x14),
+        ('nPendingMedalIndex', 0x18),
+        ('nPostSeriesSequence', 0x1C),
+        ('bSeriesFailed', 0x20),
+        ('bCampaignActive', 0x24),
+    ), frozenset()),
+    'title': UnitData(0x00468910, 1522, (
+        ('pszIntroOpeningText', 0x000),
+        ('szMissingSecretMissionsMessage', 0x008),
+        ('nIntroCreditCount', 0x120),
+        ('apszIntroCredits', 0x128),
+        ('aTitleMenuRegions', 0x178),
+        ('aIntroResourceDescriptors', 0x1B0),
+        ('bTitleMenuSceneInitialized', 0x1C8),
+    ), frozenset((0x000, *range(0x128, 0x174, 4), 0x1B0, 0x1B8)), (
+        ('aObjectTypeData', 0x00466458, 58 * 0x87),
+    )),
     'barracks': UnitData(0x004693C8, 632, (
         ('aBarracksBunkOrigins', 0x00),
         ('apszSaveCampaignMenuLabels', 0x20),
@@ -361,16 +409,25 @@ UNITS = {
     'eventmgr-bss': UnitData(0x004865A8, 4096, (
         ('abCursorSaveArea', 0x00),
     ), frozenset(), storage='.bss', owner='eventmgr.obj'),
+    'nav-bss': UnitData(0x00475E80, 368, (
+        ('aNavMapLabels', 0x00),
+        ('aNavMapExclusionRects', 0xC8),
+    ), frozenset(), storage='.bss', owner='nav.obj'),
+    'cockpt-bss': UnitData(0x00475FF0, 1024, (
+        ('abMouseCursorBackground', 0x00),
+    ), frozenset(), storage='.bss', owner='cockpt.obj'),
 }
 
 
 ADJACENT_UNITS = (
+    ('nav', 'nearheap', 'gameflow', 'title'),
     ('barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),
     ('damage', 'view'),
     ('ending', 'input', 'comm', 'video', 'joycal'),
     ('killbrd', 'gr'),
     ('sound', 'damage-bss', 'music-bss'),
     ('eventmgr-bss', 'gr-bss-prefix'),
+    ('nav-bss', 'cockpt-bss', 'pilot'),
 )
 
 
