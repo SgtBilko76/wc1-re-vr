@@ -701,6 +701,27 @@ for similarity decisions.
   and loop indices preserve the other functions' allocation; reusing one
   local perturbed three neighbouring functions. Four scheduling differences
   remain, and fourteen instructions still differ at byte level.
+- `free_ship` indexes `aObjectResourceSlots` and `aObjectTypeData` directly
+  instead of retaining pointers to their selected records. The original
+  keeps the resource byte offset on its stack and the type byte offset in
+  EDI, adding the array bases at each use. Direct typed subscripts reproduce
+  this allocation and the reloads, restore sixteen bytes, and give an exact
+  comparison for the complete 432-byte function.
+- `init_ship` retains the record's full-width object type through its calls.
+  Its normal and hazard paths form an `if`/`else`, with an immediate return
+  after successful ship setup and a shared final return for failed setup or
+  a hazard. The hazard path never initializes the returned short: the original
+  reads its stack slot at `0x0040C937`. Preserve that native behavior; the
+  SDL branch retains its existing explicit -1 result. The dead-pilot test
+  compares against eight with `JG`, rather than nine with `JGE`. Together
+  these choices recover the 16-byte frame, saved EBP, and complete 336-byte
+  function exactly.
+- Removing the cached pointers in `free_ship` also changes the formation
+  helper's first array-index calculation: its formation-index and spot loads
+  exchange registers. `set_formation_position` loses its exact match with
+  three differing instructions; its size and mnemonic score remain unchanged.
+  Reordering its locals, caching its spot, and renaming its record parameter
+  did not recover the original load order. These trials are not retained.
 - The launcher's missing sixteen bytes are still unresolved. The original
   holds `'-'` in EBX and uses immediate zero stores; CL instead holds zero
   in EBX. Moving the command local outside the loop or using `strcmp` did

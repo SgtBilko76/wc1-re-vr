@@ -344,23 +344,19 @@ int load_ship(enum ObjectType type, short slot)
 /* Function start: 0x40BC70 */
 int free_ship(short slot)
 {
-    ObjectResourceSlot *resource;
-    ObjectTypeData *typeData;
     enum ObjectType type;
     short obj;
     short section;
 
-    resource = &aObjectResourceSlots[slot];
 #ifdef SDL_PORT
     /* The carrier-return sequence also frees empty slots. Their -1 type
      * becomes an unsigned enum index on native builds. */
-    if (resource->type == -1)
+    if (aObjectResourceSlots[slot].type == -1)
         return 0;
 #endif
-    type = (enum ObjectType)resource->type;
-    typeData = &aObjectTypeData[type];
+    type = (enum ObjectType)aObjectResourceSlots[slot].type;
 
-    if (typeData->objectClass == OBJECT_CLASS_CAPITAL_SHIP) {
+    if (aObjectTypeData[type].objectClass == OBJECT_CLASS_CAPITAL_SHIP) {
         release_capital_ship_shapes(type);
         if (bExpandedMemoryAvailable != 0) {
             section = 0;
@@ -371,13 +367,13 @@ int free_ship(short slot)
                 section++;
             } while (section < 0x25);
         }
-        FreePacketAndClear(&resource->shape, 0);
-        typeData->shape = 0;
+        FreePacketAndClear(&aObjectResourceSlots[slot].shape, 0);
+        aObjectTypeData[type].shape = 0;
     }
-    if (resource->shapeSet == 0)
+    if (aObjectResourceSlots[slot].shapeSet == 0)
         return 0;
 
-    FreePacketAndClear(&resource->shapeSet, 0);
+    FreePacketAndClear(&aObjectResourceSlots[slot].shapeSet, 0);
     if (type == OBJECT_TYPE_ASTEROID_FIELD) {
         FreePacketAndClear(
             &aObjectTypeData[OBJECT_TYPE_ROCK_CHUNK].shapeSet,
@@ -403,11 +399,11 @@ int free_ship(short slot)
     }
 
     if (type != OBJECT_TYPE_MINE_FIELD) {
-        typeData->shapeSet = 0;
-        FreePacketAndClear(&resource->animation, 0);
-        typeData->animation = 0;
-        FreePacketAndClear(&resource->shape, 0);
-        typeData->shape = 0;
+        aObjectTypeData[type].shapeSet = 0;
+        FreePacketAndClear(&aObjectResourceSlots[slot].animation, 0);
+        aObjectTypeData[type].animation = 0;
+        FreePacketAndClear(&aObjectResourceSlots[slot].shape, 0);
+        aObjectTypeData[type].shape = 0;
         obj = 0;
         do {
             if (aeObjectClass[obj] >=
@@ -896,39 +892,46 @@ unsigned int find_next_ship_turn_slot(short obj)
 short init_ship(short missionShip, short navPoint)
 {
     MissionShipRecord *record;
+    enum ObjectType type;
     FixedVector center;
     short obj;
 
     if (missionShip == -1)
         return -1;
     record = &aMissionShips[missionShip];
-    if (record->type == OBJECT_TYPE_ASTEROID_FIELD ||
-        record->type == OBJECT_TYPE_MINE_FIELD) {
+    type = record->type;
+    if (type == OBJECT_TYPE_ASTEROID_FIELD ||
+        type == OBJECT_TYPE_MINE_FIELD) {
         AddFixedVectors(&aMissionNavPoints[navPoint].position,
                         &record->position, &center);
-        add_hazard_field(record->type, center,
+        add_hazard_field(type, center,
                          (short)(record->speed + 3000),
                          (short)record->behaviour.pilot);
+#ifdef SDL_PORT
         return -1;
-    }
-    obj = find_ship_index(missionShip);
-    if (obj != -1 || record->state != 0)
-        return -1;
-    if (record->missionType != MISSION_TYPE_CANNED_SEQUENCE &&
-        is_alive(record->behaviour.pilot) == 0) {
-        if (record->behaviour.pilot < 9)
+#endif
+    } else {
+        obj = find_ship_index(missionShip);
+        if (obj != -1 || record->state != 0)
             return -1;
-        record->behaviour.pilot = 3;
+        if (record->missionType != MISSION_TYPE_CANNED_SEQUENCE &&
+            is_alive(record->behaviour.pilot) == 0) {
+            if (record->behaviour.pilot <= 8)
+                return -1;
+            record->behaviour.pilot = 3;
+        }
+        record->navPoint = navPoint;
+        if (is_team_member(missionShip) != 0)
+            navPoint = -1;
+        obj = initialize_ship(type, -1);
+        if (obj != -1) {
+            Set_up_ship_info(obj, missionShip, (signed char)navPoint);
+            find_next_ship_turn_slot(obj);
+            check_futurion(obj);
+            return obj;
+        }
     }
-    record->navPoint = navPoint;
-    if (is_team_member(missionShip) != 0)
-        navPoint = -1;
-    obj = initialize_ship(record->type, -1);
-    if (obj != -1) {
-        Set_up_ship_info(obj, missionShip, (signed char)navPoint);
-        find_next_ship_turn_slot(obj);
-        check_futurion(obj);
-    }
+    /* The original hazard path returns the still-uninitialized object slot. */
     return obj;
 }
 
