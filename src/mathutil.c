@@ -14,8 +14,9 @@ short MinShort(short a, short b)
     return b;
 }
 
+/* One cockpit sizing call supplies a third argument; only the first two are read. */
 /* Function start: 0x41D0E0 */
-short MaxShort(short a, short b)
+short MaxShort(short a, short b, ...)
 {
     if (a > b)
         return a;

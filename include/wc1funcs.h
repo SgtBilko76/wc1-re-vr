@@ -725,7 +725,7 @@ LRESULT CALLBACK DebugKeyboardHookProc(int code, WPARAM key,
 void DebugOverlayPrintf(DebugOverlayConsole *console,
                         const char *format, ...);                      /* 0x0041CAB0 */
 short MinShort(short a, short b);                                       /* 0x0041D0C0 */
-short MaxShort(short a, short b);                                       /* 0x0041D0E0 */
+short MaxShort(short a, short b, ...);                                  /* 0x0041D0E0 */
 void FreePacketAndClear(void *slot, unsigned short releaseFlags);      /* 0x0041D100 */
 void ReportPacketLoadError(void *packet, short logicalFile,
                            short retry, short section,

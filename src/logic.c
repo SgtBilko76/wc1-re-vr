@@ -1648,9 +1648,6 @@ void init_vdus(void)
 /* Function start: 0x4245B0 */
 unsigned int InitializeCockpitResources(signed char mode)
 {
-    const CockpitLayout *layout;
-    const ShortPoint *origin;
-    const ShortRect *bounds;
     ShipWeaponSlot *weaponSlot;
     int backgroundSize;
     unsigned int result;
@@ -1687,41 +1684,39 @@ unsigned int InitializeCockpitResources(signed char mode)
     stCockpitReadoutTextContext.viewport = &stScreen;
     SetTextContext(&stCockpitReadoutTextContext);
 
-    layout = &stCockpitLayout;
-    origin = &layout->readoutOrigins[0][(int)cCockpitView];
-    SetTextCursor((unsigned short)origin->x, (unsigned short)origin->y);
+    SetTextCursor(
+        (unsigned short)stCockpitLayout.readoutOrigins[0][(int)cCockpitView].x,
+        (unsigned short)stCockpitLayout.readoutOrigins[0][(int)cCockpitView].y);
     InitializeCockpitReadout(4, &stCockpitReadoutTextContext);
-    origin = &layout->readoutOrigins[1][(int)cCockpitView];
-    SetTextCursor((unsigned short)origin->x, (unsigned short)origin->y);
+    SetTextCursor(
+        (unsigned short)stCockpitLayout.readoutOrigins[1][(int)cCockpitView].x,
+        (unsigned short)stCockpitLayout.readoutOrigins[1][(int)cCockpitView].y);
     InitializeCockpitReadout(5, &stCockpitReadoutTextContext);
-    origin = &layout->readoutOrigins[2][(int)cCockpitView];
-    SetTextCursor((unsigned short)origin->x, (unsigned short)origin->y);
+    SetTextCursor(
+        (unsigned short)stCockpitLayout.readoutOrigins[2][(int)cCockpitView].x,
+        (unsigned short)stCockpitLayout.readoutOrigins[2][(int)cCockpitView].y);
     InitializeCockpitReadout(2, &stCockpitReadoutTextContext);
-    origin = &layout->readoutOrigins[3][(int)cCockpitView];
-    SetTextCursor((unsigned short)origin->x, (unsigned short)origin->y);
+    SetTextCursor(
+        (unsigned short)stCockpitLayout.readoutOrigins[3][(int)cCockpitView].x,
+        (unsigned short)stCockpitLayout.readoutOrigins[3][(int)cCockpitView].y);
     InitializeCockpitReadout(3, &stCockpitReadoutTextContext);
 
-    bounds = &layout->leftVduBounds[(int)cCockpitView];
-    stLeftVdu.left = bounds->left;
-    stLeftVdu.top = bounds->top;
-    stLeftVdu.right = bounds->right;
-    stLeftVdu.bottom = bounds->bottom;
-    bounds = &layout->rightVduBounds[(int)cCockpitView];
-    stRightVdu.left = bounds->left;
-    stRightVdu.top = bounds->top;
-    stRightVdu.right = bounds->right;
-    stRightVdu.bottom = bounds->bottom;
+    *(ShortRect *)&stLeftVdu.left =
+        stCockpitLayout.leftVduBounds[(int)cCockpitView];
+    *(ShortRect *)&stRightVdu.left =
+        stCockpitLayout.rightVduBounds[(int)cCockpitView];
 
     if (pPilotHandShape != 0) {
         stPilotHand = stScreen;
-        bounds = &layout->pilotHandBounds[(int)cCockpitView];
-        stPilotHand.left = bounds->left;
-        stPilotHand.top = bounds->top;
-        stPilotHand.right = bounds->right;
-        stPilotHand.bottom = bounds->bottom;
+        *(ShortRect *)&stPilotHand.left =
+            stCockpitLayout.pilotHandBounds[(int)cCockpitView];
         SetViewportRect(&stPilotHandComposite, 0, 0,
-                        (unsigned short)(bounds->right - bounds->left),
-                        (unsigned short)(bounds->bottom - bounds->top));
+            (unsigned short)(
+                stCockpitLayout.pilotHandBounds[(int)cCockpitView].right -
+                stCockpitLayout.pilotHandBounds[(int)cCockpitView].left),
+            (unsigned short)(
+                stCockpitLayout.pilotHandBounds[(int)cCockpitView].bottom -
+                stCockpitLayout.pilotHandBounds[(int)cCockpitView].top));
         stPilotHandBackdrop = stPilotHandComposite;
         AllocateViewport(&stPilotHandComposite, cBlackColour, 0);
         AllocateViewport(&stPilotHandBackdrop, cBlackColour, 0);
@@ -1729,10 +1724,8 @@ unsigned int InitializeCockpitResources(signed char mode)
 
     LoadShapeSet(aCockpitSecondaryResources, 0,
                  (short)cCockpitLogicalFile);
-    backgroundSize = MeasureShapeFrameStorage(
-        pTargetLockShape, 2);
     pScannerMarkerBackground =
-        AllocateTaggedMemory(backgroundSize, 0);
+        AllocateTaggedMemory(MeasureShapeFrameStorage(pTargetLockShape, 2), 0);
 
     pReleaseWeaponDisplayBackground = 0;
     maximumSize = 0;
@@ -1769,9 +1762,9 @@ unsigned int InitializeCockpitResources(signed char mode)
     pDamageDisplayBackground = 0;
     maximumSize = 0;
     for (frame = 0; frame < 9; frame++) {
-        backgroundSize = MeasureShapeFrameStorage(
-            pCockpitWeaponShape, frame);
-        maximumSize = MaxShort(maximumSize, (short)backgroundSize);
+        /* The original passes an unused third zero to MaxShort. */
+        maximumSize = MaxShort(maximumSize,
+            (short)MeasureShapeFrameStorage(pCockpitWeaponShape, frame), 0);
     }
     if (maximumSize != 0)
         pDamageDisplayBackground =

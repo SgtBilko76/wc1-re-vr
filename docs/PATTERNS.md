@@ -70,6 +70,20 @@ for similarity decisions.
   same mnemonics with shorter displacements, changing the function's size.
   `ConfigureScrambleActor`, `NavMapPointInsideReservedArea`, and
   `ReserveNavMapArea` recover their original sizes with direct field accesses.
+- `InitializeCockpitResources` copies each VDU and pilot-hand rectangle as
+  an eight-byte record. Four separate halfword assignments add instructions.
+  Index the readout origins and hand bounds directly: cached pointers add
+  address calculations absent from the original. Keep the scanner sizing
+  call nested inside its allocation so the outer zero argument is pushed
+  first. The final damage-background loop also pushes an extra zero before
+  sizing, then cleans twelve bytes after `MaxShort`; its preceding sizing
+  loops clean eight. `MaxShort` reads only its first two short arguments.
+  A variadic declaration preserves both observed call forms without changing
+  its exact body or calling convention; it does not establish the original
+  header's spelling. These changes recover the original function size and
+  mnemonic sequence. Seven instructions still differ in comparison operand
+  order or weapon-loop registers. Reusing the frame index, moving the weapon
+  local declaration, and reversing the source comparison did not resolve them.
 - `object_collision` reloads ownership, object classes, and its own mass
   after calls; caching their values across those calls removes original reads.
   Five vector workspaces suffice: one holds the projectile force, separation,
