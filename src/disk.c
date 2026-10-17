@@ -109,23 +109,22 @@ void *FetchDiskPacketRetrying(short logicalFile, short section,
 {
     void *packet = 0;
     short retries = 5;
-    const char *fileName;
 
     PromptInsertNumberedDisk(logicalFile);
     if (flags == 0) {
-        if (GetPacketSize(
+        if ((int)GetPacketSize(
                 pDiskFileRecords[logicalFile].name, section) >
             (int)GetFixedOneMillionThunkAlt(0)) {
-            ReportPacketLoadError(0, logicalFile, 0, section, "LP1");
+            ReportPacketLoadError(0, logicalFile, flags, section, "LP1");
         }
     }
-    fileName = pDiskFileRecords[logicalFile].name;
 
     do {
         retries--;
         FreePacketAndClear(&packet, flags);
-        packet = PacketLoad(fileName, section, 0, flags, 0);
-        if (retries < 1 || nPacketError == 0)
+        packet = PacketLoad(pDiskFileRecords[logicalFile].name,
+                            section, 0, flags, 0);
+        if (retries <= 0 || nPacketError == 0)
             break;
     } while (nPacketError != 8);
 
@@ -135,8 +134,9 @@ void *FetchDiskPacketRetrying(short logicalFile, short section,
             do {
                 retries--;
                 FreePacketAndClear(&packet, flags);
-                packet = PacketLoad(fileName, section, 0, flags, 0);
-                if (retries < 1 || nPacketError == 0)
+                packet = PacketLoad(pDiskFileRecords[logicalFile].name,
+                                    section, 0, flags, 0);
+                if (retries <= 0 || nPacketError == 0)
                     break;
             } while (nPacketError != 8);
             if (AllocateViewport(&stSpaceBuffer,
@@ -150,8 +150,9 @@ void *FetchDiskPacketRetrying(short logicalFile, short section,
             do {
                 retries--;
                 FreePacketAndClear(&packet, flags);
-                packet = PacketLoad(fileName, section, 0, flags, 0);
-                if (retries < 1 || nPacketError == 0)
+                packet = PacketLoad(pDiskFileRecords[logicalFile].name,
+                                    section, 0, flags, 0);
+                if (retries <= 0 || nPacketError == 0)
                     break;
             } while (nPacketError != 8);
             if (AllocateViewport(&stSceneBuffer,
@@ -579,8 +580,8 @@ clamp_pointer:
     stHostMouseState.y = stMouseCursorState.y;
     if (moved != 0) {
         RetainInputEventsOfType(3);
-        QueueInputEvent(13, (unsigned short)stMouseCursorState.x,
-                        (unsigned short)stMouseCursorState.y,
+        QueueInputEvent(13, stMouseCursorState.x,
+                        stMouseCursorState.y,
                         0, 0, 0, 0);
         bPointerMovedByKeyboard = 1;
         SetMousePosition(stHostMouseState.x,

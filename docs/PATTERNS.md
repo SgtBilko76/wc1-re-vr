@@ -76,6 +76,18 @@ for similarity decisions.
   It restores `nPacketError` immediately after `LogMemoryUsage`, before
   selecting an operation label. Keeping its packet-size local before the
   error word also reproduces the original EDI/BP register assignment.
+- `FetchDiskPacketRetrying` retains the file-table index across retries,
+  but reloads `pDiskFileRecords` after every `FreePacketAndClear` call.
+  Use the indexed field at each `PacketLoad` call; caching the name pointer
+  removes those loads and shortens the function. Its initial packet-size
+  comparison is signed (`JLE`), and retry exhaustion is `retries <= 0`
+  (`TEST`/`JLE`), rather than a comparison against one. The first error call
+  passes the flags word already held in a register, even though that path
+  has established that its value is zero.
+- Keyboard cursor movement passes signed coordinates to `QueueInputEvent`.
+  The original sign-extends both short fields; unsigned casts generate
+  extra instructions and change argument preparation. Keep the observed
+  clamp of 320 for both coordinates, including the vertical coordinate.
 - Preserve switch dispatch and shared action paths. `BarracksScreen` has
   jump tables for event types and menu regions, plus a key switch. Keyboard
   activation and mouse clicks reach the same flag assignment; cursor events
