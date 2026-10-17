@@ -1264,19 +1264,16 @@ unsigned int ConfigureScrambleActor(short x, short y, short deltaX,
                                     short scale, short angle,
                                     signed char flip, short actorIndex)
 {
-    ScrambleAnimationActor *actor;
-
-    actor = &aScrambleAnimationActors[actorIndex];
-    actor->x = x;
-    actor->y = y;
-    actor->deltaX = deltaX;
-    actor->deltaY = deltaY;
-    actor->shape = shape;
-    if (actor->animationFrame != -1)
-        actor->animationFrame = 0;
-    actor->scale = scale;
-    actor->angle = angle;
-    actor->flip = flip;
+    aScrambleAnimationActors[actorIndex].x = x;
+    aScrambleAnimationActors[actorIndex].y = y;
+    aScrambleAnimationActors[actorIndex].deltaX = deltaX;
+    aScrambleAnimationActors[actorIndex].deltaY = deltaY;
+    aScrambleAnimationActors[actorIndex].shape = shape;
+    if (aScrambleAnimationActors[actorIndex].animationFrame != -1)
+        aScrambleAnimationActors[actorIndex].animationFrame = 0;
+    aScrambleAnimationActors[actorIndex].scale = scale;
+    aScrambleAnimationActors[actorIndex].angle = angle;
+    aScrambleAnimationActors[actorIndex].flip = flip;
     return 0;
 }
 

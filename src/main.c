@@ -449,11 +449,12 @@ void get_player_input(void)
         bInputPollingGuard++;
         UpdateInputDeviceTransitions(0);
         device = (int)nActiveInputDevice;
-        sample = &aInputDeviceSamples[device];
-        if (sample->x == 0 && sample->y == 0 && sample->buttons == 0) {
-            if (sample->x != stLastPolledFlightInput.x ||
-                sample->y != stLastPolledFlightInput.y ||
-                sample->buttons !=
+        if (aInputDeviceSamples[device].x == 0 &&
+            aInputDeviceSamples[device].y == 0 &&
+            aInputDeviceSamples[device].buttons == 0) {
+            if (aInputDeviceSamples[device].x != stLastPolledFlightInput.x ||
+                aInputDeviceSamples[device].y != stLastPolledFlightInput.y ||
+                aInputDeviceSamples[device].buttons !=
                     stLastPolledFlightInput.buttons) {
                 TranslatePolledInputEvent(6, 0);
                 device = (int)nActiveInputDevice;

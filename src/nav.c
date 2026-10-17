@@ -140,11 +140,10 @@ int bTitleMenuSceneInitialized = 0; /* 0x00468ad8 */
 /* Function start: 0x40D090 */
 short NavMapPointInsideReservedArea(short area, short x, short y)
 {
-    ShortRect *rectangle;
-
-    rectangle = &aNavMapExclusionRects[area];
-    return rectangle->left <= x && x <= rectangle->right &&
-           rectangle->top <= y && y <= rectangle->bottom;
+    return aNavMapExclusionRects[area].left <= x &&
+           x <= aNavMapExclusionRects[area].right &&
+           aNavMapExclusionRects[area].top <= y &&
+           y <= aNavMapExclusionRects[area].bottom;
 }
 
 /* Function start: 0x40D0E0 */
@@ -192,15 +191,13 @@ void ResetNavMapReservedAreas(void)
 /* Function start: 0x40D1E0 */
 void ReserveNavMapArea(short x, short y, short width, short height)
 {
-    ShortRect *rectangle;
     short area;
 
     area = nNavMapReservedAreaCount;
-    rectangle = &aNavMapExclusionRects[area];
-    rectangle->left = x;
-    rectangle->top = y;
-    rectangle->right = (short)(x + width);
-    rectangle->bottom = (short)(y + height);
+    aNavMapExclusionRects[area].left = x;
+    aNavMapExclusionRects[area].top = y;
+    aNavMapExclusionRects[area].right = (short)(x + width);
+    aNavMapExclusionRects[area].bottom = (short)(y + height);
     area++;
     nNavMapReservedAreaCount = area;
 }
@@ -745,7 +742,6 @@ void BriefingMap_DisplayMap(void)
     DrawNavLocationReadout(szBriefingNavMapTitle, 0);
     free_viewport(&stSceneBuffer);
     ReleasePacketHandle(pNavMapShape);
-    pNavMapShape = 0;
     ReleaseTextFont(2);
     ReleaseTextFont(1);
     stSceneBuffer = savedViewport;

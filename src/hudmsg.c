@@ -996,7 +996,7 @@ void UpdateRoomMenuCursor(void)
     short mouseY;
     short state;
     short frame;
-    TitleMenuRegion *region;
+    const TitleMenuRegion *region;
     short index;
 
     mouseX = stMouseCursorState.x;

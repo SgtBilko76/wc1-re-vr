@@ -28,9 +28,10 @@ The Ghidra-exported disassembly is in `code-full`. The reimplementation lives in
 
 ## Absolute Rules (Do Not Violate)
 
-- DO NOT remove or modify existing functions, especially those with a comment header
-  containing a function address.
-- DO NOT remove existing code.
+- Existing functions may be modified or removed when justified by the original
+  assembly. Preserve address annotations for reconstructed functions and validate
+  matching changes with `binary-comp`.
+- DO NOT remove code unrelated to the matching work.
 - DO NOT change calling conventions. The game core is `__cdecl`; a handful of `ix` functions
   are `__thiscall` — leave those implicit, never spell `__thiscall` out.
 - DO NOT add:

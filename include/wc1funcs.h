@@ -1621,7 +1621,7 @@ void DrawRoomMenuLabel(TextContext *context,
 void RefreshRoomMenuLabel(void);                                      /* 0x0043F6F0 */
 void ClearRoomMenuCursorFrame(void);                                  /* 0x0043F720 */
 void SelectRoomMenuLabel(short i);                                    /* 0x0043F730 */
-void InitializeRoomMenu(TitleMenuRegion *regions, char **labels,
+void InitializeRoomMenu(const TitleMenuRegion *regions, char **labels,
                         Viewport *viewport, char *text,
                         unsigned char alignment);                     /* 0x0043F750 */
 int FindMenuRegionAtPoint(short x, short y,
@@ -1703,7 +1703,7 @@ void DrawSolidColourSpriteScaled(Viewport *viewport, short x, short y,
                                  unsigned char colour);                /* 0x00442000 */
 int GetTransformedShapeBounds(Viewport *viewport, short x, short y,
                               unsigned char *shape, short frame,
-                              short angle, short scale, int flip,
+                              short angle, short scale, short flip,
                               short *bounds);                         /* 0x00442050 */
 void fizzle_fade(Viewport *source, Viewport *destination,
                  const ScreenViewportGeometry *geometry);            /* 0x00442200 */

@@ -75,7 +75,7 @@ void SelectRoomMenuLabel(short i)
 }
 
 /* Function start: 0x43F750 */
-void InitializeRoomMenu(TitleMenuRegion *regions, char **labels,
+void InitializeRoomMenu(const TitleMenuRegion *regions, char **labels,
                         Viewport *viewport, char *text,
                         unsigned char alignment)
 {

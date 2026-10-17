@@ -23,6 +23,14 @@ for similarity decisions.
 - Put a global's address comment before its declaration or after its final
   semicolon. A comment inside a multiline initializer is recognized by the
   layout audit but missed by the linked-data comparison's simpler parser.
+- Keep direct array-field accesses when the original repeatedly uses an index
+  plus an absolute field address. A cached structure pointer can produce the
+  same mnemonics with shorter displacements, changing the function's size.
+  `ConfigureScrambleActor`, `NavMapPointInsideReservedArea`, and
+  `ReserveNavMapArea` recover their original sizes with direct field accesses.
+- Check argument widths at callers even when the callee ignores an argument.
+  `GetTransformedShapeBounds` takes a short flip value: widening it to `int`
+  adds a sign extension in `easy2see` that the original does not contain.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

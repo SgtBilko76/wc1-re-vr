@@ -32,6 +32,17 @@ remain provisional.
 | `0x004614C0`–`0x0046162F` | `src/ix/lzo1x.cpp` | lzo |
 | `0x00461630`–`0x004617BF` | `src/ix/ixfile.cpp` | file |
 
+These source-file anchors establish function order, but do not establish every
+object boundary. The retail image has INT3 fill at `0x004446F6`–`0x004446FF`
+before the stream-file methods, at `0x00445181`–`0x0044518F` before the first
+initializer pair, and at `0x00446795`–`0x0044679F` before the second pair.
+Conversely, the first thread, stream-DSP, and voice-DSP functions follow their
+predecessors without alignment. The initializer pairs may belong to the
+following source groups; their current placement at the ends of `dsp.cpp`
+and `mixer.cpp` is not proof of ownership. Recover the original declarations
+and object grouping rather than inserting padding or registering hand-written
+initializer wrappers.
+
 The assert anchors name three source trees, `D:\Rnd\Prj\ix\Src\Streamer\`,
 `D:\rnd\prj\ix\win95\dsp\` and `D:\Rnd\prj\ix\src\sound\`; each was a separate
 library. `src/ix/ixlog.cpp` is the one ix unit linked as an object.
@@ -112,6 +123,7 @@ ownership and qualifiers:
 | --- | --- |
 | `0x00463008`–`0x004630D9` | `barracks.c`: the 21 constant menu regions passed directly by `BarracksScreen` |
 | `0x004630E8`–`0x00463167` | `dib.c`: eight DirectDraw class/interface GUIDs, followed by its frame-rate constants |
+| `0x004631C8`–`0x004631FF` | `gr.c`: constant registry-key and `Cheater` value-name arrays used by `ReadCheaterFlagFromRegistry` |
 | `0x00465040`–`0x00465057` | `winmain.c`: two initialized hazard counters and two writable eight-byte hazard tables |
 | `0x004698E0`–`0x0046994F` | `ship.c`: the writable explosion-debris table referenced by `Create_explosion_debris` |
 
@@ -120,9 +132,11 @@ DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
 in the retail image establish its value and position. Unused SDK identifiers
 are real original data, so their definitions must survive the reconstruction.
 
-The read-only layout still has unresolved material: three float constants
-at `0x004630DC`–`0x004630E7`, and the registry key/value strings at
-`0x004631C8` and `0x004631F8`. Their ownership or declaration form must be
+The registry arrays occupy read-only data, whereas the same routine's
+`"reg cheating\n"` and `"reg not cheating\n"` diagnostic literals occupy
+writable data. Changing the whole unit's string-storage policy would therefore
+be incorrect. The read-only layout still has three unresolved float constants
+at `0x004630DC`–`0x004630E7`. Their ownership or declaration form must be
 recovered from evidence; do not fill these gaps with padding variables.
 
 The raster library is the one assembled object, and its edges are proven.

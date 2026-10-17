@@ -713,7 +713,7 @@ extern Viewport stRoomMouseViewport; /* 0x00598a80 */
 extern unsigned char *apRecRoomTextData[3]; /* 0x00598aa0 */
 extern char szTextScratchBuffer[256]; /* 0x00598b00 */
 extern short nRoomMenuCursorFrame; /* 0x00598ab0 */
-extern TitleMenuRegion *pRoomMenuRegions; /* 0x00598ab2 */
+extern const TitleMenuRegion *pRoomMenuRegions; /* 0x00598ab2 */
 extern char **ppszRoomMenuLabels; /* 0x00598ab6 */
 extern const char *pszCurrentRoomMenuLabel; /* 0x00598aba */
 extern TextContext stRoomMenuTextContext; /* 0x00598abe */

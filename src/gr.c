@@ -1,10 +1,14 @@
 /*
  *  Rasteriser primitives and screen-space effects.
  *
- *  Address range 0x440c00-0x44274f (provisional -- see docs/ORDER.md).
+ *  Address range 440c00-44269f (provisional -- see docs/ORDER.md).
  *  Boundary evidence: PROVEN by name: shadow_draw, fizzle_fade, snow_viewport.
  */
 #include "wc1.h"
+
+const char szGameRegistryKey[42] =
+    "Software\\Origin Systems\\WC: Kilrathi Saga"; /* 0x004631c8 */
+const char szCheaterRegistryValue[8] = "Cheater"; /* 0x004631f8 */
 
 /* Function start: 0x440C00 */
 void ValidateViewportBounds(Viewport *viewport, RasterSurface *surface,
@@ -775,7 +779,7 @@ void DrawSolidColourSpriteScaled(Viewport *viewport, short x, short y,
 /* Function start: 0x442050 */
 int GetTransformedShapeBounds(Viewport *viewport, short x, short y,
                               unsigned char *shape, short frame,
-                              short angle, short scale, int flip,
+                              short angle, short scale, short flip,
                               short *bounds)
 {
     short *frameData;
@@ -1040,11 +1044,11 @@ int ReadCheaterFlagFromRegistry(void)
     int enabled = 0;
 
     if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
-                      "Software\\Origin Systems\\WC: Kilrathi Saga",
+                      szGameRegistryKey,
                       0, KEY_ALL_ACCESS, &key) == ERROR_SUCCESS) {
         type = REG_DWORD;
         size = sizeof(int);
-        RegQueryValueExA(key, "Cheater", 0, &type,
+        RegQueryValueExA(key, szCheaterRegistryValue, 0, &type,
                          (LPBYTE)&enabled, &size);
         RegCloseKey(key);
     }

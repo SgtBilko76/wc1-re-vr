@@ -1899,7 +1899,7 @@ Viewport stRoomDisplayViewport; /* 0x00598a60 */
 Viewport stRoomMouseViewport; /* 0x00598a80 */
 unsigned char *apRecRoomTextData[3]; /* 0x00598aa0 */
 short nRoomMenuCursorFrame; /* 0x00598ab0 */
-TitleMenuRegion *pRoomMenuRegions; /* 0x00598ab2 */
+const TitleMenuRegion *pRoomMenuRegions; /* 0x00598ab2 */
 char **ppszRoomMenuLabels; /* 0x00598ab6 */
 const char *pszCurrentRoomMenuLabel; /* 0x00598aba */
 TextContext stRoomMenuTextContext; /* 0x00598abe */
