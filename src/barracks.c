@@ -1,9 +1,9 @@
 /*
  *  Barracks and campaign save/load room.
  *
- *  Address range 41ada0-41c75f (provisional -- see docs/ORDER.md).
- *  Boundary evidence: contiguous SAVEGAME.WLD helpers ending at BarracksScreen;
- *  the Win32 debug-overlay compilation unit begins at 41c760.
+ *  Address range 41a9d0-41c75f (provisional -- see docs/ORDER.md).
+ *  Boundary evidence: the menu tables precede the modal renderer's "%P"
+ *  literal, then the SAVEGAME.WLD literals; the debug overlay starts at 41c760.
  */
 #include "wc1.h"
 
@@ -30,6 +30,171 @@ const TitleMenuRegion aBarracksMenuRegions[21] = {
     { 1, 86, 44, 181, 78 },
     { -1, 0, 0, 0, 0 }
 }; /* 0x00463008 */
+
+ShortPoint aBarracksBunkOrigins[8] = {
+    {109, 86}, {170, 86}, {98, 95}, {173, 95},
+    {78, 110}, {176, 110}, {42, 136}, {183, 136}
+}; /* 0x004693c8 */
+const char *apszSaveCampaignMenuLabels[2] = {
+    "Save this campaign  ",
+    "Save this campaign  "
+}; /* 0x004693e8 */
+char *apszBarracksMenuLabels[20] = {
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    "Mission Hangar",
+    "Return to the Bar",
+    "Quit Wing Commander",
+    "View your medals"
+}; /* 0x004693f0 */
+ShortRect stModalTextBounds = { 24, 40, 296, 60 }; /* 0x00469440 */
+ModalTextPanel *pModalTextPanel = 0; /* 0x00469448 */
+short asCampaignPilotFiles[3] = {58, 61, 74}; /* 0x00469450 */
+short asCampaignBriefingFiles[3] = {10, 62, 73}; /* 0x00469458 */
+short asMissionDataFiles[3] = {15, 52, 72}; /* 0x00469460 */
+
+/* Function start: 0x41A9D0 */
+short InitializeModalTextPanel(ModalTextPanel *panel, short fontIndex,
+                               ShortRect bounds,
+                               short clearColour,
+                               short backgroundColour,
+                               short borderColour)
+{
+    *(ShortRect *)&panel->left = bounds;
+    panel->previousContext = pCurrentTextContext;
+    pCurrentTextContext = &panel->context;
+    panel->context = stDefaultTextContext;
+    if (fontIndex == -1)
+        fontIndex = 1;
+    InitializeTextContextFromFont(&panel->context, fontIndex,
+                                  (unsigned char)clearColour,
+                                  (signed char)backgroundColour);
+    panel->viewport = stModalSourceViewport;
+    *(ShortRect *)&panel->viewport.left =
+        *(ShortRect *)&panel->savedBackground.left =
+        *(ShortRect *)&panel->left;
+    if (AllocateViewport(&panel->savedBackground, clearColour, 0) == 0)
+        return 0;
+    CopyViewportContents(&panel->viewport, &panel->savedBackground);
+    panel->context.text = szTextScratchBuffer;
+    panel->context.viewport = &panel->viewport;
+    ResetStringBuilder(&panel->context);
+    EraseTextContextBackground(&panel->context);
+    DrawViewportBorder(&panel->viewport, panel->left, panel->top,
+                       panel->right, panel->bottom, borderColour);
+    return 1;
+}
+
+/* Function start: 0x41AAE0 */
+void DrawModalTextPanel(ModalTextPanel *panel, short x, short y,
+                        unsigned char alignment,
+                        const char *format, ...)
+{
+    char text[84];
+
+#ifdef SDL_PORT
+    va_list arguments;
+
+    va_start(arguments, format);
+    vsprintf(text, format, arguments);
+    va_end(arguments);
+#else
+    vsprintf(text, format, (char *)(&format + 1));
+#endif
+    SetTextCursor((unsigned short)(panel->left + x),
+                  (unsigned short)(panel->top + y));
+    panel->context.alignment = alignment;
+    strcat(text, "%P");
+    FormatTextBufferFromStart(text);
+}
+
+/* Function start: 0x41AB60 */
+void RestoreModalTextPanel(ModalTextPanel *panel)
+{
+    CopyViewportContents(&panel->savedBackground, &panel->viewport);
+    free_viewport(&panel->savedBackground);
+    pCurrentTextContext = panel->previousContext;
+}
+
+/* Function start: 0x41AB90 */
+short ShowModalTextPanel(short fontIndex, const char *format, ...)
+{
+    ShortRect bounds;
+    short halfWidth;
+    char text[52];
+
+#ifdef SDL_PORT
+    va_list arguments;
+
+    va_start(arguments, format);
+    vsprintf(text, format, arguments);
+    va_end(arguments);
+#else
+    vsprintf(text, format, (char *)(&format + 1));
+#endif
+    bounds = stModalTextBounds;
+    if (pModalTextPanel == 0) {
+        pModalTextPanel = AllocateTaggedMemory(sizeof(ModalTextPanel), 0);
+    }
+    if (pModalTextPanel == 0)
+        return 0;
+    if (InitializeModalTextPanel(pModalTextPanel, fontIndex,
+                                 stModalTextBounds,
+                                 cBlackColour, cBlackColour,
+                                 cBlackColour) == 0) {
+        ReleasePacketHandle(pModalTextPanel);
+        pModalTextPanel = 0;
+        return 0;
+    }
+    halfWidth = MeasureTextPixelWidthClamped(text);
+    halfWidth = (short)((int)halfWidth * 8 / 16);
+    RestoreModalTextPanel(pModalTextPanel);
+    bounds.left = (short)(159 - halfWidth);
+    bounds.right = (short)(161 + halfWidth);
+    if (InitializeModalTextPanel(pModalTextPanel, fontIndex,
+                                 bounds, cViewportClearColour,
+                                 cBlueColour, cRedColour) == 0) {
+        ReleasePacketHandle(pModalTextPanel);
+        pModalTextPanel = 0;
+        return 0;
+    }
+    DrawModalTextPanel(pModalTextPanel, 0, 6, 2, text);
+    DIBslam();
+    DIBslamReal();
+    return 1;
+}
+
+/* Function start: 0x41AD10 */
+void ReleaseModalTextPanel(void)
+{
+    if (pModalTextPanel != 0) {
+        RestoreModalTextPanel(pModalTextPanel);
+        ReleasePacketHandle(pModalTextPanel);
+        pModalTextPanel = 0;
+        DIBslam();
+        DIBslamReal();
+    }
+}
+
+/* Function start: 0x41AD50 */
+short AnySavedGames(void)
+{
+    SaveGameRecord gameRecord;
+    short slot;
+    short found;
+
+    found = 0;
+    slot = 0;
+    do {
+        if (LoadGame(slot, &gameRecord) != 0) {
+            found = 1;
+            if (gameRecord.campaign.campaignIndex > 0)
+                DAT_005a7d9c = 1;
+        }
+        slot++;
+    } while (slot < 8);
+    return found;
+}
 
 /* Function start: 0x41ADA0 */
 void CreateEmptySaveGameFile(void)

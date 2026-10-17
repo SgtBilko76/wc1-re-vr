@@ -328,35 +328,6 @@ int anPilotTurnInterval[18] = { /* 0x00465fc8 */
 };
 char szErrorLoadingPilotSpeech[32] = /* 0x00466010 */
     "Error loading pilot speech";
-ShortPoint aBarracksBunkOrigins[8] = { /* 0x004693c8 */
-    {109, 86}, {170, 86}, {98, 95}, {173, 95},
-    {78, 110}, {176, 110}, {42, 136}, {183, 136}
-};
-const char *apszSaveCampaignMenuLabels[2] = { /* 0x004693e8 */
-    szSaveCampaignMenuLabel,
-    szSaveCampaignMenuLabelAlt
-};
-char *apszBarracksMenuLabels[20] = { /* 0x004693f0 */
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    (char *)szMissionHangarMenuLabel,
-    (char *)szReturnToBarMenuLabel,
-    (char *)szQuitGameMenuLabel,
-    (char *)szViewMedalsMenuLabel
-};
-ShortRect stModalTextBounds = { 24, 40, 296, 60 }; /* 0x00469440 */
-ModalTextPanel *pModalTextPanel = 0; /* 0x00469448 */
-short asCampaignPilotFiles[3] = {58, 61, 74}; /* 0x00469450 */
-short asCampaignBriefingFiles[3] = {10, 62, 73}; /* 0x00469458 */
-short asMissionDataFiles[3] = {15, 52, 72}; /* 0x00469460 */
-char szSaveCampaignMenuLabel[24] = /* 0x00469468 */
-    "Save this campaign  ";
-char szSaveCampaignMenuLabelAlt[24] = /* 0x00469480 */
-    "Save this campaign  ";
-char szMissionHangarMenuLabel[16] = "Mission Hangar"; /* 0x00469498 */
-char szReturnToBarMenuLabel[20] = "Return to the Bar"; /* 0x004694a8 */
-char szQuitGameMenuLabel[20] = "Quit Wing Commander"; /* 0x004694bc */
-char szViewMedalsMenuLabel[20] = "View your medals"; /* 0x004694d0 */
 short nPaletteTransitionInitialise = 1; /* 0x00469640 */
 int nDebugOverlayConsoleCount = 0; /* 0x00469644 */
 DWORD dwDebugOverlayKey = 0; /* 0x00469648 */

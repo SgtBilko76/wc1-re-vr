@@ -17,7 +17,6 @@ extern const int anRLEQuarterCosine[901]; /* 0x0043d4bf */
 extern const unsigned char abIffBmhdChunkId[4]; /* 0x0043e778 */
 extern const unsigned char abIffCmapChunkId[4]; /* 0x0043e77c */
 extern const unsigned char abIffBodyChunkId[4]; /* 0x0043e780 */
-extern const TitleMenuRegion aBarracksMenuRegions[21]; /* 0x00463008 */
 extern short nHazardReferenceSpeed; /* 0x00465040 */
 extern short nActiveHazards; /* 0x00465044 */
 extern int bIxAudioEnabled; /* 0x00465058 */
@@ -185,23 +184,12 @@ extern char szComponentHitFormat[8]; /* 0x004692e0 */
 extern char szAlreadyVisited[16]; /* 0x00469380 */
 extern char szObjectiveReached[20]; /* 0x00469390 */
 extern char szWaitForFormat[12]; /* 0x004693a4 */
-extern ShortRect stModalTextBounds; /* 0x00469440 */
-extern ModalTextPanel *pModalTextPanel; /* 0x00469448 */
 extern short asCampaignPilotFiles[3]; /* 0x00469450 */
 extern short asCampaignBriefingFiles[3]; /* 0x00469458 */
 extern short asMissionDataFiles[3]; /* 0x00469460 */
 extern unsigned char cEmptyHudMessage; /* 0x004693b0 */
 extern char *pGameVersion; /* 0x004693b4 */
 extern char szGameVersion[9]; /* 0x004693b8 */
-extern ShortPoint aBarracksBunkOrigins[8]; /* 0x004693c8 */
-extern const char *apszSaveCampaignMenuLabels[2]; /* 0x004693e8 */
-extern char *apszBarracksMenuLabels[20]; /* 0x004693f0 */
-extern char szSaveCampaignMenuLabel[24]; /* 0x00469468 */
-extern char szSaveCampaignMenuLabelAlt[24]; /* 0x00469480 */
-extern char szMissionHangarMenuLabel[16]; /* 0x00469498 */
-extern char szReturnToBarMenuLabel[20]; /* 0x004694a8 */
-extern char szQuitGameMenuLabel[20]; /* 0x004694bc */
-extern char szViewMedalsMenuLabel[20]; /* 0x004694d0 */
 extern short nPaletteTransitionInitialise; /* 0x00469640 */
 extern int nDebugOverlayConsoleCount; /* 0x00469644 */
 extern DWORD dwDebugOverlayKey; /* 0x00469648 */

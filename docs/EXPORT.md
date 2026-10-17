@@ -37,6 +37,13 @@ They deliberately have no source annotations and are checked separately by
 report therefore counts 1,519 source entries after removal of their four
 handwritten stand-ins; the separate gate covers the 74 generated code bytes.
 
+`make verify-barracks-data`, also included in `make verify`, checks the whole
+632-byte initialized-data block and the object section's size. It delegates
+byte matching to binary-comp, allowing one address shift for all six internal
+menu pointers. String-content fallback is disabled so duplicate literals
+cannot conceal incorrect pointer targets. This verifies relative layout;
+the block's final absolute address remains a whole-executable matching task.
+
 A per-function `EXACT` result covers only that entry's
 span up to the next exported function, even if the next function has no source
 implementation. Cross-check `make compare-functions` address shifts before

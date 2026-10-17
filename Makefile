@@ -943,6 +943,7 @@ compare-full-functions: compare-functions
 verify:
 	@$(MAKE) audit-compiler-glue
 	@$(MAKE) verify-array-initializers
+	@$(MAKE) verify-barracks-data
 	@$(MAKE) verify-globals
 	@$(MAKE) verify-globals-data
 	@$(MAKE) verify-globals-code
@@ -957,6 +958,11 @@ verify-array-initializers: $(TARGET) | $(ORIGINAL_EXE)
 	@python3 bin/verifyArrayInitializers.py \
 		--original "$(ORIGINAL_EXE)" --rebuilt "$(TARGET)" \
 		--map "$(MAPFILE)" --binary-comp "$(BINARY_COMP)"
+
+verify-barracks-data: $(TARGET) out/barracks.obj | $(ORIGINAL_EXE)
+	@python3 bin/verifyBarracksData.py \
+		--original "$(ORIGINAL_EXE)" --rebuilt "$(TARGET)" \
+		--map "$(MAPFILE)" --object out/barracks.obj
 
 verify-globals: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
 	@$(BINARY_COMP) globals $(BC) --no-source-order --fail-on-issues --fail-on-warnings
@@ -1171,6 +1177,7 @@ clean-modern:
 	sort \
 	verify \
 	verify-array-initializers \
+	verify-barracks-data \
 	verify-calls \
 	verify-global-access \
 	verify-globals \

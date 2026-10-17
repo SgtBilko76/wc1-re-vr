@@ -135,8 +135,8 @@ sits at one constant offset from the original.
 | `src/nav.c` | `0x40D000`–`0x40FFFF` |
 | `src/spc.c` | `0x410000`–`0x412FFF` |
 | `src/cockpt.c` | `0x413000`–`0x417FFF` |
-| `src/geom.c` | `0x418000`–`0x41AD4F` |
-| `src/barracks.c` | `0x41ADA0`–`0x41C75F` |
+| `src/geom.c` | `0x418000`–`0x41A9CF` |
+| `src/barracks.c` | `0x41A9D0`–`0x41C75F` |
 | `src/debug.cpp` | `0x41C760`–`0x41D0BF` |
 | `src/mathutil.c` | `0x41D0C0`–`0x41D11F` |
 | `src/disk.c` | `0x41D120`–`0x41DEDF` |
@@ -179,6 +179,7 @@ ownership and qualifiers:
 | `0x004631C8`–`0x004631FF` | `gr.c`: constant registry-key and `Cheater` value-name arrays used by `ReadCheaterFlagFromRegistry` |
 | `0x00465040`–`0x00465057` | `winmain.c`: two initialized hazard counters and two writable eight-byte hazard tables |
 | `0x00465058`–`0x004650B3` | `winmain.c`: window/audio flags, heap counters, class/title arrays, and message-pump state; two intervening words remain unidentified |
+| `0x004693C8`–`0x0046963F` | `barracks.c`: bunk origins, menu pointers, modal bounds/state, campaign file numbers, and the following string literals |
 | `0x004698E0`–`0x0046994F` | `ship.c`: the writable explosion-debris table referenced by `Create_explosion_debris` |
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
@@ -206,7 +207,27 @@ The default modal-text bounds at `0x00469440`–`0x00469447` form one
 `ShortRect` initialized to `{24, 40, 296, 60}`. All five calls to
 `InitializeModalTextPanel` pass a rectangle by value, and the initializer
 copies those eight bytes as a unit. The bounds and following panel pointer
-remain in `globals.c` pending evidence for their original unit ownership.
+belong to `barracks.c`, together with the preceding menu tables and following
+campaign file-number arrays. Only the campaign file-number arrays have users
+outside this unit.
+
+The menu-label literals follow these definitions at `0x00469468`–`0x004694E3`.
+The modal renderer references `"%P"` at `0x004694E4`, immediately before
+`CreateEmptySaveGameFile`'s `"SAVEGAME.WLD"` at `0x004694E8`. This literal order
+places the modal-panel routines and `AnySavedGames` at the beginning of
+`barracks.c`, moving its boundary to `0x0041A9D0`. The objects remain adjacent
+in `SRCS_ORDERED_CORE`; `get_right_shape` closes `geom.c`.
+
+Writing the six menu labels as literals in their pointer-table initializers
+reproduces their original four-byte spacing. Separate named character arrays
+introduced eight extra alignment bytes. Both `"Save this campaign  "` literals
+must remain distinct. With these declarations, `barracks.obj` contributes
+exactly 632 initialized-data bytes through the airlock message. The entire
+block matches through binary-comp with one address shift, including its six
+internal pointers, literal order, and padding; `make verify-barracks-data`
+enforces this. Its absolute address remains displaced until preceding units'
+data ownership is recovered. The palette flag at `0x00469640` remains in
+`globals.c` because its original unit boundary is still uncertain.
 
 The registry arrays occupy read-only data, whereas the same routine's
 `"reg cheating\n"` and `"reg not cheating\n"` diagnostic literals occupy
