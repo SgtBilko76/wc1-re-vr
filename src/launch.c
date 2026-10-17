@@ -398,8 +398,7 @@ unsigned int ShowCarrierLaunchSequence(signed char sceneObject)
                         asCarrierLaunchFighterDeltaY[frame - 9]);
                 }
                 if (frame == 23) {
-                    ((void (__cdecl *)(int, int))
-                        FlushSoundEffectsAndLog)((int)sceneObject, 0);
+                    FlushSoundEffectsAndLog((int)sceneObject, 0);
                     PlaySfxWaveFileByNumber(19, -1, 0);
                 }
                 actorX++;

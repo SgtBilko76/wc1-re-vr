@@ -78,7 +78,7 @@ void auto_position(short obj, short *formationSlot)
     }
 
     (*formationSlot)++;
-    lateral = ((*formationSlot & 1) >= 1) ? 650 : -650;
+    lateral = (*formationSlot & 1) ? 650 : -650;
     if (nAutopilotFormationShipCount == *formationSlot)
         lateral = 0;
     vertical = 0;

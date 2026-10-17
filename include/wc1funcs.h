@@ -1188,7 +1188,7 @@ void ResetSoundStateForScene(void);                                             
 void ResetSoundStateForFlight(void);                                               /* 0x0042EEB0 */
 void EnableMusicForScene(void);                                               /* 0x0042EEE0 */
 unsigned int SoundFxTick(void);                                       /* 0x0042EF00 */
-void FlushSoundEffectsAndLog(void);                                               /* 0x0042EF10 */
+void FlushSoundEffectsAndLog(int soundHandle, short fadeTicks);        /* 0x0042EF10 */
 void sound_effect(void);                                                /* 0x0042EF20 */
 #ifdef __cplusplus
 void PlaySfxWaveFileByNumber(int soundNumber, int sourceObject,

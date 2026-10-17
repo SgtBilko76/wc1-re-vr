@@ -166,6 +166,7 @@ short __stdcall GetShapeFrameExtent(short x, short y,
 unsigned int AnimateScrambleWalk(short ticks)
 {
     signed char elapsed;
+    unsigned char escapePressed;
 
     nFrameSkipCounter = 1;
     elapsed = 0;
@@ -173,6 +174,7 @@ unsigned int AnimateScrambleWalk(short ticks)
         do {
             PumpWindowMessages();
             nFrameSkipCounter--;
+            escapePressed = bEscapePressed;
             if (nFrameSkipCounter < 1) {
                 nFrameSkipCounter = nFrameSkip;
                 DrawSpriteDefault(&stSceneBuffer,
@@ -227,6 +229,7 @@ unsigned int AnimateScrambleWalk(short ticks)
                 DIBslamReal();
 
                 cScrambleLeftWalkerFrame++;
+                escapePressed = bEscapePressed;
                 if (cScrambleLeftWalkerFrame > 19)
                     cScrambleLeftWalkerFrame = 7;
                 cScrambleRightWalkerFrame++;
@@ -239,7 +242,7 @@ unsigned int AnimateScrambleWalk(short ticks)
                 nScrambleRightWalkerX + 3;
             nScrambleLeftWalkerX =
                 nScrambleLeftWalkerX + 2;
-            if (bEscapePressed == 1)
+            if (escapePressed == 1)
                 break;
             elapsed++;
         } while (elapsed < ticks);
@@ -250,8 +253,13 @@ unsigned int AnimateScrambleWalk(short ticks)
 /* Function start: 0x4079C0 */
 unsigned int PlayScrambleHangarScene(void)
 {
+    int soundHandle; /* Unset in the original; ignored by the Win32 callee. */
+
+#ifdef SDL_PORT
+    soundHandle = 0;
+#endif
     if (nMemoryConfiguration == 1)
-        SceneLeaveHook();
+        SceneLeaveHook(0x1b);
     else
         PreloadMusicTrackHook(0x1b);
     spacetrack(0x1b, 1, -1);
@@ -333,7 +341,7 @@ unsigned int PlayScrambleHangarScene(void)
         }
     }
 
-    FlushSoundEffectsAndLog();
+    FlushSoundEffectsAndLog(soundHandle, 10);
     ReleasePacketHandle(pScrambleHangarShape);
     ResetScreenClipToFullHeight();
     return 0;
@@ -557,7 +565,11 @@ unsigned int scramble(void)
 {
     unsigned char *actorShape;
     short frame;
+    int soundHandle; /* Unset in the original; ignored by the Win32 callee. */
 
+#ifdef SDL_PORT
+    soundHandle = 0;
+#endif
     nScrambleCanopyOffset = 0;
     nScrambleOverlayX = -1000;
     nScrambleCanopyFrame = 0;
@@ -655,7 +667,7 @@ unsigned int scramble(void)
         }
 
         if (bEscapePressed != 1) {
-            FlushSoundEffectsAndLog();
+            FlushSoundEffectsAndLog(soundHandle, 0);
             nScrambleCanopyOffset--;
             PlaySfxWaveFileByNumber(15, -1, 0);
             nFrameSkipCounter = 1;
@@ -688,7 +700,7 @@ unsigned int scramble(void)
                     break;
             }
 
-            FlushSoundEffectsAndLog();
+            FlushSoundEffectsAndLog(soundHandle, 0);
             PlaySfxWaveFileByNumber(16, -1, 0);
             if (bEscapePressed != 1)
                 WaitForSceneAdvance(60, 0);
@@ -818,8 +830,7 @@ unsigned int landing(signed char damageLevel)
             break;
     }
 
-    ((void (__cdecl *)(int, int))FlushSoundEffectsAndLog)(
-        damageOffset, 0);
+    FlushSoundEffectsAndLog(damageOffset, 0);
     if (bEscapePressed != 1) {
         nScrambleOverlayX =
             (short)(nScrambleShipX + 180);
@@ -869,8 +880,7 @@ unsigned int landing(signed char damageLevel)
                 break;
         }
 
-        ((void (__cdecl *)(int, int))FlushSoundEffectsAndLog)(
-            damageOffset, 0);
+        FlushSoundEffectsAndLog(damageOffset, 0);
         if (bEscapePressed != 1) {
             ClearViewport(&stConversationTextViewport,
                           cBlackColour);

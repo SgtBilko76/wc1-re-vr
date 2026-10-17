@@ -548,7 +548,7 @@ unsigned int house_keep(void)
         return 0;
     }
     if (nDamageAlarmSfxHandle != 0) {
-        ((void (__cdecl *)(int, int))FlushSoundEffectsAndLog)(
+        FlushSoundEffectsAndLog(
             nDamageAlarmSfxHandle, 1);
         nDamageAlarmSfxHandle = 0;
         abCockpitLightGoal[3] = 0;

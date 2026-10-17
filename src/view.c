@@ -227,7 +227,7 @@ short TheEndFireWorks(Viewport *viewport, short count)
                         aFireworks[index].variant * 8));
             if (aFireworks[index].frame++ == 7) {
                 aFireworks[index].frame = -1;
-                ((void (__cdecl *)(int, short))FlushSoundEffectsAndLog)(
+                FlushSoundEffectsAndLog(
                     aFireworks[index].soundHandle, index);
             } else if (aFireworks[index].frame == 1) {
                 aFireworks[index].soundHandle =

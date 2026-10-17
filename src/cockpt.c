@@ -729,7 +729,7 @@ void update_lights(void)
                 nSpaceFrame % 10 == 0)
                 PlaySfxWaveFileByNumber(0x20, -1, 0);
         } else if (nDamageAlarmSfxHandle != 0) {
-            ((void (__cdecl *)(int, int))FlushSoundEffectsAndLog)(
+            FlushSoundEffectsAndLog(
                 nDamageAlarmSfxHandle, 1);
             nDamageAlarmSfxHandle = 0;
             abCockpitLightGoal[3] = 0;

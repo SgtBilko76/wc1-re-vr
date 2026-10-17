@@ -359,6 +359,37 @@ for similarity decisions.
   The solid-colour sprite functions likewise take a short colour value even
   though `SetSolidColourTranslation` uses only its low byte. Their callers
   extend byte colours into AX before pushing them.
+- All ten direct callers of `FlushSoundEffectsAndLog` pass two arguments
+  and clean eight stack bytes. Keep its int sound handle and short fade
+  argument in the declaration, even though the Win32 body ignores both
+  and tail-calls `FlushSoundEffects`. Ordinary typed calls replace the
+  former incompatible function-pointer casts. The afterburner-expiry path
+  passes its current global value and zero; an argumentless call omits
+  original instructions.
+  `PlayScrambleHangarScene` and `scramble` read an unset four-byte local
+  handle at the flush calls. Preserve that native stack read, with zero
+  initialization only for SDL. Their fade arguments are ten and zero.
+  The hangar scene also passes `0x1b` to the empty `SceneLeaveHook`.
+  Restoring these arguments recovers the original four-byte frames and
+  the complete 720-byte and 1,104-byte function spans, respectively.
+- `AnimateScrambleWalk` retains the escape byte after decrementing the
+  frame-skip counter and refreshes it after the draw calls, alongside the
+  left walk-frame increment. Use that value for the exit test after the
+  coordinate updates. Its lifetime makes CL update the right walker's X
+  directly in memory, rather than keeping a third coordinate in a register.
+  This removes sixteen excess bytes and restores the 624-byte span at
+  98.74%. Load scheduling and register allocation still differ. A compound
+  assignment or reordered coordinate updates did not help; an explicit
+  left-coordinate local, background-coordinate local, or separate escape
+  assignments in the draw/skip branches was worse and is not retained.
+- `auto_position` tests the formation slot's low bit directly in its
+  `650 : -650` conditional. Comparing the masked value with one instead
+  produces a branch and byte operations. The direct condition emits the
+  original word mask, `SBB`, mask, and addition, recovering sixteen bytes
+  and the complete mnemonic sequence. Only the formation-count comparison
+  has reversed operands. Reversing that source comparison or retaining a
+  separate slot local did not change it. Selecting a sign and multiplying
+  by 650 restores the size but leaves an extra multiplication.
 - `InitializeModalTextPanel` takes an eight-byte `ShortRect` by value and
   three short colour arguments. The adjacent default-bound words are one
   rectangle, not two independent integer arguments. Its chained rectangle
@@ -715,6 +746,15 @@ for similarity decisions.
   complete report after correcting header visibility. The damage split gives
   57 newly exact functions and 55 formerly exact functions with differences;
   its verified data layout does not imply every code comparison improves.
+- Correcting the sound-flush declaration likewise changes unrelated
+  allocation: the complete report gains 27 exact functions and loses 16,
+  including the previous target-lock and cockpit-damage matches. Four
+  targeted routines recover their original sizes, but `DecodeShapeFrame`
+  and `replenish_shields` become sixteen bytes short and
+  `AllocateNearHeapBlockByFlags` becomes sixteen bytes long. The net result
+  is eleven additional exact functions, one fewer size mismatch, and
+  32 fewer bytes of total absolute size error. These remaining differences
+  must be resolved in source; they are not reasons to omit original arguments.
 - `AppendCommMenuChoice` loads its choice index within the reuse branch or
   the alternate path, then uses it for the shared stores. Assigning the index
   in an explicit `else` improves the changed header context from 73.08% to

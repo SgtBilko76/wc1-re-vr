@@ -1098,7 +1098,8 @@ unsigned int accelerate_and_move_object(short obj)
                     aeSpecialManeuver[obj] =
                         SPECIAL_MANEUVER_NONE;
                     if (bAfterburnerSfxActive != 0) {
-                        FlushSoundEffectsAndLog();
+                        FlushSoundEffectsAndLog(
+                            bAfterburnerSfxActive, 0);
                         bAfterburnerSfxActive = 0;
                     }
                     ScaleFixedVector(&aShipForwardVector[obj],

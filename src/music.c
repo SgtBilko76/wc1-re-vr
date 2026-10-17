@@ -669,8 +669,10 @@ unsigned int SoundFxTick(void)
 }
 
 /* Function start: 0x42EF10 */
-void FlushSoundEffectsAndLog(void)
+void FlushSoundEffectsAndLog(int soundHandle, short fadeTicks)
 {
+    (void)soundHandle;
+    (void)fadeTicks;
     FlushSoundEffects();
 }
 
