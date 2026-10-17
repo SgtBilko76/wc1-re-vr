@@ -1,10 +1,134 @@
-/*
- *  WINGLEADER main module.
- *
- *  Address range 0x4274e0-0x428e6f (provisional -- see docs/ORDER.md).
- *  Boundary evidence: main() at 0x004274E0, confirmed against the leaked DOS source screenshot.
+/* WINGLEADER main game module: process services, flight control, and HUD.
+ * The initialized state and complete literal order identify this group.
+ * Its trailing cursor/palette helpers remain provisional; see docs/ORDER.md.
  */
 #include "wc1.h"
+
+/* Legacy overlay setting: named in the WINGLEADER source screenshot and
+ * retained, without references, before game mode/status in the Win32 image. */
+unsigned int _ovrbuffer = 0x1370; /* 0x00469fa8 */
+int nCannedSceneMode = 0; /* 0x00469fac */
+int nArcadeState = 0; /* 0x00469fb0 */
+short nFrameSkipCounter = 1; /* 0x00469fb4 */
+short nFrameSkip = 1; /* 0x00469fb8 */
+int nSfxVolumeSetting = 0x14; /* 0x00469fbc */
+int nMusicVolumeSetting = 0x14; /* 0x00469fc0 */
+int bViewportDirty = 0; /* 0x00469fc4 */
+/* 0x00469fc8 */
+#ifndef SDL_PORT
+static
+#endif
+int anVolumeLevels[11] = {
+    0, 40000, 50000, 55000, 60000, 61000,
+    61500, 62000, 63000, 63500, 64000
+};
+int nOriginDevUnlock = 0; /* 0x00469ff4 */
+int bPlayerCollisionsEnabled = 1; /* 0x00469ff8 */
+int bPlayerVulnerable = 1; /* 0x00469ffc */
+int bPlayerCollisionResponse = 1; /* 0x0046a000 */
+int bViewBufferEnabled = 0; /* 0x0046a004 */
+int bCockpitlessView = 0; /* 0x0046a008 */
+static int nShowMemoryStatus = 0; /* 0x0046a00c */
+short nStartNavPointOverride = -1; /* 0x0046a010 */
+short nArcadeBonusCountdown = 0; /* 0x0046a014 */
+int bMouseCursorVisible = 0; /* 0x0046a018 */
+unsigned char bInputPollingGuard = 0; /* 0x0046a01c */
+static InputDeviceSample stLastPolledFlightInput = {0}; /* 0x0046a020 */
+#ifndef SDL_PORT
+static
+#endif
+int bMouseAfterburnerControl = 0; /* 0x0046a02c */
+/* 0x0046a030 */
+static short asMouseYawThresholds[6] = {
+    10, 37, 52, 57, 62, 1070
+};
+/* 0x0046a040 */
+static short asMousePitchThresholds[6] = {
+    5, 18, 27, 35, 38, 1040
+};
+static unsigned int dwLastSecondaryButtonPress = 0; /* 0x0046a04c */
+#ifndef SDL_PORT
+static
+#endif
+unsigned char bFlightRollLatch = 0; /* 0x0046a050 */
+static unsigned char bAfterburnerButtonLatched = 0; /* 0x0046a054 */
+#ifndef SDL_PORT
+static
+#endif
+short nMouseYawInput = 0; /* 0x0046a058 */
+#ifndef SDL_PORT
+static
+#endif
+short nMousePitchInput = 0; /* 0x0046a05c */
+
+/* Function start: 0x4272F0 */
+short LogMemoryUsage(void)
+{
+    ShutdownHook(0x21, (void *)DAT_0059ab4c);
+    EMShutDown();
+    GetMessagePumpResult();
+    chdir("..");
+    ShutdownVideoHook(3);
+    if (nOriginDevUnlock != 0) {
+        SystemDebugPrintf(
+            "Original FMem %lu.  Current FMem %lu.  Current NMem %u.\n",
+            dwOriginalFreeMemory,
+            GetFixedOneMillionThunkAlt(0),
+            (unsigned int)(int)(short)GetOriginalFreeMemory());
+    }
+    MouseIdleHook();
+    MessagePumpHook(8);
+    return 0;
+}
+
+/* Function start: 0x427370 */
+void exit_squadron(const char *msg)
+{
+    LogMemoryUsage();
+    SystemDebugPrintf(msg);
+    SystemDebugPrintf("[SYSTEM]: Exit_squadron\n");
+    WriteDebugString("[SYSTEM] exit_squadron");
+    WriteDebugString(msg);
+    ClearDebugPauseFlags();
+    AbortToDesktop();
+    exit(0);
+}
+
+/* Function start: 0x4273C0 */
+unsigned int ShowMemoryStatusDebug(void)
+{
+    TextContext savedContext;
+    TextContext *previousContext;
+    char value[60];
+
+    previousContext = pCurrentTextContext;
+    savedContext = stDefaultTextContext;
+    if (nShowMemoryStatus != 0) {
+        InitializeTextContextFromFont(
+            &stDefaultTextContext, 1,
+            (unsigned char)cViewportClearColour,
+            cBlackColour);
+        SetTextContext(&stDefaultTextContext);
+        DrawFormattedText("%X%YCurrent NMem %d.",
+                          0, 176, (int)(short)GetOriginalFreeMemory());
+        sprintf(value, "%ld", GetFixedOneMillionThunkAlt(0));
+        DrawFormattedText("%X%YCurrent FMem %s.", 0, 184, value);
+        sprintf(value, "%ld", dwOriginalFreeMemory);
+        DrawFormattedText("%X%YOriginal FMem %s.", 0, 0, value);
+        stDefaultTextContext = savedContext;
+    }
+    pCurrentTextContext = previousContext;
+    return 0;
+}
+
+/* Function start: 0x4274C0 */
+unsigned int GetJoystickButtonEdge(unsigned int a, short b)
+{
+    (void)a;
+    if (b < 0)
+        return JoystickEdgeHook(-1);
+    return 0;
+}
 
 /* Function start: 0x4274E0 */
 #ifdef SDL_PORT
@@ -47,6 +171,10 @@ int main(short argc, char **argv)
         DAT_0059ab34 = 1;
 
     SystemDebugPrintf("Loading WING COMMANDER.  Please wait...\n");
+#ifndef SDL_PORT
+    if (sizeof(int) != sizeof(short *))
+        SystemDebugPrintf("Sizeof int(enum) != sizeof short *\n");
+#endif
     DAT_005a7d9c = 1;
     nMusicPlaybackMode = 4;
     bExpandedMemoryAvailable = 1;
@@ -231,7 +359,7 @@ unsigned int initialize_view_buffer(void)
         if (AllocateViewport(&stSpaceBuffer,
                              (short)cPrimaryViewBufferColour,
                              0x20) == 0)
-            ReportOutOfMemoryAndExit(szSpaceBuffer);
+            ReportOutOfMemoryAndExit("SPACE BUFFER");
     }
     return 0;
 }
@@ -291,7 +419,7 @@ unsigned int InitializeConversationViewport(void)
     if (AllocateViewport(&stSceneBuffer,
                          (short)cBlackColour, 0) == 0)
         ReportPacketLoadError(0, 0, 0, 0,
-                              szAllocateBufferTag);
+                              "AB");
     return 0;
 }
 
@@ -576,6 +704,58 @@ int process_player_input(void)
                 }
             }
             break;
+        case 0x50:
+            bMouseCursorVisible = 0;
+            if (nPitchInput > 0) {
+                nPitchInput = 0;
+            } else if (control != 0) {
+                nSfxVolumeSetting--;
+                if (nSfxVolumeSetting < 0)
+                    nSfxVolumeSetting = 0;
+                SetSoundEffectsVolume(anVolumeLevels[
+                    nSfxVolumeSetting / 2]);
+                SaveVolumeSettingsToRegistry();
+                ShowOnScreenMessage(0, 0, "SFX VOLUME: %d.",
+                                    nSfxVolumeSetting / 2);
+            } else {
+                if (shift != 0)
+                    nPitchInput = -9;
+                if (nPitchInput > -9)
+                    nPitchInput--;
+                else if (cPreviousKey < 0)
+                    nPitchInput--;
+                else {
+                    nPitchInput++;
+                }
+            }
+            break;
+        case 0x4d:
+            if (control != 0) {
+                nMusicVolumeSetting++;
+                if (nMusicVolumeSetting > 20)
+                    nMusicVolumeSetting = 20;
+                SaveVolumeSettingsToRegistry();
+                SetMusicStreamVolume((unsigned short)
+                    anVolumeLevels[
+                        nMusicVolumeSetting / 2]);
+                ShowOnScreenMessage(0, 0, "MUSIC VOLUME: %d.",
+                                    nMusicVolumeSetting / 2);
+                return;
+            }
+            bMouseCursorVisible = 0;
+            if (nYawInput < 0) {
+                nYawInput = 0;
+            } else {
+                if (shift != 0)
+                    nYawInput = 9;
+                if (nYawInput < 9)
+                    nYawInput++;
+                else if (cPreviousKey < 0)
+                    nYawInput++;
+                else
+                    nYawInput--;
+            }
+            break;
         case 0x4b:
             if (control != 0) {
                 nMusicVolumeSetting--;
@@ -613,58 +793,6 @@ int process_player_input(void)
             nPitchInput = 0;
             nYawInput = 0;
             init_player_input();
-            break;
-        case 0x4d:
-            if (control != 0) {
-                nMusicVolumeSetting++;
-                if (nMusicVolumeSetting > 20)
-                    nMusicVolumeSetting = 20;
-                SaveVolumeSettingsToRegistry();
-                SetMusicStreamVolume((unsigned short)
-                    anVolumeLevels[
-                        nMusicVolumeSetting / 2]);
-                ShowOnScreenMessage(0, 0, "MUSIC VOLUME: %d.",
-                                    nMusicVolumeSetting / 2);
-                return;
-            }
-            bMouseCursorVisible = 0;
-            if (nYawInput < 0) {
-                nYawInput = 0;
-            } else {
-                if (shift != 0)
-                    nYawInput = 9;
-                if (nYawInput < 9)
-                    nYawInput++;
-                else if (cPreviousKey < 0)
-                    nYawInput++;
-                else
-                    nYawInput--;
-            }
-            break;
-        case 0x50:
-            bMouseCursorVisible = 0;
-            if (nPitchInput > 0) {
-                nPitchInput = 0;
-            } else if (control != 0) {
-                nSfxVolumeSetting--;
-                if (nSfxVolumeSetting < 0)
-                    nSfxVolumeSetting = 0;
-                SetSoundEffectsVolume(anVolumeLevels[
-                    nSfxVolumeSetting / 2]);
-                SaveVolumeSettingsToRegistry();
-                ShowOnScreenMessage(0, 0, "SFX VOLUME: %d.",
-                                    nSfxVolumeSetting / 2);
-            } else {
-                if (shift != 0)
-                    nPitchInput = -9;
-                if (nPitchInput > -9)
-                    nPitchInput--;
-                else if (cPreviousKey < 0)
-                    nPitchInput--;
-                else {
-                    nPitchInput++;
-                }
-            }
             break;
         case -1:
             finished++;
@@ -1087,4 +1215,1082 @@ unsigned int HandleFleetOverviewInput(void)
         break;
     }
     return 0;
+}
+
+/* Function start: 0x428E70 */
+/* Message dwell time: grows with text length, scaled by the speed setting. */
+short MeasureMessageWidth(const char *text)
+{
+    return (short)((MinShort(5, (short)(DosStrlen(text) >> 1)) + 5) *
+                   ((char)bMessageSpeed + 1));
+}
+
+/* Function start: 0x428EA0 */
+void WaitForKeyAcknowledge(int mode)
+{
+    int acknowledged;
+    int key;
+
+#ifdef SDL_PORT
+    /* Every modal wait blocks here, including both pause paths: Ctrl+P
+     * calls this directly and P reaches it through ShowOnScreenMessage's
+     * 9999 duration.  Free the pointer for the duration of the wait. */
+    SdlSuspendMouseGrab();
+#endif
+    if (mode != 0) {
+        acknowledged = 0;
+        do {
+            PumpWindowMessages();
+            if (IsInputEventQueued(4) != 0)
+                acknowledged = 1;
+        } while (acknowledged == 0);
+        acknowledged = 0;
+        FlushInputEvents();
+        ClearDebugPauseFlags();
+        do {
+            PumpWindowMessages();
+            if (IsInputEventQueued(3) != 0)
+                acknowledged = 1;
+        } while (acknowledged == 0);
+        FlushInputEvents();
+        ClearDebugPauseFlags();
+#ifdef SDL_PORT
+        SdlResumeMouseGrab();
+#endif
+        return;
+    }
+    FlushInputEvents();
+    ClearDebugPauseFlags();
+    do {
+        key = PumpMessagesDuringWait();
+    } while (key == 0x19 || key == 0x50 || key == 0x0c);
+    FlushInputEvents();
+#ifdef SDL_PORT
+    SdlResumeMouseGrab();
+#endif
+}
+
+/* Function start: 0x428F20 */
+void ShowModalMessage(const char *format, ...)
+{
+    char text[52];
+
+#ifdef SDL_PORT
+    va_list arguments;
+
+    va_start(arguments, format);
+    vsprintf(text, format, arguments);
+    va_end(arguments);
+#else
+    vsprintf(text, format, (char *)(&format + 1));
+#endif
+    if (ShowModalTextPanel(1, text) != 0) {
+        WaitForKeyAcknowledge(0);
+        ReleaseModalTextPanel();
+        return;
+    }
+    SystemDebugPrintf(text);
+    WaitForKeyAcknowledge(0);
+}
+
+/* Function start: 0x428F80 */
+void ReportOutOfMemoryAndExit(const char *resource)
+{
+    ShowModalMessage("ERROR: Out of memory for %s", resource);
+    FatalErrorAndExit(szInsufficientMemory);
+}
+
+/* Function start: 0x428FA0 */
+void ShowOnScreenMessage(int flags, short duration,
+                         const char *format, ...)
+{
+    short messageDuration;
+    short modalShown = 0;
+    char text[52];
+
+#ifdef SDL_PORT
+    va_list arguments;
+
+    va_start(arguments, format);
+    vsprintf(text, format, arguments);
+    va_end(arguments);
+#else
+    vsprintf(text, format, (char *)(&format + 1));
+#endif
+    FlushInputEvents();
+    messageDuration = duration;
+    if (messageDuration == 9999)
+        modalShown = ShowModalTextPanel(1, text);
+    if (modalShown == 0) {
+        if (messageDuration == 0)
+            messageDuration = MeasureMessageWidth(text);
+        SetHudTextColour(1);
+        DosStrcpy(szHudMessageBuffer, text);
+        SetHudMessageText(szHudMessageBuffer,
+                          cRedColour, messageDuration);
+        if (messageDuration == 9999) {
+            ShowHudTextLine(szHudMessageBuffer,
+                            (unsigned short)cRedColour);
+            dump_buffer_to_screen();
+        }
+    }
+    if (messageDuration == 9999) {
+        if (flags != 0)
+            WaitForKeyAcknowledge(1);
+        else
+            WaitForKeyAcknowledge(0);
+    }
+    if (modalShown != 0) {
+        ReleaseModalTextPanel();
+        return;
+    }
+    if (messageDuration == 9999)
+        SetHudMessageText("", cRedColour, 2);
+}
+
+/* Function start: 0x4290A0 */
+void ShowGamePausedBanner(short showBanner)
+{
+    if (showBanner != 0) {
+        ShowOnScreenMessage(1, 9999, "GAME PAUSED");
+        return;
+    }
+    WaitForKeyAcknowledge(1);
+}
+
+/* Function start: 0x4290D0 */
+void ShowVersionBanner(void)
+{
+    ShowOnScreenMessage(1, 9999, "WING COMMANDER VER. %s",
+                        pGameVersion);
+}
+
+/* Function start: 0x4290F0 */
+void SetMessageDisplaySpeed(void)
+{
+    bMessageSpeed =
+        (unsigned char)(((signed char)bMessageSpeed + 1) % 5);
+    ShowOnScreenMessage(0, 0, "MESSAGES SPEED IS NOW %d.",
+                        (signed char)bMessageSpeed + 1);
+}
+
+/* Function start: 0x429120 */
+void ReportFramesSkipped(short adjustment)
+{
+    nFrameSkip = MinShort(
+        MaxShort((short)(nFrameSkip + adjustment), 1), 5);
+    ShowOnScreenMessage(0, 0, "%d FRAMES SKIPPED.",
+                        nFrameSkip - 1);
+}
+
+/* Function start: 0x429160 */
+int HandleSpaceFlightControls(void)
+{
+    int notRepeated;
+    int control;
+
+    player_input();
+    players_flight_dynamics();
+    notRepeated = (signed char)bCurrentKey !=
+                  cPreviousKey;
+    control = GetControlKeyState();
+    GetKeyboardModifiers();
+    HandleFleetOverviewInput();
+
+    if (nTrainSimActive == 0) {
+        switch ((signed char)bCurrentKey) {
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+            if (notRepeated && get_mode(1) == 4 &&
+                nCameraViewMode == 0 &&
+                (signed char)bCurrentKey >= 2 &&
+                (signed char)bCurrentKey <=
+                    nCommMenuChoiceCount + 2 &&
+                get_mode(1) == 4) {
+                Chosen_communicate_option(
+                    (short)((signed char)bCurrentKey - 2));
+            }
+            break;
+        case 0x12:
+            if (notRepeated &&
+                (control != 0 ||
+                 (wCurrentInputModifiers & 0x2000) != 0) &&
+                acPlayerComponentDamage[7] != 4) {
+                if (RandomInRange(
+                        0, acPlayerComponentDamage[7]) == 0)
+                    nArcadeState = 2;
+                else
+                    malf_sound();
+            }
+            break;
+        case 0x1e:
+            if (notRepeated) {
+                bMouseCursorVisible = 0;
+                if (get_mode(1) != 5)
+                    SelectCockpitVduMode(1, 5);
+                if (bCockpitlessView == 0) {
+                    auto_pilot_sequence();
+                } else {
+                    GetScreenUpdateFlag();
+                    SetViewportRect(
+                        &stSpaceBuffer, 0, 0,
+                        (short)(nScreenWidth - 1),
+                        (short)(nScreenHeight - 1));
+                    initialize_view_buffer();
+                    bCockpitlessView = -2;
+                    auto_pilot_sequence();
+                    bCockpitlessView = 1;
+                    GetScreenUpdateFlag();
+                    SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
+                    initialize_view_buffer();
+                }
+                FlushInputEvents();
+                ClearDebugPauseFlags();
+                bMouseCursorVisible = 0;
+                bPointerMovedByKeyboard = 1;
+            }
+            break;
+        case 0x1f:
+            if (control != 0 && notRepeated) {
+                if (nFlightSoundEffectsEnabled == 1)
+                    ResetSoundStateForScene();
+                else
+                    ResetSoundStateForFlight();
+            }
+            break;
+        case 0x23:
+            if (notRepeated && nYourWingman != -1 &&
+                aeShipObjective[nYourWingman] !=
+                    OBJECTIVE_HOLD_FORMATION) {
+                request(0, nYourWingman, 9);
+            }
+            break;
+        case 0x2e:
+            if (notRepeated) {
+                if (message_showing() == 0) {
+                    if (get_mode(1) == 4)
+                        CloseCommChoiceMenu();
+                    else
+                        SelectCockpitVduMode(1, 4);
+                } else {
+                    EndCommMenu();
+                }
+            }
+            break;
+        case 0x2f:
+            if (notRepeated && control == 0) {
+                bVideoImagesSuppressed =
+                    bVideoImagesSuppressed == 0;
+                if (bVideoImagesSuppressed != 0)
+                    SetHudMessageText("VIDEO IMAGES SUPRESSED",
+                                      cRedColour, 20);
+                else
+                    SetHudMessageText("VIDEO IMAGES ENABLED",
+                                      cPrimaryTextColour, 20);
+            }
+            break;
+        case 0x30:
+            if (notRepeated && nYourWingman != -1 &&
+                aeShipObjective[nYourWingman] ==
+                    OBJECTIVE_HOLD_FORMATION &&
+                any_enemy(0, 14000) != 0) {
+                request(0, nYourWingman, 7);
+            }
+            break;
+        case 0x31:
+            if (notRepeated)
+                SelectCockpitVduMode(1, 5);
+            init_player_input();
+            break;
+        case 0x32:
+            if (notRepeated && control == 0)
+                SetMessageDisplaySpeed();
+            break;
+        case 0x3b:
+            if (GetF1KeyLatch() != 0) {
+                if (cScreenViewportMode == 0) {
+                    bCockpitlessView = bCockpitlessView == 0;
+                    GetScreenUpdateFlag();
+                    if (bCockpitlessView != 0) {
+                        SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
+                        initialize_cockpit(
+                            cScreenViewportMode++);
+                        SetMousePosition(
+                            (short)(((int)stSpaceBuffer.right -
+                                     (int)stSpaceBuffer.left) / 2 + 1),
+                            nViewCenterY);
+                    } else {
+                        SetViewportRect(
+                            &stSpaceBuffer, 0, 0,
+                            (short)(nScreenWidth - 1),
+                            (short)(nScreenHeight - 1));
+                        initialize_cockpit(
+                            cScreenViewportMode++);
+                        SetMousePosition(
+                            (short)(((int)stSpaceBuffer.right -
+                                     (int)stSpaceBuffer.left) / 2 + 1),
+                            (short)(((int)stSpaceBuffer.bottom -
+                                     (int)stSpaceBuffer.top) / 2));
+                    }
+                } else {
+                    bMouseCursorVisible = 0;
+                    if (bCockpitlessView == 0) {
+                        new_view(0, 0);
+                    } else {
+                        GetScreenUpdateFlag();
+                        SetViewportRect(
+                            &stSpaceBuffer, 0, 0,
+                            (short)(nScreenWidth - 1),
+                            (short)(nScreenHeight - 1));
+                        initialize_view_buffer();
+                        new_view(0, 0);
+                        GetScreenUpdateFlag();
+                        SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
+                        initialize_view_buffer();
+                    }
+                }
+                FlushInputEvents();
+                ClearDebugPauseFlags();
+                bMouseCursorVisible = 0;
+                bPointerMovedByKeyboard = 1;
+            }
+            break;
+        case 0x3c:
+            bMouseCursorVisible = 0;
+            if (bCockpitlessView == 0) {
+                new_view(2, 0);
+                break;
+            }
+            GetScreenUpdateFlag();
+            SetViewportRect(&stSpaceBuffer, 0, 0,
+                            (short)(nScreenWidth - 1),
+                            (short)(nScreenHeight - 1));
+            initialize_view_buffer();
+            new_view(2, 0);
+            goto restore_normal_viewport;
+        case 0x3d:
+            bMouseCursorVisible = 0;
+            if (bCockpitlessView == 0) {
+                new_view(1, 0);
+                break;
+            }
+            GetScreenUpdateFlag();
+            SetViewportRect(&stSpaceBuffer, 0, 0,
+                            (short)(nScreenWidth - 1),
+                            (short)(nScreenHeight - 1));
+            initialize_view_buffer();
+            new_view(1, 0);
+            goto restore_normal_viewport;
+        case 0x3e:
+            bMouseCursorVisible = 0;
+            if (bCockpitlessView == 0) {
+                new_view(3, 0);
+                break;
+            }
+            GetScreenUpdateFlag();
+            SetViewportRect(&stSpaceBuffer, 0, 0,
+                            (short)(nScreenWidth - 1),
+                            (short)(nScreenHeight - 1));
+            initialize_view_buffer();
+            new_view(3, 0);
+            goto restore_normal_viewport;
+        case 0x3f:
+            bMouseCursorVisible = 0;
+            if (bCockpitlessView == 0) {
+                new_view(4, 0);
+                break;
+            }
+            GetScreenUpdateFlag();
+            SetViewportRect(&stSpaceBuffer, 0, 0,
+                            (short)(nScreenWidth - 1),
+                            (short)(nScreenHeight - 1));
+            initialize_view_buffer();
+            new_view(4, 0);
+            goto restore_normal_viewport;
+        case 0x40:
+            bMouseCursorVisible = 0;
+            if (bCockpitlessView == 0) {
+                new_view(14, 0);
+                break;
+            }
+            GetScreenUpdateFlag();
+            SetViewportRect(&stSpaceBuffer, 0, 0,
+                            (short)(nScreenWidth - 1),
+                            (short)(nScreenHeight - 1));
+            initialize_view_buffer();
+            new_view(14, 0);
+            goto restore_normal_viewport;
+        case 0x41:
+            if (acShipTarget[0] == -1)
+                break;
+            bMouseCursorVisible = 0;
+            if (bCockpitlessView == 0) {
+                new_view(7, 0);
+                break;
+            }
+            GetScreenUpdateFlag();
+            SetViewportRect(&stSpaceBuffer, 0, 0,
+                            (short)(nScreenWidth - 1),
+                            (short)(nScreenHeight - 1));
+            initialize_view_buffer();
+            new_view(7, 0);
+            goto restore_normal_viewport;
+        case 0x42:
+            if (notRepeated) {
+                bMouseCursorVisible = 0;
+                bMissileCameraEnabled ^= 1;
+                if (bMissileCameraEnabled != 0)
+                    SetHudMessageText("MISSILE CAMERA ON",
+                                      cRedColour, 20);
+                else
+                    SetHudMessageText("MISSILE CAMERA OFF",
+                                      cPrimaryTextColour, 20);
+            }
+            break;
+        case 0x43:
+            if (notRepeated) {
+                bMouseCursorVisible = 0;
+                SelectNextExternalViewObject();
+                if (bCockpitlessView == 0) {
+                    force_view(4, (short)cViewObject);
+                    break;
+                }
+                GetScreenUpdateFlag();
+                SetViewportRect(
+                    &stSpaceBuffer, 0, 0,
+                    (short)(nScreenWidth - 1),
+                    (short)(nScreenHeight - 1));
+                initialize_view_buffer();
+                force_view(4, (short)cViewObject);
+                goto restore_normal_viewport;
+            }
+            break;
+        }
+    }
+    goto primary_controls_complete;
+
+restore_normal_viewport:
+    GetScreenUpdateFlag();
+    SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
+    initialize_view_buffer();
+
+primary_controls_complete:
+    switch ((signed char)bCurrentKey) {
+    case 1:
+        bEscapePressed = 0;
+        if (nTrainSimActive != 0)
+            return -1;
+        if (get_mode(1) == 4) {
+            CloseCommChoiceMenu();
+            return 0;
+        }
+#ifdef SDL_PORT
+        /* The original leaves Escape inert in flight, leaving no way to
+         * halt a mission.  Pause on it, exactly as the pause key does. */
+        ShowGamePausedBanner(1);
+        SetFrameTimerPeriodDirect(1);
+        return 0;
+#endif
+        break;
+    case 0x0c:
+    case 0x4a:
+        if (control != 0) {
+            ReportFramesSkipped(-1);
+            return 0;
+        }
+        accelerate(-1);
+        return 0;
+    case 0x0d:
+    case 0x4e:
+        if (control != 0) {
+            ReportFramesSkipped(1);
+            return 0;
+        }
+        accelerate(1);
+        return 0;
+    case 0x0e:
+        anShipSpeed[0] = 0;
+        return 0;
+    case 0x0f:
+    case 0x37:
+        your_afterburner();
+        return 0;
+    case 0x11:
+        if (notRepeated) {
+            SelectCockpitVduMode(0, 1);
+            return 0;
+        }
+        break;
+    case 0x14:
+        if (notRepeated) {
+            SelectCockpitVduMode(1, 3);
+            return 0;
+        }
+        break;
+    case 0x19:
+        ShowGamePausedBanner((short)(control == 0));
+        SetFrameTimerPeriodDirect(1);
+        return 0;
+    case 0x1c:
+        if (notRepeated && nSelectedReleaseWeaponIndex != -1) {
+            ShipWeaponSlot *slot =
+                &((ShipWeaponSlot *)&aShipWeapons[0][1])[
+                    nSelectedReleaseWeaponIndex];
+
+            if (slot->type == OBJECT_TYPE_SPACE_MINE) {
+                drop_player_mine(0);
+                return 0;
+            }
+            if (nExternalViewShip == -1) {
+                nExternalViewShip =
+                    (short)fire_missile(0);
+                if (bMissileCameraEnabled == 1 &&
+                    nExternalViewShip != -1) {
+                    new_view(6, nExternalViewShip);
+                    return 0;
+                }
+            }
+        }
+        break;
+    case 0x32:
+        if (notRepeated && control != 0) {
+            nMusicVolumeSetting =
+                nMusicVolumeSetting == 0 ? 20 : 0;
+            SetMusicStreamVolume(
+                (unsigned short)anVolumeLevels[
+                    nMusicVolumeSetting / 2]);
+            ShowOnScreenMessage(0, 0, "MUSIC VOLUME: %d.",
+                                nMusicVolumeSetting / 2);
+            return 0;
+        }
+        break;
+    case 0x1f:
+        if (control != 0 && notRepeated) {
+            nSfxVolumeSetting =
+                nSfxVolumeSetting == 0 ? 20 : 0;
+            SetSoundEffectsVolume(
+                anVolumeLevels[
+                    nSfxVolumeSetting / 2]);
+            ShowOnScreenMessage(0, 0, "SFX VOLUME: %d.",
+                                nSfxVolumeSetting / 2);
+            return 0;
+        }
+        break;
+    case 0x20:
+        if (notRepeated) {
+            SelectCockpitVduMode(0, 2);
+            return 0;
+        }
+        break;
+    case 0x22:
+        if (notRepeated) {
+            SelectCockpitVduMode(0, 1);
+            return 0;
+        }
+        break;
+    case 0x24:
+        if (control != 0) {
+            CalibrateJoystickInteractive();
+            return 0;
+        }
+        break;
+    case 0x26:
+        if (notRepeated == 0) {
+            init_player_input();
+            return 0;
+        }
+        nTargetLockMode =
+            (short)(nTargetLockMode == 0);
+        PlaySfxWaveFileByNumber(0x19, -1, 0);
+        if (get_mode(1) == 3) {
+            InvalidateVduMode(1);
+            return 0;
+        }
+        break;
+    case 0x2b:
+        accelerate(9000);
+        return 0;
+    case 0x2f:
+        if (notRepeated && control != 0) {
+            ShowVersionBanner();
+            return 0;
+        }
+        break;
+    case 0x39:
+        fire_players_lasers();
+        return 0;
+    }
+    return 0;
+}
+
+/* Function start: 0x429DD0 */
+unsigned int Draw_3Space_Frame(void)
+{
+    UpdateSpacePaletteFade();
+    nFrameSkipCounter--;
+    if (nFrameSkipCounter > 0)
+        return 0;
+    nFrameSkipCounter = nFrameSkip;
+    nRenderedSpaceFrame++;
+    transform_objects_to_your_view();
+    update_star_field();
+    place_exhaust_on_ships();
+    reposition_fixed_child_objects();
+    sort_object_depth();
+#ifdef SDL_PORT
+    SdlBeginSpaceFrame(
+        pScreenViewportGeometry,
+        (int)cScreenViewportMode,
+        bCockpitlessView > 0,
+        (unsigned char)cPrimaryViewBufferColour);
+#endif
+    draw_sorted_objects_to_buffer();
+    if (nCameraViewMode == 0)
+        overlay_head_up_display();
+    return 1;
+}
+
+/* Function start: 0x429E30 */
+void GetArcadeBonus(void)
+{
+    nArcadeWaveBonus =
+        (nArcadeTimeRemaining *
+             (nTrainSimMission + 1) +
+         (nTrainSimMission +
+          (nArcadeWave * 5 + 5) * 2) * 50) * 2;
+}
+
+/* Function start: 0x429E70 */
+void FigureArcadeTime(void)
+{
+    nArcadeTimeRemaining =
+        (short)((nArcadeWave + 6) * 400);
+}
+
+/* Function start: 0x429E90 */
+void DrawArcadeScorePanel(short x, short y)
+{
+    char score[20];
+
+    sprintf(score, "%0ld", nArcadeScore);
+    DrawFormattedText("%X%YScore: %s0 %XTime: %u %X1 UP",
+                      x, y, score, x + 0x82,
+                      nArcadeTimeRemaining, x + 0xbe);
+}
+
+/* Function start: 0x429EE0 */
+void UpdateArcadeScoreDisplay(void)
+{
+    char bonus[20];
+
+    if (nTrainSimActive != 0) {
+        SetTextContext(&stHudMessageTextContext);
+        DrawArcadeScorePanel(10, 10);
+        if (nArcadeBonusCountdown < 1) {
+            nArcadeScore++;
+            nArcadeTimeRemaining--;
+            if (nArcadeTimeRemaining < 1) {
+                nArcadeState = 4;
+                return;
+            }
+        } else {
+            sprintf(bonus, "%0ld", nArcadeWaveBonus);
+            SetTextCursor((unsigned short)stSpaceBuffer.left,
+                          (unsigned short)((stSpaceBuffer.top +
+                                            stSpaceBuffer.bottom) / 2 - 5));
+            if (nCurrentWave != -1) {
+                FormatTextBufferFromStart(
+                    "Wave %d complete.\n\nBonus Points: %s0%P",
+                    nArcadeWave + 1, bonus);
+                return;
+            }
+            FormatTextBufferFromStart(
+                "Mission %d complete.\n\nBonus Points: %s0%P",
+                nTrainSimMission + 1, bonus);
+        }
+    }
+}
+
+/* Function start: 0x429FC0 */
+unsigned int RenderSpaceViewFrame(void)
+{
+    if (Draw_3Space_Frame() == 0)
+        return 0;
+    check_message();
+    UpdateArcadeScoreDisplay();
+    RestoreCockpitExplosionIfVisible();
+    dump_buffer_to_screen();
+    if (nCameraViewMode == 0)
+        RestoreTransientCockpitGraphics();
+    if (bCockpitlessView == 0 && nTrainSimActive != 0) {
+        DrawFilledViewportRect(&stSpaceBuffer, 10, 10,
+                               stSpaceBuffer.right, 0x11,
+                               cPrimaryViewBufferColour);
+        if (nArcadeBonusCountdown != 0) {
+            nArcadeBonusCountdown--;
+            if (nArcadeBonusCountdown == 0) {
+                if (Vector_magnitude(
+                        &aShipPosition[0]) > 0x271000)
+                    zero_vector(&aShipPosition[0]);
+                nArcadeScore += nArcadeWaveBonus;
+                if (nCurrentWave == -1)
+                    nArcadeState = 1;
+                else
+                    nArcadeWave++;
+                ClearViewport(&stSpaceBuffer,
+                              cPrimaryViewBufferColour);
+            }
+        }
+    }
+    ClearViewport(&stSpaceBuffer, cPrimaryViewBufferColour);
+    return 1;
+}
+
+/* Function start: 0x42A0C0 */
+unsigned int RefreshCockpitStatus(void)
+{
+    Update_3Space();
+    if (nFrameSkipCounter <= 1)
+        clear_view_buffer();
+    return Draw_3Space_Frame();
+}
+
+/* Function start: 0x42A0E0 */
+short GetShipDistanceToNavPoint(short ship, MissionNavPoint *navPoint)
+{
+    FixedVector delta;
+
+    ComputeVectorDelta(&aShipPosition[ship],
+                       &navPoint->position, &delta);
+    return FixedToShortSaturating(Vector_magnitude(&delta));
+}
+
+/* Function start: 0x42A120 */
+short FindNearestNavPoint(short ship)
+{
+    short navPointIndex = 0;
+    MissionNavPoint *navPoint = aMissionNavPoints;
+
+    do {
+        if (navPoint->type == 1 &&
+            GetShipDistanceToNavPoint(ship, navPoint) < navPoint->proximityRadius)
+            return navPointIndex;
+        navPointIndex++;
+        navPoint++;
+    } while (navPointIndex < ACTIVE_MISSION_NAV_POINT_COUNT);
+
+    return nCurrentNavPoint;
+}
+
+/* Function start: 0x42A170 */
+unsigned int ReleaseStaleNavTarget(void)
+{
+    short v = FindNearestNavPoint(0);
+
+    if (nCurrentNavPoint != v)
+        set_up_action_sphere(v);
+    return 0;
+}
+
+/* Function start: 0x42A190 */
+int RunSpaceFlight(short entryNavPoint)
+{
+    Viewport *savedViewport;
+    signed char savedMode;
+    unsigned int frameReady;
+
+    bCockpitlessView = 0;
+    if (nTrainSimActive == 0 &&
+        bCockpitEnabled == 0)
+        bCockpitlessView = 1;
+    nFrameSkipCounter = 1;
+    bInputMode = 1;
+#ifdef SDL_PORT
+    SdlSetMouseGrab(1);
+#endif
+    SetEventManagerPump(get_player_input);
+    savedViewport = (Viewport *)stMouseCursorState.viewport;
+    stMouseCursorState.viewport = &stSpaceBuffer;
+    init_inflight_music();
+
+    if (entryNavPoint == -1)
+        entryNavPoint = aMissionShips[
+            nPlayerMissionShipIndex].navPoint;
+    set_up_action_sphere(entryNavPoint);
+
+    if (bCockpitlessView != 0) {
+        GetScreenUpdateFlag();
+        SetViewportRect(&stSpaceBuffer, 0, 0,
+                        (unsigned short)(nScreenWidth - 1),
+                        (unsigned short)(nScreenHeight - 1));
+        initialize_view_buffer();
+        new_view(0, 0);
+        GetScreenUpdateFlag();
+        SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
+        savedMode = cScreenViewportMode;
+        cScreenViewportMode++;
+        initialize_cockpit(savedMode);
+        SetMousePosition(
+            (stSpaceBuffer.right - stSpaceBuffer.left) / 2 + 1,
+            nViewCenterY);
+        bMouseAfterburnerControl = 0;
+        bMouseCursorVisible = 0;
+        initialize_view_buffer();
+        FlushInputEvents();
+    }
+
+    copy_frame(0, 62);
+    WarpMouseTo((short)((stSpaceBuffer.left +
+                         stSpaceBuffer.right) / 2),
+                (short)((stSpaceBuffer.top +
+                         stSpaceBuffer.bottom) / 2));
+    FlushInputEvents();
+    bMouseAfterburnerControl = 0;
+    bMouseCursorVisible = 0;
+    nArcadeState = 0;
+    DIBslam();
+    DIBslamReal();
+    SetSpaceFlightFrameTiming();
+    FlushInputEvents();
+    ClearDebugPauseFlags();
+    bMouseCursorVisible = 0;
+    bPointerMovedByKeyboard = 1;
+    frameReady = 1;
+
+    while (nArcadeState == 0) {
+        ReadPerformanceCounter(&liFlightFrameStart);
+        if (HandleSpaceFlightControls() == -1) {
+            nArcadeState = 5;
+            break;
+        }
+        ReadPerformanceCounter(&liFlightAfterInput);
+        if (nArcadeState == 0) {
+            Update_3Space();
+            ReadPerformanceCounter(&liFlightAfterSimulation);
+            frameReady = RenderSpaceViewFrame();
+            ReadPerformanceCounter(&liFlightAfterRender);
+            update_cockpit();
+        } else {
+            liFlightAfterRender =
+                liFlightAfterSimulation =
+                    liFlightAfterInput;
+        }
+        ReadPerformanceCounter(&liFlightAfterCockpit);
+        if (frameReady != 0) {
+            frameReady = 0;
+            DIBslam();
+            DIBslamReal();
+        }
+        ReadPerformanceCounter(&liFlightFrameEnd);
+        nFlightPresentTicks =
+            (int)(liFlightFrameEnd.LowPart -
+                  liFlightAfterCockpit.LowPart);
+        nFlightCockpitTicks =
+            (int)(liFlightAfterCockpit.LowPart -
+                  liFlightAfterRender.LowPart);
+        nFlightRenderTicks =
+            (int)(liFlightAfterRender.LowPart -
+                  liFlightAfterSimulation.LowPart);
+        nFlightSimulationTicks =
+            (int)(liFlightAfterSimulation.LowPart -
+                  liFlightAfterInput.LowPart);
+        nFlightFrameTotalTicks =
+            (int)(liFlightFrameEnd.LowPart -
+                  liFlightFrameStart.LowPart);
+        nFlightInputTicks =
+            (int)(liFlightAfterInput.LowPart -
+                  liFlightFrameStart.LowPart);
+        DAT_00598888 = 0;
+        DAT_0059888c = 0;
+        DAT_00598890 = 0;
+    }
+
+#ifdef SDL_PORT
+    SdlSetMouseGrab(0);
+    SdlCancelSpaceFrame();
+    if (SdlUsingDosData())
+        SdlStopDosSoundEffects();
+#endif
+    SetCinematicFrameTiming();
+    SetViewportRect(&stSpaceBuffer, 0, 0,
+                    (unsigned short)(nScreenWidth - 1),
+                    (unsigned short)(nScreenHeight - 1));
+    bCockpitlessView = 0;
+    if (nArcadeState == 1)
+        flag_objective(find_objective(1, -1), 2);
+    bCockpitlessView = 0;
+    ResetCockpitPaletteEntries();
+    stMouseCursorState.viewport = savedViewport;
+    free_inflight_music();
+    SetEventManagerPump(0);
+    bMouseCursorVisible = 0;
+    QueueInputEvent(13, 160, 100, 0, 0, 0, 0);
+    SetMouseCursorShape(stMouseCursorState.shape, 0);
+    return nArcadeState;
+}
+
+/* Function start: 0x42A520 */
+int calculate_damage_level(void)
+{
+    ObjectTypeData *typeData;
+    short damage;
+
+    typeData = &aObjectTypeData[aeObjectType[0]];
+    damage = (short)(((typeData->armorLeft -
+                       aasShipArmor[0][2]) * 4) /
+                     typeData->armorLeft);
+    damage = (short)(damage +
+        ((typeData->armorRear - aasShipArmor[0][1]) * 4) /
+            typeData->armorRear);
+    damage = (short)(damage +
+        ((typeData->armorRight - aasShipArmor[0][3]) * 4) /
+            typeData->armorRight);
+    damage = (short)(damage +
+        ((typeData->armorFront - aasShipArmor[0][0]) * 4) /
+            typeData->armorFront);
+    damage = (short)(
+        (acShipDamage[0] * 30) / typeData->damageCapacity +
+        damage * 2);
+    damage = (short)(damage +
+                     asShipAccumulatedDamage[0] * 5);
+
+    if (damage < 5)
+        return 0;
+    if (damage < 40)
+        return 1;
+    if (damage < 70)
+        return 2;
+    return 3;
+}
+
+/* Function start: 0x42A610 */
+void UpdateTrainSimMenuCursor(void)
+{
+    short mouseX;
+    short mouseY;
+    short state;
+    short frame;
+    TitleMenuRegion *region;
+
+    frame = 0;
+    mouseX = stMouseCursorState.x;
+    mouseY = stMouseCursorState.y;
+    region = aTrainSimMissionRegions;
+    while (region->frame != -1) {
+        state = IsPointInRect(mouseX, mouseY, &region->left);
+        if (state != 0)
+            frame = region->frame;
+        region++;
+    }
+    SetMouseCursorShape(stMouseCursorState.shape, frame);
+}
+
+/* Function start: 0x42A670 */
+void ResetMouseCursorFrame(void)
+{
+    SetMouseCursorShape(stMouseCursorState.shape, 0);
+}
+
+/* Function start: 0x42A680 */
+void UpdateRoomMenuCursor(void)
+{
+    short mouseX;
+    short mouseY;
+    short state;
+    short frame;
+    const TitleMenuRegion *region;
+    short index;
+
+    mouseX = stMouseCursorState.x;
+    frame = nRoomMenuCursorFrame;
+    index = 0;
+    region = pRoomMenuRegions;
+    mouseY = stMouseCursorState.y;
+    ClearRoomMenuLabel();
+    while (region->frame != -1) {
+        state = IsPointInRect(mouseX, mouseY, &region->left);
+        if (state != 0) {
+            frame = region->frame;
+            if (index >= 20)
+                return;
+            if (index < 0)
+                return;
+            SelectRoomMenuLabel(index);
+        }
+        index++;
+        region++;
+    }
+    SetMouseCursorShape(stMouseCursorState.shape, frame);
+}
+
+/* Function start: 0x42A700 */
+void __stdcall FadeViewportPaletteToColour(Viewport *viewport,
+                                           unsigned short colour,
+                                           short enabled)
+{
+    unsigned char *indices;
+    unsigned short target[3];
+    short *currentPalette;
+    short *targetPalette;
+    unsigned int paletteBytes;
+    short activeCount;
+    short index;
+
+    (void)enabled;
+    if (nVideoMode != 0x13)
+        return;
+
+    indices = AllocateTaggedMemory(256, 0);
+    if (indices == 0)
+        return;
+    memset(indices, 0, 256);
+    activeCount = CollectActivePaletteIndices(viewport, indices, 256);
+    paletteBytes = (unsigned int)(activeCount * 6);
+    currentPalette = AllocateTaggedMemory(paletteBytes, 0);
+    if (currentPalette == 0) {
+        ReleasePacketHandle(indices);
+        return;
+    }
+    memset(currentPalette, 0, paletteBytes);
+    targetPalette = AllocateTaggedMemory(paletteBytes, 0);
+    if (targetPalette == 0) {
+        ReleasePacketHandle(indices);
+        ReleasePacketHandle(currentPalette);
+        return;
+    }
+    memset(targetPalette, 0, paletteBytes);
+
+    GetPaletteEntry((short)colour, target);
+    for (index = 0; index < activeCount; index++) {
+        GetPaletteEntry((short)indices[index],
+                        (unsigned short *)&currentPalette[index * 3]);
+        memcpy(&targetPalette[index * 3], target, 6);
+    }
+
+    while (StepPaletteTransition(
+               currentPalette, targetPalette,
+               (short)(activeCount * 3)) != 0) {
+        for (index = 0; index < activeCount; index++) {
+            abPaletteTriplets[indices[index]][0] =
+                (unsigned char)currentPalette[index * 3];
+            abPaletteTriplets[indices[index]][1] =
+                (unsigned char)currentPalette[index * 3 + 1];
+            abPaletteTriplets[indices[index]][2] =
+                (unsigned char)currentPalette[index * 3 + 2];
+        }
+        SetWholePaletteFromTriplets(&abPaletteTriplets[0][0]);
+    }
+
+    ReleasePacketHandle(targetPalette);
+    ReleasePacketHandle(currentPalette);
+    ReleasePacketHandle(indices);
+    DIBslam();
+    DIBslamReal();
 }

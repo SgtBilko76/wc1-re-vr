@@ -156,9 +156,10 @@ sits at one constant offset from the original.
 | `src/logic.c` | `0x422010`–`0x42572F` |
 | `src/pilot.cpp` | `0x425730`–`0x425C2F` |
 | `src/trainsim.c` | `0x425C30`–`0x4272EF` |
-| `src/system.c` | `0x4272F0`–`0x4274DF` |
-| `src/main.c` | `0x4274E0`–`0x428E6F` |
-| `src/hudmsg.c` | `0x428E70`–`0x42AFFF` |
+| `src/main.c` | `0x4272F0`–`0x42A8EF`; trailing cursor/palette helpers remain provisional |
+| `src/targ.c` | `0x42A8F0`–`0x42ACFF` |
+| `src/select.c` | `0x42AD00`–`0x42AF9F` |
+| `src/timer.c` | `0x42AFA0`–`0x42AFFF`; internal ownership remains provisional |
 | `src/pload.c` | `0x42B000`–`0x42B3FF` |
 | `src/sound.c` | `0x42B400`–`0x42C7FF` |
 | `src/damage.c` | `0x42C800`–`0x42CDAF` |
@@ -181,11 +182,13 @@ sits at one constant offset from the original.
 | `src/killbrd.c` | `0x43F640`–`0x44089F` |
 | `src/gr.c` | `0x4408A0`–`0x44269F` |
 
-The provisional main/HUD split follows the existing function groups:
-`player_input` at `0x004285D0` and the three following view-input functions
-remain in `main.c`; `MeasureMessageWidth` at `0x00428E70` starts `hudmsg.c`.
-This corrects the former placement windows through the middle of the input
-group; it does not independently establish the original object boundary.
+The former system/main/HUD division split the main module's initialized
+state from its first literal users. The main window now begins with the
+process/memory helpers and includes flight input, banners, and the flight
+loop. The Mac `targ` and `select` runs corroborate the following target and
+weapon-selection groups. The trailing cursor/palette helpers before `targ`
+and the Win32 timer helpers after `select` retain provisional ownership;
+their positions alone do not prove their original object boundaries.
 
 `LoadPaletteTripletsFile` at `0x00404610` closes `auto.c`. Its `"rb"`
 literal is at `0x00465548`, immediately after the initialized autopilot
@@ -251,7 +254,10 @@ ownership and qualifiers:
 | `0x00469878`–`0x00469995` | `ship.c`: damage-system and debris tables, gun refire delays, and the following four HUD literals |
 | `0x00469998`–`0x00469BBD` | `init.c`: graphics defaults, the shared low-memory message, reservation tables, and startup literals |
 | `0x00469BC0`–`0x00469D7E` | `logic.c`: resource descriptors, scene state, and the scene text-format literal |
+| `0x00469D80`–`0x00469D9C` | `pilot.cpp`: transition subtitle, empty answer input, and answer label; the following word at `0x00469DA0` remains unidentified |
 | `0x00469DA8`–`0x00469FA6` | `trainsim.c`: panel state, high-score name pointers, menu regions, simulator state, and the following UI literals |
+| `0x00469FA8`–`0x0046A3A1` | `main.c`: legacy overlay setting, game/input state, and process, startup, flight, HUD, and score literals |
+| `0x0046A3A4`–`0x0046A436` | `pload.c`: compressed-data and non-pushed-buffer diagnostics; trailing audio helpers retain provisional ownership |
 | `0x0046A748`–`0x0046A8CD` | `damage.c`: cockpit damage tables and the following report literals |
 | `0x0046A8D0`–`0x0046A9F0` | `view.c`: scripted-view state, constellation tables, packet settings, target armor rectangles, and the following target/display literals |
 | `0x0046AD88`–`0x0046AF50` | `ending.c`: allocation tag, campaign-ending pointers and projectile origins, subtitle literals, and four separate text formats |
@@ -404,8 +410,9 @@ A pointer initialized directly with `"1.03F-95"` reproduces the complete
 functions to it. Its original filename and whether it shared an object with
 some of those functions remain unresolved. Three alignment bytes separate
 the cockpit tail from version data, and seven precede the barracks tables.
-The tail, version, and seven following units through logic form a checked
-3,431-byte run with 62 pointer relocations and 23 alignment bytes. A separate
+The tail, version, and eight following units through the pilot literals form
+a checked 3,461-byte run with 62 pointer relocations and 24 alignment bytes.
+A separate
 28-byte check joins space state to the cockpit prefix. Neither bridges the
 unrecovered cockpit gap or establishes absolute placement.
 
@@ -552,6 +559,14 @@ The initialization and logic checks also enforce each object's complete
 data size. Two alignment bytes separate the blocks, and one follows the
 scene-format literal before the pilot unit's data at `0x00469D80`.
 
+`ShowMeanwhileTransition` and `PromptForAnswerText` own the next three
+literals: `"Meanwhile..."`, the empty answer input, and `"Answer: "`.
+Their complete 29-byte section matches, including the empty literal's byte
+load. Named arrays previously overallocated these literals and placed them
+in the temporary globals unit. Three alignment bytes follow the label;
+the unreferenced word `10` at `0x00469DA0` and the four bytes after it remain
+outside the recovered section.
+
 The training-simulator block starts at `0x00469DA8`, after the scene
 literals and the Win32 console wrappers. Its viewport, bounds, shared title
 array, six high-score name pointers, menu regions, and three simulator-state
@@ -566,9 +581,46 @@ ending before the process-exit routines. These game functions use the C core
 profile; the console allocation wrapper and its `/GX` construction cleanup
 remain in `pilot.cpp`. That file's internal C/C++ boundary is still provisional.
 The complete 511-byte simulator data section and all six name-pointer targets
-match with one address shift. The unreferenced word `10` at `0x00469DA0`
-and storage after the final simulator literal remain outside this recovered
-block; their ownership is not inferred from proximity.
+match with one address shift. The preceding unreferenced word `10` at
+`0x00469DA0` remains unidentified.
+
+The next word, `0x1370` at `0x00469FA8`, has stronger evidence. The surviving
+WINGLEADER main-source screenshot (`../squadronsourcecode.png`) declares
+`extern unsigned _ovrbuffer = 0x1370`, immediately before game mode/status
+and the two frame counters. The Win32 bytes preserve that value and the
+same neighboring state, despite having no relocation that references the
+word. It is a retained legacy overlay setting, not padding. Its original
+external identifier is preserved in `main.c`; the earlier analysis's claim
+that it had no Win32 counterpart was incorrect.
+
+The 29 initialized declarations occupy 184 bytes. The private volume table,
+memory-display flag, last input sample, mouse thresholds, button timestamps,
+and input latches have original users only within this main group. Five
+remain available to SDL adapters through SDL-only declarations. Shared game
+state stays declared in `globals.h`. The following 834-byte literal pool
+starts with the process helpers' diagnostics, continues through `main`,
+and ends with the HUD score messages. All 1,018 bytes and all declaration
+offsets match; no pointer relocations occur in this data block.
+
+The unreferenced diagnostic at `0x0046A15C` describes an `int`/pointer size
+check. A controlled VC4.20 probe confirms that `sizeof(int) != sizeof(short *)`
+is folded away while its diagnostic literal survives in initialized data.
+This source form, inferred from the text, restores the original 36-byte
+literal without adding runtime code. `ReportOutOfMemoryAndExit` passes the
+shared message at `0x00469A28`; the former shortened use-site message added
+incorrect storage. The buffer tags are separate literals, and the two
+volume-adjustment cases and volume toggles preserve their original literal
+order without string pooling.
+
+`PacketLoad`'s compressed-data case precedes its default case in source,
+although CL schedules the default code first. This emits both fatal
+diagnostics before the non-pushed-buffer diagnostic, matching all 147 bytes
+of its literal section. The following audio routines still occupy `pload.c`
+provisionally; their initialized state remains to be recovered in its owner.
+The simulator, main, and loader sections form one checked 1,679-byte run,
+with six stored pointers and three linker alignment bytes. That run is
+currently 24 bytes early: eight bytes each remain missing in startup state,
+cockpit state, and the gap before the simulator.
 
 The maneuver proximity threshold at `0x00475E78` and reroll byte at
 `0x00475E7C` are private to `fl.c`. All references occur in the threshold

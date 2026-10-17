@@ -145,46 +145,6 @@ const unsigned char abIffCmapChunkId[4] = { 'C', 'M', 'A', 'P' }; /* 0x0043e77c 
 const unsigned char abIffBodyChunkId[4] = { 'B', 'O', 'D', 'Y' }; /* 0x0043e780 */
 #endif
 
-char szMeanwhile[16] = "Meanwhile..."; /* 0x00469d80 */
-char szEmptyAnswerInput[4] = ""; /* 0x00469d90 */
-char szAnswerLabel[9] = "Answer: "; /* 0x00469d94 */
-int nCannedSceneMode = 0; /* 0x00469fac */
-int nArcadeState = 0; /* 0x00469fb0 */
-short nFrameSkipCounter = 1; /* 0x00469fb4 */
-short nFrameSkip = 1; /* 0x00469fb8 */
-int nSfxVolumeSetting = 0x14; /* 0x00469fbc */
-int nMusicVolumeSetting = 0x14; /* 0x00469fc0 */
-int bViewportDirty = 0; /* 0x00469fc4 */
-int anVolumeLevels[11] = { /* 0x00469fc8 */
-    0, 40000, 50000, 55000, 60000, 61000,
-    61500, 62000, 63000, 63500, 64000
-};
-int nOriginDevUnlock = 0; /* 0x00469ff4 */
-int bPlayerCollisionsEnabled = 1; /* 0x00469ff8 */
-int bPlayerVulnerable = 1; /* 0x00469ffc */
-int bPlayerCollisionResponse = 1; /* 0x0046a000 */
-int bViewBufferEnabled = 0; /* 0x0046a004 */
-int bCockpitlessView = 0; /* 0x0046a008 */
-int nShowMemoryStatus = 0; /* 0x0046a00c */
-short nStartNavPointOverride = -1; /* 0x0046a010 */
-short nArcadeBonusCountdown = 0; /* 0x0046a014 */
-int bMouseCursorVisible = 0; /* 0x0046a018 */
-unsigned char bInputPollingGuard = 0; /* 0x0046a01c */
-InputDeviceSample stLastPolledFlightInput = {0}; /* 0x0046a020 */
-int bMouseAfterburnerControl = 0; /* 0x0046a02c */
-short asMouseYawThresholds[6] = { /* 0x0046a030 */
-    10, 37, 52, 57, 62, 1070
-};
-short asMousePitchThresholds[6] = { /* 0x0046a040 */
-    5, 18, 27, 35, 38, 1040
-};
-unsigned int dwLastSecondaryButtonPress = 0; /* 0x0046a04c */
-unsigned char bFlightRollLatch = 0; /* 0x0046a050 */
-unsigned char bAfterburnerButtonLatched = 0; /* 0x0046a054 */
-short nMouseYawInput = 0; /* 0x0046a058 */
-short nMousePitchInput = 0; /* 0x0046a05c */
-char szSpaceBuffer[16] = "SPACE BUFFER"; /* 0x0046a1d0 */
-char szAllocateBufferTag[4] = "AB"; /* 0x0046a1e0 */
 ActiveSoundEntry *pActiveSoundHead = 0; /* 0x0046a438 */
 ActiveSoundEntry *pActiveSoundTail = 0; /* 0x0046a43c */
 int bAudioSystemInitialized = 0; /* 0x0046a440 */

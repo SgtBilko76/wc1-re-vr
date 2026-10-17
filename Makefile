@@ -228,7 +228,7 @@ GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/eject.c sr
 	src/fl.c src/cutscene.c src/brains.c src/mission.c \
 	src/objdata.c src/nav.c src/nearheap.c src/gameflow.c src/title.c src/spc.c src/cockpt.c src/version.c \
 	src/barracks.c src/fade.c src/debug.cpp \
-	src/disk.c src/ship.c src/init.c src/logic.c src/pilot.cpp src/trainsim.c \
+	src/disk.c src/ship.c src/init.c src/logic.c src/pilot.cpp src/trainsim.c src/main.c \
 	src/sound.c src/damage.c src/view.c src/music.c src/ending.c src/input.c \
 	src/comm.c src/video.c src/joycal.c src/dib.c src/game.c src/eventmgr.c src/screens.c \
 	src/killbrd.c src/gr.c \
@@ -355,9 +355,10 @@ SRCS_ORDERED_CORE = \
 	src/logic.c \
 	src/pilot.cpp \
 	src/trainsim.c \
-	src/system.c \
 	src/main.c \
-	src/hudmsg.c \
+	src/targ.c \
+	src/select.c \
+	src/timer.c \
 	src/pload.c \
 	src/sound.c \
 	src/damage.c \
@@ -460,7 +461,6 @@ MODERN_GAMEPLAY_SRCS = \
 	src/geom.c \
 	src/gr.c \
 	src/globals.c \
-	src/hudmsg.c \
 	src/init.c \
 	src/input.c \
 	src/joycal.c \
@@ -468,6 +468,9 @@ MODERN_GAMEPLAY_SRCS = \
 	src/killbrd.c \
 	src/logic.c \
 	src/main.c \
+	src/targ.c \
+	src/select.c \
+	src/timer.c \
 	src/mathfp.c \
 	src/mathutil.c \
 	src/mono.c \
@@ -484,7 +487,6 @@ MODERN_GAMEPLAY_SRCS = \
 	src/smart.c \
 	src/spc.c \
 	src/strdos.c \
-	src/system.c \
 	src/trainsim.c \
 	src/game.c \
 	src/version.c \
@@ -807,7 +809,7 @@ $(TARGET): $(LINK_OBJS) $(IX_LIBS) Makefile bin/appendStaticSymbols.py | $(MSVCR
 	env LIB='$(GAME_LIBPATH)' $(LINK) $(LINKFLAGS) /MAP:$(LINKMAPFILE) $(LINK_OBJS) $(GAME_LIBS) /OUT:$@
 	@python3 bin/stampPeTimestamp.py $@ $(ORIGINAL_TIMESTAMP)
 	@python3 bin/appendStaticSymbols.py --map $(LINKMAPFILE) \
-		--rebuilt $@ --output $(MAPFILE) $(OUT_DIR)/winmain.obj $(OUT_DIR)/auto.obj $(OUT_DIR)/eject.obj $(OUT_DIR)/cmpgn.obj $(OUT_DIR)/fl.obj $(OUT_DIR)/cutscene.obj $(OUT_DIR)/mission.obj $(OUT_DIR)/objdata.obj $(OUT_DIR)/nav.obj $(OUT_DIR)/nearheap.obj $(OUT_DIR)/gameflow.obj $(OUT_DIR)/title.obj $(OUT_DIR)/spc.obj $(OUT_DIR)/cockpt.obj $(OUT_DIR)/damage.obj $(OUT_DIR)/view.obj $(OUT_DIR)/music.obj $(OUT_DIR)/ending.obj $(OUT_DIR)/comm.obj $(OUT_DIR)/joycal.obj $(OUT_DIR)/dib.obj $(OUT_DIR)/game.obj $(OUT_DIR)/eventmgr.obj $(OUT_DIR)/screens.obj $(OUT_DIR)/killbrd.obj $(OUT_DIR)/gr.obj
+		--rebuilt $@ --output $(MAPFILE) $(OUT_DIR)/winmain.obj $(OUT_DIR)/auto.obj $(OUT_DIR)/eject.obj $(OUT_DIR)/cmpgn.obj $(OUT_DIR)/fl.obj $(OUT_DIR)/cutscene.obj $(OUT_DIR)/mission.obj $(OUT_DIR)/objdata.obj $(OUT_DIR)/nav.obj $(OUT_DIR)/nearheap.obj $(OUT_DIR)/gameflow.obj $(OUT_DIR)/title.obj $(OUT_DIR)/spc.obj $(OUT_DIR)/cockpt.obj $(OUT_DIR)/main.obj $(OUT_DIR)/damage.obj $(OUT_DIR)/view.obj $(OUT_DIR)/music.obj $(OUT_DIR)/ending.obj $(OUT_DIR)/comm.obj $(OUT_DIR)/joycal.obj $(OUT_DIR)/dib.obj $(OUT_DIR)/game.obj $(OUT_DIR)/eventmgr.obj $(OUT_DIR)/screens.obj $(OUT_DIR)/killbrd.obj $(OUT_DIR)/gr.obj
 
 $(IX_LZO_LIB): $(call objects_of,$(SRCS_IX_LZO))
 $(IX_FILE_LIB): $(call objects_of,$(SRCS_IX_FILE))

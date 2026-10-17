@@ -42,7 +42,7 @@ void ShowMeanwhileTransition(short scene, short variant)
     SetTextContext(&stConversationTextContext);
     pIntroFont =
         (unsigned char *)FetchDiskPacketRetrying(9, 1, 0);
-    print_subtitle(&stSceneBuffer, 0x40, szMeanwhile);
+    print_subtitle(&stSceneBuffer, 0x40, "Meanwhile...");
     PanToScreen(&stSceneBuffer, &stScreen);
     FreePacketAndClear((int *)&pIntroFont, 0);
     WaitForSceneAdvance(100, 0);
@@ -138,8 +138,8 @@ short PromptForAnswerText(short entry)
     DrawModalTextPanel(&panel, 6, 10, 2,
                        szHudMessageBuffer);
     szComponentHitMessage[20] =
-        szEmptyAnswerInput[0];
-    PromptForTextInput(65, 125, (char *)szAnswerLabel,
+        ""[0];
+    PromptForTextInput(65, 125, (char *)"Answer: ",
                        &szComponentHitMessage[20], 10, 2);
     RestoreModalTextPanel(&panel);
     ApplyAnswerTextCipher(&szComponentHitMessage[20], -1);

@@ -45,7 +45,8 @@ auto (7), eject (156), cmpgn (135), fl (236), cutscene (1,297),
 brains (2), mission (939), objdata (9,773), nav (608), nearheap (12),
 gameflow (64), title (1,522), joystick (238), spc (12), version (13),
 barracks (632), fade (2),
-debug (34), disk (523), ship (286), init (550), logic (447), trainsim (511),
+debug (34), disk (523), ship (286), init (550), logic (447), pilot (29),
+trainsim (511), main (1,018), pload (147),
 damage (390), view (289), ending (457), input (6), comm (520), video (10),
 joycal (42), killbrd (1,508), and gr (2,030). It also checks gr's complete
 56-byte read-only section, including the registry key and value arrays and
@@ -121,14 +122,15 @@ The internal near-heap/campaign and viewport-helper boundaries remain
 provisional as described in `docs/ORDER.md`, as do the title/joystick division
 and the fleet-view helper's exact owner.
 
-The system-path and joystick sections contain only compiler literals, so
-they have no public data symbols to anchor the comparison. The unit gate uses the same COFF layout
+The system-path, joystick, pilot, and packet-loader sections contain only
+compiler literals, so they have no public data symbols to anchor the
+comparison. The unit gate uses the same COFF layout
 resolver as the private-symbol map: public code symbols establish the code
 base, and linked `DIR32` operands establish the literal section's base. Every
 such operand must have a PE `HIGHLOW` relocation and agree on that base.
 This also rejects a reference redirected to another byte-identical `"j.cal"`
-copy. Strict binary-comp address comparisons then check all 259 and 238
-bytes respectively.
+copy. Strict binary-comp address comparisons then check all 259, 238, 29,
+and 147 bytes respectively.
 
 Two partial-section checks cover the cockpit's 16-byte prefix and 921-byte
 tail. They verify 32 declarations and both string-pointer relocations and
@@ -137,9 +139,22 @@ bytes between the blocks prevent a complete-unit claim. The tail includes
 the full 293-byte literal pool, also represented in the linked-data metadata.
 The version pointer and its nine-byte literal form a separate complete
 13-byte block. The cockpit tail through version and the following units to
-logic must form a 3,431-byte run, including 62 pointer relocations and 23
-alignment bytes. Space state and the cockpit prefix form a separate 28-byte
+the pilot literals must form a 3,461-byte run, including 62 pointer relocations
+and 24 alignment bytes. Space state and the cockpit prefix form a separate 28-byte
 run. These checks leave the missing cockpit bytes explicitly unresolved.
+
+The scene transition and answer literals occupy all 29 bytes of `pilot.obj`'s
+initialized section. The following unidentified word at `0x00469DA0` prevents
+joining that run to the simulator. Simulator, main, and loader data form a
+separate 1,679-byte run, with six pointer relocations and three alignment
+bytes. Main's complete section checks 29 declaration offsets, including the
+legacy overlay setting corroborated by the surviving DOS source, and all
+834 literal bytes. The `sizeof` diagnostic survives compilation even though
+the compiler removes its condition and call. Separate volume literals must
+retain their original order. The packet loader's 147-byte pool likewise
+retains both fatal diagnostics before its buffer-ownership diagnostic.
+All three pools have linked-data metadata; no comparison-only storage is
+compiled into the game.
 
 `bin/collectGlobalDefinitions.py` accepts data-only owners such as
 `objdata.c` and `version.c`: without an annotated function boundary,
@@ -193,7 +208,8 @@ nineteen private cutscene symbols, three private mission symbols,
 twenty-one private objdata symbols,
 eight private nav symbols, two private nearheap symbols,
 three private gameflow symbols, six private title symbols, one private spc
-symbol, twenty-three private cockpt symbols, four private damage symbols,
+symbol, twenty-three private cockpt symbols, eleven private main symbols,
+four private damage symbols,
 seven private view symbols,
 six private music symbols, eight private ending symbols, two private
 comm symbols, two private joycal symbols, ten private dib symbols,

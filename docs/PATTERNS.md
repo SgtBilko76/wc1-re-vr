@@ -37,6 +37,15 @@ for similarity decisions.
   bound calculations still differ; the aligned span remains sixteen bytes short.
 - In `/Od` code, keep explicit pointer locals when the original stores them.
 - Repeat identical literals at each use site; string pooling was disabled.
+  Source switch-case order also determines literal order independently of
+  the final code layout. In `process_player_input`, the SFX up/down cases
+  precede music up/down. The flight-control music toggle precedes the SFX
+  toggle. In `PacketLoad`, the compressed-data case precedes default even
+  though CL schedules the default code first. These arrangements recover
+  all separate literals without changing the existing function scores.
+  CL also retains a diagnostic inside a folded-away `sizeof` check. The
+  unreferenced main-module size diagnostic is reproduced this way, as a
+  controlled compiler probe confirms; a named filler string is unnecessary.
   In `DIBcascade`, write the surface-lock failure branch before the success
   path. CL emits its second `" failed\n"` before `" successful\n"`, matching
   the original addresses. Reversing those source paths can preserve the
@@ -55,6 +64,8 @@ for similarity decisions.
   100-byte writable message array before its memory-reservation tables.
   Repeating the message at the call sites adds a duplicate to the literal
   pool and loses the original declaration order.
+  `ReportOutOfMemoryAndExit` also uses this shared message; its former shorter
+  literal both changed the original text and added unwanted literal storage.
 - `flag_reached` writes its normal-arrival branch before its waiting branch
   in source. CL still schedules the waiting path first, but emits the arrival
   strings before the wait format, matching the cockpit literal pool. The

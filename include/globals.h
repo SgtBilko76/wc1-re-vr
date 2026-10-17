@@ -86,12 +86,10 @@ extern PacketResourceDescriptor aCommon3SpaceResources[12]; /* 0x00469bc0 */
 extern int nCapitalShipViewDistance; /* 0x00468ff4 */
 extern unsigned char bLandingAuthorized; /* 0x00468ff8 */
 extern unsigned char *pCockpitPilotShape; /* 0x0046905c */
+extern char szInsufficientMemory[100]; /* 0x00469a28 */
 extern unsigned int bIntroSceneResourcesActive; /* 0x00469d48 */
 extern PacketResourceDescriptor aMissionResourceDescriptors[5]; /* 0x00469c20 */
 extern PacketResourceDescriptor aCockpitResourceDescriptors[19]; /* 0x00469c48 */
-extern char szMeanwhile[16]; /* 0x00469d80 */
-extern char szEmptyAnswerInput[4]; /* 0x00469d90 */
-extern char szAnswerLabel[9]; /* 0x00469d94 */
 extern TitleMenuRegion aTrainSimMissionRegions[5]; /* 0x00469df8 */
 extern int nTrainSimActive; /* 0x00469e2c */
 extern short nTrainSimMission; /* 0x00469e30 */
@@ -106,22 +104,10 @@ extern int bPlayerVulnerable; /* 0x00469ffc */
 extern int bPlayerCollisionResponse; /* 0x0046a000 */
 extern int bViewBufferEnabled; /* 0x0046a004 */
 extern int bCockpitlessView; /* 0x0046a008 */
-extern int nShowMemoryStatus; /* 0x0046a00c */
 extern short nStartNavPointOverride; /* 0x0046a010 */
 extern short nArcadeBonusCountdown; /* 0x0046a014 */
 extern int bMouseCursorVisible; /* 0x0046a018 */
 extern unsigned char bInputPollingGuard; /* 0x0046a01c */
-extern InputDeviceSample stLastPolledFlightInput; /* 0x0046a020 */
-extern int bMouseAfterburnerControl; /* 0x0046a02c */
-extern short asMouseYawThresholds[6]; /* 0x0046a030 */
-extern short asMousePitchThresholds[6]; /* 0x0046a040 */
-extern unsigned int dwLastSecondaryButtonPress; /* 0x0046a04c */
-extern unsigned char bFlightRollLatch; /* 0x0046a050 */
-extern unsigned char bAfterburnerButtonLatched; /* 0x0046a054 */
-extern short nMouseYawInput; /* 0x0046a058 */
-extern short nMousePitchInput; /* 0x0046a05c */
-extern char szSpaceBuffer[16]; /* 0x0046a1d0 */
-extern char szAllocateBufferTag[4]; /* 0x0046a1e0 */
 extern unsigned char *pDamageDisplayBackground; /* 0x0046a748 */
 extern const char *apszComponentNames[9]; /* 0x0046a778 */
 extern ActiveSoundEntry *pActiveSoundHead; /* 0x0046a438 */
@@ -789,7 +775,6 @@ extern int bScriptedView; /* 0x0046a8d4 */
 extern int nSfxVolumeSetting; /* 0x00469fbc */
 extern int nMusicVolumeSetting; /* 0x00469fc0 */
 extern int bViewportDirty; /* 0x00469fc4 */
-extern int anVolumeLevels[11]; /* 0x00469fc8 */
 extern int nInputTickScale; /* 0x0059af90 */
 extern short asInputButton1DoubleClick[2]; /* 0x0059e508 */
 extern short asInputButton1Changed[2]; /* 0x0059e50c */

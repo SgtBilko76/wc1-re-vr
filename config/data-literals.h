@@ -65,6 +65,19 @@ unsigned char abJoystickCalibrationLiterals[238]; /* 0x00468f04 */
  * The partial unit gate checks all offsets and both stored string pointers. */
 unsigned char abCockpitStringLiterals[293]; /* 0x0046928c */
 
+/* pilot.cpp: Meanwhile transition, empty answer input, and answer label.
+ * The complete unit gate excludes the following unidentified word at 469da0. */
+unsigned char abSceneTransitionLiterals[29]; /* 0x00469d80 */
+
+/* main.c: process/memory diagnostics, startup and buffer tags, flight/HUD
+ * messages, and scores. Includes the diagnostic retained by a folded sizeof
+ * check; the complete unit gate also checks all 29 initialized declarations. */
+unsigned char abMainGameLiterals[834]; /* 0x0046a060 */
+
+/* pload.c: compressed-data failure diagnostics and the non-pushed-buffer
+ * diagnostic. Case 1 precedes default in source, preserving this order. */
+unsigned char abPacketLoaderLiterals[147]; /* 0x0046a3a4 */
+
 /* damage.c: component and severity names, report headings, and both distinct
  * status-format literals. The complete pool also resolves the short "Ok"
  * pointer; verify-unit-data independently checks every position in its unit.

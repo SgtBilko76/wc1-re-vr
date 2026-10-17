@@ -19,29 +19,6 @@ void * __stdcall PacketLoad(const char *filename, short section,
     if (OpenPacketSection(filename, section, &handle) != 0) {
         compression = handle.compression;
         switch (compression) {
-        default:
-            if (handle.dataSize == 0) {
-                nPacketError = 8;
-            } else {
-                packet = destination;
-                if (packet == 0) {
-                    packet = AllocateTaggedMemory(
-                        handle.dataSize,
-                        (unsigned short)(flags | 0x40));
-                    pLastPacketAllocation = packet;
-                    if (packet == 0)
-                        nPacketError = 4;
-                }
-                if (packet != 0) {
-                    if (IsPushedPacketHandle(packet) == 0)
-                        exit_squadron(
-                            "qq PacketLoad with non-pushed dest");
-                    if (ReadPacketSectionData(
-                            &handle, packet, handle.dataSize) == 0)
-                        packet = 0;
-                }
-            }
-            break;
         case 1:
 #ifdef SDL_PORT
         {
@@ -110,6 +87,29 @@ void * __stdcall PacketLoad(const char *filename, short section,
                 &handle, destination, flags, decompressionWorkspace);
             break;
 #endif
+        default:
+            if (handle.dataSize == 0) {
+                nPacketError = 8;
+            } else {
+                packet = destination;
+                if (packet == 0) {
+                    packet = AllocateTaggedMemory(
+                        handle.dataSize,
+                        (unsigned short)(flags | 0x40));
+                    pLastPacketAllocation = packet;
+                    if (packet == 0)
+                        nPacketError = 4;
+                }
+                if (packet != 0) {
+                    if (IsPushedPacketHandle(packet) == 0)
+                        exit_squadron(
+                            "qq PacketLoad with non-pushed dest");
+                    if (ReadPacketSectionData(
+                            &handle, packet, handle.dataSize) == 0)
+                        packet = 0;
+                }
+            }
+            break;
         }
         CloseDataFileByHandle((unsigned short *)&handle);
     }
