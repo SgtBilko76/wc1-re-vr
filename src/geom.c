@@ -103,16 +103,14 @@ short get_ship_max_velocity(short obj)
 short recalc_max_velocity(short ship)
 {
     short oldVelocity;
-    short maximumVelocity;
 
     oldVelocity = asShipMaximumSpeed[ship];
     if (anShipFuel[ship] <= 0) {
         asShipMaximumSpeed[ship] = 5;
     } else {
-        maximumVelocity = get_ship_max_velocity(ship);
         asShipMaximumSpeed[ship] =
-            (short)(((int)maximumVelocity *
-                     (4 - (int)acShipIonDriveDamage[ship])) >> 2);
+            (short)((get_ship_max_velocity(ship) *
+                     (4 - acShipIonDriveDamage[ship])) >> 2);
     }
     if (asShipMaximumSpeed[ship] != oldVelocity)
         celerate(ship, 0);
@@ -426,6 +424,23 @@ void rectangular_to_spherical(const FixedVector *rectangular,
         DivideFixed(rectangular->y, spherical->radius)) - 90);
 }
 
+/* Function start: 0x418900 */
+/* Nothing in the shipped executable calls this routine. */
+void ConvertSphericalToRectangular(const SphericalVector *spherical,
+                                   FixedVector *rectangular)
+{
+    int horizontalLength;
+
+    horizontalLength = MultiplyFixed(spherical->radius,
+                                     SinFixed(spherical->pitch));
+    rectangular->x = MultiplyFixed(horizontalLength,
+                                   CosFixed(spherical->yaw));
+    rectangular->z = MultiplyFixed(horizontalLength,
+                                   SinFixed(spherical->yaw));
+    rectangular->y = MultiplyFixed(spherical->radius,
+                                   CosFixed(spherical->pitch));
+}
+
 /* Function start: 0x418980 */
 void ConvertShortVectorToFixedVector(const ShortVector *source,
                                      FixedVector *destination)
@@ -684,29 +699,33 @@ short distance_from_object(short obj, short other)
 }
 
 /* Function start: 0x419290 */
+/* The facing reads the low word of the dot product through the local's
+ * address, which is why the original keeps an unused stack slot for it. */
 void get_facing_range_from_point(short obj, const FixedVector *point)
 {
+    long facing;
+
     nTargetRange =
         distance_from_point(obj, point) -
         asObjectCollisionRadius[obj];
     vNormalizedToTarget = vToTarget;
     NormalizeFixedVector(&vNormalizedToTarget);
-    nFacingToTarget =
-        (short)(((short)dot_product(
-            &vNormalizedToTarget,
-            &aShipForwardVector[obj]) * 100) >> 8);
+    facing = dot_product(&vNormalizedToTarget,
+                         &aShipForwardVector[obj]);
+    nFacingToTarget = (short)((*(short *)&facing * 100) >> 8);
 }
 
 /* Function start: 0x419310 */
 void get_facing_range_from_object(short obj, short other)
 {
+    long facing;
+
     get_facing_range_from_point(obj, &aShipPosition[other]);
     nTargetRange -= asObjectCollisionRadius[other];
     negate_vector(&vNormalizedToTarget);
-    nTargetFacing =
-        (short)(((short)dot_product(
-            &vNormalizedToTarget,
-            &aShipForwardVector[other]) * 100) >> 8);
+    facing = dot_product(&vNormalizedToTarget,
+                         &aShipForwardVector[other]);
+    nTargetFacing = (short)((*(short *)&facing * 100) >> 8);
 }
 
 /* Function start: 0x419390 */
@@ -768,10 +787,10 @@ int set_ship_rotation_goals(short obj, short turnRate,
         rectangular_to_spherical(&localDirection, &spherical);
         if (spherical.radius == 0)
             return 1;
-        if (spherical.yaw <= 0)
-            spherical.yaw = (short)(spherical.yaw + turnRate);
-        else
+        if (spherical.yaw > 0)
             spherical.yaw = (short)(spherical.yaw - turnRate);
+        else
+            spherical.yaw = (short)(spherical.yaw + turnRate);
     } else {
         magnitude = Vector_magnitude(&localDirection);
         if (magnitude == 0)
@@ -783,15 +802,15 @@ int set_ship_rotation_goals(short obj, short turnRate,
             DivideFixed(localDirection.y, magnitude));
         if (localDirection.z < 0) {
             spherical.yaw = (short)-spherical.yaw;
-            if (spherical.pitch <= 0)
-                spherical.pitch = (short)(spherical.pitch - 180);
-            else
+            if (spherical.pitch > 0)
                 spherical.pitch = (short)(spherical.pitch + 180);
+            else
+                spherical.pitch = (short)(spherical.pitch - 180);
         }
-        if (spherical.pitch <= 0)
-            spherical.pitch = (short)(spherical.pitch + turnRate);
-        else
+        if (spherical.pitch > 0)
             spherical.pitch = (short)(spherical.pitch - turnRate);
+        else
+            spherical.pitch = (short)(spherical.pitch + turnRate);
     }
     *yawGoal = WrapDegrees((short)-spherical.yaw);
     *pitchGoal = WrapDegrees((short)-spherical.pitch);
@@ -890,6 +909,21 @@ void MoveObjectAlongDirection(short obj, const FixedVector *direction,
                     &aShipPosition[obj]);
 }
 
+/* Function start: 0x4198F0 */
+/* Nothing in the shipped executable calls this routine. */
+void ComputeObjectToPointDelta(short obj, FixedVector *point,
+                               FixedVector *delta)
+{
+    ComputeVectorDelta(&aShipPosition[obj], point, delta);
+}
+
+/* Function start: 0x419920 */
+/* Nothing in the shipped executable calls this routine. */
+void ComputeObjectToObjectDelta(short obj, short other, FixedVector *delta)
+{
+    ComputeVectorDelta(&aShipPosition[obj], &aShipPosition[other], delta);
+}
+
 /* Function start: 0x419950 */
 void NormalizeAndScaleVector(FixedVector *vector, int scale)
 {
@@ -919,36 +953,28 @@ unsigned int IsPointWithinRange(FixedVector *from, FixedVector *to, short range)
 /* Function start: 0x4199C0 */
 short check_for_collision(short obj)
 {
-    FixedVector *objectPosition;
-    FixedVector *position;
-    int objectIndex;
     short other;
     short range;
+    FixedVector *objectPosition;
+    FixedVector *position;
 
-    objectIndex = (int)obj;
-    objectPosition = &aShipPosition[objectIndex];
-    other = 0;
+    objectPosition = &aShipPosition[obj];
     position = aShipPosition;
-    do {
+    for (other = 0; other <= SPACE_LAST_MOVING_OBJECT;
+         other++, position++) {
         if (other != obj &&
-            aeObjectClass[(int)other] >=
-                OBJECT_CLASS_PROJECTILE) {
+            aeObjectClass[other] >= OBJECT_CLASS_PROJECTILE) {
             ComputeVectorDelta(objectPosition, position,
                                &vCollisionDelta);
-            range = (short)(
-                asObjectCollisionRadius[(int)other] +
-                asObjectCollisionRadius[objectIndex]);
-            if (aeObjectClass[(int)other] ==
-                    OBJECT_CLASS_SHIP &&
-                aeObjectClass[objectIndex] == OBJECT_CLASS_SHIP)
+            range = asObjectCollisionRadius[other] +
+                    asObjectCollisionRadius[obj];
+            if (aeObjectClass[other] == OBJECT_CLASS_SHIP &&
+                aeObjectClass[obj] == OBJECT_CLASS_SHIP)
                 range >>= 1;
-            if (IsVectorWithinRange(&vCollisionDelta,
-                                    range) != 0)
+            if (IsVectorWithinRange(&vCollisionDelta, range) != 0)
                 return other;
         }
-        other++;
-        position++;
-    } while (other <= SPACE_LAST_MOVING_OBJECT);
+    }
     return -1;
 }
 
@@ -1069,35 +1095,32 @@ void apply_force_to_object(FixedVector *point, FixedVector *force,
     FixedVector acceleration;
     int rotationalMass;
     int mass;
-    int value;
 
     transform_to_objects_frame(force, &localForce, obj);
     transform_to_objects_frame(point, &localPoint, obj);
+    mass = (unsigned short)asObjectRadarRadius[obj];
     rotationalMass = DivideFixed(
         (unsigned short)asObjectAfterburnerVelocity[obj]
             << 8,
         (int)asObjectCollisionRadius[obj] << 8);
 
-    value = DivideFixed(
+    anObjectRollRotation[obj] += (short)(DivideFixed(
         MultiplyFixed(localPoint.x, localForce.y) -
             MultiplyFixed(localPoint.y, localForce.x),
-        rotationalMass);
-    anObjectRollRotation[obj] += (short)(value >> 8);
-    value = DivideFixed(
+        rotationalMass) >> 8);
+    anObjectYawRotation[obj] += (short)(DivideFixed(
         MultiplyFixed(localPoint.x, localForce.z) -
             MultiplyFixed(localPoint.z, localForce.x),
-        rotationalMass);
-    anObjectYawRotation[obj] += (short)(value >> 8);
-    value = DivideFixed(
+        rotationalMass) >> 8);
+    anObjectPitchRotation[obj] += (short)(DivideFixed(
         MultiplyFixed(localPoint.z, localForce.y) -
             MultiplyFixed(localPoint.y, localForce.z),
-        rotationalMass);
-    anObjectPitchRotation[obj] += (short)(value >> 8);
+        rotationalMass) >> 8);
     ClampTo30(&anObjectPitchRotation[obj]);
     ClampTo30(&anObjectYawRotation[obj]);
     ClampTo30(&anObjectRollRotation[obj]);
 
-    mass = (unsigned short)asObjectRadarRadius[obj] << 8;
+    mass <<= 8;
     acceleration.x = DivideFixed(
         MultiplyFixed(0x16a -
             PlanarMagnitude(localPoint.y, localPoint.z),
@@ -1126,7 +1149,6 @@ void rotational_acceleration(FixedVector *point, FixedVector *force,
     FixedVector localPoint;
     FixedVector localForce;
     int denominator;
-    int value;
 
     transform_to_objects_frame(force, &localForce, obj);
     transform_to_objects_frame(point, &localPoint, obj);
@@ -1137,21 +1159,18 @@ void rotational_acceleration(FixedVector *point, FixedVector *force,
             (int)asObjectCollisionRadius[obj] << 8,
             0x123c));
 
-    value = DivideFixed(
+    anObjectRollRotation[obj] += (short)(DivideFixed(
         MultiplyFixed(localPoint.x, localForce.y) -
             MultiplyFixed(localPoint.y, localForce.x),
-        denominator);
-    anObjectRollRotation[obj] += (short)(value >> 8);
-    value = DivideFixed(
+        denominator) >> 8);
+    anObjectYawRotation[obj] += (short)(DivideFixed(
         MultiplyFixed(localPoint.x, localForce.z) -
             MultiplyFixed(localPoint.z, localForce.x),
-        denominator);
-    anObjectYawRotation[obj] += (short)(value >> 8);
-    value = DivideFixed(
+        denominator) >> 8);
+    anObjectPitchRotation[obj] += (short)(DivideFixed(
         MultiplyFixed(localPoint.z, localForce.y) -
             MultiplyFixed(localPoint.y, localForce.z),
-        denominator);
-    anObjectPitchRotation[obj] += (short)(value >> 8);
+        denominator) >> 8);
     ClampTo30(&anObjectPitchRotation[obj]);
     ClampTo30(&anObjectYawRotation[obj]);
     ClampTo30(&anObjectRollRotation[obj]);

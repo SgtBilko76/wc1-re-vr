@@ -79,7 +79,6 @@ unsigned int LoadOriginFxDrivers(void)
 {
     int memoryThreshold;
     int videoModeMemory;
-    short requestedGraphicsMode;
 
     memoryThreshold = 100000;
     chdir("gamedat");
@@ -145,10 +144,8 @@ unsigned int LoadOriginFxDrivers(void)
     ShutdownVideoHook(
         acGraphicsModeByAnimationSpeed[
             bSlowSceneAnimation]);
-    requestedGraphicsMode =
-        acGraphicsModeByAnimationSpeed[
-            bSlowSceneAnimation];
-    if (GetTargetColourIndex() != requestedGraphicsMode)
+    if (acGraphicsModeByAnimationSpeed[bSlowSceneAnimation] !=
+        GetTargetColourIndex())
         exit_squadron("Requested graphics display mode not available.");
     LoadGamePaletteFile();
     InitializeGameTextContexts();
@@ -210,26 +207,22 @@ unsigned int initialize_direction_view_frame(short yaw, short pitch,
 unsigned int initialize_direction_view_frames(void)
 {
     signed char frame;
-    signed char pitchBands;
-    signed char yawSectors;
+    signed char pitchBand;
+    signed char yawSector;
     short yaw;
     short pitch;
 
     frame = 1;
     pitch = 90;
     initialize_direction_view_frame(0, pitch, 0);
-    pitchBands = 5;
-    do {
+    for (pitchBand = 0; pitchBand < 5; pitchBand++) {
         pitch -= 30;
         yaw = 0;
-        yawSectors = 12;
-        do {
+        for (yawSector = 0; yawSector < 12; yawSector++) {
             initialize_direction_view_frame(yaw, pitch, frame++);
             yaw += 30;
-            yawSectors--;
-        } while (yawSectors != 0);
-        pitchBands--;
-    } while (pitchBands != 0);
+        }
+    }
     initialize_direction_view_frame(0, -90, frame);
     return 0;
 }
@@ -314,8 +307,10 @@ void kill_ace(short ace)
 void ace_greeting(short obj)
 {
     short ace = (short)aiPilotLevel[obj] - 14;
+    int message;
 
-    send_message(obj, (signed char)(ace_status(ace, 4) != 0));
+    message = ace_status(ace, 4) != 0;
+    send_message(obj, message);
     flag_ace(ace, 8);
 }
 
@@ -399,9 +394,9 @@ short normal_speed(short obj)
 /* Function start: 0x422260 */
 short real_crash_time(short obj, short other)
 {
+    short range;
     short collisionRadius;
     short time;
-    short range;
     short elapsed;
     short step;
     int collisionFound;
@@ -775,10 +770,11 @@ unsigned int init_formation_burst(short obj)
     FixedVector center;
     FixedVector *destination;
     short member;
-    short index = 0;
+    short index;
 
     build_squad_list(obj);
     find_squad_center(&center);
+    index = 0;
     member = acFormationMemberList[0];
     while (member != -1) {
         destination = &aShipDestination[member];
@@ -966,38 +962,32 @@ unsigned int close_behind(short range)
 /* Function start: 0x422F80 */
 short scan_for_enemy(short obj, unsigned short range)
 {
-    short target;
     short other;
     short distance;
 
-    target = -1;
+    nTargetShip = -1;
     nTargetRange = 0;
     for (other = 0; other < 10; other++) {
         if (aeObjectClass[other] < OBJECT_CLASS_SHIP ||
             aeSpecialManeuver[other] ==
                 SPECIAL_MANEUVER_UNKNOWN_9)
             continue;
-        nTargetShip = target;
         if (aeShipSide[obj] == aeShipSide[other])
             continue;
         distance = distance_from_point(other, &aShipPosition[obj]);
-        target = nTargetShip;
         if (distance < range &&
-            (target == -1 ||
-             distance < nTargetRange)) {
-            target = other;
+            (nTargetShip == -1 ||
+             nTargetRange > distance)) {
+            nTargetShip = other;
             nTargetRange = distance;
         }
     }
-    if (target != -1) {
-        nTargetShip = target;
+    if (nTargetShip != -1) {
         get_facing_range_from_object(obj, nTargetShip);
         nTargetRange =
             distance_from_object(obj, nTargetShip);
-        target = nTargetShip;
     }
-    nTargetShip = target;
-    return target;
+    return nTargetShip;
 }
 
 /* Function start: 0x423070 */
@@ -1041,6 +1031,36 @@ short nearest_enemy_range(short obj)
     return range;
 }
 
+/* Function start: 0x423160 */
+/* Nothing in the shipped executable calls this function. */
+int FindEnemyAimingWithinRange(short obj, short range)
+{
+    short other;
+
+    for (other = 0; other < 10; other++) {
+        if (aeObjectClass[other] < OBJECT_CLASS_SHIP ||
+            aeSpecialManeuver[other] ==
+                SPECIAL_MANEUVER_UNKNOWN_9 ||
+            aeShipSide[obj] == aeShipSide[other])
+            continue;
+        get_facing_range_from_object(obj, other);
+        if (range > nTargetRange && nTargetFacing > 80) {
+            nTargetShip = other;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Function start: 0x4231E0 */
+/* Nothing in the shipped executable calls this function. */
+unsigned int FireOnAlternateTurns(short obj)
+{
+    if ((abShipTurn[obj] & 1) == 0)
+        fire(obj, acShipTarget[obj]);
+    return 0;
+}
+
 /* Function start: 0x423210 */
 void fire_when_ready(short obj, short aimed)
 {
@@ -1065,7 +1085,7 @@ unsigned int ships_within_range(short obj, short other, short range)
 }
 
 /* Function start: 0x4232B0 */
-int attacker_in_range(short obj, short range)
+int attacker_in_range(short obj, unsigned short range)
 {
     short other;
 
@@ -1076,8 +1096,7 @@ int attacker_in_range(short obj, short range)
             aeShipSide[obj] != aeShipSide[other] &&
             acShipTarget[other] == obj) {
             nTargetRange = distance_from_object(other, obj);
-            if ((unsigned short)nTargetRange <
-                (unsigned short)range) {
+            if (range > nTargetRange) {
                 nTargetShip = other;
                 return 1;
             }
@@ -1185,9 +1204,9 @@ void inherit_leader_mission(short obj)
             aeShipMissionType[leader];
         anShipMissionShip[obj] =
             anShipMissionShip[leader];
-        asShipWingLeader[obj] = -1;
         aShipMissionSpot[obj] =
             aShipMissionSpot[leader];
+        asShipWingLeader[obj] = -1;
     }
 }
 
@@ -1242,19 +1261,17 @@ short skill_rating(short obj)
 /* Function start: 0x4236B0 */
 int skill_check(short obj, short difficulty)
 {
-    short roll;
-
-    roll = RandomBelowOrEqual(MinShort(8, difficulty));
-    return skill_rating(obj) > roll;
+    return RandomBelowOrEqual(MinShort(8, difficulty)) <
+           skill_rating(obj);
 }
 
 /* Function start: 0x4236F0 */
 short find_ships_sphere(short missionShip)
 {
+    short shipIndex;
     MissionNavPoint *navPoint;
     short fallback;
     short navIndex;
-    short shipIndex;
 
     navIndex = 0;
     navPoint = aMissionNavPoints;
@@ -1355,12 +1372,12 @@ unsigned int get_first_follow_point(short obj, FixedVector *point)
 /* Function start: 0x423970 */
 int hostile_sphere(short obj, short navPoint)
 {
-    short index;
     short missionShip;
-    short *ships = aMissionNavPoints[navPoint].missionShips;
+    short index;
 
     for (index = 0; index < 10; index++) {
-        missionShip = ships[index];
+        missionShip =
+            aMissionNavPoints[navPoint].missionShips[index];
         if (missionShip != -1 &&
             aeShipSide[obj] !=
                 aMissionShips[missionShip].side)
@@ -1384,6 +1401,7 @@ int abandoned(short obj, short other)
             explode(-1, obj);
             return 1;
         }
+        return 0;
     }
     return 0;
 }

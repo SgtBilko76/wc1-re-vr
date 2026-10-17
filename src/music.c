@@ -1376,6 +1376,15 @@ void ResetSoundStateForFlight(void)
     nFlightSoundEffectsEnabled = 1;
 }
 
+/* Function start: 0x42EEC0 */
+/* Nothing in the shipped executable calls this routine. */
+void DisableMusicForScene(void)
+{
+    StopMusicUnlessSuppressed();
+    nWaitForMusicEnabled = 0;
+    SetMusicOn(0);
+}
+
 /* Function start: 0x42EEE0 */
 void EnableMusicForScene(void)
 {

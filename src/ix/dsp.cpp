@@ -200,12 +200,12 @@ void ix_dsp_set_voice_count(int voiceCount)
         nStreamsAllocated != 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_DSP_FILE, 176);
         ix_log_printf("can't change voice count while voices are in use");
-    } else {
-        if (voiceCount >= 0)
-            nVoiceCount = voiceCount < 32 ? voiceCount : 32;
-        else
-            nVoiceCount = 0;
+        return;
     }
+    if (voiceCount >= 0)
+        nVoiceCount = voiceCount < 32 ? voiceCount : 32;
+    else
+        nVoiceCount = 0;
 }
 
 /* Function start: 0x00444D18 */
@@ -221,12 +221,12 @@ void ix_dsp_set_stream_count(int streamCount)
         nStreamsAllocated != 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_DSP_FILE, 187);
         ix_log_printf("can't change stream count while voices are in use");
-    } else {
-        if (streamCount >= 0)
-            nStreamCount = streamCount < 2 ? streamCount : 2;
-        else
-            nStreamCount = 0;
+        return;
     }
+    if (streamCount >= 0)
+        nStreamCount = streamCount < 2 ? streamCount : 2;
+    else
+        nStreamCount = 0;
 }
 
 /* Function start: 0x00444DAF */
@@ -255,33 +255,33 @@ void ix_dsp_set_master_volume(unsigned short volume)
 /* Function start: 0x00444E52 */
 void ix_dsp_build_pan_tables(void)
 {
+    short volumeStep;
     short left;
-    short distance;
-    short position;
-    short scale;
+    short panDistance;
+    short panPosition;
     short right;
 
-    scale = 0x3ff;
+    volumeStep = 0x3ff;
     left = 0x7fff;
-    for (position = 0; position < 0x40; position++) {
-        distance = (short)(0x20 - position);
-        right = (short)(distance * scale);
-        anPanTable[position * 2] = left;
-        anPanTable[position * 2 + 1] = right;
-        anPanTable[0x100 + position * 2] =
+    for (panPosition = 0; panPosition < 0x40; panPosition++) {
+        panDistance = (short)(0x20 - panPosition);
+        right = (short)(panDistance * volumeStep);
+        anPanTable[panPosition * 2] = left;
+        anPanTable[panPosition * 2 + 1] = right;
+        anPanTable[0x100 + panPosition * 2] =
             (short)(left * -1);
-        anPanTable[0x100 + position * 2 + 1] =
+        anPanTable[0x100 + panPosition * 2 + 1] =
             (short)(right * -1);
     }
     right = (short)0x8001;
-    for (position = 0x40; position < 0x80; position++) {
-        distance = (short)(0x60 - position);
-        left = (short)(distance * scale);
-        anPanTable[position * 2] = left;
-        anPanTable[position * 2 + 1] = right;
-        anPanTable[0x100 + position * 2] =
+    for (panPosition = 0x40; panPosition < 0x80; panPosition++) {
+        panDistance = (short)(0x60 - panPosition);
+        left = (short)(panDistance * volumeStep);
+        anPanTable[panPosition * 2] = left;
+        anPanTable[panPosition * 2 + 1] = right;
+        anPanTable[0x100 + panPosition * 2] =
             (short)(left * -1);
-        anPanTable[0x100 + position * 2 + 1] =
+        anPanTable[0x100 + panPosition * 2 + 1] =
             (short)(right * -1);
     }
 }

@@ -2280,7 +2280,7 @@ short nWingmanKillCount; /* 0x005a7cb8 */
 short nLastFoundShip; /* 0x005a7cba */
 short asCollisionPartner[10]; /* 0x005a7cc0 */
 int nMemoryConfiguration; /* 0x005a7cd4 */
-unsigned int dwOriginalFreeMemory; /* 0x005a7cd8 */
+volatile unsigned int dwOriginalFreeMemory; /* 0x005a7cd8 */
 unsigned char *pMouseCursorResource; /* 0x005a7cdc */
 int nAvailableGameMemory; /* 0x005a7ce0 */
 int nSceneResourceBudget; /* 0x005a7ce4 */

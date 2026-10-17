@@ -93,7 +93,7 @@ extern "C" DWORD WINAPI DebugOverlayWorkerProc(void *parameter)
     DebugOverlayConsole *console;
 #ifndef SDL_PORT
     /* Retail compares against this stack slot before its first assignment. */
-    DWORD timer;
+    int timer;
     DWORD waitResult;
     HDC deviceContext;
 #endif
@@ -104,8 +104,12 @@ extern "C" DWORD WINAPI DebugOverlayWorkerProc(void *parameter)
         SDL_Delay(10);
     return 0;
 #else
-    while (console->animationState != 2) {
-        if (timeGetTime() > timer + 500) {
+    for (;;) {
+        if (console->animationState == 2) {
+            ExitThread(0);
+            return 0;
+        }
+        if ((int)timeGetTime() > timer + 500) {
             waitResult = WaitForSingleObject(console->mutex, 500);
             if (waitResult == WAIT_FAILED) {
                 ExitThread(1);
@@ -130,8 +134,6 @@ extern "C" DWORD WINAPI DebugOverlayWorkerProc(void *parameter)
             timer = timeGetTime();
         }
     }
-    ExitThread(0);
-    return 0;
 #endif
 }
 
@@ -164,8 +166,8 @@ extern "C" void DebugOverlayPrintf(DebugOverlayConsole *console,
                                      const char *format, ...)
 {
     va_list arguments;
-    int length;
     int index;
+    int length;
     signed char character;
 
     if (format != 0) {
@@ -247,8 +249,8 @@ void DebugOverlayConsole::Scroll(void)
 void DebugOverlayConsole::DrawPendingLines(void)
 {
 #ifndef SDL_PORT
-    HDC deviceContext;
     int row;
+    HDC deviceContext;
 
     deviceContext = GetDC(window);
     row = 0;
@@ -294,9 +296,9 @@ char DebugOverlayConsole::WaitForKey(void)
             while (complete == 0) {
                 if (minimized != 0) {
                     if (GetMessageA(&message, 0, 0, 0) != 0) {
-                        complete = 1;
                         TranslateMessage(&message);
                         DispatchMessageA(&message);
+                        complete = 1;
                     } else {
                         ShutdownGameWindow();
                     }
@@ -320,12 +322,12 @@ char DebugOverlayConsole::WaitForKey(void)
                 } else {
                     if (PeekMessageA(&message, 0, 0, 0, PM_NOREMOVE) != 0) {
                         if (GetMessageA(&message, 0, 0, 0) != 0) {
-                            complete = 0;
                             TranslateMessage(&message);
                             DispatchMessageA(&message);
-                        } else {
                             complete = 0;
+                        } else {
                             ShutdownGameWindow();
+                            complete = 0;
                         }
                     } else {
                         complete = 1;

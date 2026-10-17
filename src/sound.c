@@ -89,13 +89,13 @@ void playWAVE(const char *filename, int looping, int volume)
             active = AllocateActiveSoundEntry();
             active->sound = ix_system_new_sound(wave->sample);
             active->sound->ix_system_sound_set_volume(volume);
-            sound = active->sound;
+            ix_sound_start(active->sound);
         } else {
             sound = ix_system_new_sound(wave->sample);
             sound->ix_sound_set_delete_on_stop(1);
             sound->ix_system_sound_set_volume(volume);
+            ix_sound_start(sound);
         }
-        ix_sound_start(sound);
 
         wave->name = (char *)malloc(strlen(filename) + 1);
         strcpy(wave->name, filename);
@@ -128,8 +128,8 @@ void stop_all_sounds(void)
 void PlaySnowStaticSound(void)
 {
     unsigned char *fileData;
-    long fileSize;
     int file;
+    long fileSize;
 
     if (bIxAudioEnabled != 0) {
         ReleaseFinishedSoundEntries();
@@ -220,8 +220,8 @@ void LoadVolumeSettingsFromRegistry(void)
                                (const BYTE *)&nSfxVolumeSetting,
                                sizeof(nSfxVolumeSetting));
         }
-        RegCloseKey(key);
     }
+    RegCloseKey(key);
 }
 
 /* Function start: 0x42B930 */

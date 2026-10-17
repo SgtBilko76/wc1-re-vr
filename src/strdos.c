@@ -95,6 +95,12 @@ unsigned short __stdcall ConfigureEventManagerPointer(
     return 0;
 }
 
+/* Function start: 0x4355B0 */
+/* Empty in the Win32 build; the hidden kill-board code at 0x4404B0 calls it. */
+void ReleaseEventManagerPointerHook(void)
+{
+}
+
 /* Function start: 0x4355C0 */
 void __stdcall EventManagerHook(void (*callback)(void))
 {

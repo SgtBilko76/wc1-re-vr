@@ -20,20 +20,20 @@
 void ix_thread_handle_file_chunk(IxStreamFile *streamFile)
 {
     unsigned int packagePosition;
-    IxStreamerFileChunk *fileChunk;
     unsigned int chunkIndex;
-    unsigned int chunkCount;
-    IxStreamerFileEntry *entry;
-    unsigned int chunkOffset;
+    IxStreamerFileChunk *fileChunk;
+    unsigned int chunksToScan;
     unsigned int chunkBytes;
-    unsigned char *source;
+    unsigned int innerOffset;
+    IxStreamerFileEntry *packageRecord;
     unsigned int copyBytes;
-    unsigned int middle;
+    unsigned char *readPointer;
+    unsigned int pivot;
     unsigned int firstPacket;
+    unsigned int endPacket;
     unsigned int *packet;
-    unsigned int lastPacket;
 
-    entry = streamFile->entry;
+    packageRecord = streamFile->entry;
     streamFile->serviceTick = dwStreamerThreadTick;
     if ((dwStreamerState & 0x100) != 0) {
         ix_file_seek(streamFile->file, streamFile->position);
@@ -57,27 +57,27 @@ void ix_thread_handle_file_chunk(IxStreamFile *streamFile)
         return;
     }
 
-    chunkIndex = entry->firstChunk;
-    chunkCount = entry->chunkCount;
+    chunkIndex = packageRecord->firstChunk;
+    chunksToScan = packageRecord->chunkCount;
     fileChunk = &pStreamerFileChunks[chunkIndex];
     packagePosition = (unsigned int)ix_file_tell(
         pStreamerPackageFile);
-    while (chunkCount--) {
+    while (chunksToScan--) {
         if (fileChunk->fileOffset <= streamFile->position &&
             fileChunk->fileEnd > streamFile->position) {
             chunkBytes = fileChunk->fileEnd - fileChunk->fileOffset;
             if (chunkIndex != nStreamerFileChunk) {
                 firstPacket = fileChunk->firstPacket;
-                lastPacket = fileChunk->packetCount + firstPacket;
+                endPacket = fileChunk->packetCount + firstPacket;
                 packet = 0;
                 nStreamerFileChunk = chunkIndex;
-                while (lastPacket > firstPacket) {
-                    middle = (lastPacket + firstPacket) >> 1;
-                    packet = &pStreamerPacketOffsets[middle];
+                while (endPacket > firstPacket) {
+                    pivot = (endPacket + firstPacket) >> 1;
+                    packet = &pStreamerPacketOffsets[pivot];
                     if (*packet < packagePosition)
-                        firstPacket = middle + 1;
+                        firstPacket = pivot + 1;
                     else if (*packet > packagePosition)
-                        lastPacket = middle;
+                        endPacket = pivot;
                     else
                         break;
                 }
@@ -108,14 +108,14 @@ void ix_thread_handle_file_chunk(IxStreamFile *streamFile)
                                  fileChunk->packedSize);
                 }
             }
-            source = pStreamerFileBuffer;
+            readPointer = pStreamerFileBuffer;
             copyBytes = streamFile->remaining;
-            chunkOffset = streamFile->position - fileChunk->fileOffset;
-            chunkBytes = chunkBytes - chunkOffset;
-            source += chunkOffset;
+            innerOffset = streamFile->position - fileChunk->fileOffset;
+            chunkBytes = chunkBytes - innerOffset;
+            readPointer += innerOffset;
             if (copyBytes > chunkBytes)
                 copyBytes = chunkBytes;
-            memcpy(streamFile->destination, source, copyBytes);
+            memcpy(streamFile->destination, readPointer, copyBytes);
             streamFile->destination += copyBytes;
             streamFile->position += copyBytes;
             streamFile->remaining = streamFile->remaining - copyBytes;
@@ -148,24 +148,26 @@ unsigned int ix_thread_service_streams(void)
 {
     int bytesUntilRefill;
     IxStreamFile *streamFile;
-    IxStreamFile *selected;
+    IxStreamFile *bestFile;
 
     EnterCriticalSection(&csStreamerFileQueue);
     if (pStreamerReadQueue != 0) {
         streamFile = pStreamerReadQueue;
-        selected = 0;
+        bestFile = 0;
         while (streamFile != 0) {
-            if (selected == 0)
-                selected = streamFile;
-            else if (selected->priority < streamFile->priority)
-                selected = streamFile;
-            else if (streamFile->serviceTick < selected->serviceTick)
-                selected = streamFile;
+            if (bestFile != 0) {
+                if (bestFile->priority < streamFile->priority)
+                    bestFile = streamFile;
+                else if (streamFile->serviceTick < bestFile->serviceTick)
+                    bestFile = streamFile;
+            } else {
+                bestFile = streamFile;
+            }
             streamFile = streamFile->previous;
         }
         LeaveCriticalSection(&csStreamerFileQueue);
-        if (selected != 0)
-            ix_thread_handle_file_chunk(selected);
+        if (bestFile != 0)
+            ix_thread_handle_file_chunk(bestFile);
     } else {
         LeaveCriticalSection(&csStreamerFileQueue);
     }
@@ -205,8 +207,7 @@ void ix_thread_advance_audio_chunk(void)
                     adwStreamerBranchStack[
                         nStreamerBranchStackIndex];
                 return;
-            }
-            if (pStreamerTriggers[triggerIndex].tag == '@') {
+            } else if (pStreamerTriggers[triggerIndex].tag == '@') {
                 dwStreamerState |= 0x800;
             } else if (pStreamerTriggers[triggerIndex].tag ==
                        cStreamerBranchTag) {
@@ -226,73 +227,73 @@ void ix_thread_advance_audio_chunk(void)
 
     if (pStreamerAudioChunks[
             nStreamerAudioChunk].branchCount > 0) {
-        unsigned int branchCount;
-        unsigned int branchIndex;
+        unsigned int branchesToCheck;
+        unsigned int candidateBranch;
+        unsigned int bestBranch;
         unsigned int bestDistance;
-        unsigned int selectedBranch;
-        unsigned int distance;
+        unsigned int candidateDistance;
 
-        branchCount = pStreamerAudioChunks[
+        branchesToCheck = pStreamerAudioChunks[
             nStreamerAudioChunk].branchCount - 1;
-        branchIndex = pStreamerAudioChunks[
+        candidateBranch = pStreamerAudioChunks[
             nStreamerAudioChunk].firstBranch;
         bestDistance =
-            ((pStreamerBranches[branchIndex].intensity -
+            ((pStreamerBranches[candidateBranch].intensity -
               bStreamerIntensity) >> 31 ^
-             (pStreamerBranches[branchIndex].intensity -
+             (pStreamerBranches[candidateBranch].intensity -
               bStreamerIntensity)) -
-            ((pStreamerBranches[branchIndex].intensity -
+            ((pStreamerBranches[candidateBranch].intensity -
               bStreamerIntensity) >> 31);
-        selectedBranch = branchIndex;
-        branchIndex++;
-        while (branchCount--) {
-            distance =
-                ((pStreamerBranches[branchIndex].intensity -
+        bestBranch = candidateBranch;
+        candidateBranch++;
+        while (branchesToCheck--) {
+            candidateDistance =
+                ((pStreamerBranches[candidateBranch].intensity -
                   bStreamerIntensity) >> 31 ^
-                 (pStreamerBranches[branchIndex].intensity -
+                 (pStreamerBranches[candidateBranch].intensity -
                   bStreamerIntensity)) -
-                ((pStreamerBranches[branchIndex].intensity -
+                ((pStreamerBranches[candidateBranch].intensity -
                   bStreamerIntensity) >> 31);
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                selectedBranch = branchIndex;
+            if (candidateDistance < bestDistance) {
+                bestDistance = candidateDistance;
+                bestBranch = candidateBranch;
             }
-            branchIndex++;
+            candidateBranch++;
         }
         nStreamerAudioChunk =
-            pStreamerBranches[selectedBranch].audioChunk;
-    } else {
-        nStreamerAudioChunk++;
-        if (pStreamerHeader->audioChunkCount - 1 <=
-            nStreamerAudioChunk)
-            nStreamerAudioChunk = 0;
+            pStreamerBranches[bestBranch].audioChunk;
+        return;
     }
+    nStreamerAudioChunk++;
+    if (pStreamerHeader->audioChunkCount - 1 <=
+        nStreamerAudioChunk)
+        nStreamerAudioChunk = 0;
 }
 
 /* Function start: 0x004445C9 */   /* source line(s) 394: failed to lock stream buffer */
 void ix_thread_lock_stream_buffer(void)
 {
-    unsigned int remaining;
     unsigned int lockedBytes;
+    unsigned int unreadBytes;
+    unsigned int packageOffset;
     unsigned char *buffer;
-    unsigned int fileOffset;
 
-    remaining = ix_thread_get_audio_chunk_size();
-    if (remaining > 0) {
-        fileOffset = pStreamerAudioChunks[
+    unreadBytes = ix_thread_get_audio_chunk_size();
+    if (unreadBytes > 0) {
+        packageOffset = pStreamerAudioChunks[
             nStreamerAudioChunk].fileOffset;
-        while (remaining > 0) {
-            ix_dsps_lock(0, remaining, &buffer, &lockedBytes);
+        while (unreadBytes > 0) {
+            ix_dsps_lock(0, unreadBytes, &buffer, &lockedBytes);
             if (buffer == 0) {
                 ix_log_printf("Fatal [%s - %d]:\n", IX_THREAD_FILE, 394);
                 ix_log_printf("failed to lock stream buffer");
                 exit(-1);
             }
-            ix_file_seek(pStreamerPackageFile, fileOffset);
+            ix_file_seek(pStreamerPackageFile, packageOffset);
             ix_file_read(pStreamerPackageFile, buffer,
                          lockedBytes);
-            remaining = remaining - lockedBytes;
-            fileOffset += lockedBytes;
+            unreadBytes = unreadBytes - lockedBytes;
+            packageOffset += lockedBytes;
             ix_dsps_unlock(0);
         }
     }
@@ -377,7 +378,5 @@ void IxStreamFile::ix_stream_file_wait(void)
 /* Function start: 0x004448D9 */
 int IxStreamFile::ix_stream_file_is_reading(void)
 {
-    if ((flags & IX_STREAM_FILE_READING) != 0)
-        return 1;
-    return 0;
+    return (flags & IX_STREAM_FILE_READING) != 0;
 }

@@ -128,6 +128,32 @@ void InitializeRoomViewports(void)
     nMenuInputRepeatDelay = 6;
 }
 
+/* Empty hidden routines of the event manager (eventmgr.c and strdos.c). */
+void RefreshMouseCursorHook(void);  /* 0x00435DF0 */
+void ReleaseEventManagerPointerHook(void);  /* 0x004355B0 */
+
+/* Function start: 0x43F8B0 */
+/* No inbound reference is known in the shipped executable; this routine is
+ * believed unreachable. */
+void DrawMouseCursorIntoViewport(Viewport *viewport)
+{
+    if (stMouseCursorState.shapeChanged != 0) {
+        stMouseCursorState.viewport = viewport;
+        RefreshMouseCursorHook();
+        CheckCursor();
+        stMouseCursorState.viewport = &stRoomScreenViewport;
+        return;
+    }
+    CaptureSpriteBackground(
+        viewport,
+        (unsigned char *)stMouseCursorState.reservedAfterFrame,
+        stMouseCursorState.x, stMouseCursorState.y,
+        stMouseCursorState.shape, stMouseCursorState.frame);
+    DrawSpriteDefault(viewport,
+                      stMouseCursorState.x, stMouseCursorState.y,
+                      stMouseCursorState.shape, stMouseCursorState.frame);
+}
+
 /* Function start: 0x43F940 */
 short RecRoom(void)
 {
@@ -545,6 +571,27 @@ short RecRoom(void)
     StopMusicUnlessSuppressed();
     ReleaseMusicTrackHook(30);
     return result;
+}
+
+/* Function start: 0x4404E0 */
+/* No inbound reference is known in the shipped executable; this routine is
+ * believed unreachable. */
+short SuspendMouseCursor(void)
+{
+    LeaveAllocationScope();
+    ReleaseEventManagerPointerHook();
+    return 0;
+}
+
+/* Function start: 0x4404F0 */
+/* No inbound reference is known in the shipped executable; this routine is
+ * believed unreachable. */
+short InitializeEventManagerTiming(void)
+{
+    DAT_0059ab64 = 1;
+    DAT_0059a9f0 = 20;
+    nInputTickScale = 20;
+    return 1;
 }
 
 /* Function start: 0x440510 */

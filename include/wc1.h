@@ -112,16 +112,16 @@ typedef struct Viewport {
  * addresses at 0x0059AB10-0x0059AB2B. */
 #pragma pack(push, 1)
 typedef struct MouseCursorState {
-    volatile short x;                    /* +0x00 */
-    volatile short y;                    /* +0x02 */
+    short x;                             /* +0x00 */
+    short y;                             /* +0x02 */
     unsigned char primaryButton;         /* +0x04 */
     unsigned char secondaryButton;       /* +0x05 */
     unsigned char reserved;              /* +0x06 */
     unsigned short flags;                /* +0x07 */
-    unsigned char * volatile shape;      /* +0x09 */
+    unsigned char *shape;                /* +0x09 */
     unsigned short frame;                /* +0x0D */
     unsigned int reservedAfterFrame;     /* +0x0F */
-    Viewport * volatile viewport;        /* +0x13 */
+    Viewport *viewport;                  /* +0x13 */
     unsigned int reservedAfterViewport;  /* +0x17 */
     unsigned char shapeChanged;          /* +0x1B */
 } MouseCursorState;

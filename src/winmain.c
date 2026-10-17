@@ -34,17 +34,15 @@ short easy2see(short obj)
     short bounds[4];
     short x;
     short y;
-    unsigned char *shape;
 
     x = asObjectScreenX[obj];
     if (x == (short)0x8001)
         return 0;
     x = (short)(x + nViewCenterX);
-    y = asObjectScreenY[obj];
-    shape = apObjectShape[obj];
-    y = (short)(y + nViewCenterY);
-    return GetTransformedShapeBounds(
-        &stSpaceBuffer, x, y, shape,
+    y = (short)(asObjectScreenY[obj] + nViewCenterY);
+    return (short)GetTransformedShapeBounds(
+        &stSpaceBuffer, x, y,
+        apObjectShape[obj],
         asObjectViewFrame[obj],
         asObjectScreenAngle[obj],
         asObjectScreenScale[obj],
@@ -158,31 +156,32 @@ void align(short *value, short quantum)
 /* Function start: 0x4013B0 */
 void init_hazard(short obj, FixedVector position, short moving)
 {
-    enum ObjectType type;
     FixedVector vector;
+    enum ObjectType type;
     short hazardMoves;
     short travelTime;
     short speed;
+    int separation;
 
     hazardMoves = moving;
-    type = OBJECT_TYPE_SPACE_MINE;
     if (pActiveHazardField->type == OBJECT_TYPE_ASTEROID_FIELD)
         type = (enum ObjectType)(OBJECT_TYPE_ASTEROID1 +
                                 RandomBelowOrEqual(5));
+    else
+        type = OBJECT_TYPE_SPACE_MINE;
     set_objects_data(obj, type, -1);
     aShipPosition[obj] = position;
 
     if (type == OBJECT_TYPE_SPACE_MINE) {
         point_at(obj, aShipPosition[0]);
-        speed = 2;
         skew_randomly(obj, 1);
+        speed = 2;
         hazardMoves = 0;
     } else if (hazardMoves != 0) {
-        travelTime = 65;
-        if (cCockpitView < 4)
-            travelTime = acHazardTravelTimeByView[
-                cCockpitView];
-        travelTime = (short)(travelTime + RandomBelowOrEqual(15));
+        travelTime = (short)((cCockpitView < 4
+                                  ? acHazardTravelTimeByView[cCockpitView]
+                                  : 65) +
+                             RandomBelowOrEqual(15));
         if (bIntroSecondaryScene != 0) {
             travelTime = (short)(travelTime -
                                  RandomBelowOrEqual(difficulty()));
@@ -203,9 +202,10 @@ void init_hazard(short obj, FixedVector position, short moving)
         speed = (short)(speed / travelTime);
     } else {
         point_at(obj, pActiveHazardField->center);
-        speed = 0;
         skew_randomly(obj, 1);
-        if (RandomBelow(100) >= 20)
+        if (RandomBelow(100) < 20)
+            speed = 0;
+        else
             speed = asteroid_velocity();
     }
     if (kilrathi_near(0, 16000) != 0)
@@ -214,8 +214,6 @@ void init_hazard(short obj, FixedVector position, short moving)
                      (int)speed << 8, &aShipVelocity[obj]);
 
     if (hazardMoves == 0) {
-        int separation;
-
         if (type == OBJECT_TYPE_ASTEROID_FIELD)
             separation = 1500;
         else
@@ -236,7 +234,7 @@ void init_hazard(short obj, FixedVector position, short moving)
 }
 
 /* Function start: 0x401680 */
-int near_field(const HazardField *field, const FixedVector *point)
+short near_field(const HazardField *field, const FixedVector *point)
 {
     return IsPointWithinRange((FixedVector *)&field->center,
                               (FixedVector *)point,
@@ -305,7 +303,7 @@ short rear_sphere(void)
 }
 
 /* Function start: 0x401890 */
-int ok_hazard_spot(short obj)
+short ok_hazard_spot(short obj)
 {
     int range = 4300;
 
@@ -340,15 +338,14 @@ void extra_hazard(short obj)
 /* Function start: 0x401950 */
 void approach(short obj)
 {
-    FixedVector target;
-    FixedVector thrust;
+    FixedVector offset;
 
-    ScaleFixedVector(&aShipVelocity[0], 20 << 8, &target);
-    AddFixedVectors(&aShipPosition[0], &target, &target);
-    point_at(obj, target);
+    ScaleFixedVector(&aShipVelocity[0], 20 << 8, &offset);
+    AddFixedVectors(&aShipPosition[0], &offset, &offset);
+    point_at(obj, offset);
     ScaleFixedVector(&aShipForwardVector[obj], 20 << 8,
-                     &thrust);
-    AddFixedVectors(&aShipVelocity[obj], &thrust,
+                     &offset);
+    AddFixedVectors(&aShipVelocity[obj], &offset,
                     &aShipVelocity[obj]);
 }
 
@@ -508,7 +505,9 @@ void CheckLauncherAndConfig(void)
 
             if (memcmp(option, "$#SAGA.EXE", 11) == 0)
                 bShowKilrathiSagaCredits = 1;
-            command = option[0] == '-' ? option[1] : option[0];
+            command = option[0];
+            if (command == '-')
+                command = option[1];
             switch (command) {
             case 'b':
                 *(unsigned char *)&bPlayerCollisionResponse = 0;
@@ -569,7 +568,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous,
         exit(0);
     }
 
-    if (waveOutGetNumDevs() == 0)
+    if (waveOutGetNumDevs() < 1)
         bIxAudioEnabled = 0;
     CheckLauncherAndConfig();
     if (!PromptInsertCorrectCd()) {
@@ -645,12 +644,7 @@ void ShutdownGameWindow(void)
     DIBunInstall();
     ClipCursor(0);
     ShowCursor(TRUE);
-    {
-        HANDLE process;
-
-        process = GetCurrentProcess();
-        SetPriorityClass(process, IDLE_PRIORITY_CLASS);
-    }
+    SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
     CloseHandle(hSingleInstanceSemaphore);
 #endif
     exit(0);
@@ -980,7 +974,7 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
 /* Function start: 0x402A20 */
 int __stdcall GetJoystickPosition(unsigned int *x, unsigned int *y,
                                   unsigned int *buttons, short joystick,
-                                  unsigned int fallback)
+                                  unsigned short fallback)
 {
     unsigned int device;
     unsigned int infoIndex;
@@ -1095,18 +1089,15 @@ HDC GetMainWindowDeviceContext(void)
 /* Function start: 0x402BB0 */
 void *AllocateGuardedMemory(unsigned int size)
 {
-    GuardedAllocation *allocation;
-
     if (pGuardedAllocationHead == 0) {
-        allocation =
+        pGuardedAllocationHead =
             malloc(sizeof(GuardedAllocation));
-        pGuardedAllocationHead = allocation;
+        pGuardedAllocationTail = pGuardedAllocationHead;
     } else {
         pGuardedAllocationTail->next =
             malloc(sizeof(GuardedAllocation));
-        allocation = pGuardedAllocationTail->next;
+        pGuardedAllocationTail = pGuardedAllocationTail->next;
     }
-    pGuardedAllocationTail = allocation;
     pGuardedAllocationTail->next = 0;
     pGuardedAllocationTail->size = size;
     pGuardedAllocationTail->block = malloc(size + 0x800);
@@ -1214,15 +1205,15 @@ void FreeGuardedAllocation(void *memory)
 {
     GuardedAllocation *allocation = pGuardedAllocationHead;
     GuardedAllocation *previous = 0;
+    void *block = (unsigned char *)memory - 0x400;
+    int i;
 #ifdef SDL_PORT
     unsigned char *guard;
     unsigned int guardValue;
 #else
     unsigned int *guard;
 #endif
-    void *block = (unsigned char *)memory - 0x400;
     int corrupt;
-    int i;
 
 #ifdef SDL_PORT
     guard = (unsigned char *)block;
@@ -1256,12 +1247,12 @@ void FreeGuardedAllocation(void *memory)
     if (corrupt != 0)
         ReportHeapGuardCorruption(memory, corrupt, 0);
 
-    corrupt = 0;
 #ifdef SDL_PORT
     guard = (unsigned char *)memory + allocation->size;
 #else
     guard = (unsigned int *)((unsigned char *)memory + allocation->size);
 #endif
+    corrupt = 0;
     i = 0x100;
     do {
 #ifdef SDL_PORT

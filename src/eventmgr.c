@@ -10,6 +10,7 @@
 /* Function start: 0x4355F0 */
 void TranslatePolledInputEvent(unsigned short type, unsigned int value)
 {
+    InputDeviceSample *samples;
     unsigned int state;
 
     switch (type) {
@@ -17,43 +18,29 @@ void TranslatePolledInputEvent(unsigned short type, unsigned int value)
         state = (value >> 2) |
                 (bHostSecondaryMouseButton << 1) |
                 bHostPrimaryMouseButton;
-        QueueInputEvent(type,
-                        (short)nHostMouseMessageX,
-                        (short)nHostMouseMessageY,
-                        0,
-                        bHostPrimaryMouseButton,
-                        bHostSecondaryMouseButton,
+        QueueInputEvent(type, nHostMouseMessageX, nHostMouseMessageY, 0,
+                        bHostPrimaryMouseButton, bHostSecondaryMouseButton,
                         state);
         return;
     case 6:
-    {
-        InputDeviceSample *sample =
-            &aInputDeviceSamples[nActiveInputDevice];
-
-        QueueInputEvent(type, (short)sample->x, (short)sample->y,
-                        0, 0, 0, 0);
+        samples = aInputDeviceSamples;
+        QueueInputEvent(type, samples[nActiveInputDevice].x,
+                        samples[nActiveInputDevice].y, 0, 0, 0, 0);
         return;
-    }
     case 13:
-        QueueInputEvent(type,
-                        (short)nHostMouseMessageX,
-                        (short)nHostMouseMessageY,
+        QueueInputEvent(type, nHostMouseMessageX, nHostMouseMessageY,
                         0, 0, 0, 0);
         return;
     }
 }
 
 /* Function start: 0x4356A0 */
-void QueueInputEventAtCursor(unsigned int type, short primaryButton,
+void QueueInputEventAtCursor(unsigned short type, short primaryButton,
                              short secondaryButton)
 {
-    /* Preserve the original 16-bit event ID and sample each volatile axis. */
-    unsigned int eventType = type & 0xffff;
-    int x = stMouseCursorState.x;
-    int y = stMouseCursorState.y;
+    int eventType = type;
 
-    QueueInputEvent((unsigned short)eventType, (unsigned short)x,
-                    (unsigned short)y, 0,
+    QueueInputEvent(eventType, stMouseCursorState.x, stMouseCursorState.y, 0,
                     primaryButton, secondaryButton, 0);
 }
 
@@ -97,8 +84,7 @@ void ReleaseInputEvent(InputEvent *event)
 }
 
 /* Function start: 0x435790 */
-void QueueInputEvent(unsigned short type, unsigned short x,
-                     unsigned short y, unsigned short value,
+void QueueInputEvent(int type, int x, int y, int value,
                      int primaryButton, int secondaryButton,
                      unsigned int timestamp)
 {
@@ -188,23 +174,20 @@ void RetainInputEventsOfType(int type)
 /* Function start: 0x435940 */
 void RemoveInputEvent(InputEvent *event)
 {
-    InputEvent *previous = event->previous;
-    InputEvent *next = event->next;
-
-    if (previous != 0) {
-        if (next != 0) {
-            previous->next = next;
+    if (event->previous != 0) {
+        if (event->next != 0) {
+            event->previous->next = event->next;
             event->next->previous = event->previous;
             ReleaseInputEvent(event);
             return;
         }
-        previous->next = 0;
+        event->previous->next = 0;
         pInputEventTail = event->previous;
         ReleaseInputEvent(event);
         return;
     }
-    if (next != 0) {
-        pInputEventHead = next;
+    if (event->next != 0) {
+        pInputEventHead = event->next;
         event->next->previous = 0;
         ReleaseInputEvent(event);
         return;
@@ -217,24 +200,31 @@ void RemoveInputEvent(InputEvent *event)
 /* Function start: 0x4359C0 */
 short __stdcall GetNextInputEvent(InputEventState *state)
 {
-    short *eventX;
+    int eventX;
     int eventY;
+    short limit;
     int type;
 
     type = 0;
     if (pInputEventHead != 0) {
-        eventX = &pInputEventHead->x;
-        eventY = (int)pInputEventHead->y;
-        if ((int)stMouseCursorState.viewport->left > (int)*eventX)
-            *eventX = stMouseCursorState.viewport->left;
-        else if ((int)stMouseCursorState.viewport->right < (int)*eventX)
-            *eventX = stMouseCursorState.viewport->right;
-        if ((int)stMouseCursorState.viewport->top > eventY)
-            pInputEventHead->y = stMouseCursorState.viewport->top;
-        else if ((int)stMouseCursorState.viewport->bottom <
-                 eventY)
-            pInputEventHead->y =
-                stMouseCursorState.viewport->bottom;
+        eventX = pInputEventHead->x;
+        eventY = pInputEventHead->y;
+        limit = stMouseCursorState.viewport->left;
+        if (limit > eventX)
+            pInputEventHead->x = limit;
+        else {
+            limit = stMouseCursorState.viewport->right;
+            if (limit < eventX)
+                pInputEventHead->x = limit;
+        }
+        limit = stMouseCursorState.viewport->top;
+        if (limit > eventY)
+            pInputEventHead->y = limit;
+        else {
+            limit = stMouseCursorState.viewport->bottom;
+            if (limit < eventY)
+                pInputEventHead->y = limit;
+        }
 
         state->modifiers =
             (short)pInputEventHead->modifiers;
@@ -262,45 +252,45 @@ short __stdcall GetNextInputEvent(InputEventState *state)
                 (int)pInputEventHead->primaryButton;
             break;
         case 3:
-            type = 3;
             state->value = pInputEventHead->value;
             state->x = stMouseCursorState.x;
             state->y = stMouseCursorState.y;
+            type = 3;
             break;
         case 4:
-            type = 4;
             state->x = pInputEventHead->value;
             state->x = stMouseCursorState.x;
             state->y = stMouseCursorState.y;
+            type = 4;
             break;
         case 5:
-            type = 5;
             state->x = pInputEventHead->value;
+            type = 5;
             break;
         case 6:
-            type = 6;
             state->x = pInputEventHead->x;
             state->y = pInputEventHead->y;
+            type = 6;
             break;
         case 7:
-            type = 7;
             state->x = pInputEventHead->x;
             state->y = pInputEventHead->y;
+            type = 7;
             break;
         case 8:
-            type = 8;
             state->x = pInputEventHead->x;
             state->y = pInputEventHead->y;
+            type = 8;
             break;
         case 9:
-            type = 9;
             state->x = pInputEventHead->x;
             state->y = pInputEventHead->y;
+            type = 9;
             break;
         case 10:
-            type = 10;
             state->x = pInputEventHead->x;
             state->y = pInputEventHead->y;
+            type = 10;
             break;
         case 13:
             stMouseCursorState.x = pInputEventHead->x;
@@ -377,6 +367,12 @@ short __stdcall ResetAllocationDepth(int x, int y)
 
 /* Function start: 0x435DE0 */
 void CheckCursor(void)
+{
+}
+
+/* Function start: 0x435DF0 */
+/* Empty in the Win32 build; the hidden kill-board code at 0x43F8B0 calls it. */
+void RefreshMouseCursorHook(void)
 {
 }
 
@@ -518,8 +514,8 @@ void __stdcall SetMouseCursorShape(unsigned char *shape, short frame)
                                 (short)stMouseCursorState.frame);
         pDrawnMouseCursorShape = 0;
     }
-    stMouseCursorState.frame = frame;
     stMouseCursorState.shape = shape;
+    stMouseCursorState.frame = frame;
 }
 
 /* Function start: 0x436160 */
@@ -1083,19 +1079,19 @@ unsigned int shrink_vector(FixedVector *vector)
 unsigned int shrink(int *component)
 {
     int value;
-    unsigned short fraction;
+    unsigned int fraction;
     unsigned int integerPart;
     short signedIntegerPart;
 
     value = *component / 2;
     *component = value;
-    fraction = (unsigned short)value;
+    fraction = value;
     integerPart = (unsigned int)value >> 16;
     signedIntegerPart = (short)integerPart;
     if (signedIntegerPart == 0)
-        return fraction > 0x0f00;
+        return (unsigned short)fraction > 0x0f00;
     if (signedIntegerPart == -1)
-        return fraction < 0xf100;
+        return (unsigned short)fraction < 0xf100;
     if (signedIntegerPart != 0)
         integerPart = 1;
     return integerPart;

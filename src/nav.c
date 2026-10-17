@@ -80,7 +80,7 @@ char szNavViewportName[8] = "VSCREEN"; /* 0x00468894 */
 char szBriefingNavMapTitle[20] = "Briefing Nav Map"; /* 0x0046889c */
 char szConfedNavScan[16] = "ConFed Nav Scan"; /* 0x004688b0 */
 volatile short nNearHeapActive = 0; /* 0x004688c0 */
-volatile short nNearHeapMaxDescriptors = 0x80; /* 0x004688c4 */
+short nNearHeapMaxDescriptors = 0x80; /* 0x004688c4 */
 volatile int nNearHeapRelocationBytes = 0; /* 0x004688c8 */
 int bOfficeVisitPending = 0; /* 0x004688cc */
 int bPromotionPending = 0; /* 0x004688d0 */
@@ -302,6 +302,21 @@ short IsPointInNavMapLabel(short labelIndex, short x, short y)
         y <= aNavMapLabels[labelIndex].y + 6)
         return 1;
     return 0;
+}
+
+/* Function start: 0x40D500 */
+/* Nothing in the shipped executable calls this. Returns the index of the
+   last-placed nav map label containing the point, or -1. */
+short FindNavMapLabelAtPoint(short x, short y)
+{
+    short label;
+
+    label = nNavMapLabelCount;
+    while (--label > -1) {
+        if (IsPointInNavMapLabel(label, x, y))
+            break;
+    }
+    return label;
 }
 
 /* Function start: 0x40D540 */
@@ -1052,43 +1067,59 @@ unsigned short InitializeNearHeap(void)
         initialSize = (short)GetNavRangeSentinel();
         pNearHeapAllocation = 0;
         nNearHeapSize = initialSize;
-        if (nNearHeapMaxDescriptors * 8 <
-            nNearHeapSize) {
+        if (nNearHeapMaxDescriptors * 8 < nNearHeapSize)
             pNearHeapAllocation =
                 AllocateTaggedMemory(nNearHeapSize, 0);
-            if (pNearHeapAllocation != 0) {
-                nNearHeapActive++;
-                nNearHeapBase =
-                    DosFarPtrToNear(pNearHeapAllocation);
-                if (*(unsigned short *)0x00400013 == 0x270) {
-                    nNearHeapRelocationBytes =
-                        0x9c000 - nNearHeapSize -
-                        nNearHeapBase;
-                    adjustedSize =
-                        0x98000 - nNearHeapRelocationBytes;
-                    adjustedSize -= nNearHeapBase;
-                    nNearHeapSize = adjustedSize;
-                    if (nNearHeapMaxDescriptors * 8 <
-                        nNearHeapSize) {
-                        DosMemcpy(
-                            DosNearPtrToFar(
-                                nNearHeapBase +
-                                nNearHeapSize),
-                            DosNearPtrToFar(
-                                0x9c000 -
-                                nNearHeapRelocationBytes),
-                            nNearHeapRelocationBytes);
-                    } else {
-                        FreeIfNotNull(pNearHeapAllocation);
-                        nNearHeapActive = 0;
-                    }
+        if (pNearHeapAllocation != 0) {
+            nNearHeapActive++;
+            nNearHeapBase =
+                DosFarPtrToNear(pNearHeapAllocation);
+            if (*(unsigned short *)0x00400013 == 0x270) {
+                adjustedSize = 0x9c000 - nNearHeapSize;
+                adjustedSize -= nNearHeapBase;
+                nNearHeapRelocationBytes = adjustedSize;
+                adjustedSize =
+                    0x98000 - nNearHeapRelocationBytes;
+                adjustedSize -= nNearHeapBase;
+                nNearHeapSize = adjustedSize;
+                if (nNearHeapMaxDescriptors * 8 <
+                    nNearHeapSize) {
+                    DosMemcpy(
+                        DosNearPtrToFar(
+                            nNearHeapBase +
+                            nNearHeapSize),
+                        DosNearPtrToFar(
+                            0x9c000 -
+                            nNearHeapRelocationBytes),
+                        nNearHeapRelocationBytes);
+                } else {
+                    FreeIfNotNull(pNearHeapAllocation);
+                    nNearHeapActive = 0;
                 }
-                if (nNearHeapActive != 0)
-                    PurgeNearHeapBlocks(0x10);
             }
+            if (nNearHeapActive != 0)
+                PurgeNearHeapBlocks(0x10);
         }
     }
     return nNearHeapActive;
+}
+
+/* Function start: 0x40EB10 */
+/* Nothing in the shipped executable calls this. It undoes
+   InitializeNearHeap: copies the relocated bytes back below 0x9C000 and
+   frees the heap's allocation. */
+void ShutdownNearHeap(void)
+{
+    int relocationBytes;
+
+    relocationBytes = nNearHeapRelocationBytes;
+    if (relocationBytes != 0)
+        DosMemcpy(DosNearPtrToFar(0x9c000 - relocationBytes),
+                  DosNearPtrToFar(nNearHeapBase + nNearHeapSize),
+                  relocationBytes);
+    if (nNearHeapActive != 0)
+        FreeIfNotNull(pNearHeapAllocation);
+    nNearHeapActive = 0;
 }
 
 /* Function start: 0x40EB70 */
@@ -1275,6 +1306,61 @@ void *AllocateNearHeapBlockByFlags(int size, unsigned short flags)
             allocationAddress = (allocationAddress + 0xf) & 0xfffffff0;
     }
     return DosNearPtrToFar(allocationAddress);
+}
+
+/* Function start: 0x40EF00 */
+/* Nothing in the shipped executable calls this. Releases the near heap
+   block that contains the given pointer. */
+void FreeNearHeapBlock(void *pointer)
+{
+    NearHeapBlock *block;
+    int address;
+    int descriptorAddress;
+
+    address = DosFarPtrToNear(pointer);
+    descriptorAddress =
+        nNearHeapBase + nNearHeapSize - 8;
+    for (; descriptorAddress >= nNearHeapFirstDescriptor;
+         descriptorAddress -= 8) {
+        block = DosNearPtrToFar(descriptorAddress);
+        if (block->address <= address &&
+            block->address + (int)(block->sizeAndFlags & 0xfffff) >
+                address) {
+            ReleaseNearHeapBlock(descriptorAddress);
+            break;
+        }
+    }
+}
+
+/* Function start: 0x40EF60 */
+/* Nothing in the shipped executable calls this. Returns the usable size of
+   the near heap block that contains the given pointer, or 0. */
+int GetNearHeapBlockSize(void *pointer)
+{
+    NearHeapBlock *block;
+    int address;
+    int descriptorAddress;
+    int size;
+
+    size = 0;
+    address = DosFarPtrToNear(pointer);
+    descriptorAddress =
+        nNearHeapBase + nNearHeapSize - 8;
+    for (; descriptorAddress >= nNearHeapFirstDescriptor;
+         descriptorAddress -= 8) {
+        block = DosNearPtrToFar(descriptorAddress);
+        if (address >= block->address &&
+            block->address + (int)(block->sizeAndFlags & 0xfffff) >
+                address) {
+            size = block->sizeAndFlags & 0xfffff;
+            if ((block->sizeAndFlags & 0x10000000) != 0)
+                size--;
+            else if ((block->sizeAndFlags & 0x20000000) != 0)
+                size -= 0xf;
+            break;
+        }
+    }
+    return size;
 }
 
 /* Function start: 0x40EFE0 */

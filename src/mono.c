@@ -112,15 +112,14 @@ int DrawCenteredScaledIntroText(const char *text, short centreX,
                                 short baselineY, short scale)
 {
     short bounds[4];
-    short x = centreX;
+    short x;
     short y;
-    short drawScale = scale;
-    int scaled = drawScale;
+    char c;
 
-    x = (short)(x - MeasureScaledIntroTextWidth(text, drawScale) / 2);
-    y = (short)(baselineY - (scaled * 16 >> 9));
+    x = (short)(centreX - MeasureScaledIntroTextWidth(text, scale) / 2);
+    y = (short)(baselineY - ((int)scale * 16 >> 9));
     for (;;) {
-        char c = *text++;
+        c = *text++;
 
         if (c == 0)
             break;
@@ -130,14 +129,14 @@ int DrawCenteredScaledIntroText(const char *text, short centreX,
 
             DrawSpriteScaled(&stSpaceBuffer, x, y,
                              pIntroFont, (short)c, 0,
-                             drawScale, 0);
+                             scale, 0);
             GetTransformedShapeBounds(&stSpaceBuffer, 0, 0,
                                       pIntroFont, (short)c, 0,
-                                      drawScale, 0, bounds);
+                                      scale, 0, bounds);
             x = (short)(x + bounds[2] + 1);
-            x = (short)(x + (scaled * 2 >> 8));
+            x = (short)(x + ((int)scale * 2 >> 8));
         } else if (c == ' ') {
-            x = (short)(x + (scaled * 6 >> 8));
+            x = (short)(x + ((int)scale * 6 >> 8));
         } else if (c == '\n') {
             break;
         }
@@ -188,30 +187,21 @@ int print_subtitle(Viewport *viewport, short colour, const char *text)
     short y;
     char c;
 
-    (void)colour;
     lines = 1;
     scan = text;
-    c = *scan;
-    scan++;
-    while (c != 0) {
+    while ((c = *scan++) != 0) {
         if (c == '\n')
             lines++;
-        c = *scan;
-        scan++;
     }
     lines = (short)(lines * 16);
     y = (short)((128 - lines) / 2);
     x = (short)((320 - GetLineLength(text)) >> 1);
-    for (;;) {
-        c = *text;
-        text++;
-        if (c == 0)
-            break;
+    scan = text;
+    while ((c = *scan++) != 0) {
         if (c >= 'A' && c <= 'z') {
-            c = (char)(c - 'A');
-            DrawSpriteDefault(viewport, x, y, pIntroFont, c);
+            DrawSpriteDefault(viewport, x, y, pIntroFont, (char)(c - 'A'));
             x = x + GetShapeFrameExtent(
-                0, 0, pIntroFont, c, 2);
+                0, 0, pIntroFont, (char)(c - 'A'), 2);
             x = x + 2;
         } else if (c == ' ') {
             x = x + 6;
@@ -227,7 +217,7 @@ int print_subtitle(Viewport *viewport, short colour, const char *text)
             x = x + 2;
         } else if (c == '\n') {
             y = y + 16;
-            x = (short)((320 - GetLineLength(text)) >> 1);
+            x = (short)((320 - GetLineLength(scan)) >> 1);
         }
     }
     if (viewport->pixels == stScreen.pixels)
@@ -241,8 +231,6 @@ int advance_canned_sequence(short obj)
     const short *command;
 
     command = apCannedSequence[obj];
-    if (command == 0)
-        return 0;
     asCannedCommand[obj] = *command++;
     switch (asCannedCommand[obj]) {
     case 0:
@@ -272,9 +260,6 @@ int advance_canned_sequence(short obj)
 /* Function start: 0x403B70 */
 unsigned int update_canned_sequence(short obj)
 {
-    int velocity;
-    int requested;
-
     switch (asCannedCommand[obj]) {
     case 0:
         asActionCount[obj]--;
@@ -285,10 +270,11 @@ unsigned int update_canned_sequence(short obj)
         if (anYawGoal[obj] == 0 &&
             anPitchGoal[obj] == 0 &&
             anRollGoal[obj] == 0) {
-            requested = anShipSpeed[obj];
-            velocity = Vector_magnitude(
-                &aShipVelocity[0]);
-            if ((velocity > requested - 0x400) < requested + 0x400)
+            /* A chained comparison: the speed window test compares the
+               0/1 result of the first test with the upper bound. */
+            if ((anShipSpeed[obj] - 0x400 <
+                 Vector_magnitude(&aShipVelocity[0])) <
+                anShipSpeed[obj] + 0x400)
                 advance_canned_sequence(obj);
         }
         break;
@@ -350,6 +336,18 @@ void MonoDebug_remove(void)
     if (bMonoDebugInstalled != 0) {
         CloseHandle(hMonoDebugDevice);
         bMonoDebugInstalled = 0;
+    }
+}
+
+/* Function start: 0x403D80 */
+/* Nothing in the shipped executable calls this. It sends control code 3 to
+   MONODEBG.VXD (install uses 1 and 2, print uses 9); what code 3 asks the
+   driver to do is unknown. */
+void SendMonoDebugCommand3(void)
+{
+    if (bMonoDebugInstalled != 0) {
+        if (!DeviceIoControl(hMonoDebugDevice, 3, 0, 0, 0, 0, 0, 0))
+            MonoDebug_remove();
     }
 }
 

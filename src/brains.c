@@ -294,10 +294,7 @@ void Mturn_n_spin(short ship, short target)
         veer_random(ship, 90);
         break;
     case 1:
-        ++asShipCount[ship];
-        advanceSequence = 1;
-        if (asShipCount[ship] <= 2)
-            advanceSequence = 0;
+        advanceSequence = ++asShipCount[ship] > 2;
         break;
     case 2:
         advanceSequence = nTargetFacing <= 80;
@@ -1777,8 +1774,6 @@ unsigned int landing(signed char damageLevel)
 unsigned int funeral_player(void)
 {
     short index;
-    short previousY;
-    unsigned char *shape;
 
     nFrameSkipCounter--;
     if (nFrameSkipCounter < 1) {
@@ -1810,22 +1805,18 @@ unsigned int funeral_player(void)
                           pConversationSpecialShape,
                           nFuneralRifleFrame);
 
-        index = 0;
         nFuneralParticleScale =
             (short)(0x1000L / nFuneralParticleDistance);
-        shape = pConversationSpecialShape;
-        for (; index < 7; index++) {
+        for (index = 0; index < 7; index++) {
             if (aFuneralParticles[index].x != 0) {
                 DrawSpriteScaled(
                     &stSceneBuffer,
                     aFuneralParticles[index].x,
                     aFuneralParticles[index].y,
-                    shape, 9, 0, nFuneralParticleScale, 0);
-                shape = pConversationSpecialShape;
+                    pConversationSpecialShape, 9, 0,
+                    nFuneralParticleScale, 0);
                 aFuneralParticles[index].x -= 6;
-                previousY = aFuneralParticles[index].y;
-                aFuneralParticles[index].y =
-                    (short)(previousY - 6);
+                aFuneralParticles[index].y -= 6;
                 if (stSceneBuffer.top >
                     aFuneralParticles[index].y)
                     aFuneralParticles[index].x = 0;
@@ -1835,7 +1826,7 @@ unsigned int funeral_player(void)
         DrawSpriteDefault(&stSceneBuffer,
                           nFuneralForegroundX,
                           nFuneralForegroundY,
-                          shape, 7);
+                          pConversationSpecialShape, 7);
         DrawSpriteDefault(&stSceneBuffer,
                           (short)(nFuneralForegroundX + 180),
                           nFuneralForegroundY,
@@ -1877,10 +1868,10 @@ unsigned int funeral_wingman(char *text, short duration)
 unsigned int funeral_sequence(int playerFuneral)
 {
     int *packet;
-    unsigned char *sceneData;
-    unsigned char *textData;
     unsigned char *followupSceneData;
     unsigned char *followupTextData;
+    unsigned char *sceneData;
+    unsigned char *textData;
     short frame;
     short volley;
     short particle;
@@ -1899,16 +1890,16 @@ unsigned int funeral_sequence(int playerFuneral)
             asFuneralSceneBySeries[
                 stCampaignState.currentSeries] * 2);
         followupSceneData = (unsigned char *)packet + packet[0];
+        followupTextData = (unsigned char *)packet + packet[1];
         sceneData = (unsigned char *)packet + packet[scenePair + 2];
         textData = (unsigned char *)packet + packet[scenePair + 3];
-        followupTextData = (unsigned char *)packet + packet[1];
         pIntroFont =
             FetchDiskPacketRetrying(9, 1, 0);
     } else {
         followupSceneData = (unsigned char *)packet + packet[10];
+        followupTextData = (unsigned char *)packet + packet[11];
         sceneData = (unsigned char *)packet + packet[12];
         textData = (unsigned char *)packet + packet[13];
-        followupTextData = (unsigned char *)packet + packet[11];
     }
 
     InitializeConversationViewport();
@@ -1950,12 +1941,11 @@ unsigned int funeral_sequence(int playerFuneral)
         }
 
         if (bEscapePressed != 1) {
-            frame = 0;
             FormatTextBufferFromStart(
                 szFuneralCompanyCommand, 0, 160,
                 cBlueColour);
             nFrameSkipCounter = 1;
-            for (; frame < 15; frame++) {
+            for (frame = 0; frame < 15; frame++) {
                 PumpWindowMessages();
                 funeral_player();
                 if (bEscapePressed == 1)
@@ -1993,12 +1983,11 @@ unsigned int funeral_sequence(int playerFuneral)
                         ClearViewport(
                             &stConversationTextViewport,
                             cBlackColour);
-                        frame = 10;
                         nFrameSkipCounter = 1;
                         FormatTextBufferFromStart(
                             szFuneralPrepareArmsCommand,
                             0, 160);
-                        for (; frame != 0; frame--) {
+                        for (frame = 10; frame != 0; frame--) {
                             PumpWindowMessages();
                             funeral_player();
                         }
@@ -2285,42 +2274,39 @@ unsigned int RunAnimationDemoLoop(signed char animation)
 /* Function start: 0x409760 */
 void cruise_home(short obj)
 {
-    FixedVector *destination;
     short range;
     short objective;
 
-    if (abandoned(obj, 0) != 0 || (abShipTurn[obj] & 7) != 5)
+    if (abandoned(obj, 0) != 0)
         return;
 
-    if (obj == nYourWingman &&
-        distance_from_object(obj, 0) > 16000)
-        remove_object(obj);
+    if ((abShipTurn[obj] & 7) == 5) {
+        if (nYourWingman == obj &&
+            distance_from_object(obj, 0) > 16000)
+            remove_object(obj);
 
-    if (aeObjectClass[obj] == OBJECT_CLASS_CAPITAL_SHIP)
-        approach_cruise_speed(obj);
-    else if (normal_speed(obj) != 0)
-        fire_afterburner(obj, 10);
+        if (aeObjectClass[obj] == OBJECT_CLASS_CAPITAL_SHIP)
+            approach_cruise_speed(obj);
+        else if (normal_speed(obj) != 0)
+            fire_afterburner(obj, 10);
 
-    destination = &aShipDestination[obj];
-    if (no_goal(obj) != 0)
-        point_ship_at_point(obj, destination);
-    range = distance_from_point(obj, destination);
+        if (no_goal(obj) != 0)
+            point_ship_at_point(obj, &aShipDestination[obj]);
+        range = distance_from_point(obj, &aShipDestination[obj]);
 
-    if (equ_vector(destination, &aShipMissionSpot[obj])) {
-        if (range < 5000) {
-            reset_tactic(obj, TACTIC_HEAD_HOME);
-            set_special(obj, SPECIAL_MANEUVER_KILL_ENGINES);
-            zero_vector(&aShipVelocity[obj]);
+        if (equ_vector(&aShipDestination[obj],
+                       &aShipMissionSpot[obj])) {
+            if (range < 5000) {
+                reset_tactic(obj, TACTIC_HEAD_HOME);
+                set_special(obj, SPECIAL_MANEUVER_KILL_ENGINES);
+                zero_vector(&aShipVelocity[obj]);
+            }
+        } else if (range < 1500) {
+            objective = abFlightPath[abShipNavPointIndex[obj]];
+            if (aMissionObjectives[objective].type != 1)
+                flag_objective(objective, 1);
+            get_follow_point(obj, &aShipDestination[obj]);
         }
-        return;
-    }
-
-    if (range < 1500) {
-        objective = abFlightPath[
-            abShipNavPointIndex[obj]];
-        if (aMissionObjectives[objective].type != 1)
-            flag_objective(objective, 1);
-        get_follow_point(obj, destination);
     }
 }
 
@@ -2406,7 +2392,6 @@ short check_engage_target(short obj)
 short check_destroy_target(short obj)
 {
     short destroyTarget = find_ship_index(anShipMissionShip[obj]);
-    int determination;
 
     if (destroyTarget == -1) {
         acShipTarget[obj] = check_engage_target(obj);
@@ -2414,20 +2399,16 @@ short check_destroy_target(short obj)
                    OBJECT_CLASS_FUTURION ||
                gone_ship(anShipMissionShip[obj]) != 0) {
         check_engage_target(obj);
+    } else if (evaluate_damage(obj) > 70 - MaxShort(
+                   0, MinShort(4, (short)aiPilotLevel[obj])) * 15) {
+        acShipTarget[obj] = destroyTarget;
+        if (aeShipSide[destroyTarget] ==
+            aeShipSide[obj])
+            acShipTarget[obj] = -1;
+    } else if (target_valid(obj) != 0 && RandomBelow(100) > 3) {
+        check_engage_target(obj);
     } else {
-        determination = 70;
-        determination -= MaxShort(
-            0, MinShort(4, (short)aiPilotLevel[obj])) * 15;
-        if (evaluate_damage(obj) > determination) {
-            acShipTarget[obj] = destroyTarget;
-            if (aeShipSide[destroyTarget] ==
-                aeShipSide[obj])
-                acShipTarget[obj] = -1;
-        } else if (target_valid(obj) != 0 && RandomBelow(100) > 3) {
-            check_engage_target(obj);
-        } else {
-            acShipTarget[obj] = destroyTarget;
-        }
+        acShipTarget[obj] = destroyTarget;
     }
     return acShipTarget[obj];
 }
@@ -2727,40 +2708,38 @@ void imperial_wingleader(short obj)
 /* Function start: 0x40A410 */
 void cruise_to_destination(short obj)
 {
-    FixedVector *destination;
     short range;
 
     if (abandoned(obj, 0) != 0)
         return;
+
     if ((abShipTurn[obj] & 7) == 6)
         acShipTarget[obj] = scan_for_enemy(obj, 15000);
 
     if (acShipTarget[obj] == -1) {
         approach_cruise_speed(obj);
     } else {
-        get_facing_range_from_object(obj,
-            acShipTarget[obj]);
-        if (nFacingToTarget <= 65)
-            approach_full_speed(obj);
-        else
+        get_facing_range_from_object(obj, acShipTarget[obj]);
+        if (nFacingToTarget > 65)
             approach_half_speed(obj);
+        else
+            approach_full_speed(obj);
     }
 
-    if ((abShipTurn[obj] & 7) != 2)
-        return;
-    destination = &aShipDestination[obj];
-    if (no_goal(obj) != 0)
-        point_ship_at_point(obj, destination);
-    range = distance_from_point(obj, destination);
-    if (range < 1500) {
-        if (aeShipSide[obj] == SIDE_IMPERIAL)
-            flag_reached((short)abFlightPath[
-                abShipNavPointIndex[obj]], 1);
-        if (equ_vector(destination, &aShipMissionSpot[obj])) {
-            reset_tactic(obj, TACTIC_SIT_STILL);
-            set_special(obj, SPECIAL_MANEUVER_KILL_ENGINES);
-        } else {
-            get_follow_point(obj, destination);
+    if ((abShipTurn[obj] & 7) == 2) {
+        if (no_goal(obj) != 0)
+            point_ship_at_point(obj, &aShipDestination[obj]);
+        range = distance_from_point(obj, &aShipDestination[obj]);
+        if (range < 1500) {
+            if (aeShipSide[obj] == SIDE_IMPERIAL)
+                flag_reached(abFlightPath[abShipNavPointIndex[obj]], 1);
+            if (equ_vector(&aShipDestination[obj],
+                           &aShipMissionSpot[obj])) {
+                reset_tactic(obj, TACTIC_SIT_STILL);
+                set_special(obj, SPECIAL_MANEUVER_KILL_ENGINES);
+            } else {
+                get_follow_point(obj, &aShipDestination[obj]);
+            }
         }
     }
 }
@@ -2768,28 +2747,19 @@ void cruise_to_destination(short obj)
 /* Function start: 0x40A540 */
 void prepare_for_jump(short obj)
 {
-    short count;
-    short delay;
-
     if (anShipSpeed[obj] != 0) {
         set_special(obj, SPECIAL_MANEUVER_STOP_DRIFT);
-        return;
-    }
-    count = ++asShipCount[obj];
-    delay = aeShipSide[obj] == SIDE_KILRATHI ? 250 : 25;
-    if (count <= delay)
-        return;
-
-    get_facing_range_from_object(obj, 0);
-    if (nFacingToTarget > 90 && no_goal(obj) != 0) {
-        anYawGoal[obj] = signed_random(30);
-        return;
-    }
-    delay = aeShipSide[obj] == SIDE_KILRATHI ? 270 : 45;
-    if (asShipCount[obj] > delay ||
-        (nTargetFacing > 80 && nTargetRange < 6000)) {
-        reset_tactic(obj, TACTIC_WARP_OUT);
-        fire_afterburner(obj, 10);
+    } else if (++asShipCount[obj] >
+               (aeShipSide[obj] == SIDE_KILRATHI ? 250 : 25)) {
+        get_facing_range_from_object(obj, 0);
+        if (nFacingToTarget > 90 && no_goal(obj) != 0) {
+            anYawGoal[obj] = signed_random(30);
+        } else if (asShipCount[obj] >
+                       (aeShipSide[obj] == SIDE_KILRATHI ? 270 : 45) ||
+                   (nTargetFacing > 80 && nTargetRange < 6000)) {
+            reset_tactic(obj, TACTIC_WARP_OUT);
+            fire_afterburner(obj, 10);
+        }
     }
 }
 
@@ -2920,16 +2890,13 @@ void approach_and_engage(short obj, short goal)
     unsigned short range = (unsigned short)distance_from_object(obj, goal);
     unsigned short possibleRange;
     short possibleTarget;
-    int determination;
 
-    if (aeObjectClass[goal] != OBJECT_CLASS_FUTURION) {
-        determination = 70;
-        determination -= MaxShort(
-            0, MinShort(4, (short)aiPilotLevel[obj])) * 15;
-        if (evaluate_damage(obj) > determination && range > 5000) {
-            streak_toward(obj, goal, (short)range);
-            return;
-        }
+    if (aeObjectClass[goal] != OBJECT_CLASS_FUTURION &&
+        evaluate_damage(obj) > 70 - MaxShort(
+            0, MinShort(4, (short)aiPilotLevel[obj])) * 15 &&
+        range > 5000) {
+        streak_toward(obj, goal, (short)range);
+        return;
     }
     possibleTarget = scan_for_enemy(obj, 10000);
     possibleRange = (unsigned short)nTargetRange;
@@ -2999,36 +2966,37 @@ void return_to_master(short obj, short master)
 void defend_mission(short obj)
 {
     short master = find_ship_index(anShipMissionShip[obj]);
-    short target;
 
     if (master == -1) {
         change_mission_type(obj, MISSION_TYPE_PATROL);
         return;
     }
-    if (abShipTurn[obj] % 10 == 0 &&
-        in_danger(master) != 0 && nTargetRange < 6000 &&
-        aeShipObjective[obj] != OBJECTIVE_ENGAGE_ENEMY)
-        engage(obj, nTargetShip,
-               OBJECTIVE_ENGAGE_ENEMY);
-    if (aeShipObjective[obj] != OBJECTIVE_HOME_BASE &&
-        (abShipTurn[obj] & 7) == 4 &&
-        distance_from_object(obj, master) > 10000)
-        reset_objective(obj, OBJECTIVE_HOME_BASE);
+
+    if (abShipTurn[obj] % 10 == 0)
+        if (in_danger(master) != 0)
+            if (nTargetRange < 6000) {
+                if (aeShipObjective[obj] != OBJECTIVE_ENGAGE_ENEMY)
+                    engage(obj, nTargetShip, OBJECTIVE_ENGAGE_ENEMY);
+            }
+
+    if (aeShipObjective[obj] != OBJECTIVE_HOME_BASE)
+        if ((abShipTurn[obj] & 7) == 4)
+            if (distance_from_object(obj, master) > 10000)
+                reset_objective(obj, OBJECTIVE_HOME_BASE);
 
     switch (aeShipObjective[obj]) {
-    case OBJECTIVE_HOME_BASE:
-        return_to_master(obj, master);
-        break;
     case OBJECTIVE_WANDER:
-        target = scan_for_enemy(obj, 7000);
-        acShipTarget[obj] = target;
-        if (target != -1) {
-            engage(obj, target, OBJECTIVE_ENGAGE_ENEMY);
-        } else {
+        acShipTarget[obj] = scan_for_enemy(obj, 7000);
+        if (acShipTarget[obj] != -1)
+            engage(obj, acShipTarget[obj], OBJECTIVE_ENGAGE_ENEMY);
+        else {
             approach_half_speed(obj);
             if (no_goal(obj) != 0)
                 point_perpendicular(obj, master);
         }
+        break;
+    case OBJECTIVE_HOME_BASE:
+        return_to_master(obj, master);
         break;
     case OBJECTIVE_ENGAGE_ENEMY:
         maneuvering(obj, check_engage_target(obj));
@@ -3038,7 +3006,6 @@ void defend_mission(short obj)
         break;
     default:
         fail(obj);
-        break;
     }
 }
 
@@ -3262,21 +3229,14 @@ void capital_ship_intelligence(short obj)
 /* Function start: 0x40B320 */
 void futurion_intelligence(short obj)
 {
-    short range;
-    short count;
-
     ship_vs_ship(0, obj);
-    range = nTargetRange;
-    count = ++asActionCount[obj];
-    if (range > 1000 && count > 1000) {
-        aeObjectClass[obj] =
-            (enum ObjectClass)asObjectCounter[obj];
-        return;
-    }
-    if (count > 200 && range < 4000 && range > 1000 &&
-        nFacingToTarget > 80)
-        aeObjectClass[obj] =
-            (enum ObjectClass)asObjectCounter[obj];
+
+    asActionCount[obj]++;
+    if (nTargetRange > 1000 && asActionCount[obj] > 1000)
+        aeObjectClass[obj] = (enum ObjectClass)asObjectCounter[obj];
+    else if (asActionCount[obj] > 200 && nTargetRange < 4000 &&
+             nTargetRange > 1000 && nFacingToTarget > 80)
+        aeObjectClass[obj] = (enum ObjectClass)asObjectCounter[obj];
 }
 
 /* Function start: 0x40B3A0 */
@@ -3304,95 +3264,78 @@ void mine_intelligence(short obj)
 /* Function start: 0x40B430 */
 void heat_seeking_missile_intelligence(short obj)
 {
-    short other;
-    short heat;
-    short candidate;
-    short range;
-    short facing;
-    short targetFacing;
-    signed char viableIndex;
-    signed char targetCount;
-    signed char *target;
+    short exhaustHeat;
+    short targetShip;
+    short targ;
 
-    if (nFacingToTarget >= 0 &&
-        acShipTarget[obj] != -1) {
-        point_ship(obj, 0, &vToTarget);
-        anShipSpeed[obj] =
-            (get_ship_max_velocity(obj) + 10) << 8;
-        return;
-    }
-
-    target = &acShipTarget[obj];
-    other = 0;
-    cViableTargetCount = 0;
-    *target = -1;
-    for (; other <= 9; other++) {
-        if (other == obj ||
-            aeObjectClass[other] < OBJECT_CLASS_SHIP) {
-            continue;
-        }
-        get_facing_range_from_object(obj, other);
-        range = nTargetRange;
-        facing = nFacingToTarget;
-        viableIndex = cViableTargetCount;
-        targetFacing = nTargetFacing;
-        if (range < 9000 && facing > 0 && targetFacing < 0) {
-            asViableTargetDistance[viableIndex] = range;
-            acViableTarget[viableIndex] = other;
-            cViableTargetCount = ++viableIndex;
-        }
-    }
-    sort_viable_target_list();
-    targetCount = cViableTargetCount;
-    if (targetCount > 0) {
-        for (heat = 3; heat > 0; heat--) {
-            for (candidate = 0; candidate < targetCount; candidate++) {
-                if (aeObjectClass[
-                        acViableTarget[candidate]] ==
-                        OBJECT_CLASS_CAPITAL_SHIP ||
-                    abShipExhaustHeat[
-                        acViableTarget[candidate]] == heat) {
-                    *target = acViableTarget[candidate];
-                    heat = 0;
-                    break;
+    if (nFacingToTarget < 0 || acShipTarget[obj] == -1) {
+        acShipTarget[obj] = -1;
+        cViableTargetCount = 0;
+        for (targetShip = 0; targetShip <= 9; targetShip++) {
+            if (obj != targetShip &&
+                aeObjectClass[targetShip] >= OBJECT_CLASS_SHIP) {
+                get_facing_range_from_object(obj, targetShip);
+                if (nTargetRange < 9000 && nFacingToTarget > 0 &&
+                    nTargetFacing < 0) {
+                    asViableTargetDistance[cViableTargetCount] =
+                        nTargetRange;
+                    acViableTarget[cViableTargetCount++] = targetShip;
                 }
             }
         }
+        sort_viable_target_list();
+        if (cViableTargetCount > 0) {
+            for (exhaustHeat = 3; exhaustHeat > 0; exhaustHeat--) {
+                for (targ = 0; targ < cViableTargetCount; targ++) {
+                    if (aeObjectClass[acViableTarget[targ]] ==
+                            OBJECT_CLASS_CAPITAL_SHIP ||
+                        abShipExhaustHeat[acViableTarget[targ]] ==
+                            exhaustHeat) {
+                        acShipTarget[obj] = acViableTarget[targ];
+                        exhaustHeat = 0;
+                        break;
+                    }
+                }
+            }
+        }
+        if (acShipTarget[obj] == -1)
+            explode(obj, obj);
+    } else {
+        point_ship(obj, 0, &vToTarget);
+        anShipSpeed[obj] =
+            (get_ship_max_velocity(obj) + 10) << 8;
     }
-    if (*target == -1)
-        explode(obj, obj);
 }
 
 /* Function start: 0x40B570 */
 void FF_missile_intelligence(short obj)
 {
-    short other;
-    short candidate;
+    short targetShip;
 
     if (aeShipTactic[obj] == TACTIC_RAM) {
         if (acShipTarget[obj] == -1) {
             cViableTargetCount = 0;
-            for (other = 0; other < 10; other++) {
-                if (other == obj ||
-                    aeObjectClass[other] < OBJECT_CLASS_SHIP)
-                    continue;
-                if (aeShipSide[
-                        acObjectOwner[obj]] ==
-                        aeShipSide[other] &&
-                    acShipCommunicator[other] != -1)
-                    continue;
-                nTargetRange = distance_from_object(obj, other);
-                if (nTargetRange < 9000) {
-                    candidate = cViableTargetCount++;
-                    asViableTargetDistance[candidate] =
-                        nTargetRange;
-                    acViableTarget[candidate] = other;
+            for (targetShip = 0; targetShip <= 9; targetShip++) {
+                if (obj != targetShip) {
+                    if (aeObjectClass[targetShip] >= OBJECT_CLASS_SHIP) {
+                        if (aeShipSide[targetShip] !=
+                                aeShipSide[acObjectOwner[obj]] ||
+                            acShipCommunicator[targetShip] == -1) {
+                            nTargetRange =
+                                distance_from_object(obj, targetShip);
+                            if (nTargetRange < 9000) {
+                                asViableTargetDistance[
+                                    cViableTargetCount] = nTargetRange;
+                                acViableTarget[cViableTargetCount++] =
+                                    targetShip;
+                            }
+                        }
+                    }
                 }
             }
             sort_viable_target_list();
             if (cViableTargetCount > 0)
-                acShipTarget[obj] =
-                    acViableTarget[0];
+                acShipTarget[obj] = acViableTarget[0];
         } else {
             point_ship(obj, 0, &vToTarget);
             anShipSpeed[obj] =
@@ -3998,6 +3941,17 @@ void free_pilot_talk(short personality)
     } while (line < 11);
 }
 
+/* Function start: 0x40C1A0 */
+/* Nothing in the shipped executable calls this. */
+void FreeAllPilotTalk(void)
+{
+    short personality;
+
+    for (personality = 0; personality < 14; personality++) {
+        free_pilot_talk(personality);
+    }
+}
+
 /* Function start: 0x40C1C0 */
 void get_pilot_talk(short personality)
 {
@@ -4008,15 +3962,13 @@ void get_pilot_talk(short personality)
 
     free_pilot_talk(personality);
     PromptInsertNumberedDisk(13);
+    loaded = 1;
     file = OpenDataFileOrDie(pDiskFileRecords[13].name);
-    loaded = (short)(file >= 0);
-    line = 0;
-    for (; line < 11; line++) {
-        loaded = (short)(loaded &
-            (ReadDataFileAtOffset(
-                (unsigned short)file,
-                (personality * 11 + line) * 80,
-                80, speech) == 1));
+    loaded &= (file >= 0);
+    for (line = 0; line < 11; line++) {
+        loaded &= (ReadDataFileAtOffset(file,
+                                        (personality * 11 + line) * 80,
+                                        80, speech) != 0);
         if (loaded != 0) {
             aapszPilotSpeech[personality][line] =
                 AllocateTaggedMemory(strlen(speech) + 1, 0);
@@ -4024,7 +3976,7 @@ void get_pilot_talk(short personality)
         }
     }
 
-    CloseDataFile((unsigned short)file);
+    CloseDataFile(file);
     if (loaded == 0)
         ShowModalMessage(szErrorLoadingPilotSpeech);
     LoadCommPortraitShape(personality, 4);
@@ -4081,7 +4033,6 @@ void approve_xyz(short obj, short minimum, short maximum)
 void set_up_next_wave(void)
 {
     MissionNavPoint *waveNav;
-    short previousWave;
     short entry;
 
     if (nTrainSimActive != 0) {
@@ -4093,31 +4044,24 @@ void set_up_next_wave(void)
         FigureArcadeTime();
     }
 
-    if (nCurrentWave == -1 ||
-        nCannedSceneMode != 0)
+    if (nCurrentWave == -1 || nCannedSceneMode != 0)
         return;
 
     /* The original indexes through a base biased one MissionNavPoint before
      * aMissionNavPoints.  Preserve that -1 when expressing it as a typed
      * array index: arcade wave 2 is stored in nav record 1. */
-    waveNav = &aMissionNavPoints[
-        nCurrentNavPoint + nCurrentWave - 1];
-    previousWave = nCurrentWave;
-    nCurrentWave++;
-    if (waveNav->type == (signed char)previousWave) {
+    waveNav = &aMissionNavPoints[nCurrentWave + nCurrentNavPoint - 1];
+    if (waveNav->type == nCurrentWave++) {
         new_sphere_shapes(waveNav);
         waveNav->type = -1;
-        entry = 0;
-        do {
-            approve_xyz(
-                init_ship(waveNav->missionShips[entry],
-                          nCurrentNavPoint),
-                5000, 10000);
-            entry++;
-        } while (entry < 10);
-        return;
+        for (entry = 0; entry < 10; entry++) {
+            approve_xyz(init_ship(waveNav->missionShips[entry],
+                                  nCurrentNavPoint),
+                        5000, 10000);
+        }
+    } else {
+        nCurrentWave = -1;
     }
-    nCurrentWave = -1;
 }
 
 /* Function start: 0x40C4A0 */
@@ -4138,38 +4082,36 @@ unsigned int set_formation_position(short obj,
     const MissionShipRecord *leaderRecord;
     short source;
 
-    if (record->formationIndex == -1)
-        return 0;
+    if (record->formationIndex != -1) {
+        source = obj;
+        for (leaderRecord = record;
+             leaderRecord->leaderMissionIndex != -1;
+             leaderRecord = &aMissionShips[
+                 leaderRecord->leaderMissionIndex])
+            source = find_ship_index(leaderRecord->leaderMissionIndex);
 
-    source = obj;
-    leaderRecord = record;
-    while (leaderRecord->leaderMissionIndex != -1) {
-        source = find_ship_index(leaderRecord->leaderMissionIndex);
-        leaderRecord = &aMissionShips[
-            leaderRecord->leaderMissionIndex];
+        sub_int_vector(
+            &aaFormationPositions[record->formationIndex]
+                                 [record->formationSpot],
+            &aaFormationPositions[leaderRecord->formationIndex]
+                                 [leaderRecord->formationSpot],
+            &aShipFormationOffset[obj]);
+        if (source == 0 && bInitialFormationSetup == 0)
+            return 0;
+        copy_frame(source, obj);
+        set_sphere_point(leaderRecord, &aShipPosition[obj]);
+        offset_location(obj, &aShipFormationOffset[obj],
+                        &aShipPosition[obj]);
+        anShipSpeed[obj] = leaderRecord->speed << 8;
     }
-
-    sub_int_vector(
-        &aaFormationPositions[record->formationIndex]
-                                               [record->formationSpot],
-        &aaFormationPositions[leaderRecord->formationIndex]
-                                               [leaderRecord->formationSpot],
-        &aShipFormationOffset[obj]);
-    if (source == 0 && bInitialFormationSetup == 0)
-        return 0;
-
-    copy_frame(source, obj);
-    set_sphere_point(leaderRecord, &aShipPosition[obj]);
-    offset_location(obj, &aShipFormationOffset[obj],
-                    &aShipPosition[obj]);
-    anShipSpeed[obj] = leaderRecord->speed << 8;
     return 0;
 }
 
 /* Function start: 0x40C5E0 */
-void Set_up_ship_info(short obj, short missionShip, signed char navPoint)
+unsigned int Set_up_ship_info(short obj, short missionShip,
+                              signed char navPoint)
 {
-    MissionShipRecord *record = &aMissionShips[missionShip];
+    MissionShipRecord *record;
 
     asCapitalShipViewFrame[obj] = -1;
     acWingmanMessageState[obj] = -1;
@@ -4187,6 +4129,7 @@ void Set_up_ship_info(short obj, short missionShip, signed char navPoint)
     nShipMissionIndices[obj] = missionShip;
     acShipPointingMode[obj] = 1;
 
+    record = &aMissionShips[missionShip];
     set_sphere_point(record, &aShipPosition[obj]);
     alter_yaw((short)-record->pitch, obj);
     alter_pitch((short)-record->yaw, obj);
@@ -4201,6 +4144,7 @@ void Set_up_ship_info(short obj, short missionShip, signed char navPoint)
     set_formation_position(obj, record);
     zero_vector(&aShipVelocity[obj]);
     init_intelligence_data(obj);
+    return 0;
 }
 
 /* Function start: 0x40C740 */
@@ -4208,39 +4152,33 @@ unsigned int is_team_member(short missionShip)
 {
     short index;
 
-    if (nPlayerMissionShipIndex == missionShip)
+    if (missionShip == nPlayerMissionShipIndex)
         return 1;
     index = 0;
-    do {
-        if (nInitialMissionShipIndices[index] == missionShip)
+    while (index < 8) {
+        if (missionShip == nInitialMissionShipIndices[index])
             return 1;
         index++;
-    } while (index < 8);
+    }
     return 0;
 }
 
 /* Function start: 0x40C780 */
 unsigned int find_next_ship_turn_slot(short obj)
 {
-    signed char interval;
-    int objIndex;
     short other;
 
-    objIndex = obj;
     other = 1;
-    acTurnRegulator[objIndex] = 1;
-    interval = anPilotTurnInterval[
-        aiPilotLevel[objIndex]];
-    acTurnInterval[objIndex] = interval;
+    acTurnRegulator[obj] = 1;
+    acTurnInterval[obj] = anPilotTurnInterval[aiPilotLevel[obj]];
     do {
         if (aeObjectClass[other] == OBJECT_CLASS_SHIP &&
             other != obj &&
-            acTurnRegulator[other] ==
-                acTurnRegulator[objIndex] &&
-            acTurnInterval[other] == interval) {
+            acTurnRegulator[other] == acTurnRegulator[obj] &&
+            acTurnInterval[other] == acTurnInterval[obj]) {
             other = 1;
-            acTurnRegulator[objIndex]++;
-            if (interval < acTurnRegulator[objIndex])
+            acTurnRegulator[obj]++;
+            if (acTurnInterval[obj] < acTurnRegulator[obj])
                 break;
         }
         other++;
@@ -4346,7 +4284,7 @@ unsigned int init_intelligence_data(short obj)
 
 /* Function start: 0x40CAA0 */
 short __stdcall SampleBothJoysticks(InputDeviceSample *samples,
-                                    unsigned int fallback)
+                                    unsigned short fallback)
 {
     GetJoystickPosition((unsigned int *)&samples[0].x,
                         (unsigned int *)&samples[0].y,
@@ -4360,13 +4298,16 @@ short __stdcall SampleBothJoysticks(InputDeviceSample *samples,
 /* Function start: 0x40CAE0 */
 int __stdcall SampleJoystickDevice(InputDeviceSample *samples,
                                    short joystick,
-                                   unsigned int fallback)
+                                   unsigned short fallback)
 {
     InputDeviceSample *sample;
     int result;
     short sampleIndex;
 
-    sampleIndex = (short)(joystick != 0);
+    if (joystick != 0)
+        sampleIndex = 1;
+    else
+        sampleIndex = 0;
     sample = &samples[sampleIndex];
     result = GetJoystickPosition((unsigned int *)&sample->x,
                                  (unsigned int *)&sample->y,

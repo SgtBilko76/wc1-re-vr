@@ -105,14 +105,14 @@ void prevent_collision(short obj)
 }
 
 /* Function start: 0x433D90 */
-int handle_collisions(short obj)
+short handle_collisions(short obj)
 {
     short other;
 
     other = detect_collisions(obj);
     if (other != -1)
         start_collision_alert(obj, other);
-    if (alert_flag(obj, 1) != 0)
+    if ((short)alert_flag(obj, 1) != 0)
         prevent_collision(obj);
     return alert_flag(obj, 1);
 }
@@ -234,7 +234,6 @@ unsigned int chase_location(short obj, const FixedVector *destination,
     int pointAtDestination;
     int desiredSpeed;
     short forwardFacing;
-    short speed;
     FixedVector forwardTravel;
     FixedVector projectedDestination;
 
@@ -251,9 +250,8 @@ unsigned int chase_location(short obj, const FixedVector *destination,
     get_facing_range_from_point(obj, destination);
     if (nFacingToTarget < 0) {
         approach_speed(obj, 0);
-        speed = FixedToShortSaturating(anShipSpeed[reference]);
-        speed = MaxShort(speed, 1);
-        if (nTargetRange / speed > 49)
+        if (nTargetRange /
+            MaxShort(FixedToShortSaturating(anShipSpeed[reference]), 1) > 49)
             pointAtDestination = 1;
     } else if (nTargetRange > 175 && no_goal(obj) != 0) {
         pointAtDestination = 1;
@@ -284,7 +282,6 @@ unsigned int chase_location(short obj, const FixedVector *destination,
 unsigned int goto_location(short obj, const FixedVector *destination)
 {
     short range;
-    short speed;
 
     ship_vs_point(obj, destination);
     if (nFacingToTarget < 51) {
@@ -296,9 +293,8 @@ unsigned int goto_location(short obj, const FixedVector *destination)
     } else {
         range = nTargetRange;
         if (range <= 3000) {
-            speed = FixedToShortSaturating(anShipSpeed[obj]);
-            speed = MaxShort(speed, 1);
-            if (range / speed <= 50) {
+            if (range /
+                MaxShort(FixedToShortSaturating(anShipSpeed[obj]), 1) <= 50) {
                 approach_cruise_speed(obj);
                 return 0;
             }
@@ -517,7 +513,6 @@ unsigned int process_maneuver_node(short obj, int event)
 {
     const ManeuverChoice *choice;
     short rating;
-    short morale;
     enum ShipManeuver maneuver;
 
     rating = (short)acShipRating[obj];
@@ -527,9 +522,8 @@ unsigned int process_maneuver_node(short obj, int event)
         else
             maneuver = pick_regular_maneuver(obj, event);
     } else {
-        morale = stress_morale(obj);
         choice =
-            &aRatedManeuverChoices[rating][event][morale];
+            &aRatedManeuverChoices[rating][event][stress_morale(obj)];
         maneuver = pick_from_list(choice, obj);
     }
     if (aeShipManeuver[obj] != maneuver)
@@ -659,13 +653,11 @@ void intelligence_events(short obj)
 /* Function start: 0x434C70 */
 unsigned int chase_speed(short obj, short range)
 {
-    short targetRange = nTargetRange;
-
-    if (range < targetRange) {
+    if (range < nTargetRange) {
         approach_full_speed(obj);
         return 0;
     }
-    if (range > targetRange) {
+    if (range > nTargetRange) {
         approach_zero_speed(obj);
         return 0;
     }

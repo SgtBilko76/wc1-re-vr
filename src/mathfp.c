@@ -13,7 +13,9 @@ short RandomBelow(short n)
 }
 
 /* Function start: 0x434CF0 */
-void __stdcall SeedRandomFromClock(void)
+/* `ret 4` shows one stack argument; the clock seeds the generator and the
+ * argument is never read. */
+void __stdcall SeedRandomFromClock(int seed)
 {
     srand((unsigned int)time(0));
 }
@@ -79,21 +81,21 @@ long CosFixed(short degrees)
 /* Function start: 0x434E60 */
 long ArcSin(int value)
 {
-    return (long)(asin((double)value * 0.00390625f) *
+    return (long)(asin(value * 0.00390625f) *
                   57.295779513082323);
 }
 
 /* Function start: 0x434E90 */
 long ArcCos(int value)
 {
-    return (long)(acos((double)value * 0.00390625f) *
+    return (long)(acos(value * 0.00390625f) *
                   57.295779513082323);
 }
 
 /* Function start: 0x434EC0 */
 long Magnitude(int value)
 {
-    return (long)(sqrt((double)value * 0.00390625f) * 256.0);
+    return (long)(sqrt(value * 0.00390625f) * 256.0);
 }
 
 /* Function start: 0x434EE0 */
@@ -189,13 +191,11 @@ short __stdcall GetShapeFrameBounds(short *bounds, short x, short y,
     frameTableOffset = (short)(frame * 4);
     if ((int)frameTableOffset < (int)*(unsigned short *)(shape + 4)) {
         frameTableOffset = (short)(frameTableOffset + 4);
+        shape += *(unsigned short *)(shape + frameTableOffset);
 #ifdef SDL_PORT
-        memcpy(frameData,
-               shape + *(unsigned short *)(shape + frameTableOffset),
-               sizeof(frameData));
+        memcpy(frameData, shape, sizeof(frameData));
 #else
-        frameData = (short *)(shape +
-            *(unsigned short *)(shape + frameTableOffset));
+        frameData = (short *)shape;
 #endif
         bounds[2] = (short)(frameData[0] + x);
         bounds[0] = (short)(x - frameData[1]);
@@ -233,69 +233,60 @@ void __stdcall DrawTextString(const char *text)
     int savedX;
     int finished;
 
-    wrapped = 0;
     finished = 0;
+    wrapped = 0;
     cursor = text;
-    for (;;) {
+    do {
         lineWidth = pCurrentTextContext->cursorX;
         while (*cursor == ' ')
             cursor++;
         lineStart = cursor;
         right = pCurrentTextContext->viewport->right;
-        if (lineWidth < right) {
-            for (;;) {
-                value = *cursor;
-                cursor++;
-                if (value == '\n' || value == '\r')
-                    break;
-                if (value == 0) {
-                    finished = 1;
-                    break;
-                }
-                lineWidth +=
+        while (lineWidth < right) {
+            value = *cursor;
+            cursor++;
+            if (value == '\n' || value == '\r')
+                break;
+            if (value == 0) {
+                finished = 1;
+                break;
+            }
+            lineWidth +=
+#ifdef SDL_PORT
+                pCurrentTextContext->font[4 + (unsigned char)value];
+#else
+                pCurrentTextContext->font[4 + value];
+#endif
+            if (lineWidth >= right) {
+                /* Back up to the last space so the word wraps whole. */
+                lineWidth -=
 #ifdef SDL_PORT
                     pCurrentTextContext->font[4 + (unsigned char)value];
 #else
                     pCurrentTextContext->font[4 + value];
 #endif
-                if (lineWidth >= right) {
-                    cursor--;
-                    wrapped = 1;
-                    lineWidth -=
+                cursor--;
+                wrapped = 1;
+                if (*cursor != ' ') {
+                    while (*cursor != ' ' && cursor > text) {
+                        lineWidth -=
+                            pCurrentTextContext
 #ifdef SDL_PORT
-                        pCurrentTextContext->font[4 + (unsigned char)value];
+                                ->font[4 + (unsigned char)*cursor];
 #else
-                        pCurrentTextContext->font[4 + value];
+                                ->font[4 + *cursor];
 #endif
-                    if (*cursor != ' ') {
-                        if (cursor <= text) {
-                            SystemDebugPrintf(
-                                "FATAL : INVALID STRING '%s'n", text);
-                            ClearDebugPauseFlags();
-                            PumpMessagesDuringWait();
-                            exit(0);
-                        }
-                        do {
-                            value = *cursor;
-                            cursor--;
-                            lineWidth -=
-                                pCurrentTextContext
-#ifdef SDL_PORT
-                                    ->font[4 + (unsigned char)value];
-#else
-                                    ->font[4 + value];
-#endif
-                        } while (*cursor != ' ');
-                        if (cursor <= text) {
-                            SystemDebugPrintf(
-                                "FATAL : INVALID STRING '%s'n", text);
-                            ClearDebugPauseFlags();
-                            PumpMessagesDuringWait();
-                            exit(0);
-                        }
+                        cursor--;
                     }
-                    break;
+                    if (cursor <= text) {
+                        SystemDebugPrintf(
+                            "FATAL : INVALID STRING '%s'n", text);
+                        ClearDebugPauseFlags();
+                        PumpMessagesDuringWait();
+                        exit(0);
+                    }
                 }
+                break;
             }
         }
 
@@ -305,7 +296,7 @@ void __stdcall DrawTextString(const char *text)
                 pCurrentTextContext->viewport->left +
                 ((pCurrentTextContext->viewport->right -
                   pCurrentTextContext->viewport->left) -
-                 lineWidth + savedX + 1) / 2);
+                 lineWidth + pCurrentTextContext->cursorX + 1) / 2);
         }
         while (lineStart < cursor) {
             DrawTextCharacter(*lineStart);
@@ -316,13 +307,11 @@ void __stdcall DrawTextString(const char *text)
         if (wrapped != 0) {
             pCurrentTextContext->cursorX =
                 pCurrentTextContext->viewport->left;
-            wrapped = 0;
             pCurrentTextContext->cursorY +=
                 *(short *)pCurrentTextContext->font;
+            wrapped = 0;
         }
-        if (finished != 0)
-            return;
-    }
+    } while (finished == 0);
 }
 
 /* Function start: 0x435290 */

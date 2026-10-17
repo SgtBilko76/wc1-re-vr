@@ -277,10 +277,8 @@ int DisplayTrainSimHighScoreTable(short phase)
 int AnimateTrainSimTitle(void)
 {
     short completed;
-    short y;
 
     completed = 0;
-    y = 0x6b;
     DrawFilledViewportRect(
         &stModalSourceViewport,
         stTrainSimPanelBounds.left,
@@ -290,18 +288,19 @@ int AnimateTrainSimTitle(void)
         cBlackColour);
     DIBslam();
     DIBslamReal();
-    y = (short)(y - ReadWord(
+    stTrainSimTitleDisplayViewport.top = (short)(0x6b - ReadWord(
         (unsigned short *)stTrainSimTextContext.font));
-    stTrainSimTitleDisplayViewport.top = y;
     stTrainSimTitleDisplayViewport.bottom =
-        (short)(y + ReadWord(
+        (short)(stTrainSimTitleDisplayViewport.top + ReadWord(
             (unsigned short *)stTrainSimTextContext.font) + 2);
     if (CheckEscaped() == 0) {
-        for (;;) {
+        do {
             SetFrameTimerPeriodDirect(3);
             if (stTrainSimTitleDisplayViewport.top <=
-                stTrainSimPanelBounds.top)
+                stTrainSimPanelBounds.top) {
+                completed = 1;
                 break;
+            }
             stTrainSimTitleDisplayViewport.top--;
             stTrainSimTitleDisplayViewport.bottom--;
             CopyViewportContents(
@@ -310,10 +309,7 @@ int AnimateTrainSimTitle(void)
             DIBslam();
             DIBslamReal();
             WaitForFrameTick();
-            if (CheckEscaped() != 0)
-                return completed;
-        }
-        completed = 1;
+        } while (CheckEscaped() == 0);
     }
     return completed;
 }
@@ -486,7 +482,7 @@ void DrawTextInputCursor(char character)
 }
 
 /* Function start: 0x426140 */
-void ClearTextInputCharacter(char character)
+void ClearTextInputCharacter(short character)
 {
     Viewport clearArea;
     short characterWidth;
@@ -505,7 +501,7 @@ void ClearTextInputCharacter(char character)
 }
 
 /* Function start: 0x4261D0 */
-void ClearNextTextInputCharacter(char character)
+void ClearNextTextInputCharacter(short character)
 {
     short savedX;
 

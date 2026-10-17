@@ -34,8 +34,8 @@ void cleanup_objectives(void)
                     flag_objective(objective, 2);
                 break;
             case 2:
-                if (aMissionShips[index].missionType ==
-                        MISSION_TYPE_GOTO_WARP) {
+                switch (aMissionShips[index].missionType) {
+                case MISSION_TYPE_GOTO_WARP:
                     if (aMissionShips[index].state == 2) {
                         flag_objective(objective, 2);
                         if (aMissionShips[index].type ==
@@ -46,10 +46,9 @@ void cleanup_objectives(void)
                         else
                             affect_mission_score(0, 9, -1);
                     }
-                } else if (aMissionShips[index].missionType ==
-                               MISSION_TYPE_WARP_ARRIVE ||
-                           aMissionShips[index].missionType ==
-                               MISSION_TYPE_COME_HOME) {
+                    break;
+                case MISSION_TYPE_WARP_ARRIVE:
+                case MISSION_TYPE_COME_HOME:
                     object = find_ship_index(index);
                     if (object != -1 && home != -1 &&
                         distance_from_object(object, home) < proximity)
@@ -65,16 +64,20 @@ void cleanup_objectives(void)
                         else
                             affect_mission_score(0, 9, -1);
                     }
-                } else if (aMissionShips[index].state == 0 &&
-                           sighted(objective) != 0) {
-                    flag_objective(objective, 2);
-                    if (aMissionShips[index].type ==
-                            OBJECT_TYPE_HORNET ||
-                        aMissionShips[index].type ==
-                            OBJECT_TYPE_DRAYMAN)
-                        affect_mission_score(0, 5, -1);
-                    else
-                        affect_mission_score(0, 9, -1);
+                    break;
+                default:
+                    if (aMissionShips[index].state == 0 &&
+                        sighted(objective) != 0) {
+                        flag_objective(objective, 2);
+                        if (aMissionShips[index].type ==
+                                OBJECT_TYPE_HORNET ||
+                            aMissionShips[index].type ==
+                                OBJECT_TYPE_DRAYMAN)
+                            affect_mission_score(0, 5, -1);
+                        else
+                            affect_mission_score(0, 9, -1);
+                    }
+                    break;
                 }
                 break;
             case 4:
@@ -184,6 +187,7 @@ void request(short requester, short ship, short command)
     signed char *requesterTarget;
     short target;
     short object;
+    short attacker;
 
     requesterTarget = &acShipTarget[requester];
 
@@ -192,16 +196,16 @@ void request(short requester, short ship, short command)
         switch (command) {
         case 1:
             allow_engage();
-            if (bad_target(ship, target) == 0) {
-                engage(ship, target, OBJECTIVE_ENGAGE_ENEMY);
-                reply(ship, 1);
+            if (bad_target(ship, target) != 0) {
+                reply(ship, 0);
                 return;
             }
-            reply(ship, 0);
+            engage(ship, target, OBJECTIVE_ENGAGE_ENEMY);
+            reply(ship, 1);
             return;
         case 2:
             allow_engage();
-            target = -1;
+            attacker = -1;
             for (object = 0; object < 10; object++) {
                 if (aeObjectClass[object] >=
                         OBJECT_CLASS_SHIP &&
@@ -210,15 +214,15 @@ void request(short requester, short ship, short command)
                     aeShipSide[ship] !=
                         aeShipSide[object] &&
                     acShipTarget[object] == requester) {
-                    target = object;
+                    attacker = object;
                     break;
                 }
             }
-            if (target == -1) {
+            if (attacker == -1) {
                 command = 9;
                 continue;
             }
-            engage(ship, target, OBJECTIVE_ENGAGE_ENEMY);
+            engage(ship, attacker, OBJECTIVE_ENGAGE_ENEMY);
             reply(ship, 1);
             return;
         case 3:
@@ -234,9 +238,9 @@ void request(short requester, short ship, short command)
         case 5:
         case 6:
             if (RandomBelow(100) < 70 ||
-                ((signed char)acShipRating[ship] > 8 &&
-                 (signed char)acShipRating[ship] < 13))
-                send_message(ship, (signed char)(command - 2));
+                ((signed char)acShipRating[ship] >= 9 &&
+                 (signed char)acShipRating[ship] <= 12))
+                send_message(ship, command - 2);
             if (acShipTarget[ship] != requester &&
                 too_busy(ship) == 0) {
                 engage(ship, requester, OBJECTIVE_ENGAGE_ENEMY);
@@ -305,7 +309,6 @@ unsigned short __stdcall InitializeDIBScreenViewport(
     Viewport *viewport, unsigned short colour)
 {
     short row;
-    int offset;
 
     (void)colour;
     nScreenAllocationState = 0;
@@ -324,27 +327,22 @@ unsigned short __stdcall InitializeDIBScreenViewport(
     }
     viewport->pixels = GetDIBPixelBuffer();
     viewport->rowOffsets = awScreenRowOffsets;
-    row = 0;
-    offset = 0;
-    do {
-        awScreenRowOffsets[row] = (unsigned short)offset;
-        offset = (short)offset + 320;
-        row++;
-    } while (row < 202);
+    for (row = 0; row < 202; row++)
+        awScreenRowOffsets[row] = row * 320;
     return 1;
 }
 
 /* Function start: 0x42F7E0 */
 /* Initialises a 320x200 viewport record (0x13F == 319, 199) then validates it. */
-void InitFullScreenViewport(int *record, short arg)
+void __stdcall InitFullScreenViewport(int *record, short arg)
 {
     Viewport *viewport = (Viewport *)record;
 
     DAT_005a6538 = record;
     viewport->left = 0;
-    viewport->top = 0;
     viewport->right = 319;
     viewport->bottom = 199;
+    viewport->top = 0;
     AllocateViewport(viewport, arg, 0);
 }
 
@@ -393,6 +391,28 @@ int GetFreeNearHeapBytes(void)
     return freeBytes;
 }
 
+/* Function start: 0x42F8E0 */
+/* Nothing in the shipped executable calls this.  It is the largest-block
+ * companion of GetFreeNearHeapBytes (the _memmax to its _memavl). */
+int GetLargestFreeNearHeapBlock(void)
+{
+    NearHeapBlock *block;
+    int descriptorAddress;
+    int largestBytes;
+
+    largestBytes = 0;
+    descriptorAddress =
+        nNearHeapBase + nNearHeapSize - 8;
+    for (; descriptorAddress >= nNearHeapFirstDescriptor;
+         descriptorAddress -= 8) {
+        block = DosNearPtrToFar(descriptorAddress);
+        if ((block->sizeAndFlags & 0x80000000) == 0 &&
+            largestBytes < (int)(block->sizeAndFlags & 0xfffff))
+            largestBytes = block->sizeAndFlags & 0xfffff;
+    }
+    return largestBytes;
+}
+
 /* Function start: 0x42F930 */
 void FrameStartHook(int mode)
 {
@@ -415,26 +435,19 @@ void MessagePumpHook(int mode)
 /* Function start: 0x42F960 */
 void *PushMemoryStackFrame(void *memory, int offset)
 {
-    int index;
-
     if (offset != 0) {
 #if !defined(SDL_PORT) || defined(SDL_PORT_LEGACY_DEBUG_OUTPUT)
         printf("push %p by %d\n", memory, offset);
 #endif
         if (nPacketHandleCount == 0x1000)
             exit_squadron("qq mem push overflow");
-        index = nPacketHandleCount;
-        aiPacketHandleOffsets[index] = offset;
-        if (offset < 0) {
-            memory = (unsigned char *)memory - offset;
-            apPacketHandles[index] = memory;
-            nPacketHandleCount = index + 1;
-            return memory;
-        }
-        memory = (unsigned char *)memory + offset;
-        apPacketHandles[index] = memory;
-        nPacketHandleCount = index + 1;
-        return memory;
+        aiPacketHandleOffsets[nPacketHandleCount] = offset;
+        if (offset < 0)
+            apPacketHandles[nPacketHandleCount++] = memory =
+                (unsigned char *)memory - offset;
+        else
+            apPacketHandles[nPacketHandleCount++] = memory =
+                (unsigned char *)memory + offset;
     }
     return memory;
 }
@@ -534,20 +547,15 @@ void *AllocateTaggedMemory(unsigned int size, unsigned short flags)
 /* Function start: 0x42FAE0 */
 void ReleasePacketHandle(void *handle)
 {
-    int group = 4;
-    void **entry = &aapPacketReferences[0][0];
+    int group;
+    int i;
 
-    do {
-        int i = 0x25;
-
-        do {
-            if (*entry == handle)
-                *entry = 0;
-            entry = entry + 1;
-            i = i - 1;
-        } while (i != 0);
-        group = group - 1;
-    } while (group != 0);
+    for (group = 0; group < 4; group++) {
+        for (i = 0; i < 0x25; i++) {
+            if (aapPacketReferences[group][i] == handle)
+                aapPacketReferences[group][i] = 0;
+        }
+    }
     FreeGuardedAllocation(MapPacketHandleToBlock(handle));
 }
 
@@ -943,11 +951,11 @@ unsigned int ShowTigerClawEscapeScene(void)
 /* Function start: 0x4304F0 */
 unsigned int ShowTheEndScreen(short enableFireworks)
 {
-    FireworkState *firework;
     short activeFireworks;
     short frame;
     short slot;
 
+    activeFireworks = 0;
     SetEventManagerPump(get_player_input);
     PreloadMusicTrackHook(0x17);
     spacetrack(0x17, 2, 1);
@@ -964,21 +972,21 @@ unsigned int ShowTheEndScreen(short enableFireworks)
     print_subtitle(&stSceneBuffer, 0x3a, pszTheEnd);
     PanToScreen(&stSceneBuffer, &stScreen);
     bEscapePressed = 0;
-    nFrameSkipCounter = 1;
-    activeFireworks = 0;
     frame = 0;
+    nFrameSkipCounter = 1;
     do {
         ClearViewport(&stSceneBuffer, cBlackColour);
         if (enableFireworks != 0 && activeFireworks != 0 &&
             (RandomBelowOrEqual(100) < 40 || frame > 280)) {
             slot = 0;
             do {
-                firework = &aFireworks[slot];
-                if (firework->frame == -1) {
-                    firework->frame = 0;
-                    firework->x = RandomInRange(0, stSpaceBuffer.right);
-                    firework->y = RandomInRange(0, stSpaceBuffer.bottom);
-                    firework->variant = RandomInRange(0, 2);
+                if (aFireworks[slot].frame == -1) {
+                    aFireworks[slot].frame = 0;
+                    aFireworks[slot].x =
+                        RandomInRange(0, stSpaceBuffer.right);
+                    aFireworks[slot].y =
+                        RandomInRange(0, stSpaceBuffer.bottom);
+                    aFireworks[slot].variant = RandomInRange(0, 2);
                     break;
                 }
                 slot++;
@@ -1057,6 +1065,13 @@ short __stdcall UpdateInputDeviceTransitions(short raw)
         asPreviousInputButtons[device] = (short)buttons;
     }
     return 1;
+}
+
+/* Function start: 0x430830 */
+/* Empty, and nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits among the joystick input routines. */
+void JoystickInputHook(void)
+{
 }
 
 /* Function start: 0x430840 */
@@ -1258,7 +1273,7 @@ void ResetCommMenuChoices(short reuse)
 }
 
 /* Function start: 0x430CA0 */
-int IsCommMenuIdle(void)
+short IsCommMenuIdle(void)
 {
     return nCommMenuChoiceCount == 0;
 }
@@ -1294,7 +1309,7 @@ void OpenCommMenuForTarget(const char *heading, const char *message)
 }
 
 /* Function start: 0x430D80 */
-int IsCommChoiceMenuOpen(void)
+short IsCommChoiceMenuOpen(void)
 {
     return get_mode(1) == 4;
 }
@@ -1330,7 +1345,7 @@ void CloseCommChoiceMenu(void)
 }
 
 /* Function start: 0x430E10 */
-int wingman_dead(void)
+short wingman_dead(void)
 {
     return nYourWingman == -1;
 }
@@ -1362,8 +1377,6 @@ void SelectCommRecipient(short recipient)
 void BuildCommunicationRecipientMenu(void)
 {
     short target;
-    short command;
-    const char *text;
 
     ResetCommMenuChoices(nCommMenuReuseMode);
     OpenCommMenuForTarget("VID-COM SYSTEM\n\nSend message to?\n\n",
@@ -1385,25 +1398,18 @@ void BuildCommunicationRecipientMenu(void)
     target = acShipTarget[0];
     if (target != -1) {
         if (aeShipSide[target] == SIDE_KILRATHI &&
-            aeObjectClass[target] == OBJECT_CLASS_SHIP) {
-            command = 2;
-            text = "ENEMY TARGET";
-        } else {
-            if (aeShipSide[target] != SIDE_IMPERIAL ||
-                ((aeObjectClass[target] != OBJECT_CLASS_SHIP ||
-                  any_enemy(0, 14000) == 0) &&
-                 aeObjectType[target] !=
-                     OBJECT_TYPE_TIGERS_CLAW)) {
-                goto finish_recipient_menu;
-            }
-            command = 3;
-            text = aObjectTypeData[
-                aeObjectType[target]].displayName;
-        }
-        AppendCommMenuChoice(text, command);
+            aeObjectClass[target] == OBJECT_CLASS_SHIP)
+            AppendCommMenuChoice("ENEMY TARGET", 2);
+        else if (aeShipSide[target] == SIDE_IMPERIAL &&
+                 ((aeObjectClass[target] == OBJECT_CLASS_SHIP &&
+                   any_enemy(0, 14000) != 0) ||
+                  aeObjectType[target] ==
+                      OBJECT_TYPE_TIGERS_CLAW))
+            AppendCommMenuChoice(
+                aObjectTypeData[
+                    aeObjectType[acShipTarget[0]]].displayName,
+                3);
     }
-
-finish_recipient_menu:
     SendCommMenuChoice(0);
 }
 
@@ -1420,13 +1426,11 @@ void BuildCommunicationCommandMenu(void)
             any_enemy(0, 14000) != 0) {
             SendCommMenuChoice(7);
         }
-        if (nAutoEngageTimer == -1) {
-            if (aeShipObjective[nYourWingman] !=
-                    OBJECTIVE_HOLD_FORMATION)
-                SendCommMenuChoice(9);
-        } else {
+        if (nAutoEngageTimer != -1)
             SendCommMenuChoice(8);
-        }
+        else if (aeShipObjective[nYourWingman] !=
+                     OBJECTIVE_HOLD_FORMATION)
+            SendCommMenuChoice(9);
         if (bRadioSilence != 0)
             SendCommMenuChoice(11);
         else
@@ -1455,10 +1459,10 @@ void BuildCommunicationCommandMenu(void)
         SendCommMenuChoice(5);
         SendCommMenuChoice(6);
     }
-    if (IsCommMenuIdle() == 0)
-        SendCommMenuChoice(0);
-    else
+    if (IsCommMenuIdle() != 0)
         CloseCommChoiceMenu();
+    else
+        SendCommMenuChoice(0);
 
     if (IsCommChoiceMenuOpen() != 0) {
         strcpy(szCommMenuHeadingBuffer,
@@ -1519,9 +1523,9 @@ void show_communications_disp(void)
         HandleCommunicationMenuRequest();
     if (IsCommChoiceMenuOpen() != 0) {
         set_new_vdu(1);
-        choice = 0;
         DrawTextAt(&stRightVduTextContext, stRightVdu.left,
                    stRightVdu.top, pszCommMenuHeading, 2);
+        choice = 0;
 #ifdef SDL_PORT
         selectedChoice = SdlGetCommunicationMenuSelection();
         normalColour = stRightVduTextContext.colour;
@@ -1674,18 +1678,13 @@ char *ExpandCommMessageTokens(const char *text)
     short length;
 
     szTextScratchBuffer[0] = '\0';
-    for (;;) {
-        marker = DosStrchr(text, '$');
-        if (marker == 0) {
-            DosStrcat(szTextScratchBuffer, text);
-            return szTextScratchBuffer;
-        }
+    while ((marker = DosStrchr(text, '$')) != 0) {
         destination = DosStrchr(szTextScratchBuffer, '\0');
         while (marker != text)
             *destination++ = *text++;
         *destination = '\0';
-        text = marker + 2;
-        switch (marker[1]) {
+        marker++;
+        switch (*marker++) {
         case 'C':
             DosStrcat(
                 szTextScratchBuffer,
@@ -1702,13 +1701,16 @@ char *ExpandCommMessageTokens(const char *text)
                           stCampaignState.currentPilot->rank]);
             length = DosStrlen(szTextScratchBuffer);
             if (szTextScratchBuffer[length - 1] == '.' &&
-                *text == '.') {
+                *marker == '.') {
                 length = DosStrlen(szTextScratchBuffer);
                 szTextScratchBuffer[length - 1] = '\0';
             }
             break;
         }
+        text = marker;
     }
+    DosStrcat(szTextScratchBuffer, text);
+    return szTextScratchBuffer;
 }
 
 /* Function start: 0x4316E0 */
@@ -1717,7 +1719,6 @@ void real_vid_transmit(short obj, short message)
     char text[84];
     char *expandedText;
     char *speech;
-    int objectOffset;
 
 #ifdef SDL_PORT
     if (SdlSwcFlightActive()) {
@@ -1733,7 +1734,6 @@ void real_vid_transmit(short obj, short message)
                  aeShipSide[obj]);
     if (nCommPortraitIndex == -1)
         return;
-    objectOffset = (int)obj * sizeof(enum ObjectType);
     if (bCommVideoEnabled != 0 && bVideoImagesSuppressed == 0) {
         if (apCommPortraitShapes[
                 nCommPortraitIndex] == 0)
@@ -1745,14 +1745,14 @@ void real_vid_transmit(short obj, short message)
                     nCommSpeakerObject]) != 0) {
             push_mode(1, 6);
             malf_noise(1, 3, 12, 23, 1);
-            DrawSpriteDefault(
-                &stRightVdu, stRightVdu.left,
-                stRightVdu.top,
-                aeShipSide[
-                    nCommSpeakerObject] == SIDE_IMPERIAL ?
-                    pConfedCommBackground :
-                    pKilrathiCommBackground,
-                0);
+            if (aeShipSide[nCommSpeakerObject] == SIDE_IMPERIAL)
+                DrawSpriteDefault(&stRightVdu, stRightVdu.left,
+                                  stRightVdu.top,
+                                  pConfedCommBackground, 0);
+            else
+                DrawSpriteDefault(&stRightVdu, stRightVdu.left,
+                                  stRightVdu.top,
+                                  pKilrathiCommBackground, 0);
             DrawSpriteDefault(
                 &stRightVdu, stRightVdu.left,
                 stRightVdu.top,
@@ -1793,17 +1793,11 @@ void real_vid_transmit(short obj, short message)
     } else {
 #ifdef SDL_PORT
         sprintf(text, "%s: %s",
-                aObjectTypeData[
-                    *(enum ObjectType *)(void *)
-                        ((unsigned char *)aeObjectType +
-                         objectOffset)].displayName,
+                aObjectTypeData[aeObjectType[obj]].displayName,
                 speech);
 #else
         sprintf(text, szShipCommFormat,
-                aObjectTypeData[
-                    *(enum ObjectType *)(void *)
-                        ((unsigned char *)aeObjectType +
-                         objectOffset)].displayName,
+                aObjectTypeData[aeObjectType[obj]].displayName,
                 speech);
 #endif
     }
@@ -2138,7 +2132,7 @@ void ThrottleFrameAndDrawFps(HDC dc)
         if (nPreviousFrameTimeMs != 0) {
             now = timeGetTime();
             fMeasuredFrameRate =
-                1000.0f / ((double)now - nPreviousFrameTimeMs);
+                1000.0f / ((float)now - nPreviousFrameTimeMs);
         }
         nPreviousFrameTimeMs = timeGetTime();
         sprintf((char *)szFrameRateText, "%f",

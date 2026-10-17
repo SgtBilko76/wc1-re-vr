@@ -308,7 +308,7 @@ extern "C" int ix_streamer_open_stream_file(char *path)
 extern "C" void ix_streamer_close_stream_file(void)
 {
     IxStreamFile *streamFile;
-    IxStreamFile *previous;
+    IxStreamFile *previousFile;
 
     if ((dwStreamerState & IX_STREAMER_INITIALIZED) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 250);
@@ -322,9 +322,9 @@ extern "C" void ix_streamer_close_stream_file(void)
     }
     streamFile = pStreamerIdleFiles;
     while (streamFile != 0) {
-        previous = streamFile->previous;
+        previousFile = streamFile->previous;
         ix_streamer_close_file(streamFile);
-        streamFile = previous;
+        streamFile = previousFile;
     }
     EnterCriticalSection(&csStreamer);
     dwStreamerState &= 0xffffff91;
@@ -433,10 +433,8 @@ char ix_streamer_get_trigger(void)
 /* Function start: 0x0044342E */   /* source line(s) 342: Stream has no audio */
 extern "C" void ix_streamer_force_trigger(char trigger)
 {
-    unsigned int triggerCount;
     unsigned int chunk;
     unsigned int chunkCount;
-    unsigned int triggerIndex;
 
     if ((dwStreamerState & IX_STREAMER_HAS_AUDIO) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 342);
@@ -448,6 +446,9 @@ extern "C" void ix_streamer_force_trigger(char trigger)
     EnterCriticalSection(&csStreamer);
     while (-1 < trigger && chunkCount--) {
         if (pStreamerAudioChunks[chunk].triggerCount > 0) {
+            unsigned int triggerCount;
+            unsigned int triggerIndex;
+
             triggerCount =
                 pStreamerAudioChunks[chunk].triggerCount;
             triggerIndex =
@@ -549,20 +550,20 @@ unsigned int ix_streamer_hash_name(unsigned char *name)
 /* Function start: 0x00443755 */
 IxStreamerFileEntry *ix_streamer_find_entry(unsigned int hash)
 {
-    unsigned int last;
+    unsigned int lo;
+    unsigned int hi;
+    unsigned int mid;
     IxStreamerFileEntry *entry;
-    unsigned int first;
-    unsigned int middle;
 
-    first = 0;
-    last = pStreamerHeader->fileEntryCount;
-    while (last > first) {
-        middle = (first + last) >> 1;
-        entry = &pStreamerFileEntries[middle];
+    lo = 0;
+    hi = pStreamerHeader->fileEntryCount;
+    while (hi > lo) {
+        mid = (hi + lo) >> 1;
+        entry = &pStreamerFileEntries[mid];
         if (entry->nameHash < hash) {
-            first = middle + 1;
+            lo = mid + 1;
         } else if (entry->nameHash > hash) {
-            last = middle;
+            hi = mid;
         } else {
             return entry;
         }
@@ -734,7 +735,6 @@ DWORD WINAPI ix_streamer_thread_proc(void *parameter)
 unsigned int ix_streamer_service_audio(void)
 {
     unsigned int bytesUntilStop;
-    register unsigned int chunkSize;
 
     if ((dwStreamerState & IX_STREAMER_END_TRIGGERED) != 0) {
         bytesUntilStop = pStreamerHeader->audioBufferSize -
@@ -747,20 +747,14 @@ unsigned int ix_streamer_service_audio(void)
                 IX_STREAMER_DSP_PLAYING) == 0) {
         dwStreamerState |= IX_STREAMER_DSP_PLAYING;
         ix_dsps_prepare(0);
-        for (;;) {
-            chunkSize = ix_thread_get_audio_chunk_size();
-            if (chunkSize >= (unsigned int)ix_dsps_get_buffer_free(0))
-                break;
+        while ((unsigned int)ix_dsps_get_buffer_free(0) >
+               ix_thread_get_audio_chunk_size())
             ix_thread_lock_stream_buffer();
-        }
         ix_dsps_play(0);
     } else {
-        for (;;) {
-            chunkSize = ix_thread_get_audio_chunk_size();
-            if (chunkSize >= (unsigned int)ix_dsps_get_buffer_free(0))
-                break;
+        while ((unsigned int)ix_dsps_get_buffer_free(0) >
+               ix_thread_get_audio_chunk_size())
             ix_thread_lock_stream_buffer();
-        }
     }
     return ix_thread_service_streams();
 }

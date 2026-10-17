@@ -1,7 +1,7 @@
 # Address-sorted developer functions in WC1.EXE (original addresses).
 # MSVC emits functions in source order, so adjacency here is evidence of
 # shared compilation-unit ownership. Regenerate with: make sort
-# 1454 developer functions; CRT begins at 0x00449100.
+# 1499 developer functions; CRT begins at 0x00449100.
 
 0x00401000 SaveGamePalette
 0x00401020 RestoreGamePalette
@@ -78,6 +78,7 @@
 0x00403C40 DoLocalFn3C40
 0x00403C90 MonoDebug_install
 0x00403D60 MonoDebug_remove
+0x00403D80 SendMonoDebugCommand3
 0x00403DB0 GetG005a8760Fn3DB0
 0x00403DE0 MonoDebug_print
 0x00403E30 QueryPerfCounterValue
@@ -226,6 +227,7 @@
 0x0040BF50 new_sphere_shapes
 0x0040BFF0 set_up_action_sphere
 0x0040C150 free_pilot_talk
+0x0040C1A0 FreeAllPilotTalk
 0x0040C1C0 get_pilot_talk
 0x0040C2B0 init_personalities
 0x0040C350 room_for_me
@@ -261,6 +263,7 @@
 0x0040D2C0 PlaceNavMapLabel
 0x0040D410 ScanTbl0059dac9FnD410
 0x0040D490 ScanTbl00475e80FnD490
+0x0040D500 FindNavMapLabelAtPoint
 0x0040D540 LoopNavFnD540
 0x0040D5A0 DrawNavFnD5A0
 0x0040D640 DrawNavSquareOutline
@@ -288,8 +291,11 @@
 0x0040E900 ReleaseNearHeapBlock
 0x0040E950 PurgeNearHeapBlocks
 0x0040E9E0 InitializeNearHeap
+0x0040EB10 ShutdownNearHeap
 0x0040EB70 AllocateNearHeapBlockFromEnd
 0x0040ED30 AllocateNearHeapBlockByFlags
+0x0040EF00 FreeNearHeapBlock
+0x0040EF60 GetNearHeapBlockSize
 0x0040EFE0 add_statistics
 0x0040F010 PostMission
 0x0040F190 FullMissionScore
@@ -345,6 +351,7 @@
 0x00414240 UpdateMessage
 0x00414270 set_global_message
 0x004142B0 CockpitMessage
+0x004142D0 ClearGlobalMessage
 0x004142E0 remove_message
 0x00414300 kilrathi_near
 0x00414380 auto_pilot_valid
@@ -485,6 +492,7 @@
 0x00418800 random_radial
 0x00418840 MakeRandomNormalizedVector
 0x00418890 DoLocalFn8890
+0x00418900 ConvertSphericalToRectangular
 0x00418980 ConvertShortVectorToFixedVector
 0x004189B0 ConvertFixedVectorToShortVector
 0x004189E0 dot_product
@@ -523,6 +531,8 @@
 0x00419850 point_perpendicular
 0x00419870 point_parallel
 0x004198A0 MoveObjectAlongDirection
+0x004198F0 ComputeObjectToPointDelta
+0x00419920 ComputeObjectToObjectDelta
 0x00419950 DoLocalFn9950
 0x00419970 DoLocalFn9970
 0x00419990 DoLocalFn9990
@@ -739,6 +749,8 @@
 0x00422F80 scan_for_enemy
 0x00423070 any_enemy
 0x004230F0 nearest_enemy_range
+0x00423160 FindEnemyAimingWithinRange
+0x004231E0 FireOnAlternateTurns
 0x00423210 fire_when_ready
 0x00423260 ships_within_range
 0x004232B0 attacker_in_range
@@ -971,6 +983,7 @@
 0x0042EE80 ResetSoundState
 0x0042EEA0 ResetSoundStateForScene
 0x0042EEB0 ResetSoundStateForFlight
+0x0042EEC0 DisableMusicForScene
 0x0042EEE0 EnableMusicForScene
 0x0042EF00 SoundFxTick
 0x0042EF10 FlushSoundEffectsAndLog
@@ -989,6 +1002,7 @@
 0x0042F7E0 DoUiFnF7E0
 0x0042F810 GetPacketSize
 0x0042F890 GetFreeNearHeapBytes
+0x0042F8E0 GetLargestFreeNearHeapBlock
 0x0042F930 FrameStartHook
 0x0042F940 DoLocalFnF940
 0x0042F950 MessagePumpHook
@@ -1004,6 +1018,7 @@
 0x00430150 ShowTigerClawEscapeScene
 0x004304F0 ShowTheEndScreen
 0x00430710 UpdateInputDeviceTransitions
+0x00430830 JoystickInputHook
 0x00430840 PollJoystickButtonEvents
 0x00430920 PollMenuInputDevices
 0x00430BC0 get_face
@@ -1059,7 +1074,10 @@
 0x00432970 DIBslamReal
 0x00432C60 DIBupdate
 0x00432DE0 HelperOf4326E0A
+0x00432DF0 DIBpixelBufferHook
 0x00432E00 ReadDAT00486074
+0x00432E10 GetDIBWidth
+0x00432E20 GetDIBHeight
 0x00432E30 SetTbl00486112Fn2E30
 0x00432EA0 DIBramPalette
 0x00432F10 DIBsetPalette
@@ -1137,6 +1155,7 @@
 0x00435570 InitializeEventManager
 0x00435590 ShutdownEventManager
 0x004355A0 ConfigureEventManagerPointer
+0x004355B0 ReleaseEventManagerPointerHook
 0x004355C0 EventManagerHook
 0x004355D0 SetEventManagerPump
 0x004355F0 TranslatePolledInputEvent
@@ -1154,6 +1173,7 @@
 0x00435DB0 FlushInputEvents
 0x00435DC0 DoUiFn5DC0
 0x00435DE0 CheckCursor
+0x00435DF0 RefreshMouseCursorHook
 0x00435E20 WcOrphanRoutine435E20
 0x00435EF0 DrawUiFn5EF0
 0x00435FA0 GetUiFn5FA0
@@ -1224,6 +1244,7 @@
 0x00439070 DrawUiFn9070
 0x00439150 GetTbl0046e222Fn9150
 0x00439220 BlitUiFn9220
+0x00439350 ShowOffscreenBuffer
 0x00439400 DebugNoBodyStubv1
 0x00439430 PanToScreen
 0x00439660 death_sequence
@@ -1299,7 +1320,10 @@
 0x0043F750 InitializeRoomMenu
 0x0043F7C0 FindMenuRegionAtPoint
 0x0043F810 InitializeRoomViewports
+0x0043F8B0 DrawMouseCursorIntoViewport
 0x0043F940 RecRoom
+0x004404E0 SuspendMouseCursor
+0x004404F0 InitializeEventManagerTiming
 0x00440510 ShowChalkBoard
 0x00440800 ResetCampaignData
 0x00440840 ReadPacketSectionData

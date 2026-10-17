@@ -149,12 +149,12 @@ void DIBinstall(HWND window)
     if (result != DD_OK)
         DIBerror("DIBmakeInstall   SetCooperativeLevel", result);
 
-    if (bDirectDrawModeCascadeEnabled == 0) {
-        nDIBCascadeLevel = -1;
-    } else {
+    if (bDirectDrawModeCascadeEnabled != 0) {
         cascadeResult = DIBcascade(-1, 0);
         if (cascadeResult == 0)
             DIBerror("DIBinstall   DIBcascade Failure", result);
+    } else {
+        nDIBCascadeLevel = -1;
     }
 #endif
 
@@ -179,7 +179,6 @@ int DIBcascade(int mode, int *reportedResult)
 #else
     DDSURFACEDESC surface;
     HRESULT result;
-    const char *modeText;
 
     for (;;) {
         if (mode != -2) {
@@ -200,7 +199,7 @@ int DIBcascade(int mode, int *reportedResult)
                 mode = 0;
                 continue;
             }
-            modeText = "320x200 achieved...testing\n";
+            OutputDebugStringA("320x200 achieved...testing\n");
             break;
         case 1:
             result = pDirectDraw2->lpVtbl->SetDisplayMode(
@@ -212,7 +211,7 @@ int DIBcascade(int mode, int *reportedResult)
                 mode = 0;
                 continue;
             }
-            modeText = "640x400 achieved...testing\n";
+            OutputDebugStringA("640x400 achieved...testing\n");
             break;
         case 2:
             result = pDirectDraw2->lpVtbl->SetDisplayMode(
@@ -224,13 +223,12 @@ int DIBcascade(int mode, int *reportedResult)
                 mode = 0;
                 continue;
             }
-            modeText = "640x480 achieved...testing\n";
+            OutputDebugStringA("640x480 achieved...testing\n");
             break;
         default:
             return 0;
         }
 
-        OutputDebugStringA(modeText);
         if (mode == -2) {
             if (pSecondarySurface != 0) {
                 result = IDirectDrawSurface_Restore(
@@ -294,8 +292,8 @@ int DIBcascade(int mode, int *reportedResult)
         OutputDebugStringA(" failed\n");
         mode = 0;
         IDirectDrawSurface_Release(pPrimarySurface);
-        reportedResult = 0;
         IDirectDraw2_RestoreDisplayMode(pDirectDraw2);
+        reportedResult = 0;
     }
 #endif
 }
@@ -322,7 +320,7 @@ void DIBmakeDIB(void)
 {
 #ifndef SDL_PORT
     DDSURFACEDESC surface;
-    PALETTEENTRY entries[256];
+    unsigned char entries[0x400];
     HRESULT result;
     int offset;
 
@@ -341,15 +339,15 @@ void DIBmakeDIB(void)
 #ifndef SDL_PORT
     offset = 0;
     do {
-        entries[offset / 4].peRed = abDIBPaletteCache[offset + 2];
-        entries[offset / 4].peGreen = abDIBPaletteCache[offset + 1];
-        entries[offset / 4].peBlue = abDIBPaletteCache[offset];
-        entries[offset / 4].peFlags = 0;
+        entries[offset] = abDIBPaletteCache[offset + 2];
+        entries[offset + 1] = abDIBPaletteCache[offset + 1];
+        entries[offset + 2] = abDIBPaletteCache[offset];
+        entries[offset + 3] = 0;
         offset += 4;
     } while (offset < 0x400);
 
     result = IDirectDraw2_CreatePalette(
-        pDirectDraw2, DDPCAPS_8BIT, entries,
+        pDirectDraw2, DDPCAPS_8BIT, (LPPALETTEENTRY)entries,
         &pDirectDrawPalette, 0);
     if (result != DD_OK)
         DIBerror("DIBmakeDIB   CreatePalette", result);
@@ -683,29 +681,43 @@ unsigned char *GetDIBPixelBuffer(void)
     return pDIBPixelBuffer;
 }
 
+/* Function start: 0x432DF0 */
+/* Empty, and nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits between the DIB accessors. */
+void DIBpixelBufferHook(void)
+{
+}
+
 /* Function start: 0x432E00 */
 HWND GetDIBWindowHandle(void)
 {
     return hDIBWindow;
 }
 
+/* Function start: 0x432E10 */
+/* Nothing in the shipped executable calls this. */
+unsigned int GetDIBWidth(void)
+{
+    return nDIBWidth;
+}
+
+/* Function start: 0x432E20 */
+/* Nothing in the shipped executable calls this. */
+unsigned int GetDIBHeight(void)
+{
+    return nDIBHeight;
+}
+
 /* Function start: 0x432E30 */
 void CachePaletteEntryFromWords(short index, unsigned short *rgb)
 {
-    int cacheOffset = index * 4;
-    int wordOffset = index * 3;
-    unsigned char value;
-
-    value = *(unsigned char *)&rgb[0];
-    abDIBPaletteCache[cacheOffset + 2] = value;
-    awPaletteRgbWords[wordOffset] = value;
-    value = *(unsigned char *)&rgb[1];
-    abDIBPaletteCache[cacheOffset + 1] = value;
-    awPaletteRgbWords[wordOffset + 1] = value;
-    value = *(unsigned char *)&rgb[2];
-    abDIBPaletteCache[cacheOffset] = value;
-    abDIBPaletteCache[cacheOffset + 3] = 1;
-    awPaletteRgbWords[wordOffset + 2] = value;
+    awPaletteRgbWords[index * 3] =
+        abDIBPaletteCache[index * 4 + 2] = (unsigned char)rgb[0];
+    awPaletteRgbWords[index * 3 + 1] =
+        abDIBPaletteCache[index * 4 + 1] = (unsigned char)rgb[1];
+    awPaletteRgbWords[index * 3 + 2] =
+        abDIBPaletteCache[index * 4] = (unsigned char)rgb[2];
+    abDIBPaletteCache[index * 4 + 3] = 1;
 }
 
 /* Function start: 0x432EA0 */
@@ -740,43 +752,32 @@ void DIBramPalette(void)
 /* Function start: 0x432F10 */
 void DIBsetPalette(short index, short *rgb)
 {
-    short value;
-    int wordOffset;
-    int cacheOffset;
-    int paletteIndex;
 #ifndef SDL_PORT
     PALETTEENTRY entry;
     HRESULT result;
 #endif
 
-    paletteIndex = (int)index;
-    cacheOffset = paletteIndex * 4;
-    value = rgb[0];
-    if ((int)abDIBPaletteCache[cacheOffset + 2] != (int)value ||
-        (int)abDIBPaletteCache[cacheOffset + 1] != (int)rgb[1] ||
-        (int)abDIBPaletteCache[cacheOffset] != (int)rgb[2]) {
-        abDIBPaletteCache[cacheOffset + 2] = (unsigned char)value;
-        wordOffset = paletteIndex * 3;
-        awPaletteRgbWords[wordOffset] = (unsigned char)value;
-        value = *(unsigned char *)&rgb[1];
-        abDIBPaletteCache[cacheOffset + 1] = (unsigned char)value;
-        awPaletteRgbWords[wordOffset + 1] = (unsigned char)value;
-        value = *(unsigned char *)&rgb[2];
-        abDIBPaletteCache[cacheOffset] = (unsigned char)value;
-        abDIBPaletteCache[cacheOffset + 3] = 1;
-        awPaletteRgbWords[wordOffset + 2] = (unsigned char)value;
+    if (abDIBPaletteCache[index * 4 + 2] != rgb[0] ||
+        abDIBPaletteCache[index * 4 + 1] != rgb[1] ||
+        abDIBPaletteCache[index * 4] != rgb[2]) {
+        awPaletteRgbWords[index * 3] =
+            abDIBPaletteCache[index * 4 + 2] = (unsigned char)rgb[0];
+        awPaletteRgbWords[index * 3 + 1] =
+            abDIBPaletteCache[index * 4 + 1] = (unsigned char)rgb[1];
+        awPaletteRgbWords[index * 3 + 2] =
+            abDIBPaletteCache[index * 4] = (unsigned char)rgb[2];
+        abDIBPaletteCache[index * 4 + 3] = 1;
 
         /* SDL_PORT consumes this cache on the next normal frame submission.
            A DirectDraw palette entry update did not blit or wait for vertical
            blank, so flight fades must not submit additional SDL frames. */
 #ifndef SDL_PORT
-        entry.peBlue = (unsigned char)value;
-        entry.peRed = (unsigned char)awPaletteRgbWords[wordOffset];
-        entry.peGreen =
-            (unsigned char)awPaletteRgbWords[wordOffset + 1];
+        entry.peRed = (unsigned char)awPaletteRgbWords[index * 3];
+        entry.peGreen = (unsigned char)awPaletteRgbWords[index * 3 + 1];
+        entry.peBlue = (unsigned char)awPaletteRgbWords[index * 3 + 2];
         entry.peFlags = 0;
         result = IDirectDrawPalette_SetEntries(
-            pDirectDrawPalette, 0, paletteIndex, 1, &entry);
+            pDirectDrawPalette, 0, index, 1, &entry);
         if (result != DD_OK)
             DIBerror("DIBsetPalette   SetEntries", result);
 

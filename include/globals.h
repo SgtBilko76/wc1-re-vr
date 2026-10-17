@@ -133,7 +133,7 @@ extern char szBriefingNavMapTitle[20]; /* 0x0046889c */
 extern char szConfedNavScan[16]; /* 0x004688b0 */
 extern int bInflightComputerActive; /* 0x00468754 */
 extern volatile short nNearHeapActive; /* 0x004688c0 */
-extern volatile short nNearHeapMaxDescriptors; /* 0x004688c4 */
+extern short nNearHeapMaxDescriptors; /* 0x004688c4 */
 extern volatile int nNearHeapRelocationBytes; /* 0x004688c8 */
 extern int bOfficeVisitPending; /* 0x004688cc */
 extern int bPromotionPending; /* 0x004688d0 */
@@ -164,8 +164,8 @@ extern char *pszDisplayedHudMessage; /* 0x00469008 */
 extern unsigned char cRenderedPilotHandFrame; /* 0x0046900c */
 extern short asPilotHandOffsets[34]; /* 0x00469018 */
 extern unsigned char *pCockpitExplosionBackground; /* 0x00469060 */
-extern unsigned char * volatile pCockpitExplosionShape; /* 0x00469064 */
-extern volatile short nCockpitExplosionFrame; /* 0x00469068 */
+extern unsigned char *pCockpitExplosionShape; /* 0x00469064 */
+extern short nCockpitExplosionFrame; /* 0x00469068 */
 extern unsigned char *pReleaseWeaponDisplayBackground; /* 0x0046906c */
 extern signed char cReleaseWeaponDisplayFrame; /* 0x00469070 */
 extern signed char cReleaseWeaponDisplayTicks; /* 0x00469074 */
@@ -1037,7 +1037,7 @@ extern int nWingmanKilledThisMission; /* 0x005a7cb4 */
 extern short nWingmanKillCount; /* 0x005a7cb8 */
 extern short nLastFoundShip; /* 0x005a7cba */
 extern int nMemoryConfiguration; /* 0x005a7cd4 */
-extern unsigned int dwOriginalFreeMemory; /* 0x005a7cd8 */
+extern volatile unsigned int dwOriginalFreeMemory; /* 0x005a7cd8 */
 extern unsigned char *pMouseCursorResource; /* 0x005a7cdc */
 extern int nAvailableGameMemory; /* 0x005a7ce0 */
 extern int nSceneResourceBudget; /* 0x005a7ce4 */

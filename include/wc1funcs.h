@@ -18,11 +18,11 @@ short asteroid_velocity(void);                                       /* 0x004012
 void skew_randomly(short obj, short allowReverse);                    /* 0x00401290 */
 void align(short *value, short quantum);                              /* 0x00401390 */
 void init_hazard(short obj, FixedVector position, short moving);      /* 0x004013B0 */
-int near_field(const HazardField *field, const FixedVector *point);   /* 0x00401680 */
+short near_field(const HazardField *field, const FixedVector *point); /* 0x00401680 */
 short within_field(const HazardField *field, const FixedVector *point); /* 0x004016A0 */
 short try_far_spot(FixedVector *spot, short *moving);                 /* 0x004016C0 */
 short rear_sphere(void);                                              /* 0x00401870 */
-int ok_hazard_spot(short obj);                                        /* 0x00401890 */
+short ok_hazard_spot(short obj);                                      /* 0x00401890 */
 short make_hazard(void);                                              /* 0x004018D0 */
 void extra_hazard(short obj);                                        /* 0x00401930 */
 void approach(short obj);                                            /* 0x00401950 */
@@ -48,7 +48,7 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
                                 WPARAM wParam, LPARAM lParam);         /* 0x00402530 */
 int __stdcall GetJoystickPosition(unsigned int *x, unsigned int *y,
                                   unsigned int *buttons, short joystick,
-                                  unsigned int fallback);              /* 0x00402A20 */
+                                  unsigned short fallback);            /* 0x00402A20 */
 short GetJoystickButtons(void);                                                   /* 0x00402AC0 */
 void GetJoystickDevCaps(short joystick, short *xMin, short *xMax,
                         short *yMin, short *yMax);                    /* 0x00402AE0 */
@@ -268,17 +268,17 @@ unsigned int sub_int_vector(const ShortVector *left,
                             ShortVector *difference);                  /* 0x0040C4A0 */
 unsigned int set_formation_position(short obj,
                                     const MissionShipRecord *record);  /* 0x0040C4E0 */
-void Set_up_ship_info(short obj, short missionShip,
-                      signed char navPoint);                           /* 0x0040C5E0 */
+unsigned int Set_up_ship_info(short obj, short missionShip,
+                              signed char navPoint);                   /* 0x0040C5E0 */
 unsigned int is_team_member(short missionShip);                        /* 0x0040C740 */
 unsigned int find_next_ship_turn_slot(short obj);                     /* 0x0040C780 */
 short init_ship(short missionShip, short navPoint);                    /* 0x0040C800 */
 unsigned int init_intelligence_data(short obj);                       /* 0x0040C950 */
 short __stdcall SampleBothJoysticks(InputDeviceSample *samples,
-                                    unsigned int fallback);             /* 0x0040CAA0 */
+                                    unsigned short fallback);           /* 0x0040CAA0 */
 int __stdcall SampleJoystickDevice(InputDeviceSample *samples,
                                    short joystick,
-                                   unsigned int fallback);              /* 0x0040CAE0 */
+                                   unsigned short fallback);            /* 0x0040CAE0 */
 short ReadJoystickButtons(void);                                        /* 0x0040CB20 */
 void SampleActiveJoystickDevice(void);                                 /* 0x0040CB30 */
 void DrawNavTextLine(unsigned char alignment, unsigned short colour,
@@ -432,7 +432,7 @@ void update_bars(void);                                              /* 0x004146
 short get_mode(short i);                                              /* 0x004147E0 */
 void set_mode(short i, int state);                                    /* 0x00414800 */
 unsigned short SetVduModeIfChanged(short i, int state);               /* 0x00414850 */
-int GetVduModeStackDepth(short i);                                    /* 0x00414890 */
+short GetVduModeStackDepth(short i);                                  /* 0x00414890 */
 void push_mode(short i, int state);                                   /* 0x004148A0 */
 void pop_mode(short i);                                               /* 0x004148E0 */
 void set_new_vdu(short vdu);                                          /* 0x00414910 */
@@ -467,7 +467,7 @@ short cycle_next_objective(void);                                     /* 0x00415
 void set_next_destination(void);                                       /* 0x004153D0 */
 short LocateMobileObjective(short objective);                         /* 0x00415470 */
 unsigned int someone_coming(void);                                     /* 0x004154C0 */
-unsigned int escorting_a_ship(void);                                   /* 0x00415510 */
+short escorting_a_ship(void);                                          /* 0x00415510 */
 void flag_reached(short objective, short reached);                     /* 0x00415530 */
 void check_sighting(short objective, short range, short object);      /* 0x004156D0 */
 void check_visit(short objective, short range);                       /* 0x00415720 */
@@ -768,7 +768,7 @@ void set_objects_data(short obj, enum ObjectType type,
                       short owner);                                  /* 0x0041E120 */
 unsigned int match_rotation_goal(short *rotation, short *goal,
                                  short totalError, short rate);         /* 0x0041E400 */
-void rotate_object_to_goal(short obj);                                  /* 0x0041E520 */
+int rotate_object_to_goal(short obj);                                   /* 0x0041E520 */
 unsigned int check_for_lost_control(short obj);                        /* 0x0041E650 */
 unsigned int celerate(short ship, int delta);                     /* 0x0041E710 */
 unsigned int approach_speed(short ship, int targetSpeed);         /* 0x0041E750 */
@@ -910,7 +910,7 @@ int any_enemy(short obj, short range);                                  /* 0x004
 short nearest_enemy_range(short obj);                                 /* 0x004230F0 */
 void fire_when_ready(short obj, short aimed);                         /* 0x00423210 */
 unsigned int ships_within_range(short obj, short other, short range); /* 0x00423260 */
-int attacker_in_range(short obj, short range);                          /* 0x004232B0 */
+int attacker_in_range(short obj, unsigned short range);                 /* 0x004232B0 */
 int in_danger(short obj);                                               /* 0x00423350 */
 unsigned int target_within_range(short obj);                           /* 0x00423400 */
 short build_target_list(short obj, short range);                       /* 0x00423440 */
@@ -1007,8 +1007,8 @@ void InitializeTrainSimHighScores(void);                              /* 0x00425
 short IsHighScoreSlotUsed(short i);                                    /* 0x00425FE0 */
 void AddRandomTrainSimHighScores(void);                               /* 0x00426000 */
 void DrawTextInputCursor(char character);                             /* 0x004260E0 */
-void ClearTextInputCharacter(char character);                         /* 0x00426140 */
-void ClearNextTextInputCharacter(char character);                     /* 0x004261D0 */
+void ClearTextInputCharacter(short character);                        /* 0x00426140 */
+void ClearNextTextInputCharacter(short character);                    /* 0x004261D0 */
 short ReadTextInput(char *destination, short maximumLength,
                     volatile short mode);                            /* 0x00426200 */
 void ReadRequiredPilotField(short x, short y, const char *label,
@@ -1208,7 +1208,7 @@ unsigned short __stdcall ShouldSuspendCursorForRect(
     const ShortRect *bounds);                                           /* 0x0042F730 */
 unsigned short __stdcall InitializeDIBScreenViewport(
     Viewport *viewport, unsigned short colour);                       /* 0x0042F740 */
-void InitFullScreenViewport(int *vp, short arg);                                    /* 0x0042F7E0 */
+void __stdcall InitFullScreenViewport(int *vp, short arg);                          /* 0x0042F7E0 */
 unsigned int __stdcall GetPacketSize(const char *filename,
                                      short section);                  /* 0x0042F810 */
 int GetFreeNearHeapBytes(void);                                       /* 0x0042F890 */
@@ -1235,17 +1235,17 @@ void PollMenuInputDevices(void);                                       /* 0x0043
 short get_face(short rating, unsigned int side);                      /* 0x00430BC0 */
 void LoadCommPortraitShape(short face, signed char alternate);        /* 0x00430BF0 */
 void ResetCommMenuChoices(short reuse);                               /* 0x00430C50 */
-int IsCommMenuIdle(void);                                              /* 0x00430CA0 */
+short IsCommMenuIdle(void);                                            /* 0x00430CA0 */
 void AppendCommMenuChoice(const char *text, short command);            /* 0x00430CB0 */
 void SendCommMenuChoice(short i);                                          /* 0x00430D30 */
 void OpenCommMenuForTarget(const char *heading,
                            const char *message);                       /* 0x00430D50 */
-int IsCommChoiceMenuOpen(void);                                       /* 0x00430D80 */
+short IsCommChoiceMenuOpen(void);                                     /* 0x00430D80 */
 short GetPendingMenuAction(void);                                            /* 0x00430DA0 */
 void SetPendingMenuAction(unsigned char v);                                 /* 0x00430DB0 */
 void OpenCommRecipientMenu(void);                                     /* 0x00430DC0 */
 void CloseCommChoiceMenu(void);                                       /* 0x00430DE0 */
-int wingman_dead(void);                                               /* 0x00430E10 */
+short wingman_dead(void);                                             /* 0x00430E10 */
 short have_target(void);                                              /* 0x00430E30 */
 unsigned short CanOpenCommMenu(void);                                 /* 0x00430E50 */
 void SelectCommRecipient(short recipient);                            /* 0x00430E70 */
@@ -1307,7 +1307,7 @@ void steer_away_from_predicted_object(short obj, short other,
                                       short predictionTicks,
                                       short amount);                  /* 0x00433B90 */
 void prevent_collision(short obj);                                    /* 0x00433C80 */
-int handle_collisions(short obj);                                     /* 0x00433D90 */
+short handle_collisions(short obj);                                   /* 0x00433D90 */
 int regulate_turn(short obj);                                         /* 0x00433DE0 */
 unsigned int select_target(short obj);                                  /* 0x00433E50 */
 unsigned int veer_random(short obj, short amount);                      /* 0x00433EC0 */
@@ -1337,7 +1337,7 @@ void handle_stress(short obj, int event);                              /* 0x0043
 void intelligence_events(short obj);                                    /* 0x00434A80 */
 unsigned int chase_speed(short obj, short range);                      /* 0x00434C70 */
 short RandomBelow(short n);                                           /* 0x00434CD0 */
-void __stdcall SeedRandomFromClock(void);                                               /* 0x00434CF0 */
+void __stdcall SeedRandomFromClock(int);                               /* 0x00434CF0 */
 unsigned short RandomWord(void);                                        /* 0x00434D10 */
 short __stdcall RandomInRange(short lo, short hi);                      /* 0x00434D20 */
 short RandomBelowOrEqual(short n);                                      /* 0x00434D50 */
@@ -1391,12 +1391,11 @@ void __stdcall EventManagerHook(void (*callback)(void));               /* 0x0043
 void __stdcall SetEventManagerPump(void (*pump)(void));                /* 0x004355D0 */
 void TranslatePolledInputEvent(unsigned short type,
                                unsigned int value);                   /* 0x004355F0 */
-void QueueInputEventAtCursor(unsigned int type, short primaryButton,
+void QueueInputEventAtCursor(unsigned short type, short primaryButton,
                              short secondaryButton);                   /* 0x004356A0 */
 InputEvent *AllocateInputEvent(void);                                  /* 0x004356E0 */
 void ReleaseInputEvent(InputEvent *event);                             /* 0x00435760 */
-void QueueInputEvent(unsigned short type, unsigned short x,
-                     unsigned short y, unsigned short value,
+void QueueInputEvent(int type, int x, int y, int value,
                      int primaryButton, int secondaryButton,
                      unsigned int timestamp);                          /* 0x00435790 */
 void ReleaseInputEventQueue(void);                                    /* 0x004358B0 */
@@ -1461,7 +1460,7 @@ void __stdcall ConvertChar_Int(char *text, short number,
 unsigned int LoadBriefingRoom(void);                                  /* 0x00436D00 */
 unsigned int ViewMedals(void);                                        /* 0x00436E30 */
 unsigned int AwardCampaignMedal(short medal);                         /* 0x00436F50 */
-int no_objectives_achieved(void);                                      /* 0x00438090 */
+short no_objectives_achieved(void);                                    /* 0x00438090 */
 short wing_status(short personality);                                  /* 0x004380D0 */
 short int_value(char **text);                                          /* 0x00438110 */
 ConversationSceneRecord *ParseTests(ConversationSceneRecord *record,
