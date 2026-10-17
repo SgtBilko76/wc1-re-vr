@@ -29,7 +29,7 @@ extern unsigned int nGuardedAllocationPeakBytes; /* 0x00465068 */
 extern int bShowFrameRate; /* 0x00465070 */
 extern int bDirectDrawModeCascadeEnabled; /* 0x00465074 */
 extern int bCockpitEnabled; /* 0x0046507c */
-extern int bMainWindowMinimized; /* 0x00465080 */
+extern volatile int bMainWindowMinimized; /* 0x00465080 */
 extern int bWindowMessagePumpActive; /* 0x004650a8 */
 extern unsigned int bF1KeyLatch; /* 0x004650ac */
 extern GuardedAllocation *pGuardedAllocationHead; /* 0x004650b0 */

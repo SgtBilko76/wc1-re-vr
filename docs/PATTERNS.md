@@ -72,6 +72,19 @@ for similarity decisions.
   loops call `ix_thread_get_audio_chunk_size` before `ix_dsps_get_buffer_free`;
   putting the chunk-size call on the left of `<` reproduces the original
   call order and unsigned branch direction under the library profile.
+- The message pump retains a `POINT` cursor position alongside its `MSG` and
+  `RECT`, giving a 52-byte local frame. Two independent cursor integers let
+  CL overlay their uninitialized slots and shorten the frame. Its minimized
+  flag is read again immediately after being set; `volatile int` preserves
+  those accesses and the original loop branch instead of sinking the store.
+  The minimized-state test follows the `IsIconic` branch, and the minimized
+  process priority is `IDLE_PRIORITY_CLASS` (`0x40`).
+- Keep the full-width arguments passed by `MainWindowProc` to
+  `QueueInputEvent`. Its key value is the original `WPARAM`; its mouse
+  coordinates have already been extracted from the message's low/high words.
+  Additional short casts introduce zero extensions absent from the original.
+  A separate `HANDLE` result from `GetCurrentProcess` also preserves the
+  original call-before-priority-push order in the window procedure and pump.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

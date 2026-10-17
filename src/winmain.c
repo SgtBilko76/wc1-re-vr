@@ -27,7 +27,7 @@ int bShowKilrathiSagaCredits = 0; /* 0x0046506C */
 int bShowFrameRate = 0; /* 0x00465070 */
 int bDirectDrawModeCascadeEnabled = 1; /* 0x00465074 */
 int bCockpitEnabled = 1; /* 0x0046507C */
-int bMainWindowMinimized = 0; /* 0x00465080 */
+volatile int bMainWindowMinimized = 0; /* 0x00465080 */
 
 char szMainWindowClassName[] = "Wing Commander"; /* 0x00465088 */
 char szMainWindowTitle[] = "Wing Commander"; /* 0x00465098 */
@@ -766,11 +766,11 @@ int CreateMainWindow(HINSTANCE instance, HINSTANCE previous,
 unsigned int PumpWindowMessages(void)
 {
 #ifndef SDL_PORT
-    RECT clip;
+    POINT cursor;
     MSG message;
-    int cursorX;
-    int cursorY;
-    int done;
+    RECT clip;
+    HANDLE process;
+    int done = 0;
 #endif
 
     if (bWindowMessagePumpActive != 0)
@@ -781,12 +781,11 @@ unsigned int PumpWindowMessages(void)
 #ifdef SDL_PORT
     SdlPumpEvents();
 #else
-    done = 0;
     do {
         if (bMainWindowMinimized != 0) {
             if (GetMessageA(&message, 0, 0, 0) != 0) {
-                done = 1;
                 TranslateMessage(&message);
+                done = 1;
                 DispatchMessageA(&message);
             } else {
                 LogMemoryUsage();
@@ -800,22 +799,22 @@ unsigned int PumpWindowMessages(void)
                 clip.right = 320;
                 clip.bottom = 200;
                 ShowCursor(FALSE);
-                SetPriorityClass(GetCurrentProcess(),
-                                 HIGH_PRIORITY_CLASS);
+                process = GetCurrentProcess();
+                SetPriorityClass(process, HIGH_PRIORITY_CLASS);
                 SetActiveWindow(hMainWindow);
                 SetForegroundWindow(hMainWindow);
                 DIBreInstall();
                 DIBslam();
                 DIBslamReal();
                 ClipCursor(&clip);
-                SetCursorPos(cursorX, cursorY);
+                SetCursorPos(cursor.x, cursor.y);
                 init_player_input();
             }
         } else {
             if (PeekMessageA(&message, 0, 0, 0, PM_NOREMOVE) != 0) {
                 if (GetMessageA(&message, 0, 0, 0) != 0) {
-                    done = 0;
                     TranslateMessage(&message);
+                    done = 0;
                     DispatchMessageA(&message);
                 } else {
                     done = 0;
@@ -828,17 +827,17 @@ unsigned int PumpWindowMessages(void)
         }
         if (IsIconic(hMainWindow) != 0) {
             if (bMainWindowMinimized == 0) {
-                cursorX = 160;
-                cursorY = 100;
+                cursor.x = 160;
+                cursor.y = 100;
                 ClipCursor(0);
                 ShowCursor(TRUE);
-                SetPriorityClass(GetCurrentProcess(),
-                                 NORMAL_PRIORITY_CLASS);
+                process = GetCurrentProcess();
+                SetPriorityClass(process, IDLE_PRIORITY_CLASS);
             }
             bMainWindowMinimized = 1;
-            if (bMainWindowMinimized != 0)
-                done = 0;
         }
+        if (bMainWindowMinimized != 0)
+            done = 0;
     } while (done == 0);
 #endif
     nTickCount60Hz = GetTickCount() * 60 / 1000;
@@ -865,12 +864,15 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
     unsigned int secondaryButton;
     unsigned int mouseX;
     unsigned int mouseY;
+    unsigned int command;
     unsigned short eventType;
+    HANDLE process;
 
     mouseEvent = 0;
     primaryButton = (unsigned int)wParam & 1;
     secondaryButton = ((unsigned int)wParam & 2) >> 1;
     mouseX = (unsigned short)lParam;
+    command = (unsigned short)wParam;
     mouseY = (unsigned short)((unsigned long)lParam >> 16);
 
     switch (message) {
@@ -882,14 +884,16 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
         bMainWindowAlive = 0;
         ClipCursor(0);
         ShowCursor(TRUE);
-        SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
+        process = GetCurrentProcess();
+        SetPriorityClass(process, IDLE_PRIORITY_CLASS);
         PostQuitMessage(0);
         break;
     case WM_QUIT:
         bMainWindowAlive = 0;
         ClipCursor(0);
         ShowCursor(TRUE);
-        SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
+        process = GetCurrentProcess();
+        SetPriorityClass(process, IDLE_PRIORITY_CLASS);
         break;
     case WM_PAINT:
         BeginPaint(hMainWindow, &paint);
@@ -897,7 +901,7 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
         break;
     case WM_KEYDOWN:
         if (bKeyEventQueueEnabled != 0)
-            QueueInputEvent(3, 0, 0, (unsigned short)wParam,
+            QueueInputEvent(3, 0, 0, (int)wParam,
                             0, 0, 0);
         if (wParam == VK_F1) {
             bF1KeyLatch = 1;
@@ -907,33 +911,34 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
         scanCode = ((unsigned long)lParam & 0xff0000) >> 16;
         if (scanCode == 1)
             bEscapePressed = 1;
-        QueueInputEvent(3, 0, 0, (unsigned short)scanCode,
+        QueueInputEvent(3, 0, 0, (int)scanCode,
                         0, 0, 0);
         SetInputKeyState((int)scanCode, 1);
         break;
     case WM_KEYUP:
         if (bKeyEventQueueEnabled != 0)
-            QueueInputEvent(4, 0, 0, (unsigned short)wParam,
+            QueueInputEvent(4, 0, 0, (int)wParam,
                             0, 0, 0);
         if (wParam == VK_F1)
             bF1KeyLatch = 0;
         scanCode = ((unsigned long)lParam & 0xff0000) >> 16;
-        QueueInputEvent(4, 0, 0, (unsigned short)scanCode,
+        QueueInputEvent(4, 0, 0, (int)scanCode,
                         0, 0, 0);
         SetInputKeyState((int)scanCode, 0);
         break;
     case WM_SYSKEYDOWN:
         nSystemKeyDown = (unsigned int)wParam;
-        if (wParam == 'X' &&
-            ((unsigned long)lParam & 0x20000000) != 0) {
-            PostQuitMessage(0);
-            sprintf(szMemoryUsage,
-                    "Current: %i\nMax    : %i\nTotal : %i\n",
-                    nGuardedAllocationBytes,
-                    nGuardedAllocationPeakBytes,
-                    nGuardedAllocationTotalBytes);
-            OutputDebugStringA("Memory Info:\n");
-            OutputDebugStringA(szMemoryUsage);
+        if (wParam == 'X') {
+            if (((unsigned long)lParam & 0x20000000) != 0) {
+                PostQuitMessage(0);
+                sprintf(szMemoryUsage,
+                        "Current: %i\nMax    : %i\nTotal : %i\n",
+                        nGuardedAllocationBytes,
+                        nGuardedAllocationPeakBytes,
+                        nGuardedAllocationTotalBytes);
+                OutputDebugStringA("Memory Info:\n");
+                OutputDebugStringA(szMemoryUsage);
+            }
         } else if (wParam == 'N') {
             ReportSpaceFlightMaxFps(-0.5f);
         } else if (wParam == 'M') {
@@ -944,7 +949,7 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
         nSystemKeyDown = 0;
         break;
     case WM_COMMAND:
-        if (((unsigned int)wParam & 0xffff) == 3) {
+        if (command == 3) {
             bMainWindowAlive = 0;
             PostQuitMessage(0);
         }
@@ -955,29 +960,29 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
             return 0;
         break;
     case WM_MOUSEMOVE:
-        if (bPointerMovedByKeyboard != 0) {
+        if (bPointerMovedByKeyboard == 0) {
+            eventType = 13;
+            QueueInputEvent(eventType, (int)mouseX,
+                            (int)mouseY, 0,
+                            primaryButton, secondaryButton, 0);
+            mouseEvent = 1;
+        } else {
             bPointerMovedByKeyboard = 0;
-            break;
         }
-        eventType = 13;
-        QueueInputEvent(eventType, (unsigned short)mouseX,
-                        (unsigned short)mouseY, 0,
-                        primaryButton, secondaryButton, 0);
-        mouseEvent = 1;
         break;
     case WM_LBUTTONDOWN:
     case WM_RBUTTONDOWN:
         eventType = 2;
-        QueueInputEvent(eventType, (unsigned short)mouseX,
-                        (unsigned short)mouseY, 0,
+        QueueInputEvent(eventType, (int)mouseX,
+                        (int)mouseY, 0,
                         primaryButton, secondaryButton, 0);
         mouseEvent = 1;
         break;
     case WM_LBUTTONUP:
     case WM_RBUTTONUP:
         eventType = 1;
-        QueueInputEvent(eventType, (unsigned short)mouseX,
-                        (unsigned short)mouseY, 0,
+        QueueInputEvent(eventType, (int)mouseX,
+                        (int)mouseY, 0,
                         primaryButton, secondaryButton, 0);
         mouseEvent = 1;
         break;
