@@ -270,7 +270,7 @@ extern char szTrainSimTitle[24]; /* 0x00469dc8 */
 extern unsigned char *apszBuiltInHighScoreNames[6]; /* 0x00469de0 */
 extern TitleMenuRegion aTrainSimMissionRegions[5]; /* 0x00469df8 */
 extern unsigned char aszBuiltInHighScores[48]; /* 0x00469e38 */
-extern unsigned int dwTrainSimStringPadding; /* 0x00469e68 */
+extern char szEmptyPilotField[4]; /* 0x00469e68 */
 extern char szTextFlushToken[4]; /* 0x00469e6c */
 extern char szNewPilotPrompt[80]; /* 0x00469e70 */
 extern char szDefaultPilotName[8]; /* 0x00469ec0 */
@@ -451,7 +451,7 @@ extern short nYourWingman; /* 0x0046c04c */
 extern short nPlayerCollisionObject; /* 0x0046c050 */
 extern enum ObjectType eSelectedGunType; /* 0x0046c054 */
 extern int nSelectedReleaseWeaponIndex; /* 0x0046c058 */
-extern short DAT_0046c05c;
+extern short DAT_0046c05c; /* 0x0046c05c */
 extern short bTargetLockReadoutDirty; /* 0x0046c060 */
 extern short nTargetLockCountdown; /* 0x0046c064 */
 extern short nTargetLockMarkerAngle; /* 0x0046c068 */

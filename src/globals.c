@@ -137,19 +137,6 @@ const unsigned char abIffCmapChunkId[4] = { 'C', 'M', 'A', 'P' }; /* 0x0043e77c 
 const unsigned char abIffBodyChunkId[4] = { 'B', 'O', 'D', 'Y' }; /* 0x0043e780 */
 #endif
 
-int bIxAudioEnabled = 1; /* 0x00465058 */
-unsigned int bKeyEventQueueEnabled; /* 0x0046505c */
-unsigned int nGuardedAllocationTotalBytes; /* 0x00465060 */
-unsigned int nGuardedAllocationBytes; /* 0x00465064 */
-unsigned int nGuardedAllocationPeakBytes; /* 0x00465068 */
-int bShowKilrathiSagaCredits; /* 0x0046506c */
-int bShowFrameRate; /* 0x00465070 */
-int bDirectDrawModeCascadeEnabled = 1; /* 0x00465074 */
-int bCockpitEnabled = 1; /* 0x0046507c */
-int bMainWindowMinimized; /* 0x00465080 */
-int bWindowMessagePumpActive; /* 0x004650a8 */
-unsigned int bF1KeyLatch; /* 0x004650ac */
-GuardedAllocation *pGuardedAllocationHead; /* 0x004650b0 */
 char szJoystickDevCapsFailure[26] = /* 0x004652dc */
     "Joystick: !joyGetDevCaps\n";
 signed char cScrambleLeftWalkerFrame = 7; /* 0x00465768 */
@@ -284,7 +271,7 @@ ShortPoint aFuneralParticleOrigins[7] = { /* 0x00465b18 */
 short asFuneralSceneBySeries[15] = { /* 0x00465b36 */
     0, 0, 1, 1, 1, 1, 1, 2, 3, 2, 3, 3, 2, 3, 0
 };
-int bFuneralShowTheEnd; /* 0x00465b54 */
+int bFuneralShowTheEnd = 0; /* 0x00465b54 */
 char szLandingCleanComment[32] = /* 0x00465b58 */
     "You got away pretty clean, sir!";
 char szLandingLightDamageComment[48] = /* 0x00465b78 */
@@ -305,9 +292,9 @@ char szFuneralPrepareArmsCommand[20] = /* 0x00465c40 */
 char szFuneralFireCommand[16] = /* 0x00465c54 */
     "%X%Y%FFire!%P";
 short nEnemySighting = 0x7fff; /* 0x00465c7c */
-short nDebriefingPersonality; /* 0x00465c80 */
-int bInitialFormationSetup; /* 0x00465c84 */
-void *aapPacketReferences[4][0x25]; /* 0x00465c88 */
+short nDebriefingPersonality = 0; /* 0x00465c80 */
+int bInitialFormationSetup = 0; /* 0x00465c84 */
+void *aapPacketReferences[4][0x25] = {0}; /* 0x00465c88 */
 ShortVector aaFormationPositions[5][8] = { /* 0x00465ed8 */
     {
         { 0, 0, 0 }, { -750, 0, 0 }, { 750, 0, 0 }, { 0, 0, -750 },
@@ -359,7 +346,7 @@ char *apszBarracksMenuLabels[20] = { /* 0x004693f0 */
 };
 unsigned int dwModalBoundsTopLeft = 0x00280018; /* 0x00469440 */
 unsigned int dwModalBoundsBottomRight = 0x003c0128; /* 0x00469444 */
-ModalTextPanel *pModalTextPanel; /* 0x00469448 */
+ModalTextPanel *pModalTextPanel = 0; /* 0x00469448 */
 short asCampaignPilotFiles[3] = {58, 61, 74}; /* 0x00469450 */
 short asCampaignBriefingFiles[3] = {10, 62, 73}; /* 0x00469458 */
 short asMissionDataFiles[3] = {15, 52, 72}; /* 0x00469460 */
@@ -372,10 +359,10 @@ char szReturnToBarMenuLabel[20] = "Return to the Bar"; /* 0x004694a8 */
 char szQuitGameMenuLabel[20] = "Quit Wing Commander"; /* 0x004694bc */
 char szViewMedalsMenuLabel[20] = "View your medals"; /* 0x004694d0 */
 short nPaletteTransitionInitialise = 1; /* 0x00469640 */
-int nDebugOverlayConsoleCount; /* 0x00469644 */
-DWORD dwDebugOverlayKey; /* 0x00469648 */
-DWORD dwDebugOverlayKeyLatch; /* 0x0046964c */
-HHOOK hDebugKeyboardHook; /* 0x00469650 */
+int nDebugOverlayConsoleCount = 0; /* 0x00469644 */
+DWORD dwDebugOverlayKey = 0; /* 0x00469648 */
+DWORD dwDebugOverlayKeyLatch = 0; /* 0x0046964c */
+HHOOK hDebugKeyboardHook = 0; /* 0x00469650 */
 char szDebugOverlayFontName[8] = "Courier"; /* 0x00469654 */
 char szDebugOverlaySpinner[5] = "-\\|/"; /* 0x0046965c */
 char szDebugOverlayNewline[4] = "\n"; /* 0x00469664 */
@@ -405,8 +392,8 @@ char szWeaponDestroyed[20] = "Weapon destroyed"; /* 0x00469960 */
 char szFuelTanksHit[16] = "Fuel tanks hit"; /* 0x00469974 */
 char szComponentFixedFormat[8] = "%s FIXD"; /* 0x00469984 */
 char szNeedLock[12] = "Need Lock"; /* 0x0046998c */
-short bSlowSceneAnimation; /* 0x00469998 */
-unsigned char cBlackColour; /* 0x0046999c */
+short bSlowSceneAnimation = 0; /* 0x00469998 */
+unsigned char cBlackColour = 0; /* 0x0046999c */
 unsigned char cViewportClearColour = 15; /* 0x004699a0 */
 unsigned char cBlueColour = 0x25; /* 0x004699a4 */
 unsigned char cYellowColour = 0x47; /* 0x004699a8 */
@@ -430,7 +417,7 @@ short asConversationTextColours[24] = { /* 0x004699f0 */
     0xfd, 0x47, 0xaa, 0x0b, 0x09, 0x0d, 0x03, 0x04,
     0x0b, 0x0c, 0x01, 0x0a, 0x06, 0x0e, 0x02, 0x07
 };
-int bGraphicsActive; /* 0x00469a20 */
+int bGraphicsActive = 0; /* 0x00469a20 */
 int anBaseMemoryReservationByVideoMode[4] = { /* 0x00469a90 */
     280000, 260000, 280000, 0
 };
@@ -507,17 +494,17 @@ unsigned int bIntroSceneResourcesActive = 1; /* 0x00469d48 */
 short asConstellationObjectIndices[4] = { /* 0x00469d50 */
     -1, -1, -1, -1
 };
-int bCockpitResourcesActive; /* 0x00469d58 */
-int b3SpaceObjectsActive; /* 0x00469d5c */
+int bCockpitResourcesActive = 0; /* 0x00469d58 */
+int b3SpaceObjectsActive = 0; /* 0x00469d5c */
 short asSceneAnimationLogicalFiles[8] = { /* 0x00469d60 */
     63, 64, 65, 66, 67, 68, 69, 70
 };
-short bSceneAnimationWaitCommand; /* 0x00469d70 */
+short bSceneAnimationWaitCommand = 0; /* 0x00469d70 */
 char szSceneAnimationTextFormat[12] = "%X%Y%F%s%P"; /* 0x00469d74 */
 char szMeanwhile[16] = "Meanwhile..."; /* 0x00469d80 */
 char szEmptyAnswerInput[4] = ""; /* 0x00469d90 */
 char szAnswerLabel[9] = "Answer: "; /* 0x00469d94 */
-Viewport stTrainSimPanelViewport; /* 0x00469da8 */
+Viewport stTrainSimPanelViewport = {0}; /* 0x00469da8 */
 ShortRect stTrainSimPanelBounds = { /* 0x00469dc0 */
     0x30, 0x1d, 0x110, 0x6d
 };
@@ -537,9 +524,9 @@ TitleMenuRegion aTrainSimMissionRegions[5] = { /* 0x00469df8 */
     { 1, 251, 89, 271, 109 },
     { -1, 0, 0, 0, 0 }
 };
-int nTrainSimActive; /* 0x00469e2c */
-short nTrainSimMission; /* 0x00469e30 */
-short nArcadeWave; /* 0x00469e34 */
+int nTrainSimActive = 0; /* 0x00469e2c */
+short nTrainSimMission = 0; /* 0x00469e30 */
+short nArcadeWave = 0; /* 0x00469e34 */
 unsigned char aszBuiltInHighScores[48] = /* 0x00469e38 */
     "BISHOP\0\0"
     "GOBLIN\0\0"
@@ -547,7 +534,7 @@ unsigned char aszBuiltInHighScores[48] = /* 0x00469e38 */
     "MANGLER\0"
     "THE MAN\0"
     "MONGO\0\0\0";
-unsigned int dwTrainSimStringPadding; /* 0x00469e68 */
+char szEmptyPilotField[4] = ""; /* 0x00469e68 */
 char szTextFlushToken[4] = "%P"; /* 0x00469e6c */
 char szNewPilotPrompt[80] = /* 0x00469e70 */
     "CONGRATULATIONS!\n"
@@ -575,48 +562,48 @@ char szHighScoreNumberFormat[8] = "%0ld"; /* 0x00469f80 */
 char szHighScoreRowFormat[16] = /* 0x00469f88 */
     "%X%Y%d. %s%X%s0";
 char szSelectEnemy[16] = "SELECT\nENEMY%P"; /* 0x00469f98 */
-int nCannedSceneMode; /* 0x00469fac */
-int nArcadeState; /* 0x00469fb0 */
+int nCannedSceneMode = 0; /* 0x00469fac */
+int nArcadeState = 0; /* 0x00469fb0 */
 short nFrameSkipCounter = 1; /* 0x00469fb4 */
 short nFrameSkip = 1; /* 0x00469fb8 */
 int nSfxVolumeSetting = 0x14; /* 0x00469fbc */
 int nMusicVolumeSetting = 0x14; /* 0x00469fc0 */
-int bViewportDirty; /* 0x00469fc4 */
+int bViewportDirty = 0; /* 0x00469fc4 */
 int anVolumeLevels[11] = { /* 0x00469fc8 */
     0, 40000, 50000, 55000, 60000, 61000,
     61500, 62000, 63000, 63500, 64000
 };
-int nOriginDevUnlock; /* 0x00469ff4 */
+int nOriginDevUnlock = 0; /* 0x00469ff4 */
 int bPlayerCollisionsEnabled = 1; /* 0x00469ff8 */
 int bPlayerVulnerable = 1; /* 0x00469ffc */
 int bPlayerCollisionResponse = 1; /* 0x0046a000 */
-int bViewBufferEnabled; /* 0x0046a004 */
-int bCockpitlessView; /* 0x0046a008 */
-int nShowMemoryStatus; /* 0x0046a00c */
+int bViewBufferEnabled = 0; /* 0x0046a004 */
+int bCockpitlessView = 0; /* 0x0046a008 */
+int nShowMemoryStatus = 0; /* 0x0046a00c */
 short nStartNavPointOverride = -1; /* 0x0046a010 */
-short nArcadeBonusCountdown; /* 0x0046a014 */
-int bMouseCursorVisible; /* 0x0046a018 */
-unsigned char bInputPollingGuard; /* 0x0046a01c */
-InputDeviceSample stLastPolledFlightInput; /* 0x0046a020 */
-int bMouseAfterburnerControl; /* 0x0046a02c */
+short nArcadeBonusCountdown = 0; /* 0x0046a014 */
+int bMouseCursorVisible = 0; /* 0x0046a018 */
+unsigned char bInputPollingGuard = 0; /* 0x0046a01c */
+InputDeviceSample stLastPolledFlightInput = {0}; /* 0x0046a020 */
+int bMouseAfterburnerControl = 0; /* 0x0046a02c */
 short asMouseYawThresholds[6] = { /* 0x0046a030 */
     10, 37, 52, 57, 62, 1070
 };
 short asMousePitchThresholds[6] = { /* 0x0046a040 */
     5, 18, 27, 35, 38, 1040
 };
-unsigned int dwLastSecondaryButtonPress; /* 0x0046a04c */
-unsigned char bFlightRollLatch; /* 0x0046a050 */
-unsigned char bAfterburnerButtonLatched; /* 0x0046a054 */
-short nMouseYawInput; /* 0x0046a058 */
-short nMousePitchInput; /* 0x0046a05c */
+unsigned int dwLastSecondaryButtonPress = 0; /* 0x0046a04c */
+unsigned char bFlightRollLatch = 0; /* 0x0046a050 */
+unsigned char bAfterburnerButtonLatched = 0; /* 0x0046a054 */
+short nMouseYawInput = 0; /* 0x0046a058 */
+short nMousePitchInput = 0; /* 0x0046a05c */
 char szSpaceBuffer[16] = "SPACE BUFFER"; /* 0x0046a1d0 */
 char szAllocateBufferTag[4] = "AB"; /* 0x0046a1e0 */
-ActiveSoundEntry *pActiveSoundHead; /* 0x0046a438 */
-ActiveSoundEntry *pActiveSoundTail; /* 0x0046a43c */
-int bAudioSystemInitialized; /* 0x0046a440 */
-WaveTableEntry *pWaveTableHead; /* 0x0046a444 */
-WaveTableEntry *pWaveTableTail; /* 0x0046a448 */
+ActiveSoundEntry *pActiveSoundHead = 0; /* 0x0046a438 */
+ActiveSoundEntry *pActiveSoundTail = 0; /* 0x0046a43c */
+int bAudioSystemInitialized = 0; /* 0x0046a440 */
+WaveTableEntry *pWaveTableHead = 0; /* 0x0046a444 */
+WaveTableEntry *pWaveTableTail = 0; /* 0x0046a448 */
 char szPlayWaveOpenError[36] = /* 0x0046a46c */
     "playWAVE Unable to open file '%s'";
 short asCarrierLaunchApproachDeltaX[24] = { /* 0x0046a550 */
@@ -644,7 +631,7 @@ short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
 };
 char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
     "Press any key when ready";
-unsigned char *pDamageDisplayBackground; /* 0x0046a748 */
+unsigned char *pDamageDisplayBackground = 0; /* 0x0046a748 */
 ShortPoint aDamageDisplayPositions[9] = { /* 0x0046a750 */
     {36, 37}, {36, 28}, {36, 30}, {36, 23}, {36, 19},
     {36, 15}, {36, 24}, {36, 16}, {36, 22}
@@ -671,7 +658,7 @@ const char *apszDamageSeverityNames[5] = { /* 0x0046a7b0 */
     szDamageDestroyed
 };
 short nScriptedViewObject = -1; /* 0x0046a8d0 */
-int bScriptedView; /* 0x0046a8d4 */
+int bScriptedView = 0; /* 0x0046a8d4 */
 short asConstellationVelocity[16] = { /* 0x0046a8d8 */
     8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1
 };
@@ -679,9 +666,9 @@ short asConstellationFrame[16] = { /* 0x0046a8f8 */
     0, 16, 16, 0, 4, 4, 20, 20, 24, 8, 8, 24, 28, 12, 12, 28
 };
 short nConstellationDirection = -1; /* 0x0046a918 */
-unsigned char *pPacketDecompressionWorkspace; /* 0x0046a91c */
-unsigned short wPacketDecompressionInputSizeOverride; /* 0x0046a920 */
-unsigned short wPacketCompressionFormatFlags; /* 0x0046a924 */
+unsigned char *pPacketDecompressionWorkspace = 0; /* 0x0046a91c */
+unsigned short wPacketDecompressionInputSizeOverride = 0; /* 0x0046a920 */
+unsigned short wPacketCompressionFormatFlags = 0; /* 0x0046a924 */
 ShortRect aTargetArmorClipRects[4] = { /* 0x0046a928 */
     { 12, -20, 29, 20 },
     { -11, 1, 11, 20 },
@@ -702,10 +689,10 @@ char szRangeLabel[12] = "\nRange : "; /* 0x0046a9a4 */
 char szTargetTooFar[8] = "TOO FAR"; /* 0x0046a9b0 */
 char szRangeMetresSuffix[4] = " m"; /* 0x0046a9b8 */
 char szTargetOffscreenRange[8] = "----- m"; /* 0x0046a9bc */
-short nMusicPlaybackMode; /* 0x0046a9f8 */
-int bMusicCommandSuppressed; /* 0x0046a9fc */
+short nMusicPlaybackMode = 0; /* 0x0046a9f8 */
+int bMusicCommandSuppressed = 0; /* 0x0046a9fc */
 short nMusicTrackComplete = 1; /* 0x0046aa04 */
-short nFuneralSequenceActive; /* 0x0046aa10 */
+short nFuneralSequenceActive = 0; /* 0x0046aa10 */
 int nCurrentMusicTrack = -1; /* 0x0046aa14 */
 int nMusicStreamSet = -1; /* 0x0046aa18 */
 volatile int nInFlightMusicSlotA = -1; /* 0x0046aa24 */
@@ -713,10 +700,10 @@ volatile int nInFlightMusicSlotB = -1; /* 0x0046aa2c */
 int nWaitForMusicEnabled = 1; /* 0x0046aa30 */
 int nFlightSoundEffectsEnabled = 1; /* 0x0046aa34 */
 int nInitialFlightMusicPending = 1; /* 0x0046aa38 */
-int nCombatMusicActive; /* 0x0046aa3c */
-int nInFlightMusicActive; /* 0x0046aa40 */
+int nCombatMusicActive = 0; /* 0x0046aa3c */
+int nInFlightMusicActive = 0; /* 0x0046aa40 */
 short nPassingShipSoundObject = -1; /* 0x0046aa48 */
-short nPassingShipSoundCountdown; /* 0x0046aa4c */
+short nPassingShipSoundCountdown = 0; /* 0x0046aa4c */
 unsigned char abFireworkSoundDescriptor[7] = { /* 0x0046ab70 */
     0x00, 0x80, 0x40, 0x40, 0x3c, 0x00, 0x00
 };
@@ -763,14 +750,14 @@ char szTigerClawEscapeClosingFormat[12] = "%X%Y%s%P"; /* 0x0046af48 */
 short nInputDoubleClickInterval = 1; /* 0x0046af54 */
 short nMenuPointerSpeed = 2; /* 0x0046af58 */
 short nCommMenuChoiceCount = -1; /* 0x0046af60 */
-short nCommMenuReuseMode; /* 0x0046af64 */
+short nCommMenuReuseMode = 0; /* 0x0046af64 */
 signed char cPendingCommMenuAction = 1; /* 0x0046af6c */
-unsigned char bRadioSilence; /* 0x0046af70 */
-unsigned char bVideoImagesSuppressed; /* 0x0046af74 */
+unsigned char bRadioSilence = 0; /* 0x0046af70 */
+unsigned char bVideoImagesSuppressed = 0; /* 0x0046af74 */
 unsigned char bCommVideoEnabled = 1; /* 0x0046af78 */
 signed char cCommMenuRecipient = -1; /* 0x0046afc4 */
-short nCommSpeakerObject; /* 0x0046afc8 */
-short nCommSpeakerRating; /* 0x0046afcc */
+short nCommSpeakerObject = 0; /* 0x0046afc8 */
+short nCommSpeakerRating = 0; /* 0x0046afcc */
 short nCommPortraitIndex = -1; /* 0x0046afd0 */
 char szConfedCommFormat[8] = "%s: %Fs"; /* 0x0046b150 */
 char szKilrathiAceCommFormat[8] = "%s: %Fs"; /* 0x0046b158 */
@@ -779,15 +766,15 @@ unsigned short nVideoMode = 0xffff; /* 0x0046b168 */
 signed char acGraphicsModeByAnimationSpeed[8] = { /* 0x0046b178 */
     0x13, 0x0d, 4, 9, 7, 0, 0, 0
 };
-LPDIRECTDRAW2 pDirectDraw2; /* 0x0046b1a4 */
-LPDIRECTDRAWSURFACE pPrimarySurface; /* 0x0046b1a8 */
-LPDIRECTDRAWSURFACE pSecondarySurface; /* 0x0046b1ac */
-LPDIRECTDRAWPALETTE pDirectDrawPalette; /* 0x0046b1b0 */
+LPDIRECTDRAW2 pDirectDraw2 = 0; /* 0x0046b1a4 */
+LPDIRECTDRAWSURFACE pPrimarySurface = 0; /* 0x0046b1a8 */
+LPDIRECTDRAWSURFACE pSecondarySurface = 0; /* 0x0046b1ac */
+LPDIRECTDRAWPALETTE pDirectDrawPalette = 0; /* 0x0046b1b0 */
 int nDIBCascadeLevel = -1; /* 0x0046b1b4 */
 int nFrameIntervalMs = 62; /* 0x0046b1b8 */
-int nFrameDeadlineMs; /* 0x0046b1bc */
-int nPreviousFrameTimeMs; /* 0x0046b1c4 */
-int bSpaceFlightFrameTiming; /* 0x0046b1c8 */
+int nFrameDeadlineMs = 0; /* 0x0046b1bc */
+int nPreviousFrameTimeMs = 0; /* 0x0046b1c4 */
+int bSpaceFlightFrameTiming = 0; /* 0x0046b1c8 */
 float fSpaceFlightFrameRate = 20.0f; /* 0x0046b1cc */
 float fCinematicFrameRate = 16.0f; /* 0x0046b1d0 */
 short aasCockpitLightX[5][7] = { /* 0x0046dca8 */
@@ -907,7 +894,7 @@ CockpitLayout stCockpitLayout = { /* 0x0046e008 */
 unsigned char bCurrentKey = 0x80; /* 0x0046c014 */
 signed char cPreviousKey = (signed char)0x80; /* 0x0046c018 */
 short nCurrentWave = -1; /* 0x0046c01c */
-int bIntroSecondaryScene; /* 0x0046c024 */
+int bIntroSecondaryScene = 0; /* 0x0046c024 */
 signed char abHazardObjects[0x14] = { /* 0x0046c028 */
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
@@ -920,23 +907,23 @@ signed char cCurrentObjective = -1; /* 0x0046c020 */
 int nCameraViewMode = -1; /* 0x0046c03c */
 signed char cViewObject = -1; /* 0x0046c000 */
 short nExternalViewShip = -1; /* 0x0046c040 */
-short nEjectedPilotObject; /* 0x0046c044 */
+short nEjectedPilotObject = 0; /* 0x0046c044 */
 short nClosestVisibleObject = -1; /* 0x0046c048 */
 short nYourWingman = -1; /* 0x0046c04c */
 short nPlayerCollisionObject = -1; /* 0x0046c050 */
 enum ObjectType eSelectedGunType = (enum ObjectType)-1; /* 0x0046c054 */
 int nSelectedReleaseWeaponIndex = -1; /* 0x0046c058 */
-short DAT_0046c05c;
-short bTargetLockReadoutDirty; /* 0x0046c060 */
-short nTargetLockCountdown; /* 0x0046c064 */
-short nTargetLockMarkerAngle; /* 0x0046c068 */
+short DAT_0046c05c = 0; /* 0x0046c05c */
+short bTargetLockReadoutDirty = 0; /* 0x0046c060 */
+short nTargetLockCountdown = 0; /* 0x0046c064 */
+short nTargetLockMarkerAngle = 0; /* 0x0046c068 */
 signed char cTargetDisplayObject = -1; /* 0x0046c06c */
-int bTargetLockAcquired; /* 0x0046c074 */
-short nTargetLockMode; /* 0x0046c078 */
-int bMissileCameraEnabled; /* 0x0046c07c */
-int bEngageAllowed; /* 0x0046c080 */
+int bTargetLockAcquired = 0; /* 0x0046c074 */
+short nTargetLockMode = 0; /* 0x0046c078 */
+int bMissileCameraEnabled = 0; /* 0x0046c07c */
+int bEngageAllowed = 0; /* 0x0046c080 */
 short nAutoEngageTimer = -1; /* 0x0046c084 */
-signed char cViableTargetCount; /* 0x0046c088 */
+signed char cViableTargetCount = 0; /* 0x0046c088 */
 short asIntroCameraSequence[20] = { /* 0x0046c090 */
     0, -1000, 0, -4263, 2, 15, 1, 0, 30, 0,
     3, 15, 4, 30, 1, 13, 14, 400, -1, 0
@@ -1125,7 +1112,7 @@ MissionShipRecord
       155, 0, 0, 0, 50, 3, { asCannedSequence45 },
       0, 0, 0, -1, 0, 0 }
 };
-int aiIntelligenceEvent[10]; /* 0x0046d368 */
+int aiIntelligenceEvent[10] = {0}; /* 0x0046d368 */
 signed char aDefenseManeuversNovice[8] = { /* 0x0046d390 */
     24, 34, 13, 14, -1, 0, 0, 0
 };
@@ -1358,11 +1345,11 @@ signed char acPilotRecovery[20] = { /* 0x0046d9b8 */
     6, 7, 8, 8, 9, 8, 6, 8, 10, 7,
     8, 9, 7, 0, 7, 7, 8, 8, 0, 0
 };
-InputEvent *pInputEventHead; /* 0x0046da90 */
-InputEvent *pInputEventTail; /* 0x0046da94 */
-int bInputEventPoolInitialized; /* 0x0046da98 */
-unsigned char *pDrawnMouseCursorShape; /* 0x0046da9c */
-int nMouseCursorShowCount; /* 0x0046daa0 */
+InputEvent *pInputEventHead = 0; /* 0x0046da90 */
+InputEvent *pInputEventTail = 0; /* 0x0046da94 */
+int bInputEventPoolInitialized = 0; /* 0x0046da98 */
+unsigned char *pDrawnMouseCursorShape = 0; /* 0x0046da9c */
+int nMouseCursorShowCount = 0; /* 0x0046daa0 */
 short nScreenWidth = 320; /* 0x0046daa4 */
 short nScreenHeight = 200; /* 0x0046daa8 */
 ScreenViewportGeometry aScreenViewportGeometry[6] = { /* 0x0046dab8 */
@@ -1424,7 +1411,7 @@ const char *apszMedalNames[5] = { /* 0x0046e2e0 */
     szGoldenSun,
     szTerranMedalOfValor
 };
-unsigned char *pMedalSceneShape; /* 0x0046e2f4 */
+unsigned char *pMedalSceneShape = 0; /* 0x0046e2f4 */
 const char *pszMedalsPilotSummary = /* 0x0046e2f8 */
     szMedalsPilotSummary;
 signed char aBriefingPortraitOffsetX[8][12] = { /* 0x0046e300 */
@@ -1480,7 +1467,7 @@ signed char abDebriefingEstablishDeltas[48] = { /* 0x0046e538 */
      1,  1,  1,  1,  0,  1,  0,  1,
      0,  1,  0,  1,  0,  0, -1, -1
 };
-short nDebriefingLeftX; /* 0x0046e56c */
+short nDebriefingLeftX = 0; /* 0x0046e56c */
 short nDebriefingPilotX = 80; /* 0x0046e570 */
 short nDebriefingRightX = 278; /* 0x0046e574 */
 short nDebriefingOfficerX = 200; /* 0x0046e578 */
@@ -1488,8 +1475,8 @@ short nDebriefingPodiumX = 344; /* 0x0046e57c */
 short nConversationCharacter = -1; /* 0x0046e580 */
 short nTalkingHeadFace = -1; /* 0x0046e584 */
 short nConversationBackdropFrame = -1; /* 0x0046e588 */
-int bConversationConstellation; /* 0x0046e58c */
-int bConversationOverlay; /* 0x0046e590 */
+int bConversationConstellation = 0; /* 0x0046e58c */
+int bConversationOverlay = 0; /* 0x0046e590 */
 char szBronzeStar[12] = "Bronze Star"; /* 0x0046e594 */
 char szSilverStar[12] = "Silver Star"; /* 0x0046e5a0 */
 char szGoldStar[12] = "Gold Star"; /* 0x0046e5ac */
@@ -1676,7 +1663,7 @@ char *apszRecRoomMenuLabels[6] = { /* 0x004704f8 */
     szEnterBarracks,
     szFlyTrainingMission
 };
-int bPanRoomTransition; /* 0x00470510 */
+int bPanRoomTransition = 0; /* 0x00470510 */
 CampaignDate stChalkBoardDate = {-1, -1}; /* 0x00470514 */
 short asChalkBoardPilotOrder[9] = { /* 0x00470518 */
     0, 1, 2, 3, 4, 5, 6, 7, 8

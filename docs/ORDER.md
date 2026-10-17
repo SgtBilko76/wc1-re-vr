@@ -160,12 +160,29 @@ ownership and qualifiers:
 | `0x004630E8`–`0x00463167` | `dib.c`: eight DirectDraw class/interface GUIDs, followed by its frame-rate constants |
 | `0x004631C8`–`0x004631FF` | `gr.c`: constant registry-key and `Cheater` value-name arrays used by `ReadCheaterFlagFromRegistry` |
 | `0x00465040`–`0x00465057` | `winmain.c`: two initialized hazard counters and two writable eight-byte hazard tables |
+| `0x00465058`–`0x004650B3` | `winmain.c`: window/audio flags, heap counters, class/title arrays, and message-pump state; two intervening words remain unidentified |
 | `0x004698E0`–`0x0046994F` | `ship.c`: the writable explosion-debris table referenced by `Create_explosion_debris` |
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
 DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
 in the retail image establish its value and position. Unused SDK identifiers
 are real original data, so their definitions must survive the reconstruction.
+
+The window class name at `0x00465088` is a writable character array used for
+both `WNDCLASSA` names and `CreateWindowExA`'s class argument. Its separate
+title array is at `0x00465098`. Both precede the configuration-file literals,
+so they are declarations rather than literals emitted at the call sites.
+The surrounding zero-valued flags and heap counters need explicit zero
+initializers: tentative C definitions put them in the linker's common storage
+instead of this initialized-data range. The words at `0x00465078` (one) and
+`0x00465084` (zero) still need identification; do not replace them with padding
+declarations.
+
+The same storage distinction applies to the zero-valued definitions still in
+`globals.c`. The 592-byte packet-reference table at `0x00465C88`, the input
+sample at `0x0046A020`, and the DirectDraw pointers at `0x0046B1A4` are among
+87 definitions restored to initialized data. They retain their provisional
+owner until the original compilation units are established.
 
 The registry arrays occupy read-only data, whereas the same routine's
 `"reg cheating\n"` and `"reg not cheating\n"` diagnostic literals occupy

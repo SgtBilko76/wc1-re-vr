@@ -653,8 +653,7 @@ void ReadRequiredPilotField(short x, short y, const char *label,
     SetTextCursor((unsigned short)cursorX, (unsigned short)y);
     DrawFormattedText(label);
     do {
-        DosStrcpy(destination,
-                  (const char *)&dwTrainSimStringPadding);
+        DosStrcpy(destination, szEmptyPilotField);
     } while (ReadTextInput(destination, maximumLength, 0) == 0);
 }
 

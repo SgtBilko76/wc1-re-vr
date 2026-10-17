@@ -14,12 +14,26 @@ for similarity decisions.
   epilogue placement. Equivalent C often emits different instructions.
 - In `/Od` code, keep explicit pointer locals when the original stores them.
 - Repeat identical literals at each use site; string pooling was disabled.
+  Distinguish literals from named arrays: `CreateMainWindow` references the
+  same writable class-name array three times, plus a separate title array.
+  Four independent literals reproduce the text but not the original storage.
+- Initialize structure fields individually when the original does so.
+  `CreateMainWindow` assigns every `WNDCLASSA` field; a preliminary `memset`
+  adds a `REP STOSD` absent from the original. The field order also controls
+  how CL schedules stores around `LoadIconA` and `GetStockObject`.
 - Use typed fields and arrays. Keep offset-based field names until their intent
   is proven.
 - Use the matching CRT routine when the binary calls or inlines it.
 - Check the original section before adding `const` to a table. The hazard and
   explosion-debris tables occupy writable data even though their reconstructed
   users only read them; the barracks menu regions occupy read-only data.
+- Preserve initialized storage even when every byte is zero. In CL 4.20 C,
+  a tentative definition becomes a linker common symbol, while `= 0` or
+  `= {0}` puts the variable in initialized data. The packet-reference table,
+  input state, music flags, and DirectDraw pointers occupy initialized blocks
+  in the original. Checking their values alone does not catch wrong storage.
+  Do not infer this distinction from raw section size alone: trailing file
+  padding can overlap the start of uninitialized storage.
 - Put a global's address comment before its declaration or after its final
   semicolon. A comment inside a multiline initializer is recognized by the
   layout audit but missed by the linked-data comparison's simpler parser.

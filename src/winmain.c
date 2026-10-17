@@ -18,6 +18,24 @@ static signed char acHazardPitchRange[8] = {
     -10, 4, -8, 8, -12, 8, -8, 8
 }; /* 0x00465050 */
 
+int bIxAudioEnabled = 1; /* 0x00465058 */
+unsigned int bKeyEventQueueEnabled = 0; /* 0x0046505C */
+unsigned int nGuardedAllocationTotalBytes = 0; /* 0x00465060 */
+unsigned int nGuardedAllocationBytes = 0; /* 0x00465064 */
+unsigned int nGuardedAllocationPeakBytes = 0; /* 0x00465068 */
+int bShowKilrathiSagaCredits = 0; /* 0x0046506C */
+int bShowFrameRate = 0; /* 0x00465070 */
+int bDirectDrawModeCascadeEnabled = 1; /* 0x00465074 */
+int bCockpitEnabled = 1; /* 0x0046507C */
+int bMainWindowMinimized = 0; /* 0x00465080 */
+
+char szMainWindowClassName[] = "Wing Commander"; /* 0x00465088 */
+char szMainWindowTitle[] = "Wing Commander"; /* 0x00465098 */
+
+int bWindowMessagePumpActive = 0; /* 0x004650A8 */
+unsigned int bF1KeyLatch = 0; /* 0x004650AC */
+GuardedAllocation *pGuardedAllocationHead = 0; /* 0x004650B0 */
+
 /* Function start: 0x401000 */
 void SaveGamePalette(void)
 {
@@ -697,20 +715,21 @@ int CreateMainWindow(HINSTANCE instance, HINSTANCE previous,
     if (previous != 0)
         return 0;
 
-    memset(&windowClass, 0, sizeof(windowClass));
-    windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-    windowClass.lpfnWndProc = MainWindowProc;
     windowClass.hInstance = instance;
-    windowClass.hIcon = LoadIconA(0, IDI_APPLICATION);
+    windowClass.lpszClassName = szMainWindowClassName;
+    windowClass.lpfnWndProc = MainWindowProc;
     windowClass.hCursor = 0;
+    windowClass.hIcon = LoadIconA(0, IDI_APPLICATION);
+    windowClass.lpszMenuName = szMainWindowClassName;
     windowClass.hbrBackground = GetStockObject(BLACK_BRUSH);
-    windowClass.lpszMenuName = "Wing Commander";
-    windowClass.lpszClassName = "Wing Commander";
+    windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    windowClass.cbClsExtra = 0;
+    windowClass.cbWndExtra = 0;
     if (RegisterClassA(&windowClass) == 0)
         return 0;
 
-    hMainWindow = CreateWindowExA(0, "Wing Commander",
-                                             "Wing Commander",
+    hMainWindow = CreateWindowExA(0, szMainWindowClassName,
+                                             szMainWindowTitle,
                                              WS_POPUP, 0, 0, 320, 200,
                                              0, 0,
                                              hAppInstance, 0);
