@@ -152,7 +152,8 @@ sits at one constant offset from the original.
 | `src/pload.c` | `0x42B000`–`0x42B3FF` |
 | `src/sound.c` | `0x42B400`–`0x42C7FF` |
 | `src/damage.c` | `0x42C800`–`0x42CDAF` |
-| `src/music.c` | `0x42CDB0`–`0x42EFFF` |
+| `src/view.c` | `0x42CDB0`–`0x42E31F` |
+| `src/music.c` | `0x42E320`–`0x42EFBF` |
 | `src/screen.c` | `0x42EFC0`–`0x431EFF` |
 | `src/dib.c` | `0x431F00`–`0x43390F` |
 | `src/text.c` | `0x433910`–`0x433ABF` |
@@ -197,6 +198,8 @@ ownership and qualifiers:
 | `0x00469998`–`0x00469BBD` | `init.c`: graphics defaults, the shared low-memory message, reservation tables, and startup literals |
 | `0x00469BC0`–`0x00469D7E` | `logic.c`: resource descriptors, scene state, and the scene text-format literal |
 | `0x00469DA8`–`0x00469FA6` | `trainsim.c`: panel state, high-score name pointers, menu regions, simulator state, and the following UI literals |
+| `0x0046A748`–`0x0046A8CD` | `damage.c`: cockpit damage tables and the following report literals |
+| `0x0046A8D0`–`0x0046A9F0` | `view.c`: scripted-view state, constellation tables, packet settings, target armor rectangles, and the following target/display literals |
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
 DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
@@ -378,9 +381,26 @@ including all 14 pointers, and its separate four-byte `.bss`. The three
 private tables and private damage state have no declarations in the shared
 header. `WC1.map` gains their actual linked addresses from COFF symbols and
 relocations, as described in `docs/EXPORT.md`. Two alignment bytes follow the
-last literal before music's initialized state at `0x0046A8D0`.
-The constant-return routine at `0x0042CDA0` provisionally closes this unit;
-the following `parse_view_script` at `0x0042CDB0` belongs to `music.c`.
+last literal before the scripted-view state at `0x0046A8D0`.
+The constant-return routine at `0x0042CDA0` provisionally closes this unit.
+
+The following `parse_view_script` at `0x0042CDB0` starts `view.c`, whose
+initialized state, constellation tables, packet settings, and target armor
+rectangles occupy `0x0046A8D0`–`0x0046A947`. The target/display literal pool
+follows immediately and ends with the second `"not MCGA"` at `0x0046A9F0`.
+Music's initialized state starts at `0x0046A9F8`, after those literals;
+CL's definitions-before-literals layout therefore requires a separate unit
+before `FadeMusic` at `0x0042E320`. The packet and viewport helpers remain in
+the contiguous view unit; no internal source-file boundary is established.
+
+`verify-unit-data` checks the complete 289-byte view `.data` section and all
+nine variable offsets. It also checks damage and view as one 681-byte run,
+including the two alignment bytes between them. Seven view variables have
+only local references in the recovered original code and are private;
+the two scripted-view controls remain shared. The map supplement now resolves
+these private symbols from `view.obj` alongside the damage symbols.
+The BSS used by the view functions remains in temporary storage until its
+original declaration order is recovered.
 
 Private C definitions require separate evidence: a trial moving the two
 MONODEBG variables to `static` storage in `mono.c` emitted the device handle

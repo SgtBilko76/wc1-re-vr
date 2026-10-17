@@ -400,38 +400,6 @@ short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
 };
 char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
     "Press any key when ready";
-short nScriptedViewObject = -1; /* 0x0046a8d0 */
-int bScriptedView = 0; /* 0x0046a8d4 */
-short asConstellationVelocity[16] = { /* 0x0046a8d8 */
-    8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1
-};
-short asConstellationFrame[16] = { /* 0x0046a8f8 */
-    0, 16, 16, 0, 4, 4, 20, 20, 24, 8, 8, 24, 28, 12, 12, 28
-};
-short nConstellationDirection = -1; /* 0x0046a918 */
-unsigned char *pPacketDecompressionWorkspace = 0; /* 0x0046a91c */
-unsigned short wPacketDecompressionInputSizeOverride = 0; /* 0x0046a920 */
-unsigned short wPacketCompressionFormatFlags = 0; /* 0x0046a924 */
-ShortRect aTargetArmorClipRects[4] = { /* 0x0046a928 */
-    { 12, -20, 29, 20 },
-    { -11, 1, 11, 20 },
-    { -11, -20, 11, 0 },
-    { -29, -20, -12, 20 }
-};
-char szEmptyTargetDisplayText[4] = ""; /* 0x0046a948 */
-char szLockedTarget[20] = "   LOCKED TARGET"; /* 0x0046a94c */
-char szTextColourStringColourFormat[8] = "%F%s%F"; /* 0x0046a960 */
-char szAutoTargetting[20] = "  AUTO TARGETTING"; /* 0x0046a968 */
-char szTextColourStringFormat[8] = "%F%s"; /* 0x0046a97c */
-char szTargetLabel[12] = "\nTarget:"; /* 0x0046a984 */
-char szNoTarget[8] = " None"; /* 0x0046a990 */
-char szWingmanTargetNameFormat[4] = " %s"; /* 0x0046a998 */
-char szAceTargetNameFormat[4] = " %s"; /* 0x0046a99c */
-char szShipTargetNameFormat[4] = " %s"; /* 0x0046a9a0 */
-char szRangeLabel[12] = "\nRange : "; /* 0x0046a9a4 */
-char szTargetTooFar[8] = "TOO FAR"; /* 0x0046a9b0 */
-char szRangeMetresSuffix[4] = " m"; /* 0x0046a9b8 */
-char szTargetOffscreenRange[8] = "----- m"; /* 0x0046a9bc */
 short nMusicPlaybackMode = 0; /* 0x0046a9f8 */
 int bMusicCommandSuppressed = 0; /* 0x0046a9fc */
 short nMusicTrackComplete = 1; /* 0x0046aa04 */

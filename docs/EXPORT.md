@@ -40,7 +40,7 @@ handwritten stand-ins; the separate gate covers the 74 generated code bytes.
 `make verify-unit-data`, also included in `make verify`, checks the complete
 initialized-data sections recovered for barracks (632 bytes), fade (2),
 debug (34), disk (523), ship (286), init (550), logic (447), trainsim (511),
-and damage (390).
+damage (390), and view (289).
 It delegates byte matching to binary-comp, allowing one address shift per
 block, and verifies object sizes, global positions, and pointer relocations.
 String-content fallback is disabled so duplicate or empty literals cannot
@@ -49,7 +49,9 @@ resolve to the named global at the original field offset. These checks prove
 relative layout; final absolute addresses remain a whole-executable task.
 The default check also verifies the seven adjacent units from barracks through
 logic as one 2,487-byte run, including all 13 inter-object alignment bytes.
-This catches correct individual blocks linked at incorrect relative positions.
+It also checks damage and view as a 681-byte run, including their two alignment
+bytes. These checks catch correct individual blocks linked at incorrect
+relative positions.
 The same gate checks the uninitialized blocks owned by pilot (4 bytes),
 sound (8), and damage (4). These must be genuine COFF `.bss` sections with no raw data
 or relocations, and their linker symbols must belong to the expected object
@@ -70,7 +72,8 @@ severity string's position; the separate unit-data check enforces all offsets.
 
 LINK 4.20 omits private C data symbols from its public map. The build preserves
 that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
-`WC1.map` with the four private damage symbols added. Their addresses come
+`WC1.map` with the four private damage symbols and seven private view symbols
+added. Their addresses come
 from the object's COFF symbols, public section anchors, and linked `DIR32`
 references with PE `HIGHLOW` relocations. Conflicting anchors or unresolved
 symbols fail the build. This step changes only comparison metadata; it does

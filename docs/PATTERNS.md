@@ -27,6 +27,17 @@ for similarity decisions.
   100-byte writable message array before its memory-reservation tables.
   Repeating the message at the call sites adds a duplicate to the literal
   pool and loses the original declaration order.
+- The target display's empty string, three separate `" %s"` formats, and
+  other labels are use-site literals. Keeping named arrays introduces extra
+  eight-byte alignment and separates them from their following display-mode
+  messages. `DrawTargetRangeReadout` emits `"TOO FAR"`, `" m"`, and `"----- m"`
+  in that order: test the visible-target case first, then the excessive range.
+  Its numeric path scans the result of `itoa` with `strlen` and copies the
+  suffix to the scratch-buffer base plus that length. The original `NOT ECX`
+  and base-relative `LEA` distinguish this from `strcat`, which uses the
+  scanner's ending pointer directly. Ordinary `strcpy` calls produce the
+  shared eight-byte readout copies. This restores the original function size;
+  the placement of the excessive-range branch remains different.
 - Single-use console strings are literals: the constructor's font and spinner,
   and the formatted logger's newline. Their offsets alone also fit named arrays,
   but arrays impose eight-byte object alignment. Literal storage reproduces the

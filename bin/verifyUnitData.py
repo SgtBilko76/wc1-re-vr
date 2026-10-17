@@ -150,6 +150,17 @@ UNITS = {
         ('abDamageDisplayFrames', 0x58),
         ('apszDamageSeverityNames', 0x68),
     ), frozenset((*range(0x30, 0x54, 4), *range(0x68, 0x7C, 4)))),
+    'view': UnitData(0x0046A8D0, 289, (
+        ('nScriptedViewObject', 0x00),
+        ('bScriptedView', 0x04),
+        ('asConstellationVelocity', 0x08),
+        ('asConstellationFrame', 0x28),
+        ('nConstellationDirection', 0x48),
+        ('pPacketDecompressionWorkspace', 0x4C),
+        ('wPacketDecompressionInputSizeOverride', 0x50),
+        ('wPacketCompressionFormatFlags', 0x54),
+        ('aTargetArmorClipRects', 0x58),
+    ), frozenset()),
     'damage-bss': UnitData(0x00476554, 4, (
         ('nDisplayedComponentDamage', 0x00),
     ), frozenset(), storage='.bss', owner='damage.obj'),
@@ -158,6 +169,7 @@ UNITS = {
 
 ADJACENT_UNITS = (
     ('barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),
+    ('damage', 'view'),
 )
 
 

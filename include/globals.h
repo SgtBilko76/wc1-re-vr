@@ -317,27 +317,6 @@ extern char szKilrathiAceCommFormat[8]; /* 0x0046b158 */
 extern char szShipCommFormat[8]; /* 0x0046b160 */
 extern short nInputDoubleClickInterval; /* 0x0046af54 */
 extern short nMenuPointerSpeed; /* 0x0046af58 */
-extern short asConstellationVelocity[16]; /* 0x0046a8d8 */
-extern short asConstellationFrame[16]; /* 0x0046a8f8 */
-extern short nConstellationDirection; /* 0x0046a918 */
-extern unsigned char *pPacketDecompressionWorkspace; /* 0x0046a91c */
-extern unsigned short wPacketDecompressionInputSizeOverride; /* 0x0046a920 */
-extern unsigned short wPacketCompressionFormatFlags; /* 0x0046a924 */
-extern ShortRect aTargetArmorClipRects[4]; /* 0x0046a928 */
-extern char szEmptyTargetDisplayText[4]; /* 0x0046a948 */
-extern char szLockedTarget[20]; /* 0x0046a94c */
-extern char szTextColourStringColourFormat[8]; /* 0x0046a960 */
-extern char szAutoTargetting[20]; /* 0x0046a968 */
-extern char szTextColourStringFormat[8]; /* 0x0046a97c */
-extern char szTargetLabel[12]; /* 0x0046a984 */
-extern char szNoTarget[8]; /* 0x0046a990 */
-extern char szWingmanTargetNameFormat[4]; /* 0x0046a998 */
-extern char szAceTargetNameFormat[4]; /* 0x0046a99c */
-extern char szShipTargetNameFormat[4]; /* 0x0046a9a0 */
-extern char szRangeLabel[12]; /* 0x0046a9a4 */
-extern char szTargetTooFar[8]; /* 0x0046a9b0 */
-extern char szRangeMetresSuffix[4]; /* 0x0046a9b8 */
-extern char szTargetOffscreenRange[8]; /* 0x0046a9bc */
 extern unsigned short nVideoMode; /* 0x0046b168 */
 extern signed char acGraphicsModeByAnimationSpeed[8]; /* 0x0046b178 */
 extern CockpitLayout stCockpitLayout; /* 0x0046e008 */
