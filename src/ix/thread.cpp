@@ -104,13 +104,13 @@ unsigned int ix_streamer_service_audio(void)
                 IX_STREAMER_DSP_PLAYING) == 0) {
         dwStreamerState |= IX_STREAMER_DSP_PLAYING;
         ix_dsps_prepare(0);
-        while ((unsigned int)ix_dsps_get_buffer_free(0) >
-               ix_thread_get_audio_chunk_size())
+        while (ix_thread_get_audio_chunk_size() <
+               (unsigned int)ix_dsps_get_buffer_free(0))
             ix_thread_lock_stream_buffer();
         ix_dsps_play(0);
     } else {
-        while ((unsigned int)ix_dsps_get_buffer_free(0) >
-               ix_thread_get_audio_chunk_size())
+        while (ix_thread_get_audio_chunk_size() <
+               (unsigned int)ix_dsps_get_buffer_free(0))
             ix_thread_lock_stream_buffer();
     }
     return ix_thread_service_streams();

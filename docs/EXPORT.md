@@ -8,11 +8,13 @@ For an annotated function, export directly from the retail PE:
 ```sh
 make export-asm
 make export-asm EXPORT_ASM_FLAGS=--discover
-make export-asm EXPORT_ASM_FLAGS=--clean
+make export-asm EXPORT_ASM_FLAGS='--clean --discover'
 ```
 
 This path uses `/* Function start: 0xADDR */` annotations and produces the
 disassembly needed by `compare-func`, `report`, and `order`.
+Keep `--discover` when overriding the default export flags: discovered CRT
+and thunk boundaries also delimit the byte spans of adjacent source functions.
 
 Keep `nop` out of `padding_mnemonics` in `config/checkValuesCapstone.json`.
 The original high-score routine contains a reachable `NOP` at `0x00426BAD`.

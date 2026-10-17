@@ -1,11 +1,12 @@
 /*
  *  ix diagnostic printer.
  *
- *  ix_log_printf sits at 0x004426A0, below streamer.cpp (0x00442750).  Unlike
- *  the rest of ix it was linked as an object, not from a library: its CRT
+ *  ix_log_printf sits immediately before streamer.cpp. Unlike the rest of
+ *  ix it was linked as an object, not from a library: its CRT
  *  references (_CrtDbgReport, strncmp) are resolved before the entry point,
- *  and those of every ix library member after it (docs/ORDER.md).  Built /Od
- *  like the rest of ix.
+ *  and those of every ix library member after it (docs/ORDER.md). Its short
+ *  branches, scheduled loads and POP EBP epilogue match the core optimizer
+ *  profile, unlike the unoptimized ix library members.
  *
  *  Every ix diagnostic goes through here, 107 call sites, always in pairs:
  *      ix_log_printf("Fatal [%s - %d]:\n", __FILE__, __LINE__);
@@ -23,7 +24,7 @@
 
 
 /* Formatting scratch buffer. */
-char szLogBuf[1024];
+char szLogBuf[1024];  /* 0x005977D0 */
 
 /* Mono-monitor debug printer in the game core (C linkage). */
 extern "C" void SoundDebugPrintf(const char *fmt, ...);   /* 0x00403DB0 */

@@ -68,6 +68,10 @@ for similarity decisions.
 - An `/Od` format check can retain a jump through an empty default branch.
   `ix_dsps_alloc` has two such branches for its default eight-bit and mono
   formats. Omitting the `else` bodies removes ten original code bytes.
+- Preserve the observed order of calls inside comparisons. The audio-service
+  loops call `ix_thread_get_audio_chunk_size` before `ix_dsps_get_buffer_free`;
+  putting the chunk-size call on the left of `<` reproduces the original
+  call order and unsigned branch direction under the library profile.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

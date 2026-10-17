@@ -13,7 +13,8 @@ the affected compilation unit.
 | Sources | Language and flags |
 | --- | --- |
 | Game core | C, `/MTd /Og /Oi /Ot /Oy /Ob1 /Gs` |
-| `src/ix/` | C++, `/MTd /Od /Oi` |
+| `src/ix/` library members | C++, `/MTd /Od /Oi` |
+| `src/ix/ixlog.cpp` | C++, core profile |
 | `src/sound.c` | Core profile compiled as C++ with `/TP` |
 | `src/pilot.cpp` | Core profile plus target-specific `/GX` |
 
@@ -21,8 +22,11 @@ Evidence that constrains these settings:
 
 - Debug-heap strings, `_CrtCheckMemory`, `_mtinit`, and `tidtable.c` prove the
   static debug multithreaded CRT (`/MTd`).
-- Core functions normally omit EBP and schedule registers; `ix` functions use
-  EBP, stack temporaries, and a shared epilogue.
+- Core functions normally omit EBP and schedule registers; `ix` library
+  functions use EBP, stack temporaries, and a shared epilogue.
+- The separately linked `ixlog.cpp` matches the core profile. Its variadic
+  logger retains EBP but uses short branches, scheduled argument loads and
+  `POP EBP`, rather than the library profile's near branches and `LEAVE`.
 - Duplicate literals at `0x0046B6E0` and `0x0046B71C` prove string pooling was
   disabled; do not add `/Gf` or deduplicate literals in source.
 - Core operand-size prefixes reflect 16-bit DOS-era types. Use `short` where

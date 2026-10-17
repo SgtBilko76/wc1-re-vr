@@ -67,14 +67,15 @@ CFLAGS_COMMON = \
 #   with no frame pointer; RandomBelowOrEqual (0x00434D50) schedules `POP ESI`
 #   between CDQ and IDIV and tail-duplicates its epilogue.
 #
-#   ix library = UNOPTIMIZED (/Od).  Every single ix function opens with
+#   ix library = UNOPTIMIZED (/Od).  The library functions open with
 #   `PUSH EBP / MOV EBP,ESP / PUSH EBX / PUSH ESI / PUSH EDI` -- saving all three
-#   registers whether or not they are used -- spills intermediates to stack
-#   temporaries such as [EBP-4], and jumps to one shared
+#   registers whether or not they are used -- spill intermediates to stack
+#   temporaries such as [EBP-4], and jump to one shared
 #   `POP EDI / POP ESI / POP EBX / LEAVE / RET` epilogue.
 #
-# Compiling ix with optimization on (or the core with it off) makes matching
-# impossible, so keep these separate.
+# The separately linked ixlog.cpp uses the core profile: its short branches,
+# scheduled argument loads and POP EBP epilogue match that profile exactly.
+# Keep the profiles separate; the logger override is next to the ix rule.
 CFLAGS_CORE = $(CFLAGS_COMMON) /Og /Oi /Ot /Oy /Ob1 /Gs
 CFLAGS_IX   = $(CFLAGS_COMMON) /Od /Oi
 
@@ -785,7 +786,10 @@ $(OUT_DIR)/%.obj $(OUT_DIR)/%.asm: src/%.c $(REFERENCE_HEADERS) Makefile | $(WIB
 		/Fa$(OUT_DIR)/$*.asm \
 		> $(OUT_DIR)/$*.stdout
 
-# ix/ is built unoptimised; see the CFLAGS_IX note above.
+# The standalone logger shares the core optimizer settings, unlike the libraries.
+$(OUT_DIR)/ix/ixlog.obj $(OUT_DIR)/ix/ixlog.asm: CFLAGS_IX = $(CFLAGS_CORE)
+
+# ix library members are built unoptimised; see the CFLAGS_IX note above.
 $(OUT_DIR)/ix/%.obj $(OUT_DIR)/ix/%.asm: src/ix/%.cpp src/ix/ix.h Makefile | $(WIBO) $(MSVCRT_DLL)
 	@mkdir -p $(OUT_DIR)/ix
 	@env INCLUDE='$(MSVC_INC)' $(CC) $(CFLAGS_IX) /I src\\ix $< \

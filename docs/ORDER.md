@@ -93,6 +93,13 @@ The assert anchors name three source trees, `D:\Rnd\Prj\ix\Src\Streamer\`,
 `D:\rnd\prj\ix\win95\dsp\` and `D:\Rnd\prj\ix\src\sound\`; each was a separate
 library. `src/ix/ixlog.cpp` is the one ix unit linked as an object.
 
+The logger ends at `0x00442738`, followed by seven compiler padding bytes.
+The aligned entry at `0x00442740` returns a 32-bit one, then has ten bytes
+of compiler padding before the first streamer function. It has no known
+references or naming evidence; `ixlog.obj` is only its provisional owner.
+The recovered boundary map keeps this unimplemented function separate from
+the logger, whose own bytes match with the core optimizer profile.
+
 ## Link line
 
 LINK 4.20 resolves symbols in the order they are first referenced: by each
