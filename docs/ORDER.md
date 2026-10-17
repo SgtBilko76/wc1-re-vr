@@ -105,6 +105,26 @@ formation count at `0x00465544` and before the ejection tables at
 `mono.c`'s data-file error strings. These initialized globals are kept in
 their owning units and included in the distributed global audits.
 
+The beginning of the constant and initialized-data sections also constrains
+ownership and qualifiers:
+
+| Original data | Owner and storage |
+| --- | --- |
+| `0x00463008`–`0x004630D9` | `barracks.c`: the 21 constant menu regions passed directly by `BarracksScreen` |
+| `0x004630E8`–`0x00463167` | `dib.c`: eight DirectDraw class/interface GUIDs, followed by its frame-rate constants |
+| `0x00465040`–`0x00465057` | `winmain.c`: two initialized hazard counters and two writable eight-byte hazard tables |
+| `0x004698E0`–`0x0046994F` | `ship.c`: the writable explosion-debris table referenced by `Create_explosion_debris` |
+
+The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
+DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
+in the retail image establish its value and position. Unused SDK identifiers
+are real original data, so their definitions must survive the reconstruction.
+
+The read-only layout still has unresolved material: three float constants
+at `0x004630DC`–`0x004630E7`, and the registry key/value strings at
+`0x004631C8` and `0x004631F8`. Their ownership or declaration form must be
+recovered from evidence; do not fill these gaps with padding variables.
+
 The raster library is the one assembled object, and its edges are proven.
 CL pads every optimized function with NOPs to a 16-byte boundary, so the
 `mov edi, edi` after `FillRasterBytes` closes `screens.obj` at `0x439C40`. The

@@ -17,7 +17,7 @@ extern const int anRLEQuarterCosine[901]; /* 0x0043d4bf */
 extern const unsigned char abIffBmhdChunkId[4]; /* 0x0043e778 */
 extern const unsigned char abIffCmapChunkId[4]; /* 0x0043e77c */
 extern const unsigned char abIffBodyChunkId[4]; /* 0x0043e780 */
-extern TitleMenuRegion aBarracksMenuRegions[21]; /* 0x00463008 */
+extern const TitleMenuRegion aBarracksMenuRegions[21]; /* 0x00463008 */
 extern short nHazardReferenceSpeed; /* 0x00465040 */
 extern short nActiveHazards; /* 0x00465044 */
 extern int bIxAudioEnabled; /* 0x00465058 */

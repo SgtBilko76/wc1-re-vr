@@ -137,32 +137,6 @@ const unsigned char abIffCmapChunkId[4] = { 'C', 'M', 'A', 'P' }; /* 0x0043e77c 
 const unsigned char abIffBodyChunkId[4] = { 'B', 'O', 'D', 'Y' }; /* 0x0043e780 */
 #endif
 
-TitleMenuRegion aBarracksMenuRegions[21] = { /* 0x00463008 */
-    { 1, 137, 88, 149, 94 },
-    { 1, 110, 88, 136, 94 },
-    { 1, 172, 88, 184, 94 },
-    { 1, 185, 88, 210, 94 },
-    { 1, 133, 98, 146, 107 },
-    { 1, 100, 98, 132, 107 },
-    { 1, 174, 98, 189, 107 },
-    { 1, 190, 98, 220, 107 },
-    { 1, 124, 114, 142, 128 },
-    { 1, 81, 114, 123, 128 },
-    { 1, 178, 114, 197, 128 },
-    { 1, 198, 114, 238, 128 },
-    { 1, 109, 141, 135, 164 },
-    { 1, 50, 141, 108, 164 },
-    { 1, 185, 141, 213, 164 },
-    { 1, 214, 141, 268, 164 },
-    { 1, 288, 39, 311, 85 },
-    { 1, 9, 33, 39, 95 },
-    { 1, 218, 37, 248, 78 },
-    { 1, 86, 44, 181, 78 },
-    { -1, 0, 0, 0, 0 }
-};
-
-short nHazardReferenceSpeed; /* 0x00465040 */
-short nActiveHazards; /* 0x00465044 */
 int bIxAudioEnabled = 1; /* 0x00465058 */
 unsigned int bKeyEventQueueEnabled; /* 0x0046505c */
 unsigned int nGuardedAllocationTotalBytes; /* 0x00465060 */
@@ -804,10 +778,6 @@ char szShipCommFormat[8] = "%s: %Fs"; /* 0x0046b160 */
 unsigned short nVideoMode = 0xffff; /* 0x0046b168 */
 signed char acGraphicsModeByAnimationSpeed[8] = { /* 0x0046b178 */
     0x13, 0x0d, 4, 9, 7, 0, 0, 0
-};
-const GUID guidDirectDraw2 = { /* 0x00463118 */
-    0xb3a6f3e0, 0x2b43, 0x11cf,
-    { 0xa2, 0xde, 0x00, 0xaa, 0x00, 0xb9, 0x33, 0x56 }
 };
 LPDIRECTDRAW2 pDirectDraw2; /* 0x0046b1a4 */
 LPDIRECTDRAWSURFACE pPrimarySurface; /* 0x0046b1a8 */
@@ -3004,7 +2974,7 @@ unsigned char abManeuverRerollChance[47] = { /* 0x00465678 */
     0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0
 };
-ShipManeuverHandler apShipAiManeuverHandlers[47] = { /* 0x004656a8 */
+ShipManeuverHandler apShipAiManeuverHandlers[47] = {
     /* 00 */ (void (*)(short, short))Mnone,
     /* 01 */ (void (*)(short, short))Mnone,
     /* 02 */ (void (*)(short, short))Mveer_away,
@@ -3052,7 +3022,7 @@ ShipManeuverHandler apShipAiManeuverHandlers[47] = { /* 0x004656a8 */
     /* 44 */ (void (*)(short, short))ShipAiState44,
     /* 45 */ (void (*)(short, short))Mbest_strafe,
     /* 46 */ (void (*)(short, short))Mreset
-};
+}; /* 0x004656a8 */
 
 const char *apszKilrathiAceNames[4] = { /* 0x0046af80 */
     &aszKilrathiAceNames[0x00],

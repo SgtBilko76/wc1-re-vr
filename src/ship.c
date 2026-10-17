@@ -8,7 +8,7 @@
  */
 #include "wc1.h"
 
-static const enum ObjectType aaeExplosionDebris[4][7] = { /* 0x004698e0 */
+static enum ObjectType aaeExplosionDebris[4][7] = {
     {
         OBJECT_TYPE_DEBRIS_PIPE, OBJECT_TYPE_DEBRIS_O_RING,
         OBJECT_TYPE_DEBRIS_SHIP_GIRDER_CHUNK,
@@ -34,7 +34,7 @@ static const enum ObjectType aaeExplosionDebris[4][7] = { /* 0x004698e0 */
         OBJECT_TYPE_DEBRIS_PIPE, OBJECT_TYPE_DEBRIS_O_RING,
         OBJECT_TYPE_DEBRIS_GLASS
     }
-};
+}; /* 0x004698e0 */
 
 /* Function start: 0x41DEE0 */
 short initialize_object(short obj, enum ObjectType type, short owner)

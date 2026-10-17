@@ -1,10 +1,22 @@
 /*
  *  Win32 shell: window creation, message loop, exit paths.
  *
- *  Address range 0x401000-0x402dff (provisional -- see docs/ORDER.md).
- *  Boundary evidence: CreateMainWindow/MainWindowProc/AbortToDesktop cluster; string band 0x465048-0x465354.
+ *  Address range 401000-402dff (provisional -- see docs/ORDER.md).
+ *  Boundary evidence: CreateMainWindow/MainWindowProc/AbortToDesktop cluster; string band 465048-465354.
  */
 #include "wc1.h"
+
+short nHazardReferenceSpeed = 0; /* 0x00465040 */
+short nActiveHazards = 0; /* 0x00465044 */
+
+/* Base flight times and pitch windows for the four forward view bands. */
+static signed char acHazardTravelTimeByView[8] = {
+    56, 52, 75, 73, 0, 0, 0, 0
+}; /* 0x00465048 */
+
+static signed char acHazardPitchRange[8] = {
+    -10, 4, -8, 8, -12, 8, -8, 8
+}; /* 0x00465050 */
 
 /* Function start: 0x401000 */
 void SaveGamePalette(void)
@@ -75,15 +87,6 @@ void make_shard(short asteroid, FixedVector direction)
     SetVectorFixedPoint(
         (unsigned int *)&aShipVelocity[fragment], speed);
 }
-
-/* Base flight times and pitch windows for the four forward view bands. */
-static const signed char acHazardTravelTimeByView[8] = {
-    56, 52, 75, 73, 0, 0, 0, 0
-};
-
-static const signed char acHazardPitchRange[8] = {
-    -10, 4, -8, 8, -12, 8, -8, 8
-};
 
 /* Function start: 0x4011D0 */
 void remove_hazard(signed char hazard)

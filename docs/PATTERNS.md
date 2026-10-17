@@ -17,6 +17,12 @@ for similarity decisions.
 - Use typed fields and arrays. Keep offset-based field names until their intent
   is proven.
 - Use the matching CRT routine when the binary calls or inlines it.
+- Check the original section before adding `const` to a table. The hazard and
+  explosion-debris tables occupy writable data even though their reconstructed
+  users only read them; the barracks menu regions occupy read-only data.
+- Put a global's address comment before its declaration or after its final
+  semicolon. A comment inside a multiline initializer is recognized by the
+  layout audit but missed by the linked-data comparison's simpler parser.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

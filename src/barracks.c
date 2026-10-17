@@ -1,11 +1,35 @@
 /*
  *  Barracks and campaign save/load room.
  *
- *  Address range 0x41ada0-0x41c75f (provisional -- see docs/ORDER.md).
+ *  Address range 41ada0-41c75f (provisional -- see docs/ORDER.md).
  *  Boundary evidence: contiguous SAVEGAME.WLD helpers ending at BarracksScreen;
- *  the Win32 debug-overlay compilation unit begins at 0x41c760.
+ *  the Win32 debug-overlay compilation unit begins at 41c760.
  */
 #include "wc1.h"
+
+const TitleMenuRegion aBarracksMenuRegions[21] = {
+    { 1, 137, 88, 149, 94 },
+    { 1, 110, 88, 136, 94 },
+    { 1, 172, 88, 184, 94 },
+    { 1, 185, 88, 210, 94 },
+    { 1, 133, 98, 146, 107 },
+    { 1, 100, 98, 132, 107 },
+    { 1, 174, 98, 189, 107 },
+    { 1, 190, 98, 220, 107 },
+    { 1, 124, 114, 142, 128 },
+    { 1, 81, 114, 123, 128 },
+    { 1, 178, 114, 197, 128 },
+    { 1, 198, 114, 238, 128 },
+    { 1, 109, 141, 135, 164 },
+    { 1, 50, 141, 108, 164 },
+    { 1, 185, 141, 213, 164 },
+    { 1, 214, 141, 268, 164 },
+    { 1, 288, 39, 311, 85 },
+    { 1, 9, 33, 39, 95 },
+    { 1, 218, 37, 248, 78 },
+    { 1, 86, 44, 181, 78 },
+    { -1, 0, 0, 0, 0 }
+}; /* 0x00463008 */
 
 /* Function start: 0x41ADA0 */
 void CreateEmptySaveGameFile(void)
