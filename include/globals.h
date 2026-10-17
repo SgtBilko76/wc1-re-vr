@@ -297,7 +297,6 @@ extern signed char aacCockpitLightOffFrame[5][7]; /* 0x0046dd38 */
 extern signed char aacCockpitLightOnFrame[5][7]; /* 0x0046dd60 */
 extern CockpitBarDefinition aaCockpitBars[5][8]; /* 0x0046dd88 */
 extern const GUID guidDirectDraw2; /* 0x00463118 */
-extern LPDIRECTDRAW2 pDirectDraw2; /* 0x0046b1a4 */
 extern unsigned char bCurrentKey; /* 0x0046c014 */
 extern signed char cPreviousKey; /* 0x0046c018 */
 extern short nCurrentWave; /* 0x0046c01c */
@@ -1035,11 +1034,6 @@ extern unsigned char abCockpitLightGoal[7]; /* 0x005a7eb8 */
 extern unsigned int anCockpitDamageState[4]; /* 0x005a7ef0 */
 extern MouseCursorState stHostMouseState; /* 0x0059af70 */
 extern int nFrameIntervalMs; /* 0x0046b1b8 */
-extern int nFrameDeadlineMs; /* 0x0046b1bc */
-extern int nPreviousFrameTimeMs; /* 0x0046b1c4 */
-extern int bSpaceFlightFrameTiming; /* 0x0046b1c8 */
-extern float fSpaceFlightFrameRate; /* 0x0046b1cc */
-extern float fCinematicFrameRate; /* 0x0046b1d0 */
 extern unsigned int dwStreamerState; /* 0x00597cd0 */
 extern short bExpandedMemoryAvailable; /* 0x0059a856 */
 extern int bCampaignStartupMode; /* 0x004688e0 */
@@ -1092,10 +1086,6 @@ extern const ShortVector aSwcChildOffsets[63];
 #endif
 extern ShortPoint aWeaponDisplayPositions[32]; /* 0x00468440 */
 extern ShortPoint aWeaponDisplayOrigins[5]; /* 0x004684c0 */
-extern LPDIRECTDRAWSURFACE pPrimarySurface; /* 0x0046b1a8 */
-extern LPDIRECTDRAWSURFACE pSecondarySurface; /* 0x0046b1ac */
-extern LPDIRECTDRAWPALETTE pDirectDrawPalette; /* 0x0046b1b0 */
-extern int   nDIBCascadeLevel; /* 0x0046b1b4 */
 extern char  szDIBErrorMessage[0x98]; /* 0x00486078 */
 
 extern unsigned char bMessageSpeed; /* 0x0046af68 */

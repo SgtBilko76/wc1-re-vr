@@ -784,7 +784,7 @@ $(TARGET): $(LINK_OBJS) $(IX_LIBS) Makefile bin/appendStaticSymbols.py | $(MSVCR
 	env LIB='$(GAME_LIBPATH)' $(LINK) $(LINKFLAGS) /MAP:$(LINKMAPFILE) $(LINK_OBJS) $(GAME_LIBS) /OUT:$@
 	@python3 bin/stampPeTimestamp.py $@ $(ORIGINAL_TIMESTAMP)
 	@python3 bin/appendStaticSymbols.py --map $(LINKMAPFILE) \
-		--rebuilt $@ --output $(MAPFILE) $(OUT_DIR)/damage.obj $(OUT_DIR)/view.obj $(OUT_DIR)/music.obj $(OUT_DIR)/ending.obj $(OUT_DIR)/comm.obj $(OUT_DIR)/joycal.obj
+		--rebuilt $@ --output $(MAPFILE) $(OUT_DIR)/damage.obj $(OUT_DIR)/view.obj $(OUT_DIR)/music.obj $(OUT_DIR)/ending.obj $(OUT_DIR)/comm.obj $(OUT_DIR)/joycal.obj $(OUT_DIR)/dib.obj
 
 $(IX_LZO_LIB): $(call objects_of,$(SRCS_IX_LZO))
 $(IX_FILE_LIB): $(call objects_of,$(SRCS_IX_FILE))

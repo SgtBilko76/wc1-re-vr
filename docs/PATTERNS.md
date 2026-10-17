@@ -20,6 +20,11 @@ for similarity decisions.
   epilogue placement. Equivalent C often emits different instructions.
 - In `/Od` code, keep explicit pointer locals when the original stores them.
 - Repeat identical literals at each use site; string pooling was disabled.
+  In `DIBcascade`, write the surface-lock failure branch before the success
+  path. CL emits its second `" failed\n"` before `" successful\n"`, matching
+  the original addresses. Reversing those source paths can preserve the
+  normalized function match while swapping the literal order. The complete
+  3,620-byte DirectDraw literal-pool check catches this difference.
   Distinguish literals from named arrays: `CreateMainWindow` references the
   same writable class-name array three times, plus a separate title array.
   Four independent literals reproduce the text but not the original storage.

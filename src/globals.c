@@ -400,17 +400,6 @@ short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
 };
 char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
     "Press any key when ready";
-LPDIRECTDRAW2 pDirectDraw2 = 0; /* 0x0046b1a4 */
-LPDIRECTDRAWSURFACE pPrimarySurface = 0; /* 0x0046b1a8 */
-LPDIRECTDRAWSURFACE pSecondarySurface = 0; /* 0x0046b1ac */
-LPDIRECTDRAWPALETTE pDirectDrawPalette = 0; /* 0x0046b1b0 */
-int nDIBCascadeLevel = -1; /* 0x0046b1b4 */
-int nFrameIntervalMs = 62; /* 0x0046b1b8 */
-int nFrameDeadlineMs = 0; /* 0x0046b1bc */
-int nPreviousFrameTimeMs = 0; /* 0x0046b1c4 */
-int bSpaceFlightFrameTiming = 0; /* 0x0046b1c8 */
-float fSpaceFlightFrameRate = 20.0f; /* 0x0046b1cc */
-float fCinematicFrameRate = 16.0f; /* 0x0046b1d0 */
 short aasCockpitLightX[5][7] = { /* 0x0046dca8 */
     {101, 101, 189, 137, 265, -99, 203},
     {198, 198, 133, 145, 234, 234, -99},

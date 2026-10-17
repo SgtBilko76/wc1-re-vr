@@ -500,6 +500,24 @@ as a single 1,050-byte run with all 15 inter-object alignment bytes included.
 The boundary between the allocation helpers and ending scenes remains
 provisional. These placement windows do not establish original filenames.
 
+DirectDraw's initialized interface pointers, cascade level, and frame-timing
+state belong to `dib.c`. The first seven declarations occupy 28 bytes at
+`0x0046B1A4`–`0x0046B1BF`; four further declarations occupy 16 bytes at
+`0x0046B1C4`–`0x0046B1D3`. The ten variables used only by this unit are
+private, while `nFrameIntervalMs` remains shared with the SDL flight code.
+Both observed state runs match after relocation, but the zero words at
+`0x0046B1C0` and `0x0046B1D4` have no known references or recovered declaration
+form. They remain unresolved rather than being represented by filler variables.
+
+The complete 3,620-byte DirectDraw literal pool follows at `0x0046B1D8`,
+ending with `DirectDrawResultToText`'s `"<undefined>"` terminator at
+`0x0046BFFB`. `DIBcascade` must spell the surface-lock failure branch before
+the success path so their separate diagnostic strings appear in that order.
+This pool is checked through `abDIBDiagnosticLiterals` comparison metadata.
+The current `dib.obj` `.data` section is 3,664 bytes, eight short of the
+observed 3,672-byte span. Its full layout is therefore not included among the
+complete-unit gates; its uninitialized storage also remains in `globals.c`.
+
 Private C definitions require separate evidence: a trial moving the two
 MONODEBG variables to `static` storage in `mono.c` emitted the device handle
 before the installed flag, opposite to the original. Reversing their source

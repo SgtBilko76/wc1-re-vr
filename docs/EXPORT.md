@@ -78,12 +78,19 @@ unrecovered. The 296-byte sound-descriptor table is checked directly through
 the source declaration. These partial checks do not
 establish the complete music section or its absolute placement.
 
+The DirectDraw metadata span covers all 3,620 bytes from its first frame-rate
+format through its last error-name terminator. This checks the relative order
+of duplicate diagnostics as well as their text and alignment. Its eleven
+initialized variables are checked individually; two unresolved zero words
+still prevent a complete-unit layout claim for `dib.c`.
+
 LINK 4.20 omits private C data symbols from its public map. The build preserves
 that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
 `WC1.map` with the four private damage symbols, seven private view symbols,
 five private music symbols, eight private ending symbols, two private
-comm symbols, and two private joycal symbols added. Their addresses come
-from the object's COFF symbols, public section anchors, and linked `DIR32`
+comm symbols, two private joycal symbols, and ten private dib symbols added.
+Their addresses come from the object's COFF symbols, public section anchors,
+and linked `DIR32`
 references with PE `HIGHLOW` relocations. Conflicting anchors or unresolved
 symbols fail the build. This step changes only comparison metadata; it does
 not modify the executable or infer addresses from the original binary.

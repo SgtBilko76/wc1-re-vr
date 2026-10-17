@@ -10,6 +10,18 @@
  */
 #include "wc1.h"
 
+static LPDIRECTDRAW2 pDirectDraw2 = 0; /* 0x0046b1a4 */
+static LPDIRECTDRAWSURFACE pPrimarySurface = 0; /* 0x0046b1a8 */
+static LPDIRECTDRAWSURFACE pSecondarySurface = 0; /* 0x0046b1ac */
+static LPDIRECTDRAWPALETTE pDirectDrawPalette = 0; /* 0x0046b1b0 */
+static int nDIBCascadeLevel = -1; /* 0x0046b1b4 */
+int nFrameIntervalMs = 62; /* 0x0046b1b8 */
+static int nFrameDeadlineMs = 0; /* 0x0046b1bc */
+static int nPreviousFrameTimeMs = 0; /* 0x0046b1c4 */
+static int bSpaceFlightFrameTiming = 0; /* 0x0046b1c8 */
+static float fSpaceFlightFrameRate = 20.0f; /* 0x0046b1cc */
+static float fCinematicFrameRate = 16.0f; /* 0x0046b1d0 */
+
 /* DirectDraw's SDK identifiers occur in this order before the frame-timing
  * constants. The original SDK also emitted the unused class/interface IDs. */
 const GUID CLSID_DirectDraw = {
@@ -356,21 +368,22 @@ int DIBcascade(int mode, int *reportedResult)
             DDLOCK_WAIT, 0);
         if (reportedResult != 0)
             *reportedResult = result;
-        if (result == DD_OK) {
-            IDirectDrawSurface_Unlock(
-                pPrimarySurface, surface.lpSurface);
-            IDirectDrawSurface_Release(
-                pPrimarySurface);
-            pPrimarySurface = 0;
-            OutputDebugStringA(" successful\n");
-            return 1;
+        if (result != DD_OK) {
+            OutputDebugStringA(" failed\n");
+            mode = 0;
+            IDirectDrawSurface_Release(pPrimarySurface);
+            IDirectDraw2_RestoreDisplayMode(pDirectDraw2);
+            reportedResult = 0;
+            continue;
         }
 
-        OutputDebugStringA(" failed\n");
-        mode = 0;
-        IDirectDrawSurface_Release(pPrimarySurface);
-        IDirectDraw2_RestoreDisplayMode(pDirectDraw2);
-        reportedResult = 0;
+        IDirectDrawSurface_Unlock(
+            pPrimarySurface, surface.lpSurface);
+        IDirectDrawSurface_Release(
+            pPrimarySurface);
+        pPrimarySurface = 0;
+        OutputDebugStringA(" successful\n");
+        return 1;
     }
 #endif
 }

@@ -36,3 +36,8 @@ unsigned char abMusicSoundEffectDiagnosticLiteral[16]; /* 0x0046ad10 */
  * and memory-stack diagnostics. This complete run is long enough for unique
  * lookup and also checks their adjacency across the compilation-unit edge. */
 unsigned char abMusicAndScreenLiterals[92]; /* 0x0046ad2c */
+
+/* dib.c: the complete literal pool, from the two frame-rate formats through
+ * the DirectDraw error names. Includes repeated diagnostics and all internal
+ * alignment bytes; the initialized state preceding it remains incomplete. */
+unsigned char abDIBDiagnosticLiterals[3620]; /* 0x0046b1d8 */
