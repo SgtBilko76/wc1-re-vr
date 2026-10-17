@@ -354,6 +354,8 @@ void CaptureSpriteBackground(Viewport *viewport, unsigned char *background,
     short right;
     short bottom;
     short copyLength;
+    short sourceX;
+    short sourceY;
     int frameOffset;
     int drawX;
     int drawY;
@@ -361,9 +363,6 @@ void CaptureSpriteBackground(Viewport *viewport, unsigned char *background,
     int skip;
     unsigned short count;
     unsigned short runLength;
-#ifdef SDL_PORT
-    short coordinate;
-#endif
 
     saved = background;
     if (background == 0)
@@ -389,18 +388,19 @@ void CaptureSpriteBackground(Viewport *viewport, unsigned char *background,
     commands += 2;
     while (count != 0) {
 #ifdef SDL_PORT
-        memcpy(&coordinate, commands, sizeof(coordinate));
-        drawX = x + coordinate;
-        commands += 2;
-        memcpy(&coordinate, commands, sizeof(coordinate));
-        drawY = y + coordinate;
-        commands += 2;
+        memcpy(&sourceX, commands, sizeof(sourceX));
 #else
-        drawX = x + *(short *)commands;
-        commands += 2;
-        drawY = y + *(short *)commands;
-        commands += 2;
+        sourceX = *(short *)commands;
 #endif
+        commands += 2;
+#ifdef SDL_PORT
+        memcpy(&sourceY, commands, sizeof(sourceY));
+#else
+        sourceY = *(short *)commands;
+#endif
+        commands += 2;
+        drawX = x + sourceX;
+        drawY = y + sourceY;
         screen = pixels + (SPRITE_ROW_OFFSET(viewport, drawY) + drawX);
         if ((count & 1) != 0) {
             count >>= 1;
@@ -492,6 +492,8 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
     short right;
     short bottom;
     short copyLength;
+    short sourceX;
+    short sourceY;
     int frameOffset;
     int drawX;
     int drawY;
@@ -499,9 +501,6 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
     int skip;
     unsigned short count;
     unsigned short runLength;
-#ifdef SDL_PORT
-    short coordinate;
-#endif
 
     saved = background;
     if (background == 0)
@@ -527,18 +526,19 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
     commands += 2;
     while (count != 0) {
 #ifdef SDL_PORT
-        memcpy(&coordinate, commands, sizeof(coordinate));
-        drawX = x + coordinate;
-        commands += 2;
-        memcpy(&coordinate, commands, sizeof(coordinate));
-        drawY = y + coordinate;
-        commands += 2;
+        memcpy(&sourceX, commands, sizeof(sourceX));
 #else
-        drawX = x + *(short *)commands;
-        commands += 2;
-        drawY = y + *(short *)commands;
-        commands += 2;
+        sourceX = *(short *)commands;
 #endif
+        commands += 2;
+#ifdef SDL_PORT
+        memcpy(&sourceY, commands, sizeof(sourceY));
+#else
+        sourceY = *(short *)commands;
+#endif
+        commands += 2;
+        drawX = x + sourceX;
+        drawY = y + sourceY;
         screen = pixels + (SPRITE_ROW_OFFSET(viewport, drawY) + drawX);
         if ((count & 1) != 0) {
             count >>= 1;
@@ -550,8 +550,8 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
                     commands++;
                     count -= runLength;
                     if (top <= drawY && bottom >= drawY) {
-                        endX = drawX + runLength - 1;
-                        if (drawX <= right && left <= endX) {
+                        if (drawX <= right &&
+                            left <= (endX = drawX + runLength - 1)) {
                             copyLength = (short)runLength;
                             skip = 0;
                             if (drawX < left) {
@@ -568,8 +568,8 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
                     runLength = (unsigned short)(code >> 1);
                     count -= runLength;
                     if (top <= drawY && bottom >= drawY) {
-                        endX = drawX + runLength - 1;
-                        if (drawX <= right && left <= endX) {
+                        if (drawX <= right &&
+                            left <= (endX = drawX + runLength - 1)) {
                             copyLength = (short)runLength;
                             skip = 0;
                             if (drawX < left) {
@@ -590,8 +590,8 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
         } else {
             count >>= 1;
             if (top <= drawY && bottom >= drawY) {
-                endX = drawX + count - 1;
-                if (drawX <= right && left <= endX) {
+                if (drawX <= right &&
+                    left <= (endX = drawX + count - 1)) {
                     copyLength = (short)count;
                     skip = 0;
                     if (drawX < left) {

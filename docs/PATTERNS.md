@@ -231,6 +231,17 @@ for similarity decisions.
   `RestoreSpriteBackground` and `GetShapeFrameCorners` routines. Keep checking
   the complete unit rather than retaining an unused declaration to influence
   the compiler.
+- `CaptureSpriteBackground` and `RestoreSpriteBackground` also read both
+  coordinate words into short locals before promotion. Keep separate command
+  pointer advances for the two words. Restoration calculates the run end
+  inside the second horizontal-bound test; capture retains its preceding
+  assignment. Together these forms recover restoration's original size and
+  reduce the pair's differing instructions to 157/220 and 161/224. Capture's
+  mnemonic score falls slightly despite fewer byte differences. The original
+  spills the run length while retaining clipping values in registers; this
+  allocation remains unresolved. Narrowing the run-length declaration's
+  scope, adding a register hint to the skip, caching promoted bounds, and
+  duplicating the cursor updates did not improve the match.
 - `ReadTextInput` dispatches both the input byte and the input mode with
   switches. This retains the zero-extended key for character classification
   and places Enter/Escape and uppercase/numeric branches after their defaults.
