@@ -987,7 +987,7 @@ void DestroyGlobalDebugOverlayConsole(void);                           /* 0x0042
 void SystemDebugPrintf(const char *format, ...);                           /* 0x00425BB0 */
 char PumpMessagesDuringWait(void);                                        /* 0x00425BC0 */
 unsigned char TakeDebugStepFlag(void);                                     /* 0x00425BD0 */
-void ResetDiskPromptTimer(void);                                             /* 0x00425BE0 */
+void ResetDiskPromptTimerHook(int mode, int interval);                       /* 0x00425BE0 */
 void SetConsoleTextColourHook(void);                                  /* 0x00425BF0 */
 void SetConsoleBackgroundColourHook(void);                            /* 0x00425C00 */
 void DiskPromptDrawHook(void);                                             /* 0x00425C10 */

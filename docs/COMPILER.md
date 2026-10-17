@@ -16,6 +16,7 @@ the affected compilation unit.
 | `src/ix/` library members | C++, `/MTd /Od /Oi` |
 | `src/ix/ixlog.cpp` | C++, core profile |
 | `src/sound.c` | Core profile compiled as C++ with `/TP` |
+| `src/debug.cpp` | C++, core profile without `/GX` |
 | `src/pilot.cpp` | Core profile plus target-specific `/GX` |
 
 Evidence that constrains these settings:

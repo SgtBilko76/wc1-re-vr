@@ -61,6 +61,21 @@ for similarity decisions.
   division. `ShowModalTextPanel`'s `width * 8 / 16` generates the original
   shift, `CDQ`, bias, and arithmetic shift. Manually expressing the bias lets
   CL simplify the sequence differently and changes register allocation.
+- The disk-prompt bounds at `0x005A7D80` are likewise one `ShortRect`.
+  `PromptInsertNumberedDisk` copies them into both viewport rectangles with
+  two DWORD loads and four stores, then reloads them after selecting or
+  allocating the background viewport. Splitting them into independent
+  halfword stores adds code absent from the original. The initializer in
+  `sound.c` writes the same rectangle's top, left, bottom, and right fields.
+- Empty compatibility functions can still take arguments. The text-mode
+  disk prompt pushes `2` and `10` for `ResetDiskPromptTimerHook`, then cleans
+  eight stack bytes. Preserve these arguments even though the hook is a
+  bare `RET`.
+- Distinguish a message pointer from the literal it addresses.
+  `ReportPacketLoadError` reloads three initialized pointers in `disk.c`.
+  It restores `nPacketError` immediately after `LogMemoryUsage`, before
+  selecting an operation label. Keeping its packet-size local before the
+  error word also reproduces the original EDI/BP register assignment.
 - Preserve switch dispatch and shared action paths. `BarracksScreen` has
   jump tables for event types and menu regions, plus a key switch. Keyboard
   activation and mouse clicks reach the same flag assignment; cursor events

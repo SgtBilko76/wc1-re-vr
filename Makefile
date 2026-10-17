@@ -224,10 +224,11 @@ GLOBALS_MISSING_MAX_ADDRESS = 0x004751ff
 # binary-comp currently accepts one definition source, so generate a parser-only
 # manifest from globals.c and the declaration block at the top of each owner.
 GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/cmpgn.c \
-	src/nav.c src/spc.c src/cockpt.c src/barracks.c src/ship.c src/music.c src/dib.c src/gr.c \
+	src/nav.c src/spc.c src/cockpt.c src/barracks.c src/debug.cpp src/disk.c src/ship.c src/music.c src/dib.c src/gr.c \
 	src/ix/dsp.cpp src/ix/dsps.cpp src/ix/dspv.cpp
 GLOBALS_DEFINITION_SOURCES = src/globals.c $(GLOBALS_DISTRIBUTED_SOURCES)
 GLOBALS_AUDIT_SOURCE = $(OUT_DIR)/globals-audit.c
+GLOBALS_DATA_AUDIT_SOURCE = $(OUT_DIR)/globals-data-audit.c
 
 # ---------------------------------------------------------------------------
 # Host platform and DREAMM runtime
@@ -881,6 +882,10 @@ $(GLOBALS_AUDIT_SOURCE): Makefile bin/collectGlobalDefinitions.py include/wcdata
 		--constants-header include/wcdata.h \
 		$(GLOBALS_DEFINITION_SOURCES)
 
+# Literal-pool spans are comparison metadata, not source-level globals.
+$(GLOBALS_DATA_AUDIT_SOURCE): $(GLOBALS_AUDIT_SOURCE) config/data-literals.h
+	@cat $(GLOBALS_AUDIT_SOURCE) config/data-literals.h > $@
+
 # --bytes adds each function's byte-level status (EXACT, BYTES n/m, SIZE +-n)
 # to the mnemonic similarity.
 REPORT_FLAGS ?= --bytes
@@ -914,14 +919,15 @@ order: $(TARGET) | code-full $(ORIGINAL_EXE)
 seh: $(TARGET) | code-full $(ORIGINAL_EXE)
 	@$(BINARY_COMP) seh $(BC) --report $(if $(FILTER),--filter $(FILTER)) || true
 
-globals-data: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | $(ORIGINAL_EXE)
-	@$(BINARY_COMP) data $(BC)
+globals-data: $(TARGET) $(GLOBALS_DATA_AUDIT_SOURCE) | $(ORIGINAL_EXE)
+	@$(BINARY_COMP) data $(BC) --globals-source $(GLOBALS_DATA_AUDIT_SOURCE)
 
-globals-data-verbose: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | $(ORIGINAL_EXE)
-	@$(BINARY_COMP) data $(BC) --verbose
+globals-data-verbose: $(TARGET) $(GLOBALS_DATA_AUDIT_SOURCE) | $(ORIGINAL_EXE)
+	@$(BINARY_COMP) data $(BC) --globals-source $(GLOBALS_DATA_AUDIT_SOURCE) --verbose
 
-missing-data: $(GLOBALS_AUDIT_SOURCE) | $(ORIGINAL_EXE)
+missing-data: $(GLOBALS_DATA_AUDIT_SOURCE) | $(ORIGINAL_EXE)
 	@$(BINARY_COMP) data $(BC) \
+		--globals-source $(GLOBALS_DATA_AUDIT_SOURCE) \
 		--find-missing \
 		--min-address $(GLOBALS_MISSING_MIN_ADDRESS) \
 		--max-address $(GLOBALS_MISSING_MAX_ADDRESS)
@@ -943,7 +949,7 @@ compare-full-functions: compare-functions
 verify:
 	@$(MAKE) audit-compiler-glue
 	@$(MAKE) verify-array-initializers
-	@$(MAKE) verify-barracks-data
+	@$(MAKE) verify-unit-data
 	@$(MAKE) verify-globals
 	@$(MAKE) verify-globals-data
 	@$(MAKE) verify-globals-code
@@ -960,9 +966,14 @@ verify-array-initializers: $(TARGET) | $(ORIGINAL_EXE)
 		--map "$(MAPFILE)" --binary-comp "$(BINARY_COMP)"
 
 verify-barracks-data: $(TARGET) out/barracks.obj | $(ORIGINAL_EXE)
-	@python3 bin/verifyBarracksData.py \
+	@python3 bin/verifyUnitData.py --unit barracks \
 		--original "$(ORIGINAL_EXE)" --rebuilt "$(TARGET)" \
-		--map "$(MAPFILE)" --object out/barracks.obj
+		--map "$(MAPFILE)" --objects-root "$(OUT_DIR)"
+
+verify-unit-data: $(TARGET) | $(ORIGINAL_EXE)
+	@python3 bin/verifyUnitData.py \
+		--original "$(ORIGINAL_EXE)" --rebuilt "$(TARGET)" \
+		--map "$(MAPFILE)" --objects-root "$(OUT_DIR)"
 
 verify-globals: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
 	@$(BINARY_COMP) globals $(BC) --no-source-order --fail-on-issues --fail-on-warnings
@@ -970,11 +981,12 @@ verify-globals: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
 # The source-level globals audit cannot serialize every nested or symbolic
 # initializer.  Compare the linked bytes too, but keep the normal verify output
 # to the actionable mismatches and summary.
-verify-globals-data: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | $(ORIGINAL_EXE)
+verify-globals-data: $(TARGET) $(GLOBALS_DATA_AUDIT_SOURCE) | $(ORIGINAL_EXE)
 	@audit_output=$$(mktemp "$${TMPDIR:-/tmp}/wc1-globals-data.XXXXXX"); \
 		trap 'rm -f "$$audit_output"' 0 1 2 15; \
 		status=0; \
-		$(BINARY_COMP) data $(BC) > "$$audit_output" || status=$$?; \
+		$(BINARY_COMP) data $(BC) --globals-source $(GLOBALS_DATA_AUDIT_SOURCE) \
+			> "$$audit_output" || status=$$?; \
 		awk '/ MISMATCH / || / not in rebuilt map/ || /^Summary:/' \
 			"$$audit_output"; \
 		exit $$status
@@ -1178,6 +1190,7 @@ clean-modern:
 	verify \
 	verify-array-initializers \
 	verify-barracks-data \
+	verify-unit-data \
 	verify-calls \
 	verify-global-access \
 	verify-globals \

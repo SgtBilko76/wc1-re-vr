@@ -37,12 +37,22 @@ They deliberately have no source annotations and are checked separately by
 report therefore counts 1,519 source entries after removal of their four
 handwritten stand-ins; the separate gate covers the 74 generated code bytes.
 
-`make verify-barracks-data`, also included in `make verify`, checks the whole
-632-byte initialized-data block and the object section's size. It delegates
-byte matching to binary-comp, allowing one address shift for all six internal
-menu pointers. String-content fallback is disabled so duplicate literals
-cannot conceal incorrect pointer targets. This verifies relative layout;
-the block's final absolute address remains a whole-executable matching task.
+`make verify-unit-data`, also included in `make verify`, checks the complete
+initialized-data sections recovered for barracks (632 bytes), debug (36),
+and disk (523). It delegates byte matching to binary-comp, allowing one
+address shift per block, and verifies object sizes, global positions, and
+pointer relocations. String-content fallback is disabled so duplicate or
+empty literals cannot conceal incorrect pointer targets. These checks prove
+relative layout; final absolute addresses remain a whole-executable task.
+`make verify-barracks-data` retains the barracks-only check.
+
+`config/data-literals.h` contains comparison metadata for anonymous literal
+spans. It is never compiled or included by game code. The data-check targets
+append it to `out/globals-data-audit.c`; source-level global audits continue
+to use the separate `out/globals-audit.c`. Binary-comp's unique-byte-sequence
+lookup locates the complete disk literal pool and verifies pointers into it,
+including three-character graphics-mode names and the empty string. Its
+ordinary string-content fallback cannot resolve those short strings.
 
 A per-function `EXACT` result covers only that entry's
 span up to the next exported function, even if the next function has no source

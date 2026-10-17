@@ -191,17 +191,9 @@ extern unsigned char cEmptyHudMessage; /* 0x004693b0 */
 extern char *pGameVersion; /* 0x004693b4 */
 extern char szGameVersion[9]; /* 0x004693b8 */
 extern short nPaletteTransitionInitialise; /* 0x00469640 */
-extern int nDebugOverlayConsoleCount; /* 0x00469644 */
 extern DWORD dwDebugOverlayKey; /* 0x00469648 */
 extern DWORD dwDebugOverlayKeyLatch; /* 0x0046964c */
-extern HHOOK hDebugKeyboardHook; /* 0x00469650 */
-extern char szDebugOverlayFontName[8]; /* 0x00469654 */
-extern char szDebugOverlaySpinner[5]; /* 0x0046965c */
-extern char szDebugOverlayNewline[4]; /* 0x00469664 */
-extern const char *apszGraphicsModeNames[4]; /* 0x00469668 */
-extern char szDiskMarkerFile[9]; /* 0x00469688 */
 extern short nDiskPromptBorderColour; /* 0x00469694 */
-extern short nKeyboardPointerStep; /* 0x004696a4 */
 extern short asPlayerDamageSystemTable[50]; /* 0x00469878 */
 extern enum ObjectType aeShipHitDebrisTypes[3]; /* 0x00469950 */
 extern signed char acGunRefireDelay[4]; /* 0x0046995c */
@@ -1073,8 +1065,7 @@ extern Viewport stDiskPromptBackgroundViewport; /* 0x005a7d00 */
 extern unsigned char abDiskPromptDriveState[2]; /* 0x005a7d20 */
 extern Viewport stDiskPromptViewport; /* 0x005a7d40 */
 extern TextContext stDiskPromptTextContext; /* 0x005a7d60 */
-extern unsigned int dwDiskPromptTopLeft; /* 0x005a7d80 */
-extern unsigned int dwDiskPromptBottomRight; /* 0x005a7d84 */
+extern ShortRect stDiskPromptBounds; /* 0x005a7d80 */
 extern short *pPaletteTransitionDirection; /* 0x005a7d88 */
 extern short *pPaletteTransitionDelta; /* 0x005a7d8c */
 extern short nPaletteTransitionMaxDelta; /* 0x005a7d90 */

@@ -664,15 +664,14 @@ unsigned short InitializeDiskPromptTextContext(void)
                               stDiskPromptTextContext.font) +
                  1) *
                 3);
-    ((short *)&dwDiskPromptTopLeft)[1] =
+    stDiskPromptBounds.top =
         (short)(100 - textHeight / 2);
-    ((short *)&dwDiskPromptTopLeft)[0] =
+    stDiskPromptBounds.left =
         (short)(160 - textWidth / 2);
-    ((short *)&dwDiskPromptBottomRight)[1] =
-        (short)(((short *)&dwDiskPromptTopLeft)[1] +
-                textHeight);
-    ((short *)&dwDiskPromptBottomRight)[0] =
-        (short)(((short *)&dwDiskPromptTopLeft)[0] + textWidth);
+    stDiskPromptBounds.bottom =
+        (short)(stDiskPromptBounds.top + textHeight);
+    stDiskPromptBounds.right =
+        (short)(stDiskPromptBounds.left + textWidth);
     InitializeTextContextFromFont(&stDiskPromptTextContext, 1,
                                   cBlackColour,
                                   (signed char)cViewportClearColour);

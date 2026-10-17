@@ -180,6 +180,8 @@ ownership and qualifiers:
 | `0x00465040`–`0x00465057` | `winmain.c`: two initialized hazard counters and two writable eight-byte hazard tables |
 | `0x00465058`–`0x004650B3` | `winmain.c`: window/audio flags, heap counters, class/title arrays, and message-pump state; two intervening words remain unidentified |
 | `0x004693C8`–`0x0046963F` | `barracks.c`: bunk origins, menu pointers, modal bounds/state, campaign file numbers, and the following string literals |
+| `0x00469644`–`0x00469667` | `debug.cpp`: console count, keyboard state/hook, font name, spinner, and newline arrays |
+| `0x00469668`–`0x00469872` | `disk.c`: graphics-mode and error-message pointers, disk marker, prompt settings, and the complete following literal pool |
 | `0x004698E0`–`0x0046994F` | `ship.c`: the writable explosion-debris table referenced by `Create_explosion_debris` |
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
@@ -228,6 +230,27 @@ internal pointers, literal order, and padding; `make verify-barracks-data`
 enforces this. Its absolute address remains displaced until preceding units'
 data ownership is recovered. The palette flag at `0x00469640` remains in
 `globals.c` because its original unit boundary is still uncertain.
+
+The debug-console data is a complete 36-byte block. Both keyboard words have
+users outside `debug.cpp`; the count, hook, and character arrays are private
+to that unit. Moving these definitions preserves all 36 bytes, including
+the padding after the five-byte spinner array.
+
+The disk unit begins with the graphics-mode pointer table. The next three
+pointers at `0x00469678`, `0x0046967C`, and `0x00469680` are loaded directly
+by `ReportPacketLoadError`; they point to the read-operation label,
+allocation-operation label, and error format. Direct literals in that
+routine omitted both the pointer storage and the original loads. A further
+unreferenced sequence at `0x00469698` contains pointers to `"(OVR)"` and
+`""`, then zero. Its two HIGHLOW relocations and null word are preserved as
+`DAT_00469698[3]`; no purpose is assigned to it without a known user.
+
+The resulting `disk.obj` initialized-data section is exactly 523 bytes.
+All values, nine pointer relocations, and the 459-byte literal pool match
+with one address shift. Five linker padding bytes precede the ship table at
+`0x00469878`. `make verify-unit-data` checks the barracks, debug, and disk
+blocks, their object sizes, and every global's relative position. Absolute
+placement remains dependent on the preceding units' data recovery.
 
 The registry arrays occupy read-only data, whereas the same routine's
 `"reg cheating\n"` and `"reg not cheating\n"` diagnostic literals occupy

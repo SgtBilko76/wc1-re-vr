@@ -1,13 +1,21 @@
 /*
  *  Win32 developer overlay console.
  *
- *  Address range 0x41c760-0x41d0bf (exact).  The new/delete call sites,
+ *  Address range 41c760-41d0bf (exact).  The new/delete call sites,
  *  implicit ECX object parameter, and callee-cleanup member arguments prove
  *  this isolated utility was compiled as C++ despite the surrounding game
  *  sources being C.
  */
 #include "wc1.h"
 #include <stdarg.h>
+
+int nDebugOverlayConsoleCount = 0; /* 0x00469644 */
+DWORD dwDebugOverlayKey = 0; /* 0x00469648 */
+DWORD dwDebugOverlayKeyLatch = 0; /* 0x0046964c */
+HHOOK hDebugKeyboardHook = 0; /* 0x00469650 */
+char szDebugOverlayFontName[8] = "Courier"; /* 0x00469654 */
+char szDebugOverlaySpinner[5] = "-\\|/"; /* 0x0046965c */
+char szDebugOverlayNewline[4] = "\n"; /* 0x00469664 */
 
 /* Function start: 0x41C760 */
 DebugOverlayConsole::DebugOverlayConsole(HINSTANCE module,

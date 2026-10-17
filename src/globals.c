@@ -329,22 +329,6 @@ int anPilotTurnInterval[18] = { /* 0x00465fc8 */
 char szErrorLoadingPilotSpeech[32] = /* 0x00466010 */
     "Error loading pilot speech";
 short nPaletteTransitionInitialise = 1; /* 0x00469640 */
-int nDebugOverlayConsoleCount = 0; /* 0x00469644 */
-DWORD dwDebugOverlayKey = 0; /* 0x00469648 */
-DWORD dwDebugOverlayKeyLatch = 0; /* 0x0046964c */
-HHOOK hDebugKeyboardHook = 0; /* 0x00469650 */
-char szDebugOverlayFontName[8] = "Courier"; /* 0x00469654 */
-char szDebugOverlaySpinner[5] = "-\\|/"; /* 0x0046965c */
-char szDebugOverlayNewline[4] = "\n"; /* 0x00469664 */
-const char *apszGraphicsModeNames[4] = { /* 0x00469668 */
-    "vga",
-    "ega",
-    "cga",
-    "tga",
-};
-char szDiskMarkerFile[9] = "DISK.000"; /* 0x00469688 */
-short nDiskPromptBorderColour = 0x50; /* 0x00469694 */
-short nKeyboardPointerStep = 4; /* 0x004696a4 */
 short asPlayerDamageSystemTable[50] = { /* 0x00469878 */
     0, 8, 6, 5, 0, 3, 5, 5, 7, 6,
     0, 8, 6, 5, 4, 3, 4, 0, 4, 4,
@@ -2191,8 +2175,7 @@ unsigned char abDiskPromptDriveState[2]; /* 0x005a7d20 */
 Viewport stDiskPromptViewport; /* 0x005a7d40 */
 int bPointerMovedByKeyboard; /* 0x005a7d54 */
 TextContext stDiskPromptTextContext; /* 0x005a7d60 */
-unsigned int dwDiskPromptTopLeft; /* 0x005a7d80 */
-unsigned int dwDiskPromptBottomRight; /* 0x005a7d84 */
+ShortRect stDiskPromptBounds; /* 0x005a7d80 */
 short *pPaletteTransitionDirection; /* 0x005a7d88 */
 short *pPaletteTransitionDelta; /* 0x005a7d8c */
 short nPaletteTransitionMaxDelta; /* 0x005a7d90 */

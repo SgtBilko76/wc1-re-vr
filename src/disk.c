@@ -1,44 +1,67 @@
 /*
  *  Disk data files and packet fetching with retry.
  *
- *  Address range 0x41d120-0x41dedf (provisional -- see docs/ORDER.md).
+ *  Address range 41d120-41dedf (provisional -- see docs/ORDER.md).
  *  Boundary evidence: OpenDiskDataFile/FetchDiskPacketRetrying/PromptInsertNumberedDisk;
- *  the Mac `ship` unit begins with initialize_object at 0x41dee0.
+ *  the Mac `ship` unit begins with initialize_object at 41dee0.
  */
 #include "wc1.h"
+
+const char *apszGraphicsModeNames[4] = {
+    "vga",
+    "ega",
+    "cga",
+    "tga"
+}; /* 0x00469668 */
+const char *pszPacketReadOperation = "reading from disk"; /* 0x00469678 */
+const char *pszPacketAllocationOperation = "allocating memory"; /* 0x0046967c */
+/* 0x00469680 */
+const char *pszPacketLoadErrorFormat =
+    "Sorry, an error has occured while %s.\n"
+    "Please note the following information:\n"
+    "%s #%d (ERR %d  PS%ld  LB%ld  FL%d) at %s\n"
+    "Check your configuration.  If this problem persists, please\n"
+    "call Origin Systems' service line.  We are sorry for the inconvenience.";
+char szDiskMarkerFile[9] = "DISK.000"; /* 0x00469688 */
+short nDiskPromptBorderColour = 0x50; /* 0x00469694 */
+/* Unreferenced pointer sequence: two strings followed by a null entry. */
+const char *DAT_00469698[3] = {
+    "(OVR)", "", 0
+}; /* 0x00469698 */
+short nKeyboardPointerStep = 4; /* 0x004696a4 */
 
 /* Function start: 0x41D120 */
 void ReportPacketLoadError(void *packet, short logicalFile,
                            short retry, short section,
                            const char *sourceTag)
 {
-    short error;
     unsigned int packetSize;
+    short error;
     const char *operation;
 
     error = nPacketError;
-    if ((packet == 0 || (error != 0 && error != 8)) &&
-        (packet != 0 || error != 8)) {
-        if (section != -1)
-            packetSize = GetPacketSize(
-                pDiskFileRecords[logicalFile].name, section);
-        LogMemoryUsage();
-        operation = "allocating memory";
-        if (packet != 0 && section != -1)
-            operation = "reading from disk";
-        nPacketError = error;
-        sprintf(szDefaultTextBuffer,
-                "Sorry, an error has occured while %s.\n"
-                "Please note the following information:\n"
-                "%s #%d (ERR %d  PS%ld  LB%ld  FL%d) at %s\n"
-                "Check your configuration.  If this problem persists, please\n"
-                "call Origin Systems' service line.  We are sorry for the inconvenience.",
-                operation,
-                pDiskFileRecords[logicalFile].name,
-                (int)section, (int)error, packetSize,
-                GetFixedOneMillionThunkAlt(retry), (int)retry, sourceTag);
-        FatalErrorAndExit(szDefaultTextBuffer);
+    if (packet != 0) {
+        if (error == 0 || error == 8)
+            return;
     }
+    if (packet == 0 && error == 8)
+        return;
+    if (section != -1)
+        packetSize = GetPacketSize(
+            pDiskFileRecords[logicalFile].name, section);
+    LogMemoryUsage();
+    nPacketError = error;
+    if (packet != 0 && section != -1)
+        operation = pszPacketReadOperation;
+    else
+        operation = pszPacketAllocationOperation;
+    sprintf(szDefaultTextBuffer,
+            pszPacketLoadErrorFormat,
+            operation,
+            pDiskFileRecords[logicalFile].name,
+            (int)section, (int)error, packetSize,
+            GetFixedOneMillionThunkAlt(retry), (int)retry, sourceTag);
+    FatalErrorAndExit(szDefaultTextBuffer);
 }
 
 /* Function start: 0x41D200 */
@@ -295,7 +318,7 @@ void __stdcall PromptInsertNumberedDisk(short logicalFile)
             pDiskFileRecords[logicalFile].diskNumber;
         do {
             DiskPromptDrawHook();
-            ResetDiskPromptTimer();
+            ResetDiskPromptTimerHook(2, 10);
             cprintf("Please Insert Disk %d. Press any key to continue",
                     (int)diskNumber);
             WaitForInputKey();
@@ -305,22 +328,8 @@ void __stdcall PromptInsertNumberedDisk(short logicalFile)
 
     savedTextContext = pCurrentTextContext;
     SetTextContext(&stDiskPromptTextContext);
-    stDiskPromptBackgroundViewport.left =
-        (short)dwDiskPromptTopLeft;
-    stDiskPromptBackgroundViewport.top =
-        (short)(dwDiskPromptTopLeft >> 16);
-    stDiskPromptViewport.left =
-        (short)dwDiskPromptTopLeft;
-    stDiskPromptViewport.top =
-        (short)(dwDiskPromptTopLeft >> 16);
-    stDiskPromptBackgroundViewport.right =
-        (short)dwDiskPromptBottomRight;
-    stDiskPromptBackgroundViewport.bottom =
-        (short)(dwDiskPromptBottomRight >> 16);
-    stDiskPromptViewport.right =
-        (short)dwDiskPromptBottomRight;
-    stDiskPromptViewport.bottom =
-        (short)(dwDiskPromptBottomRight >> 16);
+    *(ShortRect *)&stDiskPromptBackgroundViewport.left = stDiskPromptBounds;
+    *(ShortRect *)&stDiskPromptViewport.left = stDiskPromptBounds;
 
     if (stSpaceBuffer.pixels != 0) {
         stDiskPromptBackgroundViewport = stSpaceBuffer;
@@ -334,14 +343,7 @@ void __stdcall PromptInsertNumberedDisk(short logicalFile)
         backgroundColour = (short)(unsigned int)savedTextContext;
     }
 
-    stDiskPromptBackgroundViewport.left =
-        (short)dwDiskPromptTopLeft;
-    stDiskPromptBackgroundViewport.top =
-        (short)(dwDiskPromptTopLeft >> 16);
-    stDiskPromptBackgroundViewport.right =
-        (short)dwDiskPromptBottomRight;
-    stDiskPromptBackgroundViewport.bottom =
-        (short)(dwDiskPromptBottomRight >> 16);
+    *(ShortRect *)&stDiskPromptBackgroundViewport.left = stDiskPromptBounds;
     if (savedViewportMode != 0) {
         CopyViewportContents(&stDiskPromptViewport,
                              &stDiskPromptBackgroundViewport);

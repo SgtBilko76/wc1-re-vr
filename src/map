@@ -814,7 +814,7 @@
 0x00425BB0 SystemDebugPrintf
 0x00425BC0 GetG004763f0Fn5BC0
 0x00425BD0 GetDebugFn5BD0
-0x00425BE0 HelperOf41D760A
+0x00425BE0 ResetDiskPromptTimerHook
 0x00425BF0 SetConsoleTextColourHook
 0x00425C00 SetConsoleBackgroundColourHook
 0x00425C10 HelperOf41D760B

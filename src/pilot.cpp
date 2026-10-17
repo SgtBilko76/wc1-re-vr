@@ -198,8 +198,10 @@ unsigned char TakeDebugStepFlag(void)
 }
 
 /* Function start: 0x425BE0 */
-void ResetDiskPromptTimer(void)
+void ResetDiskPromptTimerHook(int mode, int interval)
 {
+    (void)mode;
+    (void)interval;
 }
 
 /* Function start: 0x425BF0 */
