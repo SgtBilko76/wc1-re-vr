@@ -9,7 +9,7 @@
  */
 #include "wc1.h"
 
-short nAutopilotFormationShipCount = 0; /* 0x00465544 */
+static short nAutopilotFormationShipCount = 0; /* 0x00465544 */
 
 /* Function start: 0x403E50 */
 void visit_the_cinema(int view, int obj, short frames)

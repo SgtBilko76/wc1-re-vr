@@ -40,7 +40,8 @@ handwritten stand-ins and recovery of the two graphics diagnostic functions
 code bytes.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
-initialized-data sections recovered for fl (236 bytes), cutscene (1,297),
+initialized-data sections recovered for winsys (259 bytes), mono (225),
+auto (7), eject (156), cmpgn (135), fl (236), cutscene (1,297),
 brains (2), mission (939), objdata (9,773), nav (608), nearheap (12),
 gameflow (64), title (1,522), joystick (238), spc (12), version (13),
 barracks (632), fade (2),
@@ -85,9 +86,22 @@ form another 1,404-byte run with three alignment bytes. The gate checks both
 maneuver-state offsets, both navigation array offsets, and all four owners.
 `make verify-barracks-data` retains the barracks-only check.
 
-The maneuver, cutscene, AI, mission, object-data, navigation, near-heap,
-campaign-flow, title, joystick, and space sections form one 14,728-byte run.
-The combined check includes 25 alignment bytes and 186 pointer relocations.
+Three partial startup checks cover 56, eight, and 723 bytes. Their owner must
+contain exactly 787 initialized bytes; the original 795-byte section has two
+unidentified words between those spans. The checks deliberately do not bridge
+either missing word. The startup tail, system paths, file diagnostics,
+autopilot, ejection, conversation, maneuvers, cutscenes, AI, mission, object
+data, navigation, near-heap, campaign flow, title, joystick, and space form
+one 16,248-byte run. The combined check includes 40 alignment bytes and
+187 pointer relocations. It establishes relative positions despite the
+unrecovered startup words and the resulting eight-byte absolute displacement.
+Startup, system-path, developer-channel, ejection, and campaign literal
+metadata covers 679, 259, 221, 96, and 83 bytes respectively. The startup
+check rejects the former nonempty spelling of `WinMain`'s empty argument
+literal; the ejection check requires the stranded-message pointer to target
+the beginning of its own literal. The six campaign formats retain their
+distinct positions after the mouth parser's empty initializer and two
+separate integer formats.
 The 47 maneuver dispatch entries must target the correct one of 42 named
 function entries, each represented by a one-byte external range. This rejects
 both a different handler and an interior address in the correct handler.
@@ -107,13 +121,14 @@ The internal near-heap/campaign and viewport-helper boundaries remain
 provisional as described in `docs/ORDER.md`, as do the title/joystick division
 and the fleet-view helper's exact owner.
 
-The joystick section contains only compiler literals, so it has no public
-data symbol to anchor the comparison. The unit gate uses the same COFF layout
+The system-path and joystick sections contain only compiler literals, so
+they have no public data symbols to anchor the comparison. The unit gate uses the same COFF layout
 resolver as the private-symbol map: public code symbols establish the code
 base, and linked `DIR32` operands establish the literal section's base. Every
 such operand must have a PE `HIGHLOW` relocation and agree on that base.
 This also rejects a reference redirected to another byte-identical `"j.cal"`
-copy. A strict binary-comp address comparison then checks all 238 bytes.
+copy. Strict binary-comp address comparisons then check all 259 and 238
+bytes respectively.
 
 Two partial-section checks cover the cockpit's 16-byte prefix and 921-byte
 tail. They verify 32 declarations and both string-pointer relocations and
@@ -172,7 +187,11 @@ still prevent a complete-unit layout claim for `dib.c`.
 
 LINK 4.20 omits private C data symbols from its public map. The build preserves
 that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
-`WC1.map` with eight private nav symbols, two private nearheap symbols,
+`WC1.map` with two private winmain symbols, one private auto symbol, four
+private eject symbols, one private cmpgn symbol, four private fl symbols,
+nineteen private cutscene symbols, three private mission symbols,
+twenty-one private objdata symbols,
+eight private nav symbols, two private nearheap symbols,
 three private gameflow symbols, six private title symbols, one private spc
 symbol, twenty-three private cockpt symbols, four private damage symbols,
 seven private view symbols,

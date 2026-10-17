@@ -45,6 +45,12 @@ for similarity decisions.
   Distinguish literals from named arrays: `CreateMainWindow` references the
   same writable class-name array three times, plus a separate title array.
   Four independent literals reproduce the text but not the original storage.
+  `WinMain` passes an empty literal to `main`, and `GetJoystickDevCaps` emits
+  its failure diagnostic between the memory report and corruption strings.
+  The complete 679-byte startup literal check exposed a former `"Vj"`
+  spelling that preserved the function's normalized instruction match while
+  changing the pointed-to bytes. Use the original image to check even short
+  literals omitted by the extracted-string listing.
   Both low-memory branches in `LoadOriginFxDrivers` likewise reference one
   100-byte writable message array before its memory-reservation tables.
   Repeating the message at the call sites adds a duplicate to the literal

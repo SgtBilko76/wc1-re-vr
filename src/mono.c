@@ -2,9 +2,9 @@
  *  Win32 data-file wrappers, scaled interstitial text, canned sequences,
  *  and the MONODEBG.VXD developer console.
  *
- *  Address range 0x403500-0x403e4f (provisional -- see docs/ORDER.md).
+ *  Address range 403500-403e4f (provisional -- see docs/ORDER.md).
  *  Boundary evidence: MonoDebug_install/MonoDebug_print anchor the final block;
- *  the Mac auto unit starts at visit_the_cinema (0x403e50).
+ *  the Mac auto unit starts at visit_the_cinema (403e50).
  */
 #include "wc1.h"
 

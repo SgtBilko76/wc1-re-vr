@@ -40,6 +40,47 @@ class UnitData:
 
 
 UNITS = {
+    'winmain-prefix': UnitData(0x00465040, 56, (
+        ('nHazardReferenceSpeed', 0x00),
+        ('nActiveHazards', 0x04),
+        ('acHazardTravelTimeByView', 0x08),
+        ('acHazardPitchRange', 0x10),
+        ('bIxAudioEnabled', 0x18),
+        ('bKeyEventQueueEnabled', 0x1C),
+        ('nGuardedAllocationTotalBytes', 0x20),
+        ('nGuardedAllocationBytes', 0x24),
+        ('nGuardedAllocationPeakBytes', 0x28),
+        ('bShowKilrathiSagaCredits', 0x2C),
+        ('bShowFrameRate', 0x30),
+        ('bDirectDrawModeCascadeEnabled', 0x34),
+    ), frozenset(), owner='winmain.obj', section_size=787),
+    'winmain-middle': UnitData(0x0046507C, 8, (
+        ('bCockpitEnabled', 0x00),
+        ('bMainWindowMinimized', 0x04),
+    ), frozenset(), owner='winmain.obj', section_size=787),
+    'winmain-tail': UnitData(0x00465088, 723, (
+        ('szMainWindowClassName', 0x00),
+        ('szMainWindowTitle', 0x10),
+        ('bWindowMessagePumpActive', 0x20),
+        ('bF1KeyLatch', 0x24),
+        ('pGuardedAllocationHead', 0x28),
+    ), frozenset(), owner='winmain.obj', section_size=787),
+    'winsys': UnitData(0x0046535C, 259, (), frozenset()),
+    'mono': UnitData(0x00465460, 225, (
+        ('nPacketError', 0x00),
+    ), frozenset()),
+    'auto': UnitData(0x00465544, 7, (
+        ('nAutopilotFormationShipCount', 0x00),
+    ), frozenset()),
+    'eject': UnitData(0x00465550, 156, (
+        ('asEjectionPrimaryFrames', 0x00),
+        ('asEjectionSecondaryFrames', 0x10),
+        ('asEjectionViewScript', 0x20),
+        ('pStrandedMessage', 0x38),
+    ), frozenset((0x38,))),
+    'cmpgn': UnitData(0x004655F0, 135, (
+        ('asMouthFramesByPhoneme', 0x00),
+    ), frozenset()),
     'fl': UnitData(0x00465678, 236, (
         ('abManeuverRerollChance', 0x00),
         ('apShipAiManeuverHandlers', 0x30),
@@ -580,7 +621,8 @@ UNITS = {
 
 
 ADJACENT_UNITS = (
-    ('fl', 'cutscene', 'brains', 'mission', 'objdata', 'nav', 'nearheap',
+    ('winmain-tail', 'winsys', 'mono', 'auto', 'eject', 'cmpgn', 'fl',
+     'cutscene', 'brains', 'mission', 'objdata', 'nav', 'nearheap',
      'gameflow', 'title', 'joystick', 'spc'),
     ('spc', 'cockpt-prefix'),
     ('cockpt-tail', 'version', 'barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),

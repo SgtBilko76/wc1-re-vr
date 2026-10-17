@@ -32,17 +32,7 @@ extern volatile int bMainWindowMinimized; /* 0x00465080 */
 extern int bWindowMessagePumpActive; /* 0x004650a8 */
 extern unsigned int bF1KeyLatch; /* 0x004650ac */
 extern GuardedAllocation *pGuardedAllocationHead; /* 0x004650b0 */
-extern char szJoystickDevCapsFailure[26]; /* 0x004652dc */
 extern short nPacketError; /* 0x00465460 */
-extern short nAutopilotFormationShipCount; /* 0x00465544 */
-extern short asEjectionPrimaryFrames[8]; /* 0x00465550 */
-extern short asEjectionSecondaryFrames[8]; /* 0x00465560 */
-extern short asEjectionViewScript[12]; /* 0x00465570 */
-extern const char *pStrandedMessage; /* 0x00465588 */
-extern char szStrandedMessage[72]; /* 0x0046558c */
-extern char szViewTemplates[16]; /* 0x004655d4 */
-extern char szStrandedTheEnd[12]; /* 0x004655e4 */
-extern short asMouthFramesByPhoneme[26]; /* 0x004655f0 */
 extern short nEnemySighting; /* 0x00465c7c */
 extern short nDebriefingPersonality; /* 0x00465c80 */
 extern void *aapPacketReferences[4][0x25]; /* 0x00465c88 */

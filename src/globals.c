@@ -145,8 +145,6 @@ const unsigned char abIffCmapChunkId[4] = { 'C', 'M', 'A', 'P' }; /* 0x0043e77c 
 const unsigned char abIffBodyChunkId[4] = { 'B', 'O', 'D', 'Y' }; /* 0x0043e780 */
 #endif
 
-char szJoystickDevCapsFailure[26] = /* 0x004652dc */
-    "Joystick: !joyGetDevCaps\n";
 char szMeanwhile[16] = "Meanwhile..."; /* 0x00469d80 */
 char szEmptyAnswerInput[4] = ""; /* 0x00469d90 */
 char szAnswerLabel[9] = "Answer: "; /* 0x00469d94 */

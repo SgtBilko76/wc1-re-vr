@@ -130,7 +130,8 @@ sits at one constant offset from the original.
 | `src/winsys.c` | `0x402E00`–`0x4034FF` |
 | `src/mono.c` | `0x403500`–`0x403E4F` |
 | `src/auto.c` | `0x403E50`–`0x40469F` |
-| `src/cmpgn.c` | `0x4046A0`–`0x40609F` |
+| `src/eject.c` | `0x4046A0`–`0x404CCF` |
+| `src/cmpgn.c` | `0x404CD0`–`0x40609F`; the face parser's exact owner remains provisional |
 | `src/fl.c` | `0x4060A0`–`0x40770F` |
 | `src/cutscene.c` | `0x407710`–`0x40975F` |
 | `src/brains.c` | `0x409760`–`0x40B66F` |
@@ -189,10 +190,30 @@ group; it does not independently establish the original object boundary.
 `LoadPaletteTripletsFile` at `0x00404610` closes `auto.c`. Its `"rb"`
 literal is at `0x00465548`, immediately after the initialized autopilot
 formation count at `0x00465544` and before the ejection tables at
-`0x00465550`. The campaign unit starts with `ejection_sequence` at
-`0x004046A0`. The packet error word at `0x00465460` similarly precedes
-`mono.c`'s data-file error strings. These initialized globals are kept in
-their owning units and included in the distributed global audits.
+`0x00465550`. The formation count has only local original references and is
+private in `auto.c`. The packet error word at `0x00465460` similarly precedes
+`mono.c`'s data-file error strings; it remains shared with packet consumers.
+These initialized globals are kept in their owning units and included in
+the distributed global audits.
+
+`ejection_sequence` and `stranded_sequence` occupy `eject.c`. Its three
+private animation tables and stranded-message pointer precede the message,
+`"View Templates"`, and `"THE END"` literals. The complete section is 156
+bytes; four linker alignment bytes precede the mouth-animation table at
+`0x004655F0`. That initialized table cannot follow compiler literals within
+one CL 4.20 object, establishing a boundary between the two data groups.
+The old combined unit represented the literals as oversized named arrays
+and owned eight bytes that should not have been part of those declarations.
+
+The remaining campaign/conversation group starts with `ParseFaceAnimation`
+at `0x00404CD0`, immediately before `ParseMouthAnimation`. The first parser
+has no unit-local data reference, so that precise code boundary remains
+provisional. The mouth parser indexes its private 26-word phoneme table
+with `character - 'a'`, explaining the original displacement `0x0046552E`.
+Its empty local-array initializer produces the literal at `0x00465624`;
+the following two `"%d"`, two date, one time, and three conversation formats
+remain separate use-site literals. The complete 135-byte campaign section
+ends at `0x00465676`, with one linker alignment byte before maneuver data.
 
 The beginning of the constant and initialized-data sections also constrains
 ownership and qualifiers:
@@ -204,6 +225,12 @@ ownership and qualifiers:
 | `0x004631C8`–`0x004631FF` | `gr.c`: constant registry-key and `Cheater` value-name arrays used by `ReadCheaterFlagFromRegistry` |
 | `0x00465040`–`0x00465057` | `winmain.c`: two initialized hazard counters and two writable eight-byte hazard tables |
 | `0x00465058`–`0x004650B3` | `winmain.c`: window/audio flags, heap counters, class/title arrays, and message-pump state; two intervening words remain unidentified |
+| `0x004650B4`–`0x0046535A` | `winmain.c`: configuration, window, memory, joystick, and heap-corruption literals |
+| `0x0046535C`–`0x0046545E` | `winsys.c`: game-data paths, CD paths, and disc prompts |
+| `0x00465460`–`0x00465540` | `mono.c`: packet-error word, file diagnostics, and MONODEBG literals |
+| `0x00465544`–`0x0046554A` | `auto.c`: formation count and palette-file mode literal |
+| `0x00465550`–`0x004655EB` | `eject.c`: animation tables, stranded-message pointer, and three literals |
+| `0x004655F0`–`0x00465676` | `cmpgn.c`: phoneme frames and conversation-format literals |
 | `0x00465678`–`0x00465763` | `fl.c`: maneuver reroll weights and handler pointers |
 | `0x00465768`–`0x00465C78` | `cutscene.c`: scramble, landing, and funeral tables followed by their literals and the animation-demo diagnostic |
 | `0x00465C7C`–`0x00465C7D` | `brains.c`: enemy-sighting state |
@@ -333,11 +360,13 @@ the next recovered function, `EmitTextString` at `0x00413A10`, begins the
 cockpit window. These windows no longer overlap the surviving space functions.
 
 The unit-data gate checks the complete reconstructed `.data` sections:
-maneuvers (236 bytes), cutscenes (1,297), AI (2), mission setup (939), object
-data (9,773), navigation (608), near-heap (12), campaign flow (64), title
-(1,522), joystick (238), and space state (12). It also checks the combined
-14,728-byte run and all 186 pointer relocations, including 25 inter-object
-alignment bytes. The six referenced colour
+system paths (259 bytes), file/developer diagnostics (225), autopilot (7),
+ejection (156), conversation/campaign (135), maneuvers (236), cutscenes
+(1,297), AI (2), mission setup (939), object data (9,773), navigation (608),
+near-heap (12), campaign flow (64), title (1,522), joystick (238), and space
+state (12). Together with the verified 723-byte startup tail, these form a
+16,248-byte run with 187 pointer relocations and 40 inter-object alignment
+bytes. The six referenced colour
 variables and the two title resource-record pointers must resolve to their
 original globals and field offsets. This proves the data layout independently
 of the provisional internal code boundaries.
@@ -394,6 +423,17 @@ initializers: tentative C definitions put them in the linker's common storage
 instead of this initialized-data range. The words at `0x00465078` (one) and
 `0x00465084` (zero) still need identification; do not replace them with padding
 declarations.
+
+Three partial-section checks cover the 56-byte prefix, eight-byte middle,
+and 723-byte tail around those missing words. Their rebuilt owner contains
+787 initialized bytes, versus the original 795. The tail includes the
+679-byte literal pool. `GetJoystickDevCaps` owns its diagnostic as a use-site
+literal at `0x004652DC`, between the memory report and corruption-severity
+strings. `WinMain` passes an empty literal at `0x00465218` to `main`; the
+former `"Vj"` spelling had two incorrect nonzero bytes that only the strict
+pool check exposed. The checked tail and following sixteen data units are
+currently eight bytes early. This is the exact combined deficit of the two
+unidentified words, not evidence that their source declarations are known.
 
 The same storage distinction applies to the zero-valued definitions still in
 `globals.c`. The 592-byte packet-reference table at `0x00465C88`, the input

@@ -10,6 +10,27 @@
  */
 unsigned char abDiskStringLiterals[459]; /* 0x004696a8 */
 
+/* winmain.c: startup, window, memory, joystick, and heap-corruption literals.
+ * The partial unit gate checks all 679 bytes after the named class/title
+ * arrays and window/heap state; two earlier startup words remain unidentified. */
+unsigned char abStartupStringLiterals[679]; /* 0x004650b4 */
+
+/* winsys.c: the complete CD and game-data path literal section, including
+ * repeated paths and formats. The unit gate resolves its base from code. */
+unsigned char abSystemPathLiterals[259]; /* 0x0046535c */
+
+/* mono.c: file-access diagnostics and the MONODEBG developer channel.
+ * The complete unit gate includes the preceding packet-error word. */
+unsigned char abMonoDiagnosticLiterals[221]; /* 0x00465464 */
+
+/* eject.c: the stranded message, viewport-allocation tag, and end label.
+ * The complete unit gate also checks the message pointer and animation tables. */
+unsigned char abEjectionStringLiterals[96]; /* 0x0046558c */
+
+/* cmpgn.c: the mouth parser's empty literal, player/date/time substitutions,
+ * and three distinct conversation text formats. The phoneme table precedes it. */
+unsigned char abCampaignStringLiterals[83]; /* 0x00465624 */
+
 /* cutscene.c: landing comments, funeral subtitles and commands, and the
  * animation-demo diagnostic. Both copies of the subtitle format stay distinct;
  * the complete unit gate checks all eleven stored pointer targets. */

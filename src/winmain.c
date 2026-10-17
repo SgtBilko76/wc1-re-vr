@@ -620,7 +620,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous,
     ClipCursor(&clip);
 
     _onexit((_onexit_t)AbortToDesktop);
-    main(0, (char **)"Vj");
+    main(0, (char **)"");
 
     ClipCursor(0);
     ShowCursor(TRUE);
@@ -1074,7 +1074,7 @@ void GetJoystickDevCaps(short joystick, short *xMin, short *xMax,
 #else
     if (joyGetDevCapsA(device, &caps, sizeof(caps)) != JOYERR_NOERROR) {
 #endif
-        SystemDebugPrintf(szJoystickDevCapsFailure);
+        SystemDebugPrintf("Joystick: !joyGetDevCaps\n");
         return;
     }
 
