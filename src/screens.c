@@ -1044,35 +1044,36 @@ unsigned int SceneDirector(short sceneType, unsigned char *sceneBytes,
     short shot;
     char *text;
 
-    nConversationSceneType = sceneType;
     previousShot = -2;
     previousColour = -2;
+    record = (ConversationSceneRecord *)sceneBytes;
+    nConversationSceneType = sceneType;
     TalkerInit();
     bInputMode = 1;
     ClearInputKeyState();
     FlushInputEvents();
     SetEventManagerPump(PollJoystickButtonEvents);
     bEscapePressed = 0;
-    record = (ConversationSceneRecord *)sceneBytes;
-    do {
-        do {
-            shot = (short)record->shot;
-            if (shot == -2)
-                goto scene_complete;
-            if (shot != -1) {
-                if ((shot & 0x40) != 0) {
-                    bConversationOverlay = 1;
-                    shot &= 0x3f;
-                } else {
-                    bConversationOverlay = 0;
-                }
+    for (;;) {
+        shot = (short)record->shot;
+        if (shot == -2)
+            goto scene_complete;
+        if (shot != -1) {
+            if ((shot & 0x40) != 0) {
+                bConversationOverlay = 1;
+                shot &= 0x3f;
+            } else {
+                bConversationOverlay = 0;
             }
+        }
+        if (record->testsOffset != 0) {
             selected = record;
-            if (record->testsOffset != 0)
-                record = ParseTests(record,
-                                    (ConversationSceneRecord *)sceneBytes,
-                                    textData);
-        } while (selected != record);
+            record = ParseTests(record,
+                                (ConversationSceneRecord *)sceneBytes,
+                                textData);
+            if (selected != record)
+                continue;
+        }
         if (record->talker != -2)
             nConversationCharacter = record->talker;
         duration = record->duration;
@@ -1088,8 +1089,8 @@ unsigned int SceneDirector(short sceneType, unsigned char *sceneBytes,
         case 11:
         case 16:
         case 17:
-            nTalkingHeadFace = -1;
             previousShot = shot;
+            nTalkingHeadFace = -1;
             break;
         case 1:
             if (previousShot != 1) {
@@ -1107,12 +1108,7 @@ unsigned int SceneDirector(short sceneType, unsigned char *sceneBytes,
             break;
         case 4:
             previousShot = 4;
-            if (nConversationCharacter < 0)
-                cCurrentObjective =
-                    (signed char)-nConversationCharacter;
-            else
-                cCurrentObjective =
-                    (signed char)nConversationCharacter;
+            cCurrentObjective = (signed char)abs(nConversationCharacter);
             nTalkingHeadFace = -1;
             break;
         case 12:
@@ -1161,10 +1157,9 @@ unsigned int SceneDirector(short sceneType, unsigned char *sceneBytes,
         }
         if (previousColour != (short)record->textColour &&
             record->textColour != -1) {
-            nConversationTextColour =
-                asConversationTextColours[
-                    (short)record->textColour];
             previousColour = record->textColour;
+            nConversationTextColour =
+                asConversationTextColours[previousColour];
         }
         pMouthAnimationCommands[0] = -1;
         if (textData[record->mouthAnimationOffset] != '\0')
@@ -1240,7 +1235,9 @@ unsigned int SceneDirector(short sceneType, unsigned char *sceneBytes,
             }
         }
         record++;
-    } while (bEscapePressed != 1);
+        if (bEscapePressed == 1)
+            break;
+    }
 scene_complete:
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);

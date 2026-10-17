@@ -971,7 +971,7 @@ signed char *__stdcall FindSceneAnimationCommand(
     signed char *script, signed char command);                         /* 0x00424DE0 */
 short __stdcall SceneAnimationGoalReached(short delta, short current,
                                           short goal);                 /* 0x00424EA0 */
-unsigned int __stdcall UpdateSceneAnimationObject(
+unsigned short __stdcall UpdateSceneAnimationObject(
     SceneAnimationObject *object, Viewport *viewport);                 /* 0x00424EF0 */
 void PlaySceneAnimation(char *text, short animation, short duration);  /* 0x00425500 */
 unsigned int WaitForKeyExceptXOrF12(void);                            /* 0x00425730 */

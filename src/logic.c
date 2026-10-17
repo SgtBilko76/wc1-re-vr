@@ -2059,23 +2059,24 @@ short __stdcall SceneAnimationGoalReached(short delta, short current,
 }
 
 /* Function start: 0x424EF0 */
-unsigned int __stdcall UpdateSceneAnimationObject(
+unsigned short __stdcall UpdateSceneAnimationObject(
     SceneAnimationObject *object, Viewport *viewport)
 {
     SceneAnimationObject *source;
     signed char *commandStart;
     signed char *cursor;
     signed char *label;
-    signed char opcode;
     signed char property;
+    signed char frame;
     unsigned short complete;
     unsigned short goalFlags;
     short delay;
     short value;
-    short frame;
     short xOffset;
+    short layer;
     short labelNumber;
     short objectIndex;
+    short objectSet;
     short objectCount;
     signed char stop;
 
@@ -2088,8 +2089,7 @@ unsigned int __stdcall UpdateSceneAnimationObject(
         cursor = object->scriptCursor;
 
     while (*cursor != 0 && stop == 0) {
-        opcode = *cursor++;
-        switch (opcode) {
+        switch (*cursor++) {
         case 'A':
             property = *cursor++;
             value = *(short *)cursor;
@@ -2106,7 +2106,7 @@ unsigned int __stdcall UpdateSceneAnimationObject(
                     object->rotation = (short)(
                         ((unsigned short)(0x167 - object->rotation) /
                          0x168) * 0x168 + object->rotation);
-                if (object->rotation > 0x167)
+                if (object->rotation >= 0x168)
                     object->rotation = (short)(
                         object->rotation -
                         ((unsigned short)object->rotation / 0x168) *
@@ -2142,50 +2142,53 @@ unsigned int __stdcall UpdateSceneAnimationObject(
             commandStart = cursor - 1;
             object->repeatCursor = commandStart;
             xOffset = 0;
-            frame = (short)*cursor++;
+            layer = object->layer;
+            frame = *cursor++;
             while (frame != -1) {
-                if (object->layer != 2 && nFrameSkipCounter < 1)
+                if (layer != 2 && nFrameSkipCounter <= 0)
                     DrawSpriteScaled(
                         viewport, (short)(object->x + xOffset), object->y,
                         object->shape, frame, object->rotation,
                         object->scale, object->frame);
-                if (object->layer == 0)
+                if (layer == 0)
                     xOffset = (short)(xOffset + 320);
-                frame = (short)*cursor++;
+                frame = *cursor++;
             }
-            stop = 1;
+            stop++;
             break;
 
         case 'E':
             commandStart = cursor - 1;
             xOffset = 0;
+            layer = object->layer;
             complete = 1;
-            frame = (short)*cursor++;
+            frame = *cursor++;
             while (frame != -1) {
-                if (object->layer != 2 && nFrameSkipCounter < 1)
+                if (layer != 2 && nFrameSkipCounter <= 0)
                     DrawSpriteScaled(
                         viewport, (short)(object->x + xOffset), object->y,
                         object->shape, frame, object->rotation,
                         object->scale, object->frame);
                 xOffset = (short)(xOffset + 320);
-                frame = (short)*cursor++;
+                frame = *cursor++;
             }
             cursor = commandStart;
-            stop = 1;
+            stop++;
             break;
 
-        case 'G':
         case 'J':
-            if (opcode == 'J')
-                stop = 1;
+            stop++;
+            /* Fall through to the label search. */
+        case 'G':
             labelNumber = *(short *)cursor;
             label = object->scriptStart;
             do {
                 label = FindSceneAnimationCommand(label, 'B');
-                cursor = label + 3;
-                value = *(short *)(label + 1);
-                label = cursor;
+                label++;
+                value = *(short *)label;
+                label += 2;
             } while (value != labelNumber);
+            cursor = label;
             break;
 
         case 'L':
@@ -2202,7 +2205,7 @@ unsigned int __stdcall UpdateSceneAnimationObject(
                     object->rotation = (short)(
                         ((unsigned short)(0x167 - object->rotation) /
                          0x168) * 0x168 + object->rotation);
-                if (object->rotation > 0x167)
+                if (object->rotation >= 0x168)
                     object->rotation = (short)(
                         object->rotation -
                         ((unsigned short)object->rotation / 0x168) *
@@ -2228,7 +2231,7 @@ unsigned int __stdcall UpdateSceneAnimationObject(
             break;
 
         case 'P':
-            stop = 1;
+            stop++;
             break;
 
         case 'Q':
@@ -2261,9 +2264,10 @@ unsigned int __stdcall UpdateSceneAnimationObject(
 
         case 'R':
             objectCount = *(short *)pSceneAnimationDefinitions;
-            objectIndex = (short)(objectCount * (short)*cursor++);
-            objectIndex = (short)(objectIndex + (short)*cursor++);
-            source = &pSceneAnimationObjects[objectIndex];
+            objectSet = (short)*cursor++;
+            objectIndex = (short)*cursor++;
+            source = &pSceneAnimationObjects[
+                (short)(objectCount * objectSet) + objectIndex];
             object->x = source->x;
             object->y = source->y;
             object->rotation = source->rotation;
@@ -2302,7 +2306,7 @@ unsigned int __stdcall UpdateSceneAnimationObject(
     object->delay = delay;
     if (complete == 0 && goalFlags != 0) {
         if ((goalFlags & 0x10) != 0)
-            complete = SceneAnimationGoalReached(
+            complete |= SceneAnimationGoalReached(
                 object->deltaFrame, object->frame, object->goalFrame);
         if ((goalFlags & 4) != 0)
             complete |= SceneAnimationGoalReached(
@@ -2344,19 +2348,19 @@ void PlaySceneAnimation(char *text, short animation, short duration)
     objectCount = *(short *)pSceneAnimationDefinitions;
     objects = pSceneAnimationObjects +
         (short)(objectCount * animation);
-    remaining = objectCount;
     object = objects;
-    while (remaining > 0) {
-        if (object->layer == 0)
-            object->shape = pSceneAnimationPrimaryShape;
-        else
-            object->shape = pSceneAnimationSecondaryShape;
-        object->scriptStart =
-            (signed char *)pSceneAnimationDefinitions +
-            object->scriptOffset;
-        object->scriptCursor = object->scriptStart;
-        object++;
-        remaining--;
+    if (objectCount > 0) {
+        remaining = objectCount;
+        do {
+            if (object->layer == 0)
+                object->shape = pSceneAnimationPrimaryShape;
+            else
+                object->shape = pSceneAnimationSecondaryShape;
+            object->scriptStart = (signed char *)pSceneAnimationDefinitions;
+            object->scriptStart += object->scriptOffset;
+            object->scriptCursor = object->scriptStart;
+            object++;
+        } while (--remaining != 0);
     }
 
     nFrameSkipCounter = 1;
@@ -2368,18 +2372,19 @@ void PlaySceneAnimation(char *text, short animation, short duration)
         do {
             nFrameSkipCounter--;
             object = objects;
-            remaining = objectCount;
-            while (remaining > 0) {
-                complete |= (unsigned short)
-                    UpdateSceneAnimationObject(object, &stSceneBuffer);
-                object++;
-                remaining--;
+            if (objectCount > 0) {
+                remaining = objectCount;
+                do {
+                    complete |= UpdateSceneAnimationObject(
+                        object, &stSceneBuffer);
+                    object++;
+                } while (--remaining != 0);
             }
             if (nSceneAnimationWaitFrames != -1) {
-                if (nSceneAnimationWaitFrames == 0)
-                    complete++;
-                else
+                if (nSceneAnimationWaitFrames != 0)
                     nSceneAnimationWaitFrames--;
+                else
+                    complete++;
             }
             if (complete == 0) {
                 RefreshMemoryStatusOverlay();
@@ -2397,14 +2402,14 @@ void PlaySceneAnimation(char *text, short animation, short duration)
                     while (complete == 0 &&
                            bSceneAnimationWaitCommand == 0) {
                         object = objects;
-                        remaining = objectCount;
-                        while (remaining > 0) {
-                            nFrameSkipCounter = 2;
-                            complete |= (unsigned short)
-                                UpdateSceneAnimationObject(
+                        if (objectCount > 0) {
+                            remaining = objectCount;
+                            do {
+                                nFrameSkipCounter = 2;
+                                complete |= UpdateSceneAnimationObject(
                                     object, &stSceneBuffer);
-                            object++;
-                            remaining--;
+                                object++;
+                            } while (--remaining != 0);
                         }
                     }
                 }
@@ -2415,7 +2420,7 @@ void PlaySceneAnimation(char *text, short animation, short duration)
         if (nSceneAnimationWaitFrames == -1) {
             SetFrameTimerPeriodDirect((short)(duration / 2));
             do {
-                if (IsFrameTickElapsed() != 0 || CheckEscaped() != 0)
+                if ((short)IsFrameTickElapsed() != 0 || CheckEscaped() != 0)
                     break;
             } while (bEscapePressed == 0);
         }

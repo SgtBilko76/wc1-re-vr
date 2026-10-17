@@ -293,6 +293,44 @@ for similarity decisions.
   through `pCurrentTextContext` after installing the input buffer. Using the
   cached viewport pointer omits an original reload. The key itself holds the
   translated character; no separate character temporary is needed.
+- `UpdateSceneAnimationObject` returns a short and reads frame commands as
+  signed bytes, promoting them only for the draw call. Cache the object's
+  layer across each drawing loop, increment the byte stop flag, and let the
+  `J` command fall through to `G`'s label search. Keeping an opcode local for
+  a later `J` test adds a branch and changes the switch layout. Advance the
+  label pointer separately over its command and value. The object-copy command
+  narrows its scene-count product before adding the object index at full width;
+  narrowing the final sum is different from the original. OR every goal result
+  into the completion word. These choices restore the 12-byte local frame and
+  1,552-byte span at 98.96% mnemonic similarity. Register allocation, initial
+  scheduling, and one comparison operand order still differ. A register hint,
+  moving stop initialization past cursor selection, and reversing the label
+  comparison did not improve the match.
+- `PlaySceneAnimation` writes the packet base into each object's script pointer
+  before adding the signed script offset. Combining those writes omits an
+  original store. Its three object loops test the object count before loading
+  their countdown locals; guarded `do` loops reproduce this. Decrement a
+  nonzero wait count before the completion branch, and test the timer result
+  as a short. The complete 560-byte span now has the original instruction
+  sequence; 15 instructions still differ in loop-register allocation.
+- `SceneDirector` uses one record loop. When a conditional test selects another
+  record, restart that loop before checking Escape; a nested source loop
+  instead makes CL retain the shot and spill the duration, adding repeated
+  loads. Initialize the record and prior-state locals before assigning the
+  scene-type global. Use `abs` for the objective index, save the selected shot
+  before clearing the face in the common cases, and update the cached text
+  colour before looking up its palette word. Keep constellation initialization's
+  shot assignment after its two global stores so that branch retains its own
+  face reset. These choices restore the 1,136-byte span and all mnemonics;
+  only two equality comparisons retain reversed operands. Register hints,
+  declaration reordering, unsigned shot storage, and a label-based restart
+  did not improve the result. The unit change also reverses two comparison/
+  branch pairs in the previously exact `PanToScreen` (four of 183 instructions).
+  Its source is unchanged: reversed source conditions and guarded palette loops
+  did not restore the earlier encodings. Continue checking the entire unit.
+  Binary-comp separately verifies all six switch tables in this director and
+  the animation interpreter: 60 relocated targets, their HIGHLOW entries, and
+  210 literal selector/padding bytes match at one address shift per function.
 - Keep the observed form of record copies. In `LoadGame`, a byte source
   pointer and direct destination array fields retain the four original
   counted loops. Caching the destination base adds instructions; naming
