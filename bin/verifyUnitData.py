@@ -190,6 +190,14 @@ UNITS = {
         ('nCommSpeakerRating', 0x6C),
         ('nCommPortraitIndex', 0x70),
     ), frozenset(range(0x20, 0x64, 4))),
+    'video': UnitData(0x0046B168, 10, (
+        ('nVideoMode', 0x00),
+    ), frozenset()),
+    'joycal': UnitData(0x0046B178, 42, (
+        ('acGraphicsModeByAnimationSpeed', 0x00),
+        ('szTMDriverName', 0x08),
+        ('szSuperTMDriverName', 0x10),
+    ), frozenset()),
     'damage-bss': UnitData(0x00476554, 4, (
         ('nDisplayedComponentDamage', 0x00),
     ), frozenset(), storage='.bss', owner='damage.obj'),
@@ -199,7 +207,7 @@ UNITS = {
 ADJACENT_UNITS = (
     ('barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),
     ('damage', 'view'),
-    ('ending', 'input', 'comm'),
+    ('ending', 'input', 'comm', 'video', 'joycal'),
 )
 
 

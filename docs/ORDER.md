@@ -158,7 +158,8 @@ sits at one constant offset from the original.
 | `src/ending.c` | `0x42FA90`–`0x43070F` |
 | `src/input.c` | `0x430710`–`0x430BBF` |
 | `src/comm.c` | `0x430BC0`–`0x4318EF` |
-| `src/video.c` | `0x4318F0`–`0x431EFF` |
+| `src/video.c` | `0x4318F0`–`0x431A0F` |
+| `src/joycal.c` | `0x431A10`–`0x431EFF` |
 | `src/dib.c` | `0x431F00`–`0x43390F` |
 | `src/text.c` | `0x433910`–`0x433ABF` |
 | `src/smart.c` | `0x433AC0`–`0x434CCF` |
@@ -207,6 +208,8 @@ ownership and qualifiers:
 | `0x0046AD88`–`0x0046AF50` | `ending.c`: allocation tag, campaign-ending pointers and projectile origins, subtitle literals, and four separate text formats |
 | `0x0046AF54`–`0x0046AF59` | `input.c`: double-click interval and menu-pointer speed |
 | `0x0046AF60`–`0x0046B167` | `comm.c`: menu/video state, ace and menu-label pointers, and the complete communication literal pool |
+| `0x0046B168`–`0x0046B171` | `video.c`: video mode and the palette-allocation diagnostic literals |
+| `0x0046B178`–`0x0046B1A1` | `joycal.c`: graphics-mode table, two unused driver names, and both calibration-file literals |
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
 DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
@@ -470,14 +473,31 @@ The three identical `"%s: %Fs"` formats are separate literals in
 to this unit. Other declarations remain shared with their original or SDL
 callers. `verify-unit-data` checks the complete 520-byte `.data` section,
 all 13 declaration offsets, and all 17 pointer targets with one address shift.
-It also checks ending, input, and communication data as one 992-byte run,
-including nine bytes of inter-object alignment.
+It also checks this block's position within the adjacent run from ending
+through joystick calibration, described below.
 
-Video mode state follows the communication formats at `0x0046B168`, so the
-video/calibration group begins separately at `ShutdownVideoHook`,
-`0x004318F0`. Its initialized-data layout is not yet recovered; the existing
-definitions remain in `globals.c`. The internal boundaries within the video
-group and between the allocation helpers and ending scenes remain
+Video mode state follows the communication formats at `0x0046B168`.
+The mode word and `PrintPaletteAllocationMap`'s `"%c"` and newline literals
+form a complete ten-byte `.data` section. The next initialized table begins
+at `0x0046B178`, after those literals and six bytes of alignment, requiring
+a separate object. `video.c` contains the four functions from
+`ShutdownVideoHook` at `0x004318F0` through `PrintPaletteAllocationMap`.
+
+The graphics-mode table occupies eight bytes at `0x0046B178`. The strings
+`"TM.DRV"` and `"SUPERTM.DRV"` follow at `0x0046B180` and `0x0046B188`;
+neither has a relocation or disassembled reference in the original. Private
+character arrays retain this real data, and the compiler supplies the one
+alignment byte between them. These are matching declarations, not recovered
+original variable names. The two independent `"j.cal"` literals follow at
+`0x0046B194` and `0x0046B19C`, used by `LoadJoystickCalibrationFile`.
+All 42 bytes match as `joycal.obj`'s complete `.data` section. The source
+window begins with that function at `0x00431A10` and retains the adjacent
+rectangle helper through `0x00431EFF`; its internal boundary is provisional.
+
+`verify-unit-data` checks both complete sections and all four declaration
+offsets. Ending, input, communication, video, and calibration data also match
+as a single 1,050-byte run with all 15 inter-object alignment bytes included.
+The boundary between the allocation helpers and ending scenes remains
 provisional. These placement windows do not establish original filenames.
 
 Private C definitions require separate evidence: a trial moving the two

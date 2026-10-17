@@ -400,10 +400,6 @@ short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
 };
 char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
     "Press any key when ready";
-unsigned short nVideoMode = 0xffff; /* 0x0046b168 */
-signed char acGraphicsModeByAnimationSpeed[8] = { /* 0x0046b178 */
-    0x13, 0x0d, 4, 9, 7, 0, 0, 0
-};
 LPDIRECTDRAW2 pDirectDraw2 = 0; /* 0x0046b1a4 */
 LPDIRECTDRAWSURFACE pPrimarySurface = 0; /* 0x0046b1a8 */
 LPDIRECTDRAWSURFACE pSecondarySurface = 0; /* 0x0046b1ac */
