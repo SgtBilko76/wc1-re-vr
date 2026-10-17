@@ -1,16 +1,17 @@
 /*
  *  ix -- Origin Systems audio library (C++), original dev tree D:\Rnd\Prj\ix.
  *
- *  Unlike the game core, this library's module layout is EXACTLY known: the
- *  shipped debug build still contains its assert __FILE__/__LINE__ anchors, and
- *  the linker laid each object file out contiguously:
+ *  The shipped debug build preserves assert __FILE__/__LINE__ anchors for
+ *  these source groups. They do not establish every object boundary;
+ *  docs/ORDER.md records the independently established boundaries.
  *
  *      streamer.cpp  0x00442750 - 0x00443DA5
  *      thread.cpp    0x00443DA6 - 0x0044490F
  *      dsp.cpp       0x00444910 - 0x004451B4
  *      dsps.cpp      0x004451B5 - 0x00445F5F
  *      mixer.cpp     0x00445F60 - 0x004467C4
- *      dspv.cpp      0x004467C5 - 0x004471FF
+ *      dspv.cpp      0x004467C5 - 0x00446F73
+ *      dspmix.asm    0x00446F74 - 0x004471FF
  *      system.cpp    0x00447200 - 0x00447CD7
  *      sound.cpp     0x00447CD8 - 0x0044879B
  *      sample.cpp    0x0044879C - 0x004492DF
@@ -148,15 +149,15 @@ extern void *(__cdecl *pIxMalloc)(unsigned int);
 extern void (__cdecl *pIxFree)(void *);
 
 /* Master volume and the stereo pan table (two shorts per position). */
-extern unsigned short nMasterVolume;
-extern short          anPanTable[];
-extern CRITICAL_SECTION csMixer;
+extern unsigned short nMasterVolume; /* 0x0047198C */
+extern short          anPanTable[];  /* 0x00597D28 */
+extern CRITICAL_SECTION csMixer;    /* 0x005985E8 */
 
 #define IX_MIXER_BASE_RATE 22050    /* 0x5622, the divisor in set_frequency */
 
-/* Globals keep their original address in the name (see AGENTS.md). */
-extern IxVoice voices[];
-extern int     nVoiceCount;
+extern IxVoice voices[];           /* 0x005981A8 */
+extern int     nVoiceCount;        /* 0x00598600 */
+extern int     nVoicesAllocated;   /* 0x00598604 */
 
 /* The ix source tree lived on D: -- each assert site carries its own copy of
  * this literal (the build did not use /Gf, so identical strings are not
@@ -177,7 +178,7 @@ void ix_dspv_set_bits_per_sample(int voice, int bps);          /* 0x00446D2C  8 
 void ix_dspv_set_channels(int voice, int ch);                  /* 0x00446DF5  1 or 2 */
 void ix_dspv_set_flag4(int voice, int on);                     /* 0x00446956 */
 void ix_dspv_recalc_mix(int voice);                            /* 0x00446EBF */
-void ix_dspv_mix(void *outputBuffer, unsigned int outputBytes); /* 0x00446F74 */
+extern "C" void ix_dspv_mix(void *outputBuffer, unsigned int outputBytes); /* 0x00446F74 */
 
 /* --------------------------------------------------------------------------
  * DSP stream.  Array at 0x00598138, stride 0x38; count at 0x00598130.
@@ -196,15 +197,15 @@ struct IxStream {                       /* 0x38 bytes */
     unsigned int   size;                /* +0x08 */
     unsigned int   writePos;            /* +0x0C */
     unsigned int   playPos;             /* +0x10 */
-    unsigned int   pending;             /* +0x14 */
+    int            pending;             /* +0x14, negative after an underrun */
     unsigned char *lockPtr;             /* +0x18 */
-    unsigned int   lockLen;             /* +0x1C */
+    int            lockLen;             /* +0x1C */
     CRITICAL_SECTION cs;                /* +0x20, 24 bytes */
 };
 
-extern IxStream streams[];
-extern int      nStreamCount;
-extern int      nStreamsAllocated;
+extern IxStream streams[];         /* 0x00598138 */
+extern int      nStreamCount;      /* 0x00598130 */
+extern int      nStreamsAllocated; /* 0x00598134 */
 
 #define IX_DSPS_FILE "D:\\rnd\\prj\\ix\\win95\\dsp\\dsps.cpp"
 void ix_dsps_alloc(int stream, unsigned int size, int frequency,

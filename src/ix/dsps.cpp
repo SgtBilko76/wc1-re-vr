@@ -1,8 +1,8 @@
 /*
  *  ix / D:\rnd\prj\ix\win95\dsp\dsps.cpp
  *
- *  Original address range: 0x004451B5 - 0x00445F5F   (10 functions)
- *  Range is exact: recovered from this module's own assert __FILE__ anchors.
+ *  Ten stream-control functions; source anchors and storage bounds are
+ *  recorded in docs/ORDER.md.
  *  Built /Od /Oi like the rest of ix -- do not optimise this file.
  *
  *  A "stream" is a ring buffer fed by the streamer thread and played through a
@@ -11,9 +11,9 @@
 #include "ix.h"
 #include <stdlib.h>
 
-IxStream streams[8];
-int      nStreamCount;
-int      nStreamsAllocated;
+int      nStreamCount;           /* 0x00598130 */
+int      nStreamsAllocated;      /* 0x00598134 */
+IxStream streams[2];             /* 0x00598138 */
 
 /* Function start: 0x4451B5 */   /* source lines 26, 27, 28, 32 */
 void ix_dsps_alloc(int stream, unsigned int size, int freq, int bps, int channels)
@@ -49,10 +49,16 @@ void ix_dsps_alloc(int stream, unsigned int size, int freq, int bps, int channel
 
     v = &voices[nVoiceCount + stream];
     v->flags = IX_VOICE_FLAG4 | 1;
-    if (bps == 16)
+    if (bps == 16) {
         v->flags |= IX_VOICE_16BIT;
-    if (channels == 2)
+    } else {
+        /* Eight-bit samples use the default format flags. */
+    }
+    if (channels == 2) {
         v->flags |= IX_VOICE_STEREO;
+    } else {
+        /* Mono samples use the default format flags. */
+    }
     v->cursor = streams[stream].buffer;
     v->start = v->cursor;
     v->end = v->cursor + size;
@@ -198,45 +204,39 @@ unsigned int ix_dsps_get_flags(int stream)
 }
 
 /* Function start: 0x445A6F */   /* source lines 128, 129 */
-int ix_dsps_get_buffer_free(int stream)
+int ix_dsps_get_buffer_free(int streamIndex)
 {
-    int elapsed;
-    unsigned int played;
-
-    if (stream < 0 || stream >= nStreamCount) {
+    if (streamIndex < 0 || streamIndex >= nStreamCount) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_DSPS_FILE, 128);
         ix_log_printf("invalid stream index");
         exit(-1);
     }
-    if ((streams[stream].flags & IX_STREAM_ALLOCATED) == 0) {
+    if ((streams[streamIndex].flags & IX_STREAM_ALLOCATED) == 0) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_DSPS_FILE, 129);
         ix_log_printf("stream is not ready!");
         exit(-1);
     }
-    elapsed = 0;
-    EnterCriticalSection(&streams[stream].cs);
-    played = voices[nVoiceCount + stream].cursor
-           - streams[stream].buffer;
-    if ((int)streams[stream].pending < 0) {
-        streams[stream].pending = 0;
-        streams[stream].playPos = played;
-        LeaveCriticalSection(&streams[stream].cs);
-        return streams[stream].size;
+    unsigned int consumedBytes = 0;
+    EnterCriticalSection(&streams[streamIndex].cs);
+    unsigned int bufferPosition =
+        voices[nVoiceCount + streamIndex].cursor - streams[streamIndex].buffer;
+    if (streams[streamIndex].pending < 0) {
+        streams[streamIndex].pending = 0;
+        streams[streamIndex].playPos = bufferPosition;
+        LeaveCriticalSection(&streams[streamIndex].cs);
+        return streams[streamIndex].size;
     }
-    if (streams[stream].playPos < played) {
-        elapsed = played - streams[stream].playPos;
-        streams[stream].pending =
-            streams[stream].pending - elapsed;
+    if (streams[streamIndex].playPos < bufferPosition) {
+        consumedBytes = bufferPosition - streams[streamIndex].playPos;
+        streams[streamIndex].pending -= consumedBytes;
+    } else if (streams[streamIndex].playPos != bufferPosition) {
+        consumedBytes = (streams[streamIndex].size
+                         - streams[streamIndex].playPos) + bufferPosition;
+        streams[streamIndex].pending -= consumedBytes;
     }
-    else if (streams[stream].playPos != played) {
-        elapsed = (streams[stream].size
-                   - streams[stream].playPos) + played;
-        streams[stream].pending =
-            streams[stream].pending - elapsed;
-    }
-    streams[stream].playPos = played;
-    LeaveCriticalSection(&streams[stream].cs);
-    return streams[stream].size - streams[stream].pending;
+    streams[streamIndex].playPos = bufferPosition;
+    LeaveCriticalSection(&streams[streamIndex].cs);
+    return streams[streamIndex].size - streams[streamIndex].pending;
 }
 
 /* Function start: 0x00445CDB */   /* source lines 169, 172, 173 */

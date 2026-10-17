@@ -33,7 +33,7 @@ Evidence that constrains these settings:
 
 ## Hand-written assembly
 
-Two regions were written in assembly, through different tools:
+Three regions were written in assembly, through different tools:
 
 - The LZO decoder (`0x004614C0`) is an `/Od` function around an `__asm` block.
   Its padding (`nop`, `lea ecx,[ecx]`) is what CL 4.20's inline assembler emits
@@ -51,6 +51,13 @@ Two regions were written in assembly, through different tools:
   `bin/extractRasterLibrary.py`, which checks that UASM (a MASM-compatible
   assembler, built from the `compilers/uasm` submodule) reproduces every
   byte and relocation. Regenerate it with the script rather than editing it.
+- The ix sample mixer (`0x00446F74`–`0x004471FE`) was also assembled.
+  Its two `shl dx, 1` instructions use `66 D1 E2`, and its branches have
+  MASM's shortest encodings. Three INT3 bytes after the preceding C++
+  function align this object to four bytes; one follows its final `RET`
+  before the next C++ object. `src/ix/dspmix.asm` preserves this boundary
+  and is assembled with UASM. Compiling the same instructions as an `/Od`
+  inline-assembly block emitted longer jumps and immediate-one shifts.
 
 `FillRasterBytes` (`0x00439C10`), just before the library, is compiled C: its
 body is CL's inline `memset`, and the `mov edi, edi` before and after it is

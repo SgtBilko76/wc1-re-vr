@@ -223,7 +223,8 @@ GLOBALS_MISSING_MAX_ADDRESS = 0x004751ff
 # binary-comp currently accepts one definition source, so generate a parser-only
 # manifest from globals.c and the declaration block at the top of each owner.
 GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/cmpgn.c \
-	src/nav.c src/spc.c src/cockpt.c src/barracks.c src/ship.c src/dib.c src/gr.c
+	src/nav.c src/spc.c src/cockpt.c src/barracks.c src/ship.c src/dib.c src/gr.c \
+	src/ix/dsp.cpp src/ix/dsps.cpp src/ix/dspv.cpp
 GLOBALS_DEFINITION_SOURCES = src/globals.c $(GLOBALS_DISTRIBUTED_SOURCES)
 GLOBALS_AUDIT_SOURCE = $(OUT_DIR)/globals-audit.c
 
@@ -363,7 +364,8 @@ SRCS_IX_DSP = \
 	src/ix/dsp.cpp \
 	src/ix/dsps.cpp \
 	src/ix/mixer.cpp \
-	src/ix/dspv.cpp
+	src/ix/dspv.cpp \
+	src/ix/dspmix.asm
 
 SRCS_IX_SOUND = \
 	src/ix/system.cpp \
@@ -382,7 +384,7 @@ SRCS_ORDERED_IX = $(SRCS_IX_LOG) $(SRCS_IX_LIBRARIES)
 SRCS_ORDERED = $(SRCS_ORDERED_CORE) $(SRCS_ORDERED_IX)
 
 ALL_SRCS = $(wildcard src/*.c) $(wildcard src/*.cpp) $(wildcard src/*.asm) \
-           $(wildcard src/ix/*.cpp)
+           $(wildcard src/ix/*.cpp) $(wildcard src/ix/*.asm)
 SRCS = $(filter $(ALL_SRCS), $(SRCS_ORDERED)) \
        $(filter-out $(SRCS_ORDERED), $(ALL_SRCS))
 
@@ -799,7 +801,7 @@ $(OUT_DIR)/%.obj $(OUT_DIR)/%.asm: src/%.cpp $(REFERENCE_HEADERS) Makefile | $(W
 		/Fa$(OUT_DIR)/$*.asm \
 		> $(OUT_DIR)/$*.stdout
 
-# The raster library is assembled, not compiled (docs/COMPILER.md).
+# The raster library and ix sample mixer are assembled (docs/COMPILER.md).
 $(OUT_DIR)/%.obj: src/%.asm | $(UASM)
 	@mkdir -p $(dir $(OUT_DIR)/$*)
 	@$(UASM) -q -coff -Fo$@ -Fw$(OUT_DIR)/$*.err $< > $(OUT_DIR)/$*.stdout || \
@@ -943,7 +945,7 @@ verify:
 	@$(MAKE) verify-vtables
 
 verify-globals: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
-	@$(BINARY_COMP) globals $(BC) --fail-on-issues --fail-on-warnings
+	@$(BINARY_COMP) globals $(BC) --no-source-order --fail-on-issues --fail-on-warnings
 
 # The source-level globals audit cannot serialize every nested or symbolic
 # initializer.  Compare the linked bytes too, but keep the normal verify output
@@ -959,6 +961,7 @@ verify-globals-data: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | $(ORIGINAL_EXE)
 
 verify-globals-code: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
 	@$(BINARY_COMP) globals $(BC) \
+		--no-source-order \
 		--include-code-globals \
 		--fail-on-issues \
 		--fail-on-warnings \
@@ -973,8 +976,10 @@ globals: globals-data
 globals-verbose: globals-data-verbose
 
 audit-auto-complete-globals: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
-	@$(BINARY_COMP) globals $(BC) --show-auto-complete-reviewed
+	@$(BINARY_COMP) globals $(BC) --no-source-order --show-auto-complete-reviewed
 
+# The generated manifest concatenates independent owners, so its order is not
+# an original declaration order. Check source order in each real unit instead.
 audit-rebuilt-global-layout: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
 	@$(BINARY_COMP) globals $(BC) \
 		--globals-source src/globals.c \

@@ -31,6 +31,14 @@ for similarity decisions.
 - Check argument widths at callers even when the callee ignores an argument.
   `GetTransformedShapeBounds` takes a short flip value: widening it to `int`
   adds a sign extension in `easy2see` that the original does not contain.
+- Signedness matters even for 32-bit fields. In `IxStream`, `pending` and
+  `lockLen` are signed counts, while the consumed-byte delta is unsigned.
+  The original tests `pending` with a signed comparison and updates it
+  through a load/subtract/store sequence. Treating all these values as
+  unsigned lets CL 4.20 replace that sequence with different memory arithmetic.
+- An `/Od` format check can retain a jump through an empty default branch.
+  `ix_dsps_alloc` has two such branches for its default eight-bit and mono
+  formats. Omitting the `else` bodies removes ten original code bytes.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

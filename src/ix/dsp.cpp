@@ -1,9 +1,8 @@
 /*
  *  ix / D:\rnd\prj\ix\win95\dsp\dsp.cpp
  *
- *  Original address range: 0x00444910 - 0x004451B4   (21 functions)
- *  Range is exact: recovered from this module's own assert __FILE__ anchors in
- *  the shipped debug build (see docs/ORDER.md).
+ *  DSP device control and shared configuration. Source anchors and original
+ *  storage placement are recorded in docs/ORDER.md.
  *
  *  Implement in ADDRESS ORDER -- MSVC emits functions in source order, so the
  *  list below is the original source order of this file.
@@ -17,25 +16,27 @@
 
 #define IX_DSP_FILE "D:\\rnd\\prj\\ix\\win95\\dsp\\dsp.cpp"
 
-HANDLE hMixerThread;
-HWND hDspWindow;
-HANDLE hMixerWakeEvent;
-unsigned int dwMixerWriteOffset;
-LPDIRECTSOUND pDirectSound;
-unsigned int dwMixerBufferSize;
-unsigned int dwDspFlags;
-DWORD dwMixerThreadId;
-LPDIRECTSOUNDBUFFER pMixerBuffer;
-unsigned int dwDspTick;
-LPDIRECTSOUNDBUFFER pPrimarySoundBuffer;
-int nVoicesAllocated;
+unsigned short nMasterVolume = 0xffff; /* 0x0047198C */
 #ifdef SDL_PORT
 void *(__cdecl *pIxMalloc)(unsigned int) =
-    (void *(__cdecl *)(unsigned int))malloc;
+    (void *(__cdecl *)(unsigned int))malloc; /* 0x00471990 */
 #else
-void *(__cdecl *pIxMalloc)(unsigned int) = malloc;
+void *(__cdecl *pIxMalloc)(unsigned int) = malloc; /* 0x00471990 */
 #endif
-void (__cdecl *pIxFree)(void *) = free;
+void (__cdecl *pIxFree)(void *) = free; /* 0x00471994 */
+
+HANDLE hMixerThread;                   /* 0x00597D00 */
+HWND hDspWindow;                       /* 0x00597D04 */
+HANDLE hMixerWakeEvent;                /* 0x00597D08 */
+unsigned int dwMixerWriteOffset;       /* 0x00597D0C */
+LPDIRECTSOUND pDirectSound;            /* 0x00597D10 */
+unsigned int dwMixerBufferSize;        /* 0x00597D14 */
+unsigned int dwDspFlags;               /* 0x00597D18 */
+DWORD dwMixerThreadId;                /* 0x00597D1C */
+LPDIRECTSOUNDBUFFER pMixerBuffer;      /* 0x00597D20 */
+short anPanTable[512];                /* 0x00597D28 */
+unsigned int dwDspTick;                /* 0x00598128 */
+LPDIRECTSOUNDBUFFER pPrimarySoundBuffer; /* 0x0059812C */
 
 /* Function start: 0x00444910 */   /* source line 62 */
 int ix_dsp_init(void)

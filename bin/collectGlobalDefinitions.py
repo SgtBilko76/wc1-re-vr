@@ -11,6 +11,7 @@ from pathlib import Path
 
 FUNCTION_MARKER = "/* Function start:"
 GAME_INCLUDE = '#include "wc1.h"'
+OWNER_INCLUDES = (GAME_INCLUDE, '#include "ix.h"')
 BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 LINE_COMMENT_RE = re.compile(r"//[^\r\n]*")
 DEFINE_RE = re.compile(
@@ -168,7 +169,8 @@ def definition_block(path: Path) -> str:
     if path.name == "globals.c":
         return text
 
-    include_at = text.find(GAME_INCLUDE)
+    include_positions = [text.find(include) for include in OWNER_INCLUDES]
+    include_at = min((pos for pos in include_positions if pos >= 0), default=-1)
     function_at = text.find(FUNCTION_MARKER)
     if include_at < 0 or function_at < 0 or function_at <= include_at:
         raise ValueError(f"cannot locate global-definition block in {path}")

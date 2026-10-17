@@ -25,7 +25,8 @@ remain provisional.
 | `0x00444910`–`0x004451B4` | `src/ix/dsp.cpp` | dsp |
 | `0x004451B5`–`0x00445F5F` | `src/ix/dsps.cpp` | dsp |
 | `0x00445F60`–`0x004467C4` | `src/ix/mixer.cpp` | dsp |
-| `0x004467C5`–`0x004471FF` | `src/ix/dspv.cpp` | dsp |
+| `0x004467C5`–`0x00446F73` | `src/ix/dspv.cpp` | dsp |
+| `0x00446F74`–`0x004471FF` | `src/ix/dspmix.asm` | dsp |
 | `0x00447200`–`0x00447CD7` | `src/ix/system.cpp` | sound |
 | `0x00447CD8`–`0x0044879B` | `src/ix/sound.cpp` | sound |
 | `0x0044879C`–`0x004492DF` | `src/ix/sample.cpp` | sound |
@@ -42,6 +43,25 @@ following source groups; their current placement at the ends of `dsp.cpp`
 and `mixer.cpp` is not proof of ownership. Recover the original declarations
 and object grouping rather than inserting padding or registering hand-written
 initializer wrappers.
+
+The voice-control group ends with `ix_dspv_recalc_mix`'s `RET` at
+`0x00446F70`, followed by three INT3 bytes. The separately assembled mixer
+starts at `0x00446F74` and ends at `0x004471FE`, followed by one INT3 byte.
+Its shift encodings independently identify MASM output (see
+`docs/COMPILER.md`); it is a separate member after `dspv.obj` in `dsp.lib`.
+
+The DSP stream array starts at `0x00598138`. The voice array immediately
+after it starts at `0x005981A8`, leaving 112 bytes: exactly two 56-byte
+`IxStream` records. This agrees with the stream count of two set by
+`ix_dsp_init`; the former eight-entry reconstruction overallocated 336 bytes.
+
+DSP state also constrains data ownership. The initialized master-volume word
+at `0x0047198C` contains `0xFFFF` and precedes the allocator callbacks at
+`0x00471990` and `0x00471994` in `dsp.cpp`. Its pan table occupies
+`0x00597D28`–`0x00598127`, immediately before the DSP tick and primary-buffer
+pointer. The voice array, mixer critical section, voice count, and allocated
+voice count occupy `0x005981A8`–`0x00598607` in `dspv.cpp`. These definitions,
+along with `dsps.cpp`'s stream state, are included in the global-data audits.
 
 The assert anchors name three source trees, `D:\Rnd\Prj\ix\Src\Streamer\`,
 `D:\rnd\prj\ix\win95\dsp\` and `D:\Rnd\prj\ix\src\sound\`; each was a separate

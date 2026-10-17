@@ -6,6 +6,7 @@ dist/
 *.asm
 # Hand-written assembly is source; the other .asm files are compiler listings.
 !/src/*.asm
+!/src/ix/*.asm
 *.map
 *.stdout
 
