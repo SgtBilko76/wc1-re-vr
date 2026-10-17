@@ -33,8 +33,10 @@ static signed char abBriefingLargeCharacterAnimation[24] = {
     0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0
 };
+/* Eight populated records in ten slots; see docs/ORDER.md for the
+ * activity-array and data-layout evidence for the zero-initialized tail. */
 /* 0x0046e218 */
-BriefingCharacterLayout aBriefingCharacters[8] = {
+BriefingCharacterLayout aBriefingCharacters[10] = {
     { 60, 123,  10, 95, 176, 1, 0, 2,
       abBriefingSmallCharacterAnimation, 0},
     {316, 123, 264, 94, 176, 1, 2, 1,

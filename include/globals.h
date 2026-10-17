@@ -199,7 +199,7 @@ extern int nMouseCursorShowCount; /* 0x0046daa0 */
 extern short asPilotHandOrigins[10]; /* 0x0046e120 */
 extern CampaignDate stSavedCampaignDate; /* 0x0046e188 */
 extern TalkingHeadOrigin aTalkingHeadOrigins[11]; /* 0x0046e190 */
-extern BriefingCharacterLayout aBriefingCharacters[8]; /* 0x0046e218 */
+extern BriefingCharacterLayout aBriefingCharacters[10]; /* 0x0046e218 */
 extern const char *apszMedalNames[5]; /* 0x0046e2e0 */
 extern short nDebriefingPodiumX; /* 0x0046e57c */
 extern short nConversationCharacter; /* 0x0046e580 */

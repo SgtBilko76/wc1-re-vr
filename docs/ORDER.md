@@ -901,14 +901,25 @@ The last `"Game Over"` terminator at `0x0046E699` precedes the raster object.
 These 27 declarations now reside in `screens.c`, in original address order;
 17 are private, while the ten used by other units retain shared declarations.
 
-Two partial-section checks cover the 288-byte character-data run at
-`0x0046E188` and the 970-byte medal/animation/literal run at `0x0046E2D0`.
-They verify all 14 pointer relocations, including the animation sequences
-and the medal names, with one address shift per run. The 40 zero bytes
-between the eight known character records and the medal-position array
-remain unexplained. No extra records or padding declarations are supplied:
-the current `screens.obj` section is 1,258 bytes versus the original
-1,298-byte span.
+The character table uses a reconstructed capacity of ten 18-byte records,
+with its eight populated initializers unchanged. The original clears ten
+activity bytes in `ReturnToBriefingLongShot`, even though its main briefing
+loops visit eight characters. Two implicitly zero-initialized records occupy
+the 36 bytes from `0x0046E2A8` through `0x0046E2CB`; normal compiler alignment
+supplies the four remaining zeros before the medal-position array at
+`0x0046E2D0`. No pointer relocation occurs in that tail. This capacity is an
+inference from the activity storage and complete data layout, not a uniquely
+recovered source declaration. `CloseLook` also retains its original
+fourteen-iteration path; the storage reconstruction does not alter that loop.
+
+One complete-section check now covers all 1,298 bytes from `0x0046E188`
+through the final string terminator. It verifies all 27 declaration offsets,
+all 14 pointer relocations, and the formerly omitted tail with one address
+shift. The table-capacity change leaves every function comparison unchanged.
+The adjacent raster object has 6,640 initialized bytes, 22 public data
+symbols, and no data relocations. Screens, raster, killbrd, and gr now also
+match as one 11,486-byte run, including all ten inter-object alignment bytes.
+These checks establish relative layout; their absolute addresses still differ.
 
 The debriefing movement table contains 50 signed samples. The original
 nonzero bytes at `0x0046E568` and `0x0046E569` are its final two `-2` samples,

@@ -48,7 +48,8 @@ barracks (632), fade (2),
 debug (34), disk (523), ship (286), init (550), logic (447), pilot (29),
 trainsim (511), main (1,018), pload (147), sound (274), launch (172), install (325),
 damage (390), view (289), ending (457), input (6), comm (520), video (10),
-joycal (42), killbrd (1,508), and gr (2,030). It also checks gr's complete
+joycal (42), screens (1,298), raster (6,640), killbrd (1,508), and gr (2,030).
+It also checks gr's complete
 56-byte read-only section, including the registry key and value arrays and
 their alignment. The read-only block must retain its COFF storage flags.
 It delegates byte matching to binary-comp, allowing one address shift per
@@ -64,6 +65,10 @@ bytes, and ending through joycal as a 1,050-byte run, including 15 alignment
 bytes. The room and graphics units form another 3,542-byte run, including
 four alignment bytes. These checks catch correct individual blocks linked
 at incorrect relative positions.
+The broader screens, raster, room, and graphics check covers 11,486 bytes
+with all four object positions and ten inter-object alignment bytes. Raster's
+complete data check also verifies its 22 public symbol offsets and empty
+relocation set, in addition to matching the linked bytes.
 The same gate checks the uninitialized blocks owned by fl (5 bytes), nav (368),
 cockpt (1,024), pilot (4),
 sound (8), damage (4), music (200), and eventmgr (4,096).
@@ -176,13 +181,13 @@ current containing COFF section size of 6,788 bytes. The unresolved four bytes
 between the two state runs prevents a complete-unit layout claim; these
 checks do not silently treat that gap as matched.
 
-Two more partial-section checks cover `screens.c`: its 288-byte character-data
-run and its 970-byte medal, animation, and literal run. They verify all 27
-declarations and 14 pointer relocations and require a 1,258-byte containing
-COFF section. The intervening 40 zero bytes remain unrecovered, so these
-checks do not establish a complete-unit match. The second run includes the
-full 50-byte debriefing movement table and all 262 bytes of literal storage,
-with each repeated format at its original relative position.
+The complete 1,298-byte `screens.c` check replaces its former two partial
+checks. It verifies all 27 declarations and 14 pointer relocations, including
+the character table's two zero-initialized tail records and the compiler's
+following four alignment bytes. The full 50-byte debriefing movement table
+and all 262 bytes of literal storage retain their original relative positions.
+The ten-slot table capacity is a reconstruction supported by the original
+activity-array capacity and data layout; see `docs/ORDER.md` for its limits.
 
 `config/data-literals.h` contains comparison metadata for anonymous literal
 spans. It is never compiled or included by game code. The data-check targets
