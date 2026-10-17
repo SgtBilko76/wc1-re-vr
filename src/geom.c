@@ -1510,14 +1510,12 @@ void get_right_shape(short obj, FixedVector *direction)
 
 /* Function start: 0x41A9D0 */
 short InitializeModalTextPanel(ModalTextPanel *panel, short fontIndex,
-                               unsigned int topLeft,
-                               unsigned int bottomRight,
+                               ShortRect bounds,
                                short clearColour,
-                               unsigned char backgroundColour,
+                               short backgroundColour,
                                short borderColour)
 {
-    memcpy(&panel->left, &topLeft, sizeof(topLeft));
-    memcpy(&panel->right, &bottomRight, sizeof(bottomRight));
+    *(ShortRect *)&panel->left = bounds;
     panel->previousContext = pCurrentTextContext;
     pCurrentTextContext = &panel->context;
     panel->context = stDefaultTextContext;
@@ -1525,12 +1523,11 @@ short InitializeModalTextPanel(ModalTextPanel *panel, short fontIndex,
         fontIndex = 1;
     InitializeTextContextFromFont(&panel->context, fontIndex,
                                   (unsigned char)clearColour,
-                                  backgroundColour);
+                                  (signed char)backgroundColour);
     panel->viewport = stModalSourceViewport;
-    memcpy(&panel->savedBackground.left, &panel->left,
-           sizeof(topLeft) + sizeof(bottomRight));
-    memcpy(&panel->viewport.left, &panel->left,
-           sizeof(topLeft) + sizeof(bottomRight));
+    *(ShortRect *)&panel->viewport.left =
+        *(ShortRect *)&panel->savedBackground.left =
+        *(ShortRect *)&panel->left;
     if (AllocateViewport(&panel->savedBackground, clearColour, 0) == 0)
         return 0;
     CopyViewportContents(&panel->viewport, &panel->savedBackground);
@@ -1577,8 +1574,7 @@ void RestoreModalTextPanel(ModalTextPanel *panel)
 /* Function start: 0x41AB90 */
 short ShowModalTextPanel(short fontIndex, const char *format, ...)
 {
-    unsigned int topLeft;
-    unsigned int bottomRight;
+    ShortRect bounds;
     short halfWidth;
     char text[52];
 
@@ -1591,15 +1587,14 @@ short ShowModalTextPanel(short fontIndex, const char *format, ...)
 #else
     vsprintf(text, format, (char *)(&format + 1));
 #endif
-    topLeft = dwModalBoundsTopLeft;
-    bottomRight = dwModalBoundsBottomRight;
+    bounds = stModalTextBounds;
     if (pModalTextPanel == 0) {
         pModalTextPanel = AllocateTaggedMemory(sizeof(ModalTextPanel), 0);
     }
     if (pModalTextPanel == 0)
         return 0;
     if (InitializeModalTextPanel(pModalTextPanel, fontIndex,
-                                 topLeft, bottomRight,
+                                 stModalTextBounds,
                                  cBlackColour, cBlackColour,
                                  cBlackColour) == 0) {
         ReleasePacketHandle(pModalTextPanel);
@@ -1607,14 +1602,12 @@ short ShowModalTextPanel(short fontIndex, const char *format, ...)
         return 0;
     }
     halfWidth = MeasureTextPixelWidthClamped(text);
-    halfWidth = (short)(((int)halfWidth * 8 +
-        (((int)halfWidth * 8 >> 31) & 15)) >> 4);
+    halfWidth = (short)((int)halfWidth * 8 / 16);
     RestoreModalTextPanel(pModalTextPanel);
-    *(short *)&topLeft = (short)(159 - halfWidth);
-    *(short *)&bottomRight = (short)(161 + halfWidth);
+    bounds.left = (short)(159 - halfWidth);
+    bounds.right = (short)(161 + halfWidth);
     if (InitializeModalTextPanel(pModalTextPanel, fontIndex,
-                                 topLeft, bottomRight,
-                                 cViewportClearColour,
+                                 bounds, cViewportClearColour,
                                  cBlueColour, cRedColour) == 0) {
         ReleasePacketHandle(pModalTextPanel);
         pModalTextPanel = 0;

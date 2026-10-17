@@ -117,19 +117,19 @@ void LoadAnswerPromptAndResponse(short entry, char *prompt,
  * believed unreachable. */
 short PromptForAnswerText(short entry)
 {
-    unsigned int bounds[2];
+    ShortRect bounds;
     ModalTextPanel panel;
     short matches;
 
-    ((short *)&bounds[0])[0] = 50;
-    ((short *)&bounds[0])[1] = 50;
-    ((short *)&bounds[1])[0] = 269;
-    ((short *)&bounds[1])[1] = 149;
+    bounds.left = 50;
+    bounds.top = 50;
+    bounds.right = 269;
+    bounds.bottom = 149;
     ClearViewport(&stScreen, cBlackColour);
     LoadAnswerPromptAndResponse(entry, szHudMessageBuffer,
                                 szComponentHitMessage);
     ApplyAnswerTextCipher(szHudMessageBuffer, 1);
-    InitializeModalTextPanel(&panel, 0, bounds[0], bounds[1],
+    InitializeModalTextPanel(&panel, 0, bounds,
                              cViewportClearColour,
                              cBlackColour, cRedColour);
     DrawModalTextPanel(&panel, 6, 10, 2,

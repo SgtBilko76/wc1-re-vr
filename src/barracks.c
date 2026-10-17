@@ -333,30 +333,26 @@ short PromptForTextInput(short x, short y, const char *prompt,
                          short inputMode)
 {
     ModalTextPanel panel;
-    volatile unsigned int bounds[2];
-    short promptWidth;
+    ShortRect bounds;
     short result;
     int widestCharacter;
 
     result = 0;
-    ((short *)&bounds[0])[0] = x;
-    ((short *)&bounds[0])[1] = y;
-    ((short *)&bounds[1])[1] = (short)(y + 20);
+    bounds.top = y;
+    bounds.left = x;
+    bounds.bottom = (short)(y + 20);
     InitializeModalTextPanel(&panel, 0,
-                             dwModalBoundsTopLeft,
-                             dwModalBoundsBottomRight,
+                             stModalTextBounds,
                              cBlackColour, cBlackColour,
                              cBlackColour);
-    widestCharacter = MeasureTextPixelWidthClamped("M");
-    widestCharacter *= (int)maximumLength;
-    promptWidth = MeasureTextPixelWidthClamped(prompt);
-    widestCharacter += (int)promptWidth;
-    ((short *)&bounds[1])[0] = (short)(x +
-        (widestCharacter * 16) / 15);
+    widestCharacter = (int)MeasureTextPixelWidthClamped("M") *
+                      (int)maximumLength;
+    widestCharacter += (int)MeasureTextPixelWidthClamped(prompt);
+    widestCharacter *= 16;
+    bounds.right = (short)(x + widestCharacter / 15);
     RestoreModalTextPanel(&panel);
     if (InitializeModalTextPanel(&panel, 0,
-                                 (unsigned int)bounds[0],
-                                 (unsigned int)bounds[1],
+                                 bounds,
                                  cViewportClearColour,
                                  cBlueColour, cRedColour) != 0) {
         DrawModalTextPanel(&panel, 3, 6, 0, prompt);
@@ -865,33 +861,45 @@ short BarracksScreen(void)
     EnterAllocationScope();
     SetFrameTimerPeriodDirect(0);
     FlushInputEvents();
-    nSavedRoomControllerX =
-        nMenuInputRepeatDelay;
     bInputMode = 1;
     nMenuPointerSpeed = 1;
+    nSavedRoomControllerX =
+        nMenuInputRepeatDelay;
     nMenuInputRepeatDelay = 2;
 
     while (result == 0) {
-        if (IsFrameTickElapsed() != 0) {
+        if ((short)IsFrameTickElapsed() != 0) {
             UpdateBarracksScreen(&stRoomScreenViewport,
                                  background, &animation);
             SetFrameTimerPeriodDirect(2);
         }
         eventType = PollInputEvent(&event, 0xff);
-        clicked = 0;
-        if (eventType == 3 || eventType == 5) {
+        switch (eventType) {
+        case 3:
+        case 5:
+            clicked = 0;
             ClearInputKeyStatePreservingModifiers();
-            if ((short)event.value == 0x1c ||
-                (short)event.value == 0x39)
+            switch ((short)event.value) {
+            case 0x1c:
+            case 0x39:
+activateRegion:
                 clicked = 1;
-            else if ((short)event.value == 0x24)
+                break;
+            case 0x24:
                 CalibrateJoystickInteractive();
-            else
+                break;
+            default:
                 MoveMenuPointerFromKeyboard(&event);
-        } else if (eventType == 2 || eventType == 10) {
-            clicked = 1;
-        } else if (eventType == 13) {
+                break;
+            }
+            break;
+        case 2:
+        case 10:
+            goto activateRegion;
+        case 13:
             UpdateRoomMenuCursor();
+        default:
+            goto redraw;
         }
 
         if (clicked != 0) {
@@ -900,55 +908,63 @@ short BarracksScreen(void)
             if (region >= 0 && region < 16) {
                 HandleBarracksBunkSelection(
                     &stSceneBuffer, background, &animation, region);
-            } else if (region == 16) {
-                if (bCampaignActive == 0)
-                    WarnLoadGameFirst();
-                else
-                    result = 7;
-            } else if (region == 17) {
-                if (bCampaignActive == 0)
-                    WarnLoadGameFirst();
-                else
-                    result = 8;
-            } else if (region == 18) {
-                if (ConfirmQuitWingCommander() != 0) {
-                    ShutdownEventManager();
-                    exit_squadron(
-                        "You step out of the airlock and into...");
-                }
-            } else if (region == 19) {
-                if (bCampaignActive == 0) {
-                    WarnLoadGameFirst();
-                } else {
-                    LoadMissionData(
-                        (short)stCampaignState.currentSeries,
-                        (short)stCampaignState.currentMission);
-                    FlushInputEvents();
-                    if ((int)(nTickCount60Hz - lastMedalsTick) >
-                        nInputTickScale) {
-                        LeaveAllocationScope();
-                        ClearViewport(&stRoomScreenViewport,
-                                      cBlackColour);
-                        stSceneBuffer.bottom = 127;
-                        stScreen.top = 24;
-                        stScreen.bottom = 151;
-                        ViewMedals();
-                        lastMedalsTick = (int)nTickCount60Hz;
-                        ClearViewport(&stRoomScreenViewport,
-                                      cBlackColour);
-                        stScreen.top = 0;
-                        stScreen.bottom = 199;
-                        stSceneBuffer.bottom = 199;
-                        DrawBarracksBunks(&stSceneBuffer, background,
-                                          &animation);
-                        EnterAllocationScope();
-                        UpdateBarracksScreen(
-                            &stRoomScreenViewport,
-                            background, &animation);
+            } else {
+                switch (region) {
+                case 16:
+                    if (bCampaignActive == 0)
+                        WarnLoadGameFirst();
+                    else
+                        result = 7;
+                    break;
+                case 17:
+                    if (bCampaignActive == 0)
+                        WarnLoadGameFirst();
+                    else
+                        result = 8;
+                    break;
+                case 18:
+                    if (ConfirmQuitWingCommander() != 0) {
+                        ShutdownEventManager();
+                        exit_squadron(
+                            "You step out of the airlock and into...");
                     }
+                    break;
+                case 19:
+                    if (bCampaignActive == 0) {
+                        WarnLoadGameFirst();
+                    } else {
+                        LoadMissionData(
+                            (short)stCampaignState.currentSeries,
+                            (short)stCampaignState.currentMission);
+                        FlushInputEvents();
+                        if ((int)(nTickCount60Hz - lastMedalsTick) >
+                            nInputTickScale) {
+                            LeaveAllocationScope();
+                            ClearViewport(&stRoomScreenViewport,
+                                          cBlackColour);
+                            stSceneBuffer.bottom = 127;
+                            stScreen.top = 24;
+                            stScreen.bottom = 151;
+                            ViewMedals();
+                            lastMedalsTick = (int)nTickCount60Hz;
+                            ClearViewport(&stRoomScreenViewport,
+                                          cBlackColour);
+                            stScreen.top = 0;
+                            stScreen.bottom = 199;
+                            stSceneBuffer.bottom = 199;
+                            DrawBarracksBunks(&stSceneBuffer, background,
+                                              &animation);
+                            EnterAllocationScope();
+                            UpdateBarracksScreen(
+                                &stRoomScreenViewport,
+                                background, &animation);
+                        }
+                    }
+                    break;
                 }
             }
         }
+redraw:
         ShowMemoryStatusDebug();
         DIBslam();
         DIBslamReal();

@@ -202,6 +202,12 @@ sample at `0x0046A020`, and the DirectDraw pointers at `0x0046B1A4` are among
 87 definitions restored to initialized data. They retain their provisional
 owner until the original compilation units are established.
 
+The default modal-text bounds at `0x00469440`–`0x00469447` form one
+`ShortRect` initialized to `{24, 40, 296, 60}`. All five calls to
+`InitializeModalTextPanel` pass a rectangle by value, and the initializer
+copies those eight bytes as a unit. The bounds and following panel pointer
+remain in `globals.c` pending evidence for their original unit ownership.
+
 The registry arrays occupy read-only data, whereas the same routine's
 `"reg cheating\n"` and `"reg not cheating\n"` diagnostic literals occupy
 writable data. Changing the whole unit's string-storage policy would therefore

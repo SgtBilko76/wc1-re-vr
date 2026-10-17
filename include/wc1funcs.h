@@ -666,10 +666,9 @@ void set_background_objects_rotation(short obj,
                                      FixedVector *direction);    /* 0x0041A530 */
 void get_right_shape(short obj, FixedVector *direction);          /* 0x0041A610 */
 short InitializeModalTextPanel(ModalTextPanel *panel, short fontIndex,
-                               unsigned int topLeft,
-                               unsigned int bottomRight,
+                               ShortRect bounds,
                                short clearColour,
-                               unsigned char backgroundColour,
+                               short backgroundColour,
                                short borderColour);                    /* 0x0041A9D0 */
 void DrawModalTextPanel(ModalTextPanel *panel, short x, short y,
                         unsigned char alignment,

@@ -48,6 +48,24 @@ for similarity decisions.
   The solid-colour sprite functions likewise take a short colour value even
   though `SetSolidColourTranslation` uses only its low byte. Their callers
   extend byte colours into AX before pushing them.
+- `InitializeModalTextPanel` takes an eight-byte `ShortRect` by value and
+  three short colour arguments. The adjacent default-bound words are one
+  rectangle, not two independent integer arguments. Its chained rectangle
+  assignment produces an eight-byte compiler temporary; separate `memcpy`
+  calls omit that temporary and shorten the function. The reconstructed
+  panel and viewport retain flat fields, accessed as a `ShortRect` for this
+  aggregate copy. `ShowModalTextPanel` saves the default rectangle before
+  allocating the panel but passes the global rectangle to its first
+  initialization, reloading its bounds after allocation.
+- Write signed arithmetic at its source level when the instructions implement
+  division. `ShowModalTextPanel`'s `width * 8 / 16` generates the original
+  shift, `CDQ`, bias, and arithmetic shift. Manually expressing the bias lets
+  CL simplify the sequence differently and changes register allocation.
+- Preserve switch dispatch and shared action paths. `BarracksScreen` has
+  jump tables for event types and menu regions, plus a key switch. Keyboard
+  activation and mouse clicks reach the same flag assignment; cursor events
+  and unhandled events go directly to the common redraw. Its frame-timer
+  result is tested in AX even though the timer function returns a full int.
 - A shared call in the executable can come from calls in both source branches.
   In `intro_drawbackgroundships`, separate sprite calls let CL 4.20 prepare
   the common colour and frame arguments before selecting the shape. Selecting

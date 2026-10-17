@@ -344,8 +344,7 @@ char *apszBarracksMenuLabels[20] = { /* 0x004693f0 */
     (char *)szQuitGameMenuLabel,
     (char *)szViewMedalsMenuLabel
 };
-unsigned int dwModalBoundsTopLeft = 0x00280018; /* 0x00469440 */
-unsigned int dwModalBoundsBottomRight = 0x003c0128; /* 0x00469444 */
+ShortRect stModalTextBounds = { 24, 40, 296, 60 }; /* 0x00469440 */
 ModalTextPanel *pModalTextPanel = 0; /* 0x00469448 */
 short asCampaignPilotFiles[3] = {58, 61, 74}; /* 0x00469450 */
 short asCampaignBriefingFiles[3] = {10, 62, 73}; /* 0x00469458 */

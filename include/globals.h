@@ -185,8 +185,7 @@ extern char szComponentHitFormat[8]; /* 0x004692e0 */
 extern char szAlreadyVisited[16]; /* 0x00469380 */
 extern char szObjectiveReached[20]; /* 0x00469390 */
 extern char szWaitForFormat[12]; /* 0x004693a4 */
-extern unsigned int dwModalBoundsTopLeft; /* 0x00469440 */
-extern unsigned int dwModalBoundsBottomRight; /* 0x00469444 */
+extern ShortRect stModalTextBounds; /* 0x00469440 */
 extern ModalTextPanel *pModalTextPanel; /* 0x00469448 */
 extern short asCampaignPilotFiles[3]; /* 0x00469450 */
 extern short asCampaignBriefingFiles[3]; /* 0x00469458 */
