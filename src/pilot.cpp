@@ -8,6 +8,8 @@
  */
 #include "wc1.h"
 
+DebugOverlayConsole *pDebugOverlay; /* 0x004763f0 */
+
 /* Function start: 0x425730 */
 unsigned int WaitForKeyExceptXOrF12(void)
 {

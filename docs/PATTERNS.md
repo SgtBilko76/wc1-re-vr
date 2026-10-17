@@ -47,6 +47,13 @@ for similarity decisions.
   in the original. Checking their values alone does not catch wrong storage.
   Do not infer this distinction from raw section size alone: trailing file
   padding can overlap the start of uninitialized storage.
+- Uninitialized C++ definitions have different storage from C tentative
+  definitions. The overlay pointer in `pilot.cpp` and the three private wave
+  and damage-display variables in `sound.c` naturally produce `.bss` in
+  declaration order. Keeping them in the temporary C globals unit instead
+  produces linker common symbols with different positions. Restore proven
+  ownership and verify object storage as well as zero values; zero-filled
+  memory by itself cannot establish a matching layout.
 - Put a global's address comment before its declaration or after its final
   semicolon. A comment inside a multiline initializer is recognized by the
   layout audit but missed by the linked-data comparison's simpler parser.

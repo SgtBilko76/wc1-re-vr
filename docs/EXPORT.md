@@ -49,6 +49,12 @@ relative layout; final absolute addresses remain a whole-executable task.
 The default check also verifies the seven adjacent units from barracks through
 logic as one 2,487-byte run, including all 13 inter-object alignment bytes.
 This catches correct individual blocks linked at incorrect relative positions.
+The same gate checks the uninitialized blocks owned by pilot (4 bytes) and
+sound (12 bytes). These must be genuine COFF `.bss` sections with no raw data
+or relocations, and their linker symbols must belong to the expected object
+at the recovered relative offsets. Binary-comp compares the loader-visible
+zero-filled bytes. These two checks establish local storage and layout;
+they do not claim that the surrounding uninitialized region matches.
 `make verify-barracks-data` retains the barracks-only check.
 
 `config/data-literals.h` contains comparison metadata for anonymous literal

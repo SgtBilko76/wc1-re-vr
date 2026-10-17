@@ -1598,7 +1598,6 @@ unsigned char bCurrentManeuverReroll; /* 0x00475e7c */
 NavMapLabel aNavMapLabels[20]; /* 0x00475e80 */
 ShortRect aNavMapExclusionRects[21]; /* 0x00475f48 */
 unsigned char abMouseCursorBackground[0x400]; /* 0x00475ff0 */
-DebugOverlayConsole *pDebugOverlay; /* 0x004763f0 */
 int nFlightFrameTotalTicks; /* 0x004764f8 */
 int nFlightCockpitTicks; /* 0x004764fc */
 LARGE_INTEGER liFlightAfterInput; /* 0x00476500 */
@@ -1611,9 +1610,6 @@ LARGE_INTEGER liFlightAfterCockpit; /* 0x00476530 */
 int nFlightInputTicks; /* 0x00476538 */
 LARGE_INTEGER liFlightAfterRender; /* 0x00476540 */
 int nFlightRenderTicks; /* 0x00476548 */
-WaveTableEntry *pSnowStaticWave; /* 0x0047654c */
-IxSound *pSnowStaticSound; /* 0x00476550 */
-int nDisplayedComponentDamage; /* 0x00476554 */
 char szSfxWavePath[0xc8]; /* 0x00476558 */
 unsigned char szFrameRateText[32]; /* 0x00476620 */
 unsigned int DAT_00476640;

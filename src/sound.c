@@ -1,10 +1,14 @@
 /*
  *  Wave playback, volume settings and INSTALL.DAT.
  *
- *  Address range 0x42b400-0x42cfff (provisional -- see docs/ORDER.md).
- *  Boundary evidence: playWAVE/PlaySnowStaticSound/LoadInstallDat; string band 0x46A46C-0x46A710.
+ *  Address range 42b400-42cfff (provisional -- see docs/ORDER.md).
+ *  Boundary evidence: playWAVE/PlaySnowStaticSound/LoadInstallDat; string band 46A46C-46A710.
  */
 #include "wc1.h"
+
+WaveTableEntry *pSnowStaticWave; /* 0x0047654c */
+IxSound *pSnowStaticSound; /* 0x00476550 */
+int nDisplayedComponentDamage; /* 0x00476554 */
 
 /* Function start: 0x42B410 */
 void ReleaseFinishedSoundEntries(void)

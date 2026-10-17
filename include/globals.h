@@ -593,14 +593,10 @@ extern char szWriteDataFileError[0x40]; /* 0x00475da0 */
 extern char szSeekDataFileError[0x80]; /* 0x00475de0 */
 extern int bMonoDebugInstalled; /* 0x00475e70 */
 extern HANDLE hMonoDebugDevice; /* 0x00475e74 */
-extern WaveTableEntry *pSnowStaticWave; /* 0x0047654c */
-extern IxSound *pSnowStaticSound; /* 0x00476550 */
-extern int nDisplayedComponentDamage; /* 0x00476554 */
 extern char szSfxWavePath[0xc8]; /* 0x00476558 */
 extern short DAT_00475e78;
 extern unsigned char bCurrentManeuverReroll; /* 0x00475e7c */
 extern unsigned char abMouseCursorBackground[0x400]; /* 0x00475ff0 */
-extern DebugOverlayConsole *pDebugOverlay; /* 0x004763f0 */
 extern int nFlightFrameTotalTicks; /* 0x004764f8 */
 extern int nFlightCockpitTicks; /* 0x004764fc */
 extern LARGE_INTEGER liFlightAfterInput; /* 0x00476500 */

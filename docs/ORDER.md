@@ -341,6 +341,26 @@ match with one address shift. The unreferenced word `10` at `0x00469DA0`
 and storage after the final simulator literal remain outside this recovered
 block; their ownership is not inferred from proximity.
 
+Two early uninitialized-data blocks now reside in their C++ owners:
+`pDebugOverlay` at `0x004763F0` belongs to the console wrappers in `pilot.cpp`,
+and `pSnowStaticWave`, `pSnowStaticSound`, and `nDisplayedComponentDamage`
+occupy `0x0047654C`–`0x00476557` in `sound.c`. Every reference to these four
+variables comes from its respective owner. VC++ 4.20 emits four and twelve
+bytes of `.bss`, with the three sound globals at offsets 0, 4, and 8.
+Their former tentative definitions in `globals.c` became independently
+ordered linker common symbols. The unit-data gate now verifies their owner,
+relative symbol offsets, complete object `.bss` sizes, and zero-filled bytes.
+Their absolute addresses and the intervening uninitialized storage remain
+unrecovered. The adjacent `szSfxWavePath` buffer belongs to the following music
+code and is not part of the sound block.
+
+Private C definitions require separate evidence: a trial moving the two
+MONODEBG variables to `static` storage in `mono.c` emitted the device handle
+before the installed flag, opposite to the original. Reversing their source
+declarations did not change that order. Those definitions remain in
+`globals.c`; the C++ result does not justify applying the same layout claim
+to all private C variables.
+
 The registry arrays occupy read-only data, whereas the same routine's
 `"reg cheating\n"` and `"reg not cheating\n"` diagnostic literals occupy
 writable data. Changing the whole unit's string-storage policy would therefore

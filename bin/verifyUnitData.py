@@ -5,6 +5,7 @@ Only one address shift is allowed per block. Identical literals must retain
 their separate locations, and empty-string pointers must remain correct.
 Pointers outside a block must target the declared globals at their original
 field offsets, using the rebuilt linker symbols.
+Uninitialized blocks must retain their COFF .bss storage and declared size.
 """
 from __future__ import annotations
 
@@ -29,6 +30,7 @@ class UnitData:
     globals: tuple[tuple[str, int], ...]
     pointers: frozenset[int]
     external_globals: tuple[tuple[str, int, int], ...] = ()
+    storage: str = '.data'
 
 
 UNITS = {
@@ -133,6 +135,14 @@ UNITS = {
         ('nTrainSimMission', 0x88),
         ('nArcadeWave', 0x8C),
     ), frozenset(range(0x38, 0x50, 4))),
+    'pilot': UnitData(0x004763F0, 4, (
+        ('pDebugOverlay', 0x00),
+    ), frozenset(), storage='.bss'),
+    'sound': UnitData(0x0047654C, 12, (
+        ('pSnowStaticWave', 0x00),
+        ('pSnowStaticSound', 0x04),
+        ('nDisplayedComponentDamage', 0x08),
+    ), frozenset(), storage='.bss'),
 }
 
 
@@ -146,7 +156,7 @@ def require(condition: bool, message: str) -> None:
         raise ValueError(message)
 
 
-def data_section_size(path: str) -> int:
+def data_section_size(path: str, storage: str) -> int:
     data = Path(path).read_bytes()
     require(len(data) >= 20, f'{path}: truncated COFF header')
     machine, sections, _, _, _, optional, _ = struct.unpack_from('<HHIIIHH', data)
@@ -156,9 +166,19 @@ def data_section_size(path: str) -> int:
     sizes = []
     for index in range(sections):
         offset = 20 + optional + index * 40
-        if data[offset:offset + 8].rstrip(b'\0') == b'.data':
-            sizes.append(struct.unpack_from('<I', data, offset + 16)[0])
-    require(len(sizes) == 1, f'{path}: expected one .data section')
+        if data[offset:offset + 8].rstrip(b'\0').decode('ascii') == storage:
+            size, raw_pointer, reloc_pointer = struct.unpack_from('<III', data, offset + 16)
+            reloc_count = struct.unpack_from('<H', data, offset + 32)[0]
+            flags = struct.unpack_from('<I', data, offset + 36)[0]
+            if storage == '.bss':
+                require(flags & 0xC0 == 0x80 and raw_pointer == 0 and
+                        reloc_pointer == 0 and reloc_count == 0,
+                        f'{path}: .bss must contain uninitialized storage only')
+            else:
+                require(flags & 0xC0 == 0x40,
+                        f'{path}: .data must contain initialized storage')
+            sizes.append(size)
+    require(len(sizes) == 1, f'{path}: expected one {storage} section')
     return sizes[0]
 
 
@@ -189,8 +209,8 @@ def main() -> int:
         owner = unit + '.obj'
         start = address(owner, block.globals[0][0])
         starts[unit] = start
-        require(data_section_size(str(args.objects_root / owner)) == block.size,
-                f'{owner}: .data must contain exactly {block.size} bytes')
+        require(data_section_size(str(args.objects_root / owner), block.storage) == block.size,
+                f'{owner}: {block.storage} must contain exactly {block.size} bytes')
         for name, offset in block.globals:
             require(address(owner, name) == start + offset,
                     f'{name}: incorrect offset within {unit} data')
@@ -198,8 +218,11 @@ def main() -> int:
         for image, base in ((original, block.original_start), (rebuilt, start)):
             section = image.section_for_va(base)
             require(section is not None and section.name == '.data' and
-                    base + block.size <= section.start + section.rawsize,
-                    f'{image.path}: {unit} block must occupy initialized .data')
+                    base + block.size <= section.start + section.virtual_size,
+                    f'{image.path}: {unit} block must occupy the .data section')
+            if block.storage == '.data':
+                require(base + block.size <= section.start + section.rawsize,
+                        f'{image.path}: {unit} block must occupy initialized .data')
             offsets = {va - base for va in image.relocations()
                        if base <= va < base + block.size}
             require(offsets == block.pointers,
@@ -225,7 +248,7 @@ def main() -> int:
             require(relocated_pointer_match(original_bytes[offset:offset + 4],
                                             rebuilt_bytes[offset:offset + 4], {}, ranges),
                     f'{unit} pointer at +0x{offset:02X} has an incorrect target')
-        print(f'{owner}: {block.size} data bytes match with one address shift; '
+        print(f'{owner}: {block.size} {block.storage} bytes match with one address shift; '
               f'{len(block.globals)} globals and {len(block.pointers)} '
               'pointer relocations verified')
     for group in ADJACENT_UNITS:
