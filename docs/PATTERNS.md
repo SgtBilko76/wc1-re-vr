@@ -681,6 +681,41 @@ for similarity decisions.
   `add_statistics` and changed allocation in neighboring functions.
   These trials were reverted; binary-comp confirmed that the restored
   executable was identical to the previously verified build.
+- `PostMission` divides the saved kill count by five before incrementing the
+  mission count. Its badge tests compare directly against five and 25. The
+  wingman's statistics call passes an immediate one; the alternate call
+  passes the random mission count and a conditional kill count. Keep the
+  random kill result unsigned through argument promotion: the original
+  emits `MOVZX EAX,AX`. These choices recover the complete function, including
+  its switch tables and deliberate first-mission fallthrough.
+- The mission-score routines declare the objective index before the score
+  pointer and initialize the accumulated score before calculating that
+  pointer. Both now compare exactly. `UpdateSeries` calls
+  `PlayersMissionScore` first, retains that word result, then directly
+  compares the result of `FullMissionScore` with it. The successful-series
+  branch precedes failure, with immediate flag stores in each branch.
+  Compare the saved short ship type against the full-width ship enum rather
+  than narrowing both operands. This restores its missing sixteen bytes
+  and gives an exact comparison.
+- `GameFlow` skips both debriefing and the promotion rank increment after
+  ejection; the original jump at `0x0040F71B` lands at `0x0040F7CE`. A failed
+  promotion roll still reaches debriefing at `0x0040F7AE`. Keep promotion
+  eligibility as one short-circuit expression and the ending dispatch as
+  a switch with direct calls. The generic ending passes `!bSeriesFailed`:
+  the original `CMP`/`SBB`/`NEG` sequence produces one for a zero flag.
+  Declaring the flown mission before the flown series also recovers the
+  original series register and mission stack slot. The 1,168-byte span
+  and all mnemonics now match; twelve instructions still differ because
+  the preflight zero and minus-one registers are exchanged.
+- `free_viewport` searches its allocation table using `viewport->allocation`
+  while retaining a separate allocation local through the release calls.
+  CL eliminates the repeated field read but keeps the original register
+  copy and search-loop allocation. This reduces differing instructions
+  from 50 to six at the same size; loop comparison direction and four
+  equality-operand orders remain different. Reversing their source operands
+  did not change the output. Explicit additions instead of compound
+  assignments in `add_statistics` likewise did not improve its allocation;
+  those trial forms are not retained.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must
