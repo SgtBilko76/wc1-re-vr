@@ -673,6 +673,14 @@ for similarity decisions.
   from the last function's linker padding: `ix_dsp_free` and
   `ix_thread_get_audio_chunk_size` already have matching instruction bodies,
   but their object-end alignment contributes size differences to the report.
+- The two game-side audio-list removal routines retain comparison-operand
+  differences despite 100% mnemonic scores. Reversing equality operands,
+  separating declaration order from initialization order, and changing the
+  parameter names to `wave`/`sound` all produced the same instructions.
+  An explicit pointer to the pilot-table slot likewise did not improve
+  `add_statistics` and changed allocation in neighboring functions.
+  These trials were reverted; binary-comp confirmed that the restored
+  executable was identical to the previously verified build.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

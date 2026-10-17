@@ -1015,3 +1015,15 @@ in the seeded function map. Recovered entries are recorded in `src/map`;
 remaining discovery candidates include the rectangle routine at `0x00436AC0`
 and legacy event hooks. Do not replace these gaps with padding. The apparent
 entry at `0x004393F0` lies in a switch table/padding range and is not a function.
+
+The current boundary supplement has 29 unimplemented entries in addition to
+the four reproduced array initializers. Their original aligned spans total
+880 bytes: 27 empty or constant-return routines occupy 16 bytes apiece,
+the jump-only entry at `0x00436390` occupies another 16-byte span, and the
+rectangle routine occupies 432 bytes before `FillGraphicSuffix` at
+`0x00436C70`. These are verified code boundaries, not recovered interfaces
+or names. In particular, the jump entry targets
+`ClearInputKeyStatePreservingModifiers` and must be compiler-generated;
+the surrounding empty routines' purposes cannot be established by proximity
+alone. The function report does not score these absent implementations, so
+its average similarity must not be interpreted as whole-program completion.
