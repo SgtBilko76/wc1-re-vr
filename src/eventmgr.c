@@ -602,8 +602,9 @@ void TimerResetHook(void)
 }
 
 /* Function start: 0x4362B0 */
-unsigned int GetVideoReleaseResult(void)
+unsigned int GetPacketDecompressionResult(void *packet)
 {
+    (void)packet;
     return 0;
 }
 
@@ -1046,7 +1047,7 @@ unsigned short __stdcall GetShutdownErrorCode(unsigned char *driveState)
 }
 
 /* Function start: 0x4369D0 */
-void VideoReleaseHook(void)
+void FinishPacketDecompressionHook(void)
 {
 }
 

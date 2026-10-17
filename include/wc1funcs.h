@@ -1427,7 +1427,7 @@ unsigned short GetSoundHardwareFlag(void);                                    /*
 void *AllocateUntaggedMemory(unsigned int size);                       /* 0x00436270 */
 void ReleaseUntaggedMemory(void *memory);                              /* 0x00436290 */
 void TimerResetHook(void);                                           /* 0x004362A0 */
-unsigned int GetVideoReleaseResult(void);                                      /* 0x004362B0 */
+unsigned int GetPacketDecompressionResult(void *);                     /* 0x004362B0 */
 unsigned short IdentityWord(unsigned short v);                         /* 0x004362C0 */
 void TimerStopHook(void);                                           /* 0x004362D0 */
 unsigned int GetFixedOneMillion(void);                                 /* 0x004362E0 */
@@ -1452,7 +1452,7 @@ unsigned short __stdcall SelectDiskDriveHook(short drive);             /* 0x0043
 short GetCurrentDiskDriveHook(void);                                    /* 0x004369B0 */
 unsigned short __stdcall GetShutdownErrorCode(
     unsigned char *driveState);                                    /* 0x004369C0 */
-void VideoReleaseHook(void);                                           /* 0x004369D0 */
+void FinishPacketDecompressionHook(void);                              /* 0x004369D0 */
 void ExitCleanupHook(void);                                           /* 0x004369E0 */
 unsigned int IsVectorWithinRange(FixedVector *vector, short range);    /* 0x00436A00 */
 unsigned int shrink_vector(FixedVector *vector);                       /* 0x00436A30 */

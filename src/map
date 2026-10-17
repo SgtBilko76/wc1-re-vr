@@ -1194,7 +1194,7 @@
 0x00436270 AllocateUntaggedMemory
 0x00436290 ReleaseUntaggedMemory
 0x004362A0 GameNoBodyStubv16
-0x004362B0 ReturnConst0v9
+0x004362B0 GetPacketDecompressionResult
 0x004362C0 DoLocalFn62C0
 0x004362D0 GameNoBodyStubv17
 0x004362E0 ReturnConst3E8000v2
@@ -1218,7 +1218,7 @@
 0x004369A0 SelectDiskDriveHook
 0x004369B0 GetCurrentDiskDriveHook
 0x004369C0 ReturnConst0v13
-0x004369D0 GameNoBodyStubv22
+0x004369D0 FinishPacketDecompressionHook
 0x004369E0 GameNoBodyStubv23
 0x00436A00 DoLocalFn6A00
 0x00436A30 shrink_vector

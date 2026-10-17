@@ -370,8 +370,9 @@ short __stdcall OpenPacketSection(const char *filename, short section,
 {
     unsigned int sectionEntry;
     unsigned int fileSize;
-    unsigned int nextEntry;
+    unsigned int sectionEnd;
     int sectionIndex;
+    int directoryOffset;
     unsigned int directorySize;
     short compression;
     short sectionCount;
@@ -390,23 +391,25 @@ short __stdcall OpenPacketSection(const char *filename, short section,
         goto failed;
     }
     sectionIndex = (int)section;
-    if (ReadDataFileAtOffset(file, sectionIndex * 4 + 4, 4,
+    directoryOffset = sectionIndex * 4 + 4;
+    if (ReadDataFileAtOffset(file, directoryOffset, 4,
                              &sectionEntry) == 0)
         goto failed;
     handle->finalSection = 0;
-    compression = (short)(sectionEntry >> 24);
+    compression = (short)(sectionEntry >> 24) & 0xff;
+    sectionEntry &= 0x00ffffff;
     if (sectionCount - sectionIndex == 1) {
         handle->finalSection = 1;
-        nextEntry = fileSize;
-        sectionEntry &= 0x00ffffff;
+        sectionEnd = fileSize;
     } else {
-        sectionEntry &= 0x00ffffff;
-        if (ReadDataFileAtOffset(file, sectionIndex * 4 + 8, 4,
-                                 &nextEntry) == 0)
+        directoryOffset += 4;
+        if (ReadDataFileAtOffset(file, directoryOffset, 4,
+                                 &sectionEnd) == 0)
             goto failed;
-        nextEntry &= 0x00ffffff;
+        /* Discard the next directory entry's compression byte. */
+        ((unsigned char *)&sectionEnd)[3] = 0;
     }
-    fileSize = nextEntry - sectionEntry;
+    fileSize = sectionEnd - sectionEntry;
     if (SeekDataFile(file, sectionEntry, 0) != 0) {
         handle->file = file;
         handle->dataOffset = sectionEntry;
@@ -432,22 +435,22 @@ void * __stdcall DecompressPacketSection(
     PacketSectionHandle *handle, void *destination, unsigned short flags,
     void *decompressionWorkspace)
 {
-    unsigned int allocationSize;
+    volatile unsigned int allocationSize;
     void *packet;
-    void *alignedWorkspace;
+    void *workspace;
     void *largeScratch;
     void *smallScratch;
-    int fallbackAllocations;
+    unsigned char fallbackAllocations;
 
     fallbackAllocations = 0;
     packet = 0;
     pLastPacketAllocation = 0;
-    if (wPacketCompressionFormatFlags == 0) {
-        if (handle->compression != 1) {
+    if (wPacketCompressionFormatFlags != 0) {
+        if ((handle->compression & 0xc0) != 0) {
             nPacketError = 6;
             return 0;
         }
-    } else if ((handle->compression & 0xc0) != 0) {
+    } else if (handle->compression != 1) {
         nPacketError = 6;
         return 0;
     }
@@ -479,33 +482,33 @@ void * __stdcall DecompressPacketSection(
                     return 0;
                 }
             }
-            alignedWorkspace = IdentityHandle(largeScratch);
+            workspace = IdentityHandle(largeScratch);
             pPacketDecompressInput = IdentityHandle(smallScratch);
             wPacketDecompressInputSize = 0x400;
             goto initializeDecompressor;
         }
     }
 
-    alignedWorkspace = IdentityHandle(decompressionWorkspace);
+    workspace = IdentityHandle(decompressionWorkspace);
     wPacketDecompressInputSize = 0x400;
     allocationSize = 0x3020;
     pPacketDecompressInput =
         ((PacketDecompressionWorkspace *)decompressionWorkspace)->input;
     pPacketDecompressInput =
         IdentityHandle(pPacketDecompressInput);
-    largeScratch = (void *)allocationSize;
-    smallScratch = (void *)allocationSize;
     if (wPacketDecompressionInputSizeOverride != 0)
         wPacketDecompressInputSize =
             wPacketDecompressionInputSizeOverride;
+    largeScratch = (void *)allocationSize;
+    smallScratch = (void *)allocationSize;
 
 initializeDecompressor:
     nPacketDecompressSourceFile = handle->file;
     nPacketDecompressInputPosition = 0;
     nPacketDecompressPending = 0;
     nPacketDecompressWorkspaceSegment =
-        (short)(unsigned int)alignedWorkspace;
-    if (alignedWorkspace != 0)
+        (short)(unsigned int)workspace;
+    if (workspace != 0)
         nPacketDecompressWorkspaceSegment++;
 
     if (SeekPacketSection(handle, 0, 0) == -1) {
@@ -513,7 +516,7 @@ initializeDecompressor:
         return 0;
     }
     if (destination == 0) {
-        if (ReadPacketSectionData(handle, &allocationSize, 4) != 0) {
+        if (ReadPacketSectionData(handle, (void *)&allocationSize, 4) != 0) {
             pLastPacketAllocation = AllocateTaggedMemory(
                 allocationSize, flags);
             if (pLastPacketAllocation == 0)
@@ -533,9 +536,9 @@ initializeDecompressor:
                 handle, pPacketDecompressInput,
                 wPacketDecompressInputSize) == 0)
             packet = 0;
-        nPacketDecompressResult = GetVideoReleaseResult();
+        nPacketDecompressResult = GetPacketDecompressionResult(packet);
         if (packet != 0)
-            VideoReleaseHook();
+            FinishPacketDecompressionHook();
     }
     if (decompressionWorkspace == 0) {
         ReleasePacketHandle(smallScratch);

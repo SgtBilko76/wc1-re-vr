@@ -426,6 +426,40 @@ for similarity decisions.
   (`TEST`/`JLE`), rather than a comparison against one. The first error call
   passes the flags word already held in a register, even though that path
   has established that its value is zero.
+- `OpenPacketSection` keeps the directory-entry offset across its two reads,
+  adding four before the second. Recomputing it from the section index omits
+  a stack slot and changes the register lifetimes. Mask the entry offset
+  once before the last-section branch, retain the compression word's `0xff`
+  mask, and clear the next entry's high byte through its byte representation:
+  the original uses `MOV BYTE`, not a full-width `AND`. These choices recover
+  its 24-byte frame and 320-byte span at 99.05% similarity, with eighteen
+  differing instructions out of 105. The file-size and section-end slots
+  remain exchanged, and the section guard and final stores still differ.
+  Reversing the guard's source branches added sixteen bytes and reduced the
+  match to 80%; that trial is not retained.
+- `DecompressPacketSection` tests the nonzero format-flags path first and
+  keeps its fallback-allocation flag as a byte, matching `TEST BL,BL`.
+  The caller-supplied-workspace path reads its size local independently into
+  EDI and EBP after applying the input-size override. A volatile size local
+  preserves both original reads; an ordinary local or chained assignment
+  merges them into a load and register copy, shortening the aligned span by
+  sixteen bytes. This is a matching declaration, not evidence of the original
+  source spelling. The complete 752-byte span now has matching mnemonics,
+  with twelve differing instructions out of 222: its packet and size slots
+  remain exchanged, and two initialization stores are scheduled differently.
+  Making the packet pointer or `OpenPacketSection`'s file size volatile did
+  not change their code and is not retained. Reordering declarations, using
+  DWORD header locals, and changing the scratch pointer's element type also
+  failed to recover the remaining layout.
+- The constant-zero callback at `0x004362B0` still takes the packet pointer:
+  its sole caller pushes that value and cleans four stack bytes afterwards.
+  `GetPacketDecompressionResult` describes its observed use, and the following
+  empty callback is `FinishPacketDecompressionHook`; their former video-release
+  names were unsupported. Both bodies remain exact. Keep the new callback's
+  shared prototype argument unnamed: adding a parameter identifier changes
+  CL 4.20 register allocation in unrelated compilation units. The declaration
+  still supplies the complete pointer type, and its definition names the
+  argument. Whole-project reports caught this otherwise invisible regression.
 - Keyboard cursor movement passes signed coordinates to `QueueInputEvent`.
   The original sign-extends both short fields; unsigned casts generate
   extra instructions and change argument preparation. Keep the observed
