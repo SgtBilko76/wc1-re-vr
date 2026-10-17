@@ -37,8 +37,10 @@ Evidence that constrains these settings:
   `trainsim.c` and use the C core profile. Other units must not gain C++
   exception handling.
 - `src/sound.c` directly calls `ix` member functions and matches only as C++.
-  Its following damage-display routines belong to the separate C unit
-  `src/damage.c`: their initialized tables follow sound's literal pool.
+  Its wave and active-sound lists share initialized state with those calls.
+  The following launch, installation, and damage-display routines use C.
+  Launch's initialized tables follow sound's literal pool, proving that
+  sound's C++ unit ends before `DrawLaunchDoorFrame`.
 - The global `IxStream` and `IxVoice` arrays require non-aggregate record
   declarations to reproduce VC++ 4.20's empty `$E2`/`$E1` initializer pairs
   and `.CRT$XCU` registrations. Private fields and friend declarations for

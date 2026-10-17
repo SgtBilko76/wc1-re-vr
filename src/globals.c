@@ -145,39 +145,6 @@ const unsigned char abIffCmapChunkId[4] = { 'C', 'M', 'A', 'P' }; /* 0x0043e77c 
 const unsigned char abIffBodyChunkId[4] = { 'B', 'O', 'D', 'Y' }; /* 0x0043e780 */
 #endif
 
-ActiveSoundEntry *pActiveSoundHead = 0; /* 0x0046a438 */
-ActiveSoundEntry *pActiveSoundTail = 0; /* 0x0046a43c */
-int bAudioSystemInitialized = 0; /* 0x0046a440 */
-WaveTableEntry *pWaveTableHead = 0; /* 0x0046a444 */
-WaveTableEntry *pWaveTableTail = 0; /* 0x0046a448 */
-char szPlayWaveOpenError[36] = /* 0x0046a46c */
-    "playWAVE Unable to open file '%s'";
-short asCarrierLaunchApproachDeltaX[24] = { /* 0x0046a550 */
-    -1, -1, -1, -2, -2, -2, -2, -3,
-    -3, -3, -3, -3, -2, -2, -2, -2,
-    -1, -1, -1, -1, -1, 0, 0, 0
-};
-signed char acCarrierLaunchApproachFrames[24] = { /* 0x0046a580 */
-    36, 32, 32, 32, 32, 32, 32, 32,
-    25, 25, 25, 25, 25, 25, 25, 25,
-    18, 18, 18, 18, 18, 18, 18, 18
-};
-ShortPoint aCarrierLaunchFighterPath[9] = { /* 0x0046a598 */
-    { -2, 1 }, { -1, 1 }, { -1, 1 },
-    { -1, 0 }, { -1, 1 }, { -1, 0 },
-    { -1, 1 }, { -1, 0 }, { 0, 0 }
-};
-short asCarrierLaunchFighterDeltaY[16] = { /* 0x0046a5bc */
-    0, 0, 3, 3, 3, 2, 2, 2,
-    2, 2, 1, 1, 1, 1, 1, 1
-};
-short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
-    0, 0, 12, 11,
-    1, 90, 90, 0, 9, -90, 0, 0, 20, 3, 15, -1
-};
-char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
-    "Press any key when ready";
-
 /* 0x0046da90 */
 InputEvent *pInputEventHead = 0;
 

@@ -6,6 +6,12 @@ for similarity decisions.
 
 ## Source choices that affect matching
 
+- Biased array operands can precede the actual array. The carrier-launch
+  fighter loop loads from `0x0046A5AE + frame * 2` for frames 9 through 22.
+  Its real 14-word table starts at `0x0046A5C0`; `frame - 9` reproduces the
+  operand. The four bytes before the table are normal alignment, as are
+  the four before the following view script. Including these bytes as
+  array elements changes compiler layout and invents unused source data.
 - Confirm arguments at call sites, return width from register use, and calling
   convention from the terminating `RET`. Core functions are normally
   `__cdecl`; `ix` methods receive the implicit object in ECX.

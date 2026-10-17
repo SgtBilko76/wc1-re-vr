@@ -46,7 +46,7 @@ brains (2), mission (939), objdata (9,773), nav (608), nearheap (12),
 gameflow (64), title (1,522), joystick (238), spc (12), version (13),
 barracks (632), fade (2),
 debug (34), disk (523), ship (286), init (550), logic (447), pilot (29),
-trainsim (511), main (1,018), pload (147),
+trainsim (511), main (1,018), pload (147), sound (274), launch (172), install (325),
 damage (390), view (289), ending (457), input (6), comm (520), video (10),
 joycal (42), killbrd (1,508), and gr (2,030). It also checks gr's complete
 56-byte read-only section, including the registry key and value arrays and
@@ -145,15 +145,21 @@ run. These checks leave the missing cockpit bytes explicitly unresolved.
 
 The scene transition and answer literals occupy all 29 bytes of `pilot.obj`'s
 initialized section. The following unidentified word at `0x00469DA0` prevents
-joining that run to the simulator. Simulator, main, and loader data form a
-separate 1,679-byte run, with six pointer relocations and three alignment
-bytes. Main's complete section checks 29 declaration offsets, including the
+joining that run to the simulator. The eight units from simulator through
+scripted view form a separate 3,145-byte run, with 20 pointer relocations and
+19 alignment bytes. Main's complete section checks 29 declaration offsets, including the
 legacy overlay setting corroborated by the surviving DOS source, and all
 834 literal bytes. The `sizeof` diagnostic survives compilation even though
 the compiler removes its condition and call. Separate volume literals must
 retain their original order. The packet loader's 147-byte pool likewise
 retains both fatal diagnostics before its buffer-ownership diagnostic.
-All three pools have linked-data metadata; no comparison-only storage is
+Audio's complete initialized section includes two shared registry-name arrays,
+two separate registry-key literals, both `SNOW` literals, and the restored
+newline in its volume diagnostic. Launch's five private tables retain their
+original offsets, including compiler alignment before its two 14-word arrays.
+Installation's section includes all three distinct failure messages and the
+last terminating zero; seven linker alignment bytes follow before damage data.
+All five literal pools have linked-data metadata; no comparison-only storage is
 compiled into the game.
 
 `bin/collectGlobalDefinitions.py` accepts data-only owners such as

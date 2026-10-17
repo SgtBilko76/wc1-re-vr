@@ -78,6 +78,15 @@ unsigned char abMainGameLiterals[834]; /* 0x0046a060 */
  * diagnostic. Case 1 precedes default in source, preserving this order. */
 unsigned char abPacketLoaderLiterals[147]; /* 0x0046a3a4 */
 
+/* sound.c: playback diagnostics, two distinct SNOW literals, and two registry
+ * paths. The named registry value arrays precede this pool. The complete
+ * unit gate checks all 274 initialized bytes and the separate private BSS. */
+unsigned char abWavePlaybackLiterals[222]; /* 0x0046a46c */
+
+/* install.c: disk prompt, configuration filename and formats, and all three
+ * separate installation-failure diagnostics, including the final zero. */
+unsigned char abInstallConfigurationLiterals[325]; /* 0x0046a5fc */
+
 /* damage.c: component and severity names, report headings, and both distinct
  * status-format literals. The complete pool also resolves the short "Ok"
  * pointer; verify-unit-data independently checks every position in its unit.

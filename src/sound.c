@@ -1,13 +1,161 @@
-/*
- *  Wave playback, volume settings and INSTALL.DAT.
- *
- *  Address range 42b400-42c7ff (provisional -- see docs/ORDER.md).
- *  Boundary evidence: playWAVE/PlaySnowStaticSound/LoadInstallDat; string band 46A46C-46A710.
+/* Wave/sample ownership, playback, and persisted volume settings.
+ * Address range 42b160-42b99f. The following launch data establishes
+ * the unit boundary; see docs/ORDER.md.
  */
 #include "wc1.h"
 
-WaveTableEntry *pSnowStaticWave; /* 0x0047654c */
-IxSound *pSnowStaticSound; /* 0x00476550 */
+static ActiveSoundEntry *pActiveSoundHead = 0; /* 0x0046a438 */
+static ActiveSoundEntry *pActiveSoundTail = 0; /* 0x0046a43c */
+static int bAudioSystemInitialized = 0; /* 0x0046a440 */
+static WaveTableEntry *pWaveTableHead = 0; /* 0x0046a444 */
+static WaveTableEntry *pWaveTableTail = 0; /* 0x0046a448 */
+static char szMusicVolumeValueName[] = "MusicVolume"; /* 0x0046a450 */
+static char szSfxVolumeValueName[] = "SFXVolume"; /* 0x0046a460 */
+
+static WaveTableEntry *pSnowStaticWave; /* 0x0047654c */
+static IxSound *pSnowStaticSound; /* 0x00476550 */
+
+/* Function start: 0x42B160 */
+void InitializeAudioSystem(HWND window)
+{
+    if (bIxAudioEnabled != 0 && bAudioSystemInitialized == 0) {
+        ix_system_configure(3, (void *)1);
+        ix_system_configure(0, window);
+        ix_system_init();
+        ix_system_set_voice_count(0x10);
+        bAudioSystemInitialized = 1;
+    }
+}
+
+/* Function start: 0x42B1B0 */
+void ServiceAudioStream(void)
+{
+    if (bIxAudioEnabled != 0 && bAudioSystemInitialized != 0) {
+        ix_system_delete_all_sounds();
+        ix_system_delete_all_samples();
+        ix_system_shutdown();
+        FreeWaveTable();
+        bAudioSystemInitialized = 0;
+    }
+}
+
+/* Function start: 0x42B1F0 */
+WaveTableEntry *AllocateWaveTableEntry(void)
+{
+    if (pWaveTableHead == 0) {
+        pWaveTableHead =
+            (WaveTableEntry *)malloc(sizeof(WaveTableEntry));
+        pWaveTableTail = pWaveTableHead;
+    } else {
+        pWaveTableTail->next =
+            (WaveTableEntry *)malloc(sizeof(WaveTableEntry));
+        pWaveTableTail = pWaveTableTail->next;
+    }
+    pWaveTableTail->next = 0;
+    return pWaveTableTail;
+}
+
+/* Function start: 0x42B240 */
+WaveTableEntry *FindWaveTableEntryByName(const char *name)
+{
+    WaveTableEntry *entry = pWaveTableHead;
+
+    while (entry != 0) {
+        if (strcmp(entry->name, name) == 0)
+            return entry;
+        entry = entry->next;
+    }
+    return 0;
+}
+
+/* Function start: 0x42B290 */
+void RemoveWaveTableEntry(WaveTableEntry *target)
+{
+    WaveTableEntry *previous = 0;
+    WaveTableEntry *entry = pWaveTableHead;
+
+    while (entry != 0 && target != entry) {
+        previous = entry;
+        entry = entry->next;
+    }
+    if (entry != 0) {
+        if (previous != 0)
+            previous->next = entry->next;
+        if (pWaveTableTail == entry && previous != 0)
+            pWaveTableTail = previous;
+        if (pWaveTableHead == entry)
+            pWaveTableHead = entry->next;
+        free(entry->name);
+        free(entry);
+    }
+}
+
+/* Function start: 0x42B300 */
+void FreeWaveTable(void)
+{
+    WaveTableEntry *entry = pWaveTableHead;
+
+    while (entry != 0) {
+        WaveTableEntry *next = entry->next;
+
+        free(entry->name);
+        free(entry);
+        entry = next;
+    }
+    pWaveTableTail = 0;
+    pWaveTableHead = 0;
+}
+
+/* Function start: 0x42B340 */
+ActiveSoundEntry *AllocateActiveSoundEntry(void)
+{
+    if (pActiveSoundHead == 0) {
+        pActiveSoundHead =
+            (ActiveSoundEntry *)malloc(sizeof(ActiveSoundEntry));
+        pActiveSoundTail = pActiveSoundHead;
+    } else {
+        pActiveSoundTail->next =
+            (ActiveSoundEntry *)malloc(sizeof(ActiveSoundEntry));
+        pActiveSoundTail = pActiveSoundTail->next;
+    }
+    pActiveSoundTail->next = 0;
+    return pActiveSoundTail;
+}
+
+/* Function start: 0x42B390 */
+void RemoveActiveSoundEntry(ActiveSoundEntry *target)
+{
+    ActiveSoundEntry *entry = pActiveSoundHead;
+    ActiveSoundEntry *previous = 0;
+
+    while (entry != 0 && entry != target) {
+        previous = entry;
+        entry = entry->next;
+    }
+    if (entry != 0) {
+        if (previous != 0)
+            previous->next = entry->next;
+        if (pActiveSoundTail == entry && previous != 0)
+            pActiveSoundTail = previous;
+        if (pActiveSoundHead == entry)
+            pActiveSoundHead = entry->next;
+        free(entry);
+    }
+}
+
+/* Function start: 0x42B3F0 */
+ActiveSoundEntry *FindActiveSoundEntryBySample(IxSample *sample)
+{
+    ActiveSoundEntry *entry = pActiveSoundHead;
+
+    for (;;) {
+        if (entry == 0)
+            return 0;
+        if (entry->sound->sample == sample)
+            return entry;
+        entry = entry->next;
+    }
+}
 
 /* Function start: 0x42B410 */
 void ReleaseFinishedSoundEntries(void)
@@ -75,7 +223,7 @@ void playWAVE(const char *filename, int looping, int volume)
 
         file = _open(filename, 0x8000);
         if (file == -1) {
-            MessageBoxA(0, szPlayWaveOpenError,
+            MessageBoxA(0, "playWAVE Unable to open file '%s'",
                         filename, MB_ICONHAND);
             exit(1);
         }
@@ -180,7 +328,7 @@ void SetSoundEffectsVolume(int volume)
 {
     if (volume >= 0 && volume < 65000)
         ix_system_set_master_volume((unsigned short)volume);
-    SoundDebugPrintf("Setting SFX Volume to %d", volume);
+    SoundDebugPrintf("Setting SFX Volume to %d\n", volume);
 }
 
 /* Function start: 0x42B810 */
@@ -205,21 +353,21 @@ void LoadVolumeSettingsFromRegistry(void)
     if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
                       "Software\\Origin Systems\\WC: Kilrathi Saga",
                       0, KEY_ALL_ACCESS, &key) == ERROR_SUCCESS) {
-        if (RegistryQueryValue(key, "MusicVolume", REG_DWORD,
+        if (RegistryQueryValue(key, szMusicVolumeValueName, REG_DWORD,
                                (LPBYTE)&nMusicVolumeSetting,
                                sizeof(nMusicVolumeSetting)) !=
             ERROR_SUCCESS) {
             nMusicVolumeSetting = 0x14;
-            RegistryStoreValue(key, "MusicVolume", REG_DWORD,
+            RegistryStoreValue(key, szMusicVolumeValueName, REG_DWORD,
                                (const BYTE *)&nMusicVolumeSetting,
                                sizeof(nMusicVolumeSetting));
         }
-        if (RegistryQueryValue(key, "SFXVolume", REG_DWORD,
+        if (RegistryQueryValue(key, szSfxVolumeValueName, REG_DWORD,
                                (LPBYTE)&nSfxVolumeSetting,
                                sizeof(nSfxVolumeSetting)) !=
             ERROR_SUCCESS) {
             nSfxVolumeSetting = 0x14;
-            RegistryStoreValue(key, "SFXVolume", REG_DWORD,
+            RegistryStoreValue(key, szSfxVolumeValueName, REG_DWORD,
                                (const BYTE *)&nSfxVolumeSetting,
                                sizeof(nSfxVolumeSetting));
         }
@@ -235,616 +383,12 @@ void SaveVolumeSettingsToRegistry(void)
     if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
                       "Software\\Origin Systems\\WC: Kilrathi Saga",
                       0, KEY_ALL_ACCESS, &key) == ERROR_SUCCESS) {
-        RegistryStoreValue(key, "MusicVolume", REG_DWORD,
+        RegistryStoreValue(key, szMusicVolumeValueName, REG_DWORD,
                            (const BYTE *)&nMusicVolumeSetting,
                            sizeof(nMusicVolumeSetting));
-        RegistryStoreValue(key, "SFXVolume", REG_DWORD,
+        RegistryStoreValue(key, szSfxVolumeValueName, REG_DWORD,
                            (const BYTE *)&nSfxVolumeSetting,
                            sizeof(nSfxVolumeSetting));
     }
     RegCloseKey(key);
-}
-
-/* Function start: 0x42B9A0 */
-void DrawLaunchDoorFrame(short distance)
-{
-    short bounds[4];
-    short scale;
-
-    if (distance > 10) {
-        scale = (short)(0x1a00L / distance);
-        GetTransformedShapeBounds(
-            &stSpaceBuffer,
-            (short)((short)nScreenWidth >> 1),
-            (short)((short)nScreenHeight >> 1),
-            pLaunchDoorShape, 1, 0, scale, 0, bounds);
-#ifdef SDL_PORT
-        if (!SdlRecordSpaceSprite(
-                &stSpaceBuffer, (short)(bounds[0] - 1),
-                (short)((short)nScreenHeight >> 1),
-                pLaunchDoorShape, 0, 0, scale, 0))
-#endif
-        DrawSpriteScaled(
-            &stSpaceBuffer, (short)(bounds[0] - 1),
-            (short)((short)nScreenHeight >> 1),
-            pLaunchDoorShape, 0, 0, scale, 0);
-#ifdef SDL_PORT
-        if (!SdlRecordSpaceSprite(
-                &stSpaceBuffer,
-                (short)((short)nScreenWidth >> 1),
-                (short)((short)nScreenHeight >> 1),
-                pLaunchDoorShape, 1, 0, scale, 0))
-#endif
-        DrawSpriteScaled(
-            &stSpaceBuffer,
-            (short)((short)nScreenWidth >> 1),
-            (short)((short)nScreenHeight >> 1),
-            pLaunchDoorShape, 1, 0, scale, 0);
-#ifdef SDL_PORT
-        if (!SdlRecordSpaceSprite(
-                &stSpaceBuffer, bounds[2],
-                (short)((short)nScreenHeight >> 1),
-                pLaunchDoorShape, 2, 0, scale, 0))
-#endif
-        DrawSpriteScaled(
-            &stSpaceBuffer, bounds[2],
-            (short)((short)nScreenHeight >> 1),
-            pLaunchDoorShape, 2, 0, scale, 0);
-    }
-}
-
-/* Function start: 0x42BA90 */
-void LaunchPlayerShip(void)
-{
-    short doorDistances[4];
-    signed char distanceStep;
-    signed char frame;
-    signed char door;
-
-    doorDistances[0] = 50;
-    doorDistances[1] = 40;
-    doorDistances[2] = 30;
-    doorDistances[3] = 20;
-    distanceStep = 1;
-
-    spacetrack(changetrack(), 1, 0);
-    if (bEscapePressed == 0) {
-        pLaunchDoorShape =
-            (unsigned char *)FetchDiskPacketRetrying(1, 7, 0);
-        nCannedSceneMode = 1;
-        force_view(0, 0);
-        PlaySfxWaveFileByNumber(20, -1, 0);
-        nFrameSkipCounter = 1;
-        bEscapePressed = 0;
-        frame = 0;
-        do {
-            PumpWindowMessages();
-            if (RefreshCockpitStatus() != 0) {
-                door = 0;
-                do {
-                    DrawLaunchDoorFrame(doorDistances[door]);
-                    doorDistances[door] =
-                        (short)(doorDistances[door] - distanceStep);
-                    door++;
-                } while (door < 4);
-                dump_buffer_to_screen();
-                update_cockpit();
-            }
-            DIBslam();
-            DIBslamReal();
-            if (bEscapePressed == 1)
-                break;
-            if (frame % 5 == 0)
-                distanceStep++;
-            frame++;
-        } while (frame < 25);
-
-        if (bEscapePressed != 0) {
-            StopMusicUnlessSuppressed();
-            spacetrack(changetrack(), 1, 0);
-        }
-        ReleasePacketHandle(pLaunchDoorShape);
-    } else {
-        force_view(0, 0);
-    }
-
-    DIBslam();
-    DIBslamReal();
-    clear_view_buffer();
-    nCannedSceneMode = 0;
-    ResetSoundState();
-    bEscapePressed = 0;
-}
-
-/* Function start: 0x42BC00 */
-unsigned int ShowCarrierLaunchSequence(signed char sceneObject)
-{
-    unsigned char *carrierShape;
-    unsigned char *actorShape;
-    unsigned char *fighterShape;
-    short approachScale;
-    short approachDistance;
-    short fighterScreenX;
-    short fighterScreenY;
-    short carrierScreenX;
-    short actorX;
-    short actorY;
-    short frame;
-    short object;
-
-    bIntroSceneResourcesActive = 0;
-    carrierScreenX = 180;
-    free_ship(1);
-    free_ship(2);
-    free_ship(3);
-    remove_nav_point_objects();
-    ResetSoundState();
-    PreloadMusicTrackHook(0x1c);
-    spacetrack(0x1c, 2, 1);
-    carrierShape =
-        (unsigned char *)FetchDiskPacketRetrying(1, 8, 0);
-    actorShape =
-        (unsigned char *)FetchDiskPacketRetrying(1, 4, 0);
-    pScrambleViewport = &stSpaceBuffer;
-    object = (short)sceneObject;
-    fighterShape = aObjectTypeData[
-        stCampaignState.playerShipType].shapeSet;
-    fighterScreenY = 64;
-    fighterScreenX = 20;
-    nScriptedViewObject = object;
-    initialize_scripted_view(&asCarrierLaunchViewData[2]);
-    nScrambleBackgroundY = 64;
-    nScrambleBackgroundRightX = 520;
-    asObjectFlip[0] = 0;
-    asObjectViewFrame[0] = 36;
-    asObjectScreenAngle[0] = 180;
-    asObjectDistance[0] = 300;
-    apObjectShape[0] = fighterShape;
-    apObjectShape[object] = carrierShape;
-    asObjectFlip[object] = 0;
-    asObjectViewFrame[object] = 3;
-    bEscapePressed = 0;
-    asObjectScreenAngle[object] = 0;
-    asObjectScreenScale[object] = 0x100;
-    asObjectDistance[object] = 2000;
-    nFrameSkipCounter = 1;
-    frame = 0;
-    approachDistance = 20;
-    do {
-        PumpWindowMessages();
-        aeObjectClass[0] = OBJECT_CLASS_NULL;
-        aeObjectClass[object] = OBJECT_CLASS_NULL;
-        set_eye_direction_and_position();
-        nFrameSkipCounter--;
-        if (nFrameSkipCounter < 1) {
-            nFrameSkipCounter = nFrameSkip;
-            nRenderedSpaceFrame++;
-            UpdateSpacePaletteFade();
-            clear_view_buffer();
-            house_keep_objects();
-            update_objects_in_space();
-            transform_objects_to_your_view();
-            update_star_field();
-            if (frame < 24) {
-                fighterScreenY = (short)(fighterScreenY +
-                    asCarrierLaunchApproachDeltaX[frame]);
-                asObjectViewFrame[0] =
-                    acCarrierLaunchApproachFrames[frame];
-            } else if (frame < 48) {
-                fighterScreenY = (short)(fighterScreenY -
-                    asCarrierLaunchApproachDeltaX[47 - frame]);
-                asObjectViewFrame[0] =
-                    acCarrierLaunchApproachFrames[47 - frame];
-            }
-            aeObjectClass[0] = OBJECT_CLASS_SHIP;
-            approachScale = (short)(
-                ((unsigned int)(unsigned short)asObjectScale[0]
-                    << 4) / approachDistance);
-            aeObjectClass[object] = OBJECT_CLASS_SHIP;
-            asObjectScreenX[0] =
-                (short)(fighterScreenX - nViewCenterX);
-            asObjectScreenY[0] =
-                (short)(fighterScreenY - nViewCenterY);
-            asObjectScreenScale[0] = approachScale;
-            asObjectScreenX[object] =
-                (short)(nScrambleBackgroundRightX -
-                        nViewCenterX);
-            asObjectScreenY[object] =
-                (short)(nScrambleBackgroundY -
-                        nViewCenterY);
-            sort_object_depth();
-#ifdef SDL_PORT
-            SdlBeginSpaceFrame(
-                pScreenViewportGeometry,
-                (int)cScreenViewportMode,
-                bCockpitlessView > 0,
-                (unsigned char)cPrimaryViewBufferColour);
-#endif
-            draw_sorted_objects_to_buffer();
-            dump_buffer_to_screen();
-        }
-        fighterScreenX = (short)(fighterScreenX + 2);
-        nSpaceFrame++;
-        nScrambleBackgroundRightX =
-            (short)(nScrambleBackgroundRightX - 2);
-        approachDistance = (short)(approachDistance + 2);
-        asObjectDistance[0] =
-            (short)(asObjectDistance[0] + 10);
-        AddFixedVectors(&aShipPosition[61],
-                        &aShipVelocity[61],
-                        &aShipPosition[61]);
-        if (bEscapePressed == 1)
-            break;
-        frame++;
-        DIBslam();
-        DIBslamReal();
-    } while (frame < 100);
-
-    aeObjectClass[0] = OBJECT_CLASS_NULL;
-    aeObjectClass[object] = OBJECT_CLASS_NULL;
-    if (bEscapePressed != 1) {
-        copy_frame(object, 61);
-        aShipPosition[61] = aShipPosition[object];
-        nScrambleBackgroundRightX = 0;
-        fighterScreenX = 200;
-        fighterScreenY = 32;
-        nScrambleBackgroundY = 0;
-        asObjectCollisionRadius[61] =
-            asObjectCollisionRadius[object];
-        approachDistance = 100;
-        ConfigureScrambleActor(100, 80, 1, 0, actorShape,
-                               0x100, 0, 0, 0);
-        ConfigureScrambleActor(116, 130, 0, 0, actorShape,
-                               0x100, 0, 0, 1);
-        ConfigureScrambleActor(300, 110, -4, 0, actorShape,
-                               0xc0, 0, 0x10, 3);
-        ConfigureScrambleActor(301, 110, -4, 0, actorShape,
-                               0xc0, 0, 0x10, 4);
-        PlaySfxWaveFileByNumber(18, -1, 0);
-        frame = 0;
-        actorX = 60;
-        actorY = 10;
-        nFrameSkipCounter = 1;
-        do {
-            PumpWindowMessages();
-            alter_yaw(-1, 61);
-            if (RefreshCockpitStatus() != 0) {
-                DrawSpriteDefault(
-                    &stSpaceBuffer,
-                    (short)(nScrambleBackgroundRightX + 239),
-                    nScrambleBackgroundY,
-                    carrierShape, 0);
-                DrawSpriteDefault(
-                    &stSpaceBuffer,
-                    (short)(nScrambleBackgroundRightX + 240),
-                    nScrambleBackgroundY,
-                    carrierShape, 1);
-                DrawScrambleActor(0);
-                approachScale = (short)(0x6000L / approachDistance);
-                DrawSpriteScaled(&stSpaceBuffer, fighterScreenX,
-                                 fighterScreenY, fighterShape, 16, 0,
-                                 approachScale, 0);
-                DrawScrambleActor(3);
-                DrawScrambleActor(4);
-                DrawScrambleActor(1);
-                DrawSpriteDefault(
-                    &stSpaceBuffer,
-                    (short)(nScrambleBackgroundRightX + 60),
-                    (short)(nScrambleBackgroundY + 10),
-                    actorShape, 16);
-                DrawSpriteDefault(
-                    &stSpaceBuffer,
-                    (short)(nScrambleBackgroundRightX + 80),
-                    (short)(nScrambleBackgroundY + 134),
-                    actorShape, 8);
-                DrawSpriteDefault(&stSpaceBuffer, carrierScreenX,
-                                  nScrambleBackgroundY,
-                                  carrierShape, 2);
-                WaitForVerticalBlankThunk();
-                dump_buffer_to_screen();
-            }
-            nScrambleBackgroundRightX =
-                (short)(nScrambleBackgroundRightX + 2);
-            carrierScreenX = (short)(carrierScreenX + 4);
-            fighterScreenX = (short)(fighterScreenX - 2);
-            fighterScreenY++;
-            approachDistance--;
-            if (sceneObject != 0) {
-                ((void (__cdecl *)(int, int, int, int))PaletteFadeHook)(
-                    (int)sceneObject, 10, 0, 0);
-            }
-            if (bEscapePressed == 1)
-                break;
-            DIBslam();
-            DIBslamReal();
-            frame++;
-        } while (frame < 35);
-
-        if (bEscapePressed != 1) {
-            nFrameSkipCounter = 1;
-            frame = 0;
-            do {
-                PumpWindowMessages();
-                if (RefreshCockpitStatus() != 0) {
-                    DrawSpriteDefault(
-                        &stSpaceBuffer,
-                        (short)(nScrambleBackgroundRightX + 239),
-                        nScrambleBackgroundY,
-                        carrierShape, 0);
-                    DrawSpriteDefault(
-                        &stSpaceBuffer,
-                        (short)(nScrambleBackgroundRightX + 240),
-                        nScrambleBackgroundY,
-                        carrierShape, 1);
-                    DrawScrambleActor(0);
-                    DrawSpriteScaled(&stSpaceBuffer, fighterScreenX,
-                                     fighterScreenY, fighterShape, 16, 0,
-                                     approachScale, 0);
-                    DrawScrambleActor(3);
-                    DrawScrambleActor(4);
-                    DrawScrambleActor(1);
-                    DrawSpriteDefault(
-                        &stSpaceBuffer,
-                        (short)(nScrambleBackgroundRightX + actorX),
-                        (short)(nScrambleBackgroundY + actorY),
-                        actorShape, 16);
-                    DrawSpriteDefault(
-                        &stSpaceBuffer,
-                        (short)(nScrambleBackgroundRightX + 80),
-                        (short)(nScrambleBackgroundY + 134),
-                        actorShape, 8);
-                    DrawSpriteDefault(&stSpaceBuffer, carrierScreenX,
-                                      nScrambleBackgroundY,
-                                      carrierShape, 2);
-                    WaitForVerticalBlankThunk();
-                    dump_buffer_to_screen();
-                }
-                frame++;
-                if (frame < 9) {
-                    fighterScreenX = (short)(fighterScreenX +
-                        aCarrierLaunchFighterPath[frame].x);
-                    fighterScreenY = (short)(fighterScreenY +
-                        aCarrierLaunchFighterPath[frame].y);
-                } else if (frame < 23) {
-                    if (frame == 9)
-                        PlaySfxWaveFileByNumber(11, -1, 0);
-                    fighterScreenY = (short)(fighterScreenY +
-                        asCarrierLaunchFighterDeltaY[frame - 7]);
-                }
-                if (frame == 23) {
-                    ((void (__cdecl *)(int, int))
-                        FlushSoundEffectsAndLog)((int)sceneObject, 0);
-                    PlaySfxWaveFileByNumber(19, -1, 0);
-                }
-                actorX++;
-                if (frame % 7 == 0)
-                    actorY--;
-                DIBslam();
-                DIBslamReal();
-            } while (bEscapePressed != 1 && frame < 50);
-        }
-    }
-
-    bEscapePressed = 0;
-    ResetSoundState();
-    StopMusicUnlessSuppressed();
-    ReleaseMusicTrackHook(0x1c);
-    free_ship(0);
-    ReleasePacketHandle(carrierShape);
-    ReleasePacketHandle(actorShape);
-    bScriptedView = 0;
-    bIntroSceneResourcesActive = 1;
-    return 0;
-}
-
-/* Function start: 0x42C410 */
-void FxDriverShutdownHook(void)
-{
-}
-
-/* Function start: 0x42C420 */
-unsigned short InitializeDiskPromptTextContext(void)
-{
-    short textWidth;
-    short textHeight;
-
-    nDiskPromptBorderColour = 0x50;
-    if (stScreen.pixels == 0)
-        InitializeGameTextContexts();
-    stDiskPromptTextContext = stDefaultTextContext;
-    stDiskPromptTextContext.viewport =
-        &stDiskPromptViewport;
-    stDiskPromptTextContext.text =
-        szTextScratchBuffer;
-    stDiskPromptTextContext.alignment = 2;
-    stDiskPromptViewport = stScreen;
-    textWidth =
-        (short)(MeasureTextPixelWidthClamped(
-                    szPressAnyKeyWhenReady) +
-                10);
-    textHeight =
-        (short)((ReadWord((unsigned short *)
-                              stDiskPromptTextContext.font) +
-                 1) *
-                3);
-    stDiskPromptBounds.top =
-        (short)(100 - textHeight / 2);
-    stDiskPromptBounds.left =
-        (short)(160 - textWidth / 2);
-    stDiskPromptBounds.bottom =
-        (short)(stDiskPromptBounds.top + textHeight);
-    stDiskPromptBounds.right =
-        (short)(stDiskPromptBounds.left + textWidth);
-    InitializeTextContextFromFont(&stDiskPromptTextContext, 1,
-                                  cBlackColour,
-                                  (signed char)cViewportClearColour);
-    bGraphicsActive = 1;
-    return 0;
-}
-
-/* Function start: 0x42C510 */
-unsigned short RewriteDiskFileGraphicsExtensions(short videoMode)
-{
-    DiskFileRecord *record;
-    char *extensionPosition;
-    char extension;
-
-    record = pDiskFileRecords;
-    switch (videoMode) {
-    case 0:
-        extension = 'v';
-        break;
-    case 1:
-        extension = 'e';
-        break;
-    case 3:
-        extension = 't';
-        break;
-    }
-
-    while (record->name[0] != '\0') {
-        extensionPosition = strchr(record->name, '.');
-#ifdef SDL_PORT
-        if (extensionPosition != 0) {
-            extensionPosition++;
-            if (toupper((int)*extensionPosition) == 'V')
-                *extensionPosition = extension;
-        }
-#else
-        if (extensionPosition++ != 0 &&
-            toupper((int)*extensionPosition) == 'V')
-            *extensionPosition = extension;
-#endif
-        record++;
-    }
-    return 0;
-}
-
-/* Function start: 0x42C580 */
-short LoadWingCmdrCfgFile(short argc, char **argv)
-{
-    FILE *file;
-    short argumentCount;
-    char *destination;
-    short argumentIndex;
-#ifdef SDL_PORT
-    char resolvedPath[PATH_MAX];
-#endif
-
-    argumentIndex = 1;
-    argumentCount = 0;
-    destination = szTextScratchBuffer;
-#ifdef SDL_PORT
-    if (SdlResolvePath("WINGCMDR.CFG", resolvedPath,
-                          sizeof(resolvedPath)))
-        file = fopen(resolvedPath, "rt");
-    else
-        file = 0;
-#else
-    file = fopen("WINGCMDR.CFG", "rt");
-#endif
-    while (file != 0) {
-        if ((short)fscanf(file, "%s", destination) == -1) {
-            fclose(file);
-            break;
-        }
-        pStartupArguments[argumentCount++] =
-            destination;
-        destination = strchr(destination, 0) + 1;
-    }
-
-    while (argc-- != 0) {
-        strcpy(destination, argv[argumentIndex]);
-        pStartupArguments[argumentCount++] = destination;
-        argumentIndex++;
-        destination = strchr(destination, 0) + 1;
-    }
-    return (short)(argumentCount - 1);
-}
-
-/* Function start: 0x42C660 */
-unsigned short LoadInstallDat(void)
-{
-    DiskFileRecord *records;
-    DiskFileRecord *record;
-    DiskFileRecord *entry;
-    unsigned int size;
-    short file;
-    short maximumId;
-
-    maximumId = 0;
-    SystemDebugPrintf("Loading INSTALL.DAT\n");
-    file = OpenDataFileOrDie("install.dat");
-    if (file == -1) {
-        SystemDebugPrintf("Unable to open INSTALL.DAT\n");
-        SystemDebugPrintf(
-            "[SYSTEM]: Exiting Prematurely (LoadInstallData)\n");
-        ClearDebugPauseFlags();
-        PumpMessagesDuringWait();
-        exit(0);
-    }
-    size = (unsigned int)filelength(file);
-    records = (DiskFileRecord *)AllocateTaggedMemory(size, 0);
-    if (records == 0) {
-        SystemDebugPrintf("Unable to load INSTALL.DAT\n");
-        SystemDebugPrintf(
-            "[SYSTEM]: Exiting Prematurely (LoadInstallData)\n");
-        ClearDebugPauseFlags();
-        PumpMessagesDuringWait();
-        exit(0);
-    }
-    ReadDataFileAtOffset(file, 0, size, records);
-    CloseDataFile(file);
-
-    record = records;
-    while (record->name[0] != 0) {
-        if (maximumId < record->logicalFile &&
-            record->logicalFile != 0xff)
-            maximumId = record->logicalFile;
-        record++;
-    }
-    maximumId++;
-
-#ifdef SDL_PORT
-    pDiskFileRecords =
-        (DiskFileRecord *)AllocateTaggedMemory(
-            sizeof(DiskFileRecord) * 78, 0);
-    if (pDiskFileRecords != 0)
-        memset(pDiskFileRecords, 0,
-               sizeof(DiskFileRecord) * 78);
-#else
-    pDiskFileRecords =
-        (DiskFileRecord *)AllocateTaggedMemory(0x4b0, 0);
-    memset(pDiskFileRecords, 0,
-           (maximumId + 1) * sizeof(DiskFileRecord));
-#endif
-    if (pDiskFileRecords == 0) {
-        SystemDebugPrintf("Unable to copy INSTALL.DAT\n");
-        SystemDebugPrintf(
-            "[SYSTEM]: Exiting Prematurely (LoadInstallData)\n");
-        ClearDebugPauseFlags();
-        PumpMessagesDuringWait();
-        exit(0);
-    }
-
-    entry = pDiskFileRecords;
-    while (maximumId > 0) {
-        entry->name[0] = ' ';
-        entry++;
-        maximumId--;
-    }
-
-    record = records;
-    while (record->name[0] != 0) {
-        if (record->logicalFile != 0xff)
-            pDiskFileRecords[record->logicalFile] = *record;
-        record++;
-    }
-    ReleasePacketHandle(records);
-    pDiskFileRecords++;
-#ifdef SDL_PORT
-    if (SdlUsingDosData())
-        SdlCompleteDosInstallTable(pDiskFileRecords);
-#endif
-    return 0;
 }

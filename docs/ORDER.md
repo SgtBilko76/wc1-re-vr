@@ -159,9 +159,11 @@ sits at one constant offset from the original.
 | `src/main.c` | `0x4272F0`–`0x42A8EF`; trailing cursor/palette helpers remain provisional |
 | `src/targ.c` | `0x42A8F0`–`0x42ACFF` |
 | `src/select.c` | `0x42AD00`–`0x42AF9F` |
-| `src/timer.c` | `0x42AFA0`–`0x42AFFF`; internal ownership remains provisional |
-| `src/pload.c` | `0x42B000`–`0x42B3FF` |
-| `src/sound.c` | `0x42B400`–`0x42C7FF` |
+| `src/timer.c` | `0x42AFA0`–`0x42B04F`; internal ownership remains provisional |
+| `src/pload.c` | `0x42B050`–`0x42B15F` |
+| `src/sound.c` | `0x42B160`–`0x42B99F` |
+| `src/launch.c` | `0x42B9A0`–`0x42C40F`; boundary with installation remains provisional |
+| `src/install.c` | `0x42C410`–`0x42C7FF`; leading empty hook's exact owner remains provisional |
 | `src/damage.c` | `0x42C800`–`0x42CDAF` |
 | `src/view.c` | `0x42CDB0`–`0x42E31F` |
 | `src/music.c` | `0x42E320`–`0x42EFBF` |
@@ -615,12 +617,42 @@ order without string pooling.
 `PacketLoad`'s compressed-data case precedes its default case in source,
 although CL schedules the default code first. This emits both fatal
 diagnostics before the non-pushed-buffer diagnostic, matching all 147 bytes
-of its literal section. The following audio routines still occupy `pload.c`
-provisionally; their initialized state remains to be recovered in its owner.
-The simulator, main, and loader sections form one checked 1,679-byte run,
-with six stored pointers and three linker alignment bytes. That run is
-currently 24 bytes early: eight bytes each remain missing in startup state,
-cockpit state, and the gap before the simulator.
+of its literal section. The following audio routines share state with the
+playback and registry routines and now reside together in `sound.c`.
+
+The audio unit starts at `InitializeAudioSystem`, `0x0042B160`, and ends
+after `SaveVolumeSettingsToRegistry`. Its five initialized state variables
+occupy `0x0046A438`–`0x0046A44B`. The three references to each registry
+value name share the arrays at `0x0046A450` and `0x0046A460`; writing a
+separate literal at each call would incorrectly duplicate their storage.
+By contrast, the two full registry-key literals are distinct. The following
+222-byte literal pool preserves both `SNOW` copies, the mismatched `sfx23`
+diagnostic, and the SFX-volume message's trailing newline. All 274 bytes,
+seven declaration offsets, and the separate eight-byte private `.bss` match.
+
+Six linker alignment bytes separate that literal pool from the launch
+tables at `0x0046A550`. Their position proves a new compilation unit before
+`DrawLaunchDoorFrame`. The five private tables occupy 172 bytes. The first
+table changes screen Y, so it is named `asCarrierLaunchApproachDeltaY`.
+The last two tables begin at `0x0046A5C0` and `0x0046A5E0`, each containing
+14 words. The previous 16-word declarations included four preceding alignment
+bytes apiece. The fighter loop uses frames 9 through 22 and the displacement
+`0x0046A5AE`: indexing the real table by `frame - 9` preserves that operand.
+The scripted-view call passes `0x0046A5E0` directly. Normal compiler alignment
+supplies both gaps; neither belongs to an array.
+
+The configuration and installation literals occupy the next 325 bytes,
+`0x0046A5FC`–`0x0046A740`. The disk prompt is a use-site literal, and each
+installation-failure message remains separate. These routines and the
+launch routines use the C profile. Their internal boundary is provisional:
+the data establishes separation from the preceding audio and following
+damage units but does not independently distinguish launch from installation.
+The empty shutdown hook remains with installation provisionally.
+
+Simulator, main, loader, audio, launch, installation, damage, and view data
+form one checked 3,145-byte run, with 20 stored pointers and 19 linker alignment
+bytes. That run is currently 24 bytes early: eight bytes each remain missing
+in startup state, cockpit state, and the gap before the simulator.
 
 The maneuver proximity threshold at `0x00475E78` and reroll byte at
 `0x00475E7C` are private to `fl.c`. All references occur in the threshold
@@ -645,7 +677,7 @@ Three more uninitialized-data blocks reside in their owners:
 in `sound.c`, and `nDisplayedComponentDamage` at `0x00476554` belongs to
 `damage.c`. Every reference to these four variables comes from its respective
 owner. VC++ 4.20 emits four and eight bytes of `.bss` in the C++ owners,
-with the two sound globals at offsets 0 and 4. The private damage variable
+with the two private sound globals at offsets 0 and 4. The private damage variable
 uses C `static` storage to produce its four-byte `.bss` section.
 Their former tentative definitions in `globals.c` became independently
 ordered linker common symbols. The unit-data gate now verifies their owner,
@@ -686,9 +718,10 @@ raster surface, contrary to the original. Those definitions remain in
 temporary storage; the matching prefix does not establish the later layout.
 
 The damage-display unit starts with `show_damage_disp` at `0x0042C800`.
-Its initialized tables start at `0x0046A748`, after the sound/configuration
-literal pool ending at `0x0046A73F`. CL places a unit's initialized definitions
-before its literals, so these tables require a separate owner from `sound.c`.
+Its initialized tables start at `0x0046A748`, after the installation
+literal pool ending at `0x0046A740` and seven linker alignment bytes.
+CL places a unit's initialized definitions before its literals, so these
+tables require a separate owner from the preceding installation routines.
 The display positions, component-name pointers, frame indices, and severity
 pointers precede the literal pool at `0x0046A7C4`. The component names and
 severity names are individual literals in their pointer initializers; named

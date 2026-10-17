@@ -110,18 +110,6 @@ extern int bMouseCursorVisible; /* 0x0046a018 */
 extern unsigned char bInputPollingGuard; /* 0x0046a01c */
 extern unsigned char *pDamageDisplayBackground; /* 0x0046a748 */
 extern const char *apszComponentNames[9]; /* 0x0046a778 */
-extern ActiveSoundEntry *pActiveSoundHead; /* 0x0046a438 */
-extern ActiveSoundEntry *pActiveSoundTail; /* 0x0046a43c */
-extern int bAudioSystemInitialized; /* 0x0046a440 */
-extern WaveTableEntry *pWaveTableHead; /* 0x0046a444 */
-extern WaveTableEntry *pWaveTableTail; /* 0x0046a448 */
-extern char szPlayWaveOpenError[36]; /* 0x0046a46c */
-extern short asCarrierLaunchApproachDeltaX[24]; /* 0x0046a550 */
-extern signed char acCarrierLaunchApproachFrames[24]; /* 0x0046a580 */
-extern ShortPoint aCarrierLaunchFighterPath[9]; /* 0x0046a598 */
-extern short asCarrierLaunchFighterDeltaY[16]; /* 0x0046a5bc */
-extern short asCarrierLaunchViewData[16]; /* 0x0046a5dc */
-extern char szPressAnyKeyWhenReady[28]; /* 0x0046a5fc */
 extern short nMusicPlaybackMode; /* 0x0046a9f8 */
 extern short nMusicTrackComplete; /* 0x0046aa04 */
 extern short nFuneralSequenceActive; /* 0x0046aa10 */
