@@ -1931,7 +1931,7 @@ void print_message_text(char *text, unsigned short colour)
     char source[84];
     char *input;
     char *output;
-    int charactersPerLine;
+    short charactersPerLine;
     short lastSpace = -1;
     short position;
     short width;
@@ -1958,60 +1958,62 @@ void print_message_text(char *text, unsigned short colour)
                           (int)cCockpitView * 2 + 1] + 60));
     context.backgroundColour = 0xff;
     context.colour = colour;
-    input = source;
-    output = wrapped;
     width = GetRectHeight(&viewport);
     charactersPerLine = (short)(width / 6);
-    position = 0;
-    if (*input != 0) {
-        for (; *input != 0; position++, input++, output++) {
-            *output = *input;
-            if (*input == ' ')
-                lastSpace = position;
-            if ((position + 1) % charactersPerLine == 0) {
-                if (lastSpace == -1) {
-                    output[1] = '\n';
-                    output++;
-                } else {
-                    output[position - lastSpace] = '\n';
-                }
+    input = source;
+    output = wrapped;
+    for (position = 0; *input != 0; position++, input++, output++) {
+        *output = *input;
+        if (*output == ' ')
+            lastSpace = position;
+        if ((position + 1) % charactersPerLine == 0) {
+            if (lastSpace == -1) {
+                output[1] = '\n';
+                output++;
+            } else {
+                output[position - lastSpace] = '\n';
             }
         }
     }
     *output = 0;
 
-    {
-        int view;
-
-        view = (int)cCockpitView;
-        if (bCockpitlessView != 0) {
-            switch (view) {
-            case 0:
-                DrawTextAt(&context, asHudMessageOrigins[view * 2],
-                           (short)(asHudMessageOrigins[view * 2 + 1] + 10),
-                           wrapped, 2);
-                break;
-            case 1:
-                DrawTextAt(&context, asHudMessageOrigins[view * 2],
-                           (short)(asHudMessageOrigins[view * 2 + 1] + 25),
-                           wrapped, 2);
-                break;
-            case 2:
-                DrawTextAt(&context, asHudMessageOrigins[view * 2],
-                           (short)(asHudMessageOrigins[view * 2 + 1] + 50),
-                           wrapped, 2);
-                break;
-            case 3:
-                DrawTextAt(&context, asHudMessageOrigins[view * 2],
-                           asHudMessageOrigins[view * 2 + 1], wrapped, 2);
-                break;
-            default:
-                break;
-            }
-        } else {
-            DrawTextAt(&context, asHudMessageOrigins[view * 2],
-                       asHudMessageOrigins[view * 2 + 1], wrapped, 2);
+    if (bCockpitlessView != 0) {
+        switch ((int)cCockpitView) {
+        case 0:
+            DrawTextAt(&context,
+                       asHudMessageOrigins[(int)cCockpitView * 2],
+                       (short)(asHudMessageOrigins[
+                                   (int)cCockpitView * 2 + 1] + 10),
+                       wrapped, 2);
+            break;
+        case 1:
+            DrawTextAt(&context,
+                       asHudMessageOrigins[(int)cCockpitView * 2],
+                       (short)(asHudMessageOrigins[
+                                   (int)cCockpitView * 2 + 1] + 25),
+                       wrapped, 2);
+            break;
+        case 2:
+            DrawTextAt(&context,
+                       asHudMessageOrigins[(int)cCockpitView * 2],
+                       (short)(asHudMessageOrigins[
+                                   (int)cCockpitView * 2 + 1] + 50),
+                       wrapped, 2);
+            break;
+        case 3:
+            DrawTextAt(&context,
+                       asHudMessageOrigins[(int)cCockpitView * 2],
+                       asHudMessageOrigins[(int)cCockpitView * 2 + 1],
+                       wrapped, 2);
+            break;
+        default:
+            break;
         }
+    } else {
+        DrawTextAt(&context,
+                   asHudMessageOrigins[(int)cCockpitView * 2],
+                   asHudMessageOrigins[(int)cCockpitView * 2 + 1],
+                   wrapped, 2);
     }
     pszDisplayedHudMessage = pszPendingHudMessage;
 }

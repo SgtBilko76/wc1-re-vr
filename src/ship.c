@@ -2127,10 +2127,11 @@ int drop_mine(short obj, signed char weapon, enum ObjectType type,
 /* Function start: 0x421350 */
 void fire_afterburner(short obj, short time)
 {
+    int speed;
     short timer;
 
-    if (Vector_magnitude(&aShipVelocity[obj]) <
-        get_ship_max_velocity(obj) * 0x500L) {
+    speed = Vector_magnitude(&aShipVelocity[obj]);
+    if (speed < get_ship_max_velocity(obj) * 0x500L) {
         set_special(obj, SPECIAL_MANEUVER_AFTERBURNER);
         if (aeSpecialManeuver[obj] != SPECIAL_MANEUVER_AFTERBURNER)
             timer = 0;

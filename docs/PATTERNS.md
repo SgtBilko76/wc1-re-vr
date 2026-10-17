@@ -104,6 +104,26 @@ for similarity decisions.
   the length local leaves this function's instructions unchanged but alters
   register allocation in later mission functions. Check the entire unit
   when changing locals, not just the edited function.
+- `print_message_text` keeps its character limit as a short and initializes
+  the two wrapping pointers after measuring the viewport. Test the character
+  just written to the output buffer so CL retains the loaded byte instead
+  of rereading the input after a potentially aliasing store. Preserve the
+  original forward newline offset from the current output cursor. Index the
+  message origins directly with `cCockpitView` in each draw call. Caching
+  that view in an int changes how CL shares the argument setup between the
+  switch cases and the normal cockpit path. The direct accesses
+  recover 95.83% mnemonic similarity, but pointer/index allocation still
+  leaves two extra body bytes and therefore a 16-byte larger aligned span.
+  Explicit break/index locals and alternate pointer initialization did not
+  remove that difference. The full-unit check also recovers the exact
+  `build_your_target_list` without changing that function's source.
+- `fire_afterburner` measures velocity before querying the maximum velocity.
+  Save the measured speed in a real int local before the comparison: CL 4.20
+  evaluates the two calls in the opposite order when both appear directly
+  in the comparison, even if its operands are reversed. The explicit speed
+  restores 30 of the original 32 instructions at the byte-comparison level.
+  Only the equivalent reversed comparison and branch remain different.
+  An early return, a named limit, and a long speed local did not resolve them.
 - `get_right_shape` retains object class and type as short values and the
   selected frame as a signed byte. Read the type only in the non-missile
   branch. Its pitch rounding clamps the promoted increment or decrement
