@@ -53,8 +53,9 @@ void CreateEmptySaveGameFile(void)
     if (file >= 0) {
         for (; slot < 8; slot++) {
             sprintf(gameRecord.description, "game %d", (int)slot + 1);
-            memcpy(diskRecord.description, gameRecord.description,
-                   sizeof(diskRecord.description));
+            diskBytes = (unsigned char *)diskRecord.description;
+            gameBytes = (unsigned char *)gameRecord.description;
+            memcpy(diskBytes, gameBytes, sizeof(diskRecord.description));
             diskRecord.occupied = gameRecord.occupied;
             memcpy(diskRecord.pilots, gameRecord.pilots,
                    sizeof(diskRecord.pilots));
@@ -95,7 +96,7 @@ void CreateEmptySaveGameFile(void)
                 diskRecord.campaign.personalityDeathMission;
             for (; diskDeathMission <
                        diskRecord.campaign.personalityDeathMission + 8;
-                 diskDeathMission++, gameDeathMission++) {
+                 gameDeathMission++, diskDeathMission++) {
                 *diskDeathMission = (short)*gameDeathMission;
             }
 
@@ -122,7 +123,7 @@ void CreateEmptySaveGameFile(void)
             gameObjective = gameRecord.objectives;
             diskObjective = diskRecord.objectives;
             for (; diskObjective < diskRecord.objectives + 16;
-                 diskObjective++, gameObjective++) {
+                 gameObjective++, diskObjective++) {
                 diskObjective->mapX = gameObjective->mapX;
                 diskObjective->mapY = gameObjective->mapY;
                 diskObjective->field_4 = gameObjective->field_4;
@@ -250,7 +251,8 @@ short SaveGame(short slot, SaveGameRecord *gameRecord)
     int index;
 
     PromptInsertNumberedDisk(0x10);
-    memcpy(diskRecord.description, gameRecord->description,
+    diskBytes = (unsigned char *)diskRecord.description;
+    memcpy(diskBytes, gameRecord->description,
            sizeof(diskRecord.description));
     diskRecord.occupied = gameRecord->occupied;
     memcpy(diskRecord.pilots, gameRecord->pilots,
@@ -284,7 +286,7 @@ short SaveGame(short slot, SaveGameRecord *gameRecord)
     diskDeathMission = diskRecord.campaign.personalityDeathMission;
     for (; diskDeathMission <
                diskRecord.campaign.personalityDeathMission + 8;
-         diskDeathMission++, gameDeathMission++) {
+         gameDeathMission++, diskDeathMission++) {
         *diskDeathMission = (short)*gameDeathMission;
     }
 
@@ -306,7 +308,7 @@ short SaveGame(short slot, SaveGameRecord *gameRecord)
     gameObjective = gameRecord->objectives;
     diskObjective = diskRecord.objectives;
     for (; diskObjective < diskRecord.objectives + 16;
-         diskObjective++, gameObjective++) {
+         gameObjective++, diskObjective++) {
         diskObjective->mapX = gameObjective->mapX;
         diskObjective->mapY = gameObjective->mapY;
         diskObjective->field_4 = gameObjective->field_4;
@@ -431,7 +433,6 @@ int LoadGame(short slot, SaveGameRecord *gameRecord)
     SaveGameDiskObjective *diskObjective;
     MissionObjective *gameObjective;
     unsigned char *diskBytes;
-    unsigned char *gameBytes;
     short *diskDeathMission;
     int *gameDeathMission;
     short file;
@@ -441,11 +442,12 @@ int LoadGame(short slot, SaveGameRecord *gameRecord)
 
     PromptInsertNumberedDisk(0x10);
     file = OpenDataFileOrDie("SAVEGAME.WLD");
-    fileOpen = file >= 0;
+    fileOpen = (file >= 0) & 1;
     read = ReadDataFileAtOffset((unsigned short)file,
                                 (int)slot * 0x33c, 0x33c,
                                 &diskRecord);
-    memcpy(gameRecord->description, diskRecord.description,
+    diskBytes = (unsigned char *)diskRecord.description;
+    memcpy(gameRecord->description, diskBytes,
            sizeof(gameRecord->description));
     gameRecord->occupied = diskRecord.occupied;
     memcpy(gameRecord->pilots, diskRecord.pilots,
@@ -454,16 +456,14 @@ int LoadGame(short slot, SaveGameRecord *gameRecord)
         (PilotRecord *)(int)diskRecord.campaign.currentPilot;
     gameRecord->campaign.playerShipType =
         (enum ObjectType)diskRecord.campaign.playerShipType;
-    gameBytes = gameRecord->campaign.medals;
     diskBytes = diskRecord.campaign.medals;
     for (index = 0; index < 5; index++) {
-        gameBytes[index] = diskBytes[index];
+        gameRecord->campaign.medals[index] = diskBytes[index];
     }
 
-    gameBytes = gameRecord->campaign.badges;
     diskBytes = diskRecord.campaign.badges;
     for (index = 0; index < 12; index++) {
-        gameBytes[index] = diskBytes[index];
+        gameRecord->campaign.badges[index] = diskBytes[index];
     }
     gameRecord->campaign.currentMission =
         diskRecord.campaign.currentMission;
@@ -471,10 +471,9 @@ int LoadGame(short slot, SaveGameRecord *gameRecord)
         diskRecord.campaign.currentSeries;
     gameRecord->campaign.seriesHistoryCount =
         diskRecord.campaign.seriesHistoryCount;
-    gameBytes = (unsigned char *)gameRecord->campaign.seriesHistory;
     diskBytes = (unsigned char *)diskRecord.campaign.seriesHistory;
     for (index = 0; index < 8; index++) {
-        gameBytes[index] = diskBytes[index];
+        gameRecord->campaign.seriesHistory[index] = diskBytes[index];
     }
 
     gameDeathMission = gameRecord->campaign.personalityDeathMission;
@@ -485,10 +484,9 @@ int LoadGame(short slot, SaveGameRecord *gameRecord)
         *gameDeathMission = (int)*diskDeathMission;
     }
 
-    gameBytes = gameRecord->campaign.aceFlags;
     diskBytes = diskRecord.campaign.aceFlags;
     for (index = 0; index < 4; index++) {
-        gameBytes[index] = diskBytes[index];
+        gameRecord->campaign.aceFlags[index] = diskBytes[index];
     }
     gameRecord->campaign.currentDate = diskRecord.campaign.currentDate;
     gameRecord->campaign.elapsedDate.day =
@@ -612,6 +610,7 @@ void DrawBarracksBunks(Viewport *viewport, unsigned char *shape,
 {
     short bunk;
     short frame;
+    short row;
 
     DrawSpriteDefault(viewport, 0, 0, shape, 0);
     bunk = 0;
@@ -624,9 +623,10 @@ void DrawBarracksBunks(Viewport *viewport, unsigned char *shape,
                 shape, (short)(bunk + 1));
             frame = 9;
         }
+        row = (short)(bunk / 2);
         DrawSpriteDefault(viewport,
                           (short)((bunk % 2) * 31 + 143),
-                          (short)((bunk / 2) * 5 + 167),
+                          (short)(row * 5 + 167),
                           shape, frame);
         bunk++;
     } while (bunk < 8);

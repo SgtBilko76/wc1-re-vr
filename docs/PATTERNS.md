@@ -66,6 +66,19 @@ for similarity decisions.
   activation and mouse clicks reach the same flag assignment; cursor events
   and unhandled events go directly to the common redraw. Its frame-timer
   result is tested in AX even though the timer function returns a full int.
+- Keep the observed form of record copies. In `LoadGame`, a byte source
+  pointer and direct destination array fields retain the four original
+  counted loops. Caching the destination base adds instructions; naming
+  both arrays directly lets CL replace the loops with bulk copies. A byte
+  pointer for the 17-byte description copy also preserves the interleaved
+  loads and stores in the loader and both save writers. In the writers,
+  advance the runtime source pointer before the disk destination pointer:
+  reversing that order moves the destination increment ahead of its store
+  and introduces an extra displacement byte.
+- Calculate the bunk row before `DrawBarracksBunks` prepares its draw-call
+  arguments. Keeping the division inside the argument expression occupies
+  AX with the frame number and changes both coordinate indexing and push
+  order. A short row local restores CX for the frame and the original size.
 - A shared call in the executable can come from calls in both source branches.
   In `intro_drawbackgroundships`, separate sprite calls let CL 4.20 prepare
   the common colour and frame arguments before selecting the shape. Selecting
