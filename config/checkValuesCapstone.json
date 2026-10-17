@@ -16,7 +16,6 @@
     "test"
   ],
   "padding_mnemonics": [
-    "nop",
     "int3"
   ],
   "stack_registers": [

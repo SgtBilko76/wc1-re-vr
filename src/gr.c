@@ -133,9 +133,9 @@ void PrepareShapeRLEData(unsigned char *shape)
                 if (*pixel != 0xff) {
                     unsigned char *runCode;
 
-                    runLength = 0;
                     runCode = output++;
-                    while (remaining > 0 && runLength < 0x7f &&
+                    runLength = 0;
+                    while (remaining != 0 && runLength < 0x7f &&
                            *pixel != 0xff) {
                         *output = *pixel;
                         runLength++;
@@ -146,7 +146,7 @@ void PrepareShapeRLEData(unsigned char *shape)
                     *runCode = (unsigned char)(runLength * 2 + 1);
                 } else {
                     runLength = 0;
-                    while (remaining > 0 && runLength < 0xff &&
+                    while (remaining != 0 && runLength < 0xff &&
                            *pixel == 0xff) {
                         runLength++;
                         remaining--;
@@ -405,36 +405,38 @@ void CaptureSpriteBackground(Viewport *viewport, unsigned char *background,
                     runLength = (unsigned short)(code >> 1);
                     commands++;
                     count -= runLength;
-                    endX = drawX + runLength - 1;
-                    if (top <= drawY && bottom >= drawY && drawX <= right &&
-                        left <= endX) {
-                        copyLength = (short)runLength;
-                        skip = 0;
-                        if (drawX < left) {
-                            copyLength = copyLength - left + drawX;
-                            skip = left - drawX;
+                    if (top <= drawY && bottom >= drawY) {
+                        endX = drawX + runLength - 1;
+                        if (drawX <= right && left <= endX) {
+                            copyLength = (short)runLength;
+                            skip = 0;
+                            if (drawX < left) {
+                                copyLength = copyLength - left + drawX;
+                                skip = left - drawX;
+                            }
+                            if (right < endX)
+                                copyLength = copyLength - endX + right;
+                            memcpy(saved, screen + skip, copyLength);
+                            saved += copyLength;
                         }
-                        if (right < endX)
-                            copyLength = copyLength - endX + right;
-                        memcpy(saved, screen + skip, copyLength);
-                        saved += copyLength;
                     }
                 } else {
                     runLength = (unsigned short)(code >> 1);
                     count -= runLength;
-                    endX = drawX + runLength - 1;
-                    if (top <= drawY && bottom >= drawY && drawX <= right &&
-                        left <= endX) {
-                        copyLength = (short)runLength;
-                        skip = 0;
-                        if (drawX < left) {
-                            copyLength = copyLength - left + drawX;
-                            skip = left - drawX;
+                    if (top <= drawY && bottom >= drawY) {
+                        endX = drawX + runLength - 1;
+                        if (drawX <= right && left <= endX) {
+                            copyLength = (short)runLength;
+                            skip = 0;
+                            if (drawX < left) {
+                                copyLength = copyLength - left + drawX;
+                                skip = left - drawX;
+                            }
+                            if (right < endX)
+                                copyLength = copyLength - endX + right;
+                            memcpy(saved, screen + skip, copyLength);
+                            saved += copyLength;
                         }
-                        if (right < endX)
-                            copyLength = copyLength - endX + right;
-                        memcpy(saved, screen + skip, copyLength);
-                        saved += copyLength;
                     }
                     commands += runLength;
                 }
@@ -443,19 +445,20 @@ void CaptureSpriteBackground(Viewport *viewport, unsigned char *background,
             }
         } else {
             count >>= 1;
-            endX = drawX + count - 1;
-            if (top <= drawY && bottom >= drawY && drawX <= right &&
-                left <= endX) {
-                copyLength = (short)count;
-                skip = 0;
-                if (drawX < left) {
-                    copyLength = copyLength - left + drawX;
-                    skip = left - drawX;
+            if (top <= drawY && bottom >= drawY) {
+                endX = drawX + count - 1;
+                if (drawX <= right && left <= endX) {
+                    copyLength = (short)count;
+                    skip = 0;
+                    if (drawX < left) {
+                        copyLength = copyLength - left + drawX;
+                        skip = left - drawX;
+                    }
+                    if (right < endX)
+                        copyLength = copyLength - endX + right;
+                    memcpy(saved, screen + skip, copyLength);
+                    saved += copyLength;
                 }
-                if (right < endX)
-                    copyLength = copyLength - endX + right;
-                memcpy(saved, screen + skip, copyLength);
-                saved += copyLength;
             }
             commands += count;
         }
@@ -503,7 +506,7 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
         return;
     frameOffset = (short)(frame * 4 + 4);
     if ((int)*(unsigned short *)(shape + 4) <= frameOffset)
-        return;
+        goto refreshScreen;
     left = viewport->left;
     right = viewport->right;
     top = viewport->top;
@@ -540,36 +543,38 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
                     runLength = (unsigned short)(code >> 1);
                     commands++;
                     count -= runLength;
-                    endX = drawX + runLength - 1;
-                    if (top <= drawY && bottom >= drawY && drawX <= right &&
-                        left <= endX) {
-                        copyLength = (short)runLength;
-                        skip = 0;
-                        if (drawX < left) {
-                            copyLength = copyLength - left + drawX;
-                            skip = left - drawX;
+                    if (top <= drawY && bottom >= drawY) {
+                        endX = drawX + runLength - 1;
+                        if (drawX <= right && left <= endX) {
+                            copyLength = (short)runLength;
+                            skip = 0;
+                            if (drawX < left) {
+                                copyLength = copyLength - left + drawX;
+                                skip = left - drawX;
+                            }
+                            if (right < endX)
+                                copyLength = copyLength - endX + right;
+                            memcpy(screen + skip, saved, copyLength);
+                            saved += copyLength;
                         }
-                        if (right < endX)
-                            copyLength = copyLength - endX + right;
-                        memcpy(screen + skip, saved, copyLength);
-                        saved += copyLength;
                     }
                 } else {
                     runLength = (unsigned short)(code >> 1);
                     count -= runLength;
-                    endX = drawX + runLength - 1;
-                    if (top <= drawY && bottom >= drawY && drawX <= right &&
-                        left <= endX) {
-                        copyLength = (short)runLength;
-                        skip = 0;
-                        if (drawX < left) {
-                            copyLength = copyLength - left + drawX;
-                            skip = left - drawX;
+                    if (top <= drawY && bottom >= drawY) {
+                        endX = drawX + runLength - 1;
+                        if (drawX <= right && left <= endX) {
+                            copyLength = (short)runLength;
+                            skip = 0;
+                            if (drawX < left) {
+                                copyLength = copyLength - left + drawX;
+                                skip = left - drawX;
+                            }
+                            if (right < endX)
+                                copyLength = copyLength - endX + right;
+                            memcpy(screen + skip, saved, copyLength);
+                            saved += copyLength;
                         }
-                        if (right < endX)
-                            copyLength = copyLength - endX + right;
-                        memcpy(screen + skip, saved, copyLength);
-                        saved += copyLength;
                     }
                     commands += runLength;
                 }
@@ -578,19 +583,20 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
             }
         } else {
             count >>= 1;
-            endX = drawX + count - 1;
-            if (top <= drawY && bottom >= drawY && drawX <= right &&
-                left <= endX) {
-                copyLength = (short)count;
-                skip = 0;
-                if (drawX < left) {
-                    copyLength = copyLength - left + drawX;
-                    skip = left - drawX;
+            if (top <= drawY && bottom >= drawY) {
+                endX = drawX + count - 1;
+                if (drawX <= right && left <= endX) {
+                    copyLength = (short)count;
+                    skip = 0;
+                    if (drawX < left) {
+                        copyLength = copyLength - left + drawX;
+                        skip = left - drawX;
+                    }
+                    if (right < endX)
+                        copyLength = copyLength - endX + right;
+                    memcpy(screen + skip, saved, copyLength);
+                    saved += copyLength;
                 }
-                if (right < endX)
-                    copyLength = copyLength - endX + right;
-                memcpy(screen + skip, saved, copyLength);
-                saved += copyLength;
             }
             commands += count;
         }
@@ -601,6 +607,7 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
 #endif
         commands += 2;
     }
+refreshScreen:
     if (viewport->pixels == stScreen.pixels)
         DIBslam();
 }

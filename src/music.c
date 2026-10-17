@@ -282,10 +282,9 @@ unsigned int InitializeConstellationField(Viewport *viewport,
 /* Function start: 0x42D500 */
 unsigned int DrawConstellationField(void)
 {
-    ConstellationParticle *particle;
     short height;
     short index;
-    short randomIndex;
+    int randomIndex;
     short speed;
 
     height = (short)(pConstellationViewport->bottom -
@@ -303,41 +302,47 @@ unsigned int DrawConstellationField(void)
     for (index = 0;
          index < nConstellationParticleCount;
          index++) {
-        particle = &aConstellationParticles[index];
         DrawSpriteDefault(pConstellationViewport,
-                          particle->x, particle->y,
+                          aConstellationParticles[index].x,
+                          aConstellationParticles[index].y,
                           pConstellationShape,
-                          particle->frame);
-        particle->x = (short)(particle->x + particle->velocity);
-        particle->frame = (short)(
-            (particle->frame & 0xfc) + (particle->frame + 1) % 4);
+                          aConstellationParticles[index].frame);
+        aConstellationParticles[index].x = (short)(
+            aConstellationParticles[index].x +
+            aConstellationParticles[index].velocity);
+        aConstellationParticles[index].frame = (short)(
+            (aConstellationParticles[index].frame & 0xfc) +
+            (aConstellationParticles[index].frame + 1) % 4);
         if (nConstellationDirection < 0) {
-            if (particle->x < pConstellationViewport->left) {
-                randomIndex = RandomInRange(0, 15);
-                speed = asConstellationVelocity[randomIndex];
-                particle->x = (short)(
-                    pConstellationViewport->right -
-                    RandomInRange(0, speed));
-                particle->y = (short)(
-                    pConstellationViewport->top +
-                    RandomInRange(0, height));
-                particle->velocity = (short)-speed;
-            }
-        } else if (particle->x >
-                   pConstellationViewport->right) {
+            if (aConstellationParticles[index].x >=
+                pConstellationViewport->left)
+                continue;
             randomIndex = RandomInRange(0, 15);
             speed = asConstellationVelocity[randomIndex];
-            particle->velocity = speed;
-            particle->x = (short)(
-                pConstellationViewport->left +
+            aConstellationParticles[index].x = (short)(
+                pConstellationViewport->right -
                 RandomInRange(0, speed));
-            particle->y = (short)(
+            aConstellationParticles[index].y = (short)(
                 pConstellationViewport->top +
                 RandomInRange(0, height));
-            particle->frame = (short)(
-                asConstellationFrame[randomIndex] +
-                RandomInRange(0, 3));
+            aConstellationParticles[index].velocity = (short)-speed;
+        } else {
+            if (aConstellationParticles[index].x <=
+                pConstellationViewport->right)
+                continue;
+            randomIndex = RandomInRange(0, 15);
+            speed = asConstellationVelocity[randomIndex];
+            aConstellationParticles[index].velocity = speed;
+            aConstellationParticles[index].x = (short)(
+                pConstellationViewport->left +
+                RandomInRange(0, speed));
+            aConstellationParticles[index].y = (short)(
+                pConstellationViewport->top +
+                RandomInRange(0, height));
         }
+        aConstellationParticles[index].frame = (short)(
+            asConstellationFrame[randomIndex] +
+            RandomInRange(0, 3));
     }
     return 0;
 }

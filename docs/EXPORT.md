@@ -14,6 +14,14 @@ make export-asm EXPORT_ASM_FLAGS=--clean
 This path uses `/* Function start: 0xADDR */` annotations and produces the
 disassembly needed by `compare-func`, `report`, and `order`.
 
+Keep `nop` out of `padding_mnemonics` in `config/checkValuesCapstone.json`.
+The original high-score routine contains a reachable `NOP` at `0x00426BAD`.
+Filtering it creates a gap in the decoded control flow and drops the following
+18 instructions, including calls to `GetHighScoreEntry` and `DrawFormattedText`.
+Two CRT routines also contain reachable NOPs. The current policy filters only
+`int3`; normal return and function-boundary handling excludes trailing padding.
+Run `make export-asm` after changing this policy to refresh existing exports.
+
 The seeded Ghidra list and automatic discovery both miss unreferenced routines.
 `config/original-boundaries.map.txt` preserves verified entry points that lack
 source annotations, using the MSVC map format accepted by `binary-comp`.
