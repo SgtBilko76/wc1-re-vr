@@ -226,16 +226,28 @@ for similarity decisions.
   comparison instead of the original sign extension and dword comparison.
   These forms improve the routine from 83.65% to 97.12%; scheduling and
   registers in the radius calculation still differ.
-- `DIBupdate` is sensitive to shared-header declarations. An earlier build
-  added the surface pointer before the horizontal offset, unlike the original.
-  Parenthesizing the offset, writing it before the pointer, and separating
-  assignment from `+=` did not resolve those two differing instructions.
-  Removing the obsolete shared object-name-array declaration changed
-  allocation again: `top` occupies EBP and `height` spills, shortening
-  the function by 32 bytes. A `register` hint, swapping the extent declarations,
-  and an explicitly guarded do/while loop did not improve its 84.11% result.
-  Reusing the right/bottom parameters as extents made it worse. These trials
-  were reverted; the original retains the row count in EBP and `top` in memory.
+- `DIBupdate` keeps `top` in its argument stack slot while width and height
+  occupy EBX and EBP. A volatile qualification on the definition's `top`
+  parameter preserves the original memory comparisons, clipped store, and
+  repeated accesses. It retains the 116-byte frame and restores the original
+  384-byte span, raising similarity from 84.11% to 100% of mnemonics without
+  changing other function comparisons. The qualification reproduces observed
+  accesses; it does not establish the original source spelling or change
+  the function's calling convention or parameter type compatibility.
+  The two row-offset products still load their operands in reverse order.
+  One extra body byte shifts subsequent relative operands, leaving 45 of 107
+  instructions different in the byte comparison. Reversing multiplication
+  operands and splitting the products through a real offset local did not
+  change that output. Qualifying the source pointer instead preserved the
+  size but displaced the left bound and reduced similarity to 86.92%.
+  Earlier register hints, reordered extent declarations, an explicitly
+  guarded do/while loop, and reusing the right/bottom parameters as extents
+  also failed to recover the original allocation. These trials are not retained.
+- `DIBsetPalette` still reads the RGB pointer before calculating its cache
+  offset, unlike the original. An explicit byte-offset local did not change
+  the generated sequence. Reading a volatile index parameter once into an
+  int local and using that local throughout likewise left its 85.33% result
+  unchanged. Both probes are reverted.
 - Keep direct array-field accesses when the original repeatedly uses an index
   plus an absolute field address. A cached structure pointer can produce the
   same mnemonics with shorter displacements, changing the function's size.

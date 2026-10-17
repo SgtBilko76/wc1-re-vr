@@ -699,7 +699,7 @@ void DIBslamReal(void)
 }
 
 /* Function start: 0x432C60 */
-void DIBupdate(int left, int top, int right, int bottom)
+void DIBupdate(int left, volatile int top, int right, int bottom)
 {
 #ifndef SDL_PORT
     unsigned char *destination;
