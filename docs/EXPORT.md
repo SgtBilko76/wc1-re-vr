@@ -29,6 +29,12 @@ It is recovered metadata, not an original linker map. `make export-asm` loads
 it even for clean exports. Remove an entry when its source annotation supplies
 the boundary, so the export takes the implemented function's name.
 
+The map also retains four compiler-generated DSP array initializer entries.
+They deliberately have no source annotations and are checked separately by
+`make verify-array-initializers` (included in `make verify`). The function
+report therefore counts 1,519 source entries after removal of their four
+handwritten stand-ins; the separate gate covers the 74 generated code bytes.
+
 A per-function `EXACT` result covers only that entry's
 span up to the next exported function, even if the next function has no source
 implementation. Cross-check `make compare-functions` address shifts before

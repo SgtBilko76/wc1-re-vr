@@ -938,6 +938,7 @@ compare-full-functions: compare-functions
 
 verify:
 	@$(MAKE) audit-compiler-glue
+	@$(MAKE) verify-array-initializers
 	@$(MAKE) verify-globals
 	@$(MAKE) verify-globals-data
 	@$(MAKE) verify-globals-code
@@ -947,6 +948,11 @@ verify:
 	@$(MAKE) verify-values
 	@$(MAKE) verify-values-stack-locals
 	@$(MAKE) verify-vtables
+
+verify-array-initializers: $(TARGET) | $(ORIGINAL_EXE)
+	@python3 bin/verifyArrayInitializers.py \
+		--original "$(ORIGINAL_EXE)" --rebuilt "$(TARGET)" \
+		--map "$(MAPFILE)" --binary-comp "$(BINARY_COMP)"
 
 verify-globals: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
 	@$(BINARY_COMP) globals $(BC) --no-source-order --fail-on-issues --fail-on-warnings
@@ -1160,6 +1166,7 @@ clean-modern:
 	seh \
 	sort \
 	verify \
+	verify-array-initializers \
 	verify-calls \
 	verify-global-access \
 	verify-globals \

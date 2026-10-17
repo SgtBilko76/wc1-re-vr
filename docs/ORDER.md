@@ -23,10 +23,10 @@ remain provisional.
 | `0x00442750`–`0x00443B0F` | `src/ix/streamer.cpp` | streamer |
 | `0x00443B10`–`0x004446FF` | `src/ix/thread.cpp` | streamer |
 | `0x00444700`–`0x0044490F` | `src/ix/streamfile.cpp` | streamer |
-| `0x00444910`–`0x004451B4` | `src/ix/dsp.cpp` | dsp |
-| `0x004451B5`–`0x00445F5F` | `src/ix/dsps.cpp` | dsp |
-| `0x00445F60`–`0x004467C4` | `src/ix/mixer.cpp` | dsp |
-| `0x004467C5`–`0x00446F73` | `src/ix/dspv.cpp` | dsp |
+| `0x00444910`–`0x0044518F` | `src/ix/dsp.cpp` | dsp |
+| `0x00445190`–`0x00445F5F` | `src/ix/dsps.cpp` | dsp |
+| `0x00445F60`–`0x0044679F` | `src/ix/mixer.cpp` | dsp |
+| `0x004467A0`–`0x00446F73` | `src/ix/dspv.cpp` | dsp |
 | `0x00446F74`–`0x004471FF` | `src/ix/dspmix.asm` | dsp |
 | `0x00447200`–`0x00447A1F` | `src/ix/system.cpp` | sound |
 | `0x00447A20`–`0x004486AF` | `src/ix/sound.cpp` | sound |
@@ -53,11 +53,22 @@ produce the observed boundaries without explicit padding.
 
 The retail image also has INT3 fill at `0x00445181`–`0x0044518F` before the
 first initializer pair and at `0x00446795`–`0x0044679F` before the second pair.
-The first stream-DSP and voice-DSP functions follow these pairs without
-alignment. The pairs may belong to the following source groups; their current
-placement at the ends of `dsp.cpp` and `mixer.cpp` is not proof of ownership.
-Recover the original declarations rather than inserting padding or registering
-hand-written initializer wrappers.
+The pairs begin `dsps.cpp` and `dspv.cpp`, respectively: a 21-byte `$E2`
+calls a 16-byte `$E1`, followed immediately by the first ordinary function.
+VC++ 4.20 emits these exact 37 bytes for each global array of non-aggregate
+state records, even when no explicit constructor exists. Private fields with
+the existing free functions as friends reproduce this property. This is a
+matching declaration choice, not evidence of the original access-specifier
+spelling. Public aggregate records omit the pair; explicit empty constructors
+add calls and loop code absent from the executable.
+
+The compiler also emits the two `.CRT$XCU` entries, at original addresses
+`0x00465008` and `0x0046500C`, in stream-then-voice order. The handwritten
+stand-ins formerly placed at the ends of `dsp.cpp` and `mixer.cpp` did not
+register these initializers. `make verify-array-initializers` compares both
+complete pairs with binary-comp and checks their registration order and base
+relocations. Their original boundaries remain in the recovered map because
+compiler-generated functions have no source annotations.
 
 The voice-control group ends with `ix_dspv_recalc_mix`'s `RET` at
 `0x00446F70`, followed by three INT3 bytes. The separately assembled mixer

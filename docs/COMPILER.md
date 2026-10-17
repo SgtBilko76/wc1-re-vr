@@ -30,6 +30,11 @@ Evidence that constrains these settings:
 - The console allocation wrapper proves `pilot.cpp` needs construction cleanup.
   Other units must not gain C++ exception handling.
 - `src/sound.c` directly calls `ix` member functions and matches only as C++.
+- The global `IxStream` and `IxVoice` arrays require non-aggregate record
+  declarations to reproduce VC++ 4.20's empty `$E2`/`$E1` initializer pairs
+  and `.CRT$XCU` registrations. Private fields and friend declarations for
+  their existing users produce both pairs byte for byte under `/Od /Oi`.
+  No explicit constructor, exception handling, or extra compiler flag is needed.
 
 ## Hand-written assembly
 

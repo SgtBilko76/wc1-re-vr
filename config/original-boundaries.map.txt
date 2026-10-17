@@ -2,7 +2,8 @@
 # These starts were verified in WC1.ORI.EXE between implemented functions.
 # MSVC map syntax lets binary-comp preserve them across clean exports.
 # eventmgr.obj is the reconstruction's provisional owner (docs/ORDER.md).
-# FUN names mark unknown intent; none of these entries supplies source code.
+# FUN names mark unknown intent; $E names mark compiler-generated initializers.
+# None of these entries supplies source code.
 # Remove an entry here when its source annotation provides the boundary.
 # The jump-only entry at 00436390 is compiler glue; do not hand-write it.
 # The apparent 004393F0 entry is switch-table data and is deliberately excluded.
@@ -35,3 +36,9 @@
  0001:00035990 _FUN_00436990 00436990 f eventmgr.obj
  0001:000359f0 _FUN_004369F0 004369f0 f eventmgr.obj
  0001:00035ac0 _FUN_00436AC0 00436ac0 f eventmgr.obj
+
+# Compiler-generated array initializers; no source functions implement them.
+ 0001:00044190 _$E2 00445190 f dsps.obj
+ 0001:000441a5 _$E1 004451a5 f dsps.obj
+ 0001:000457a0 _$E2 004467a0 f dspv.obj
+ 0001:000457b5 _$E1 004467b5 f dspv.obj

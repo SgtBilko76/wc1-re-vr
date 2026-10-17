@@ -345,14 +345,3 @@ void ix_dsp_free(void *memory)
 {
     pIxFree(memory);
 }
-
-/* Function start: 0x00445190 */
-void ix_dsp_static_initializer(void)
-{
-    ix_dsp_static_initialization_hook();
-}
-
-/* Function start: 0x004451A5 */
-void ix_dsp_static_initialization_hook(void)
-{
-}

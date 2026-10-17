@@ -8,10 +8,10 @@
  *      streamer.cpp  0x00442750 - 0x00443B0F
  *      thread.cpp    0x00443B10 - 0x004446FF
  *      streamfile.cpp 0x00444700 - 0x0044490F
- *      dsp.cpp       0x00444910 - 0x004451B4
- *      dsps.cpp      0x004451B5 - 0x00445F5F
- *      mixer.cpp     0x00445F60 - 0x004467C4
- *      dspv.cpp      0x004467C5 - 0x00446F73
+ *      dsp.cpp       0x00444910 - 0x0044518F
+ *      dsps.cpp      0x00445190 - 0x00445F5F
+ *      mixer.cpp     0x00445F60 - 0x0044679F
+ *      dspv.cpp      0x004467A0 - 0x00446F73
  *      dspmix.asm    0x00446F74 - 0x004471FF
  *      system.cpp    0x00447200 - 0x00447A1F
  *      sound.cpp     0x00447A20 - 0x004486AF
@@ -50,7 +50,14 @@ enum IxVoiceFlags {
     IX_VOICE_STEREO   = 0x10    /* set by ix_dspv_set_channels(2) */
 };
 
+extern "C" void ix_dspv_mix(void *outputBuffer, unsigned int outputBytes); /* 0x00446F74 */
+
+/* Private state makes these records non-aggregate. VC++ 4.20 then emits the
+ * empty $E2/$E1 initializer pair for each global array, including its CRT
+ * registration. An explicit constructor instead emits calls absent from the
+ * original. The existing free functions retain access through friendship. */
 struct IxVoice {                  /* 32 bytes; offsets confirmed from the accessors */
+private:
     unsigned int   flags;         /* +0x00 */
     unsigned char *cursor;        /* +0x04  current read pointer */
     unsigned char *start;         /* +0x08  buffer start */
@@ -64,6 +71,29 @@ struct IxVoice {                  /* 32 bytes; offsets confirmed from the access
     short          rightGain;     /* +0x1A */
     short          panAngle;      /* +0x1C  0..0x7F, wraps at +-0x40 */
     short          panPos;        /* +0x1E  0..0xFF, indexes the pan table */
+
+    friend void ix_dspv_set_active(int);
+    friend void ix_dspv_clear_active(int);
+    friend void ix_dspv_clear_flag4(int);
+    friend unsigned int ix_dspv_get_flags(int);
+    friend void ix_dspv_set_flag4(int, int);
+    friend void ix_dspv_set_buffer(int, unsigned char *, int);
+    friend int ix_dspv_get_position(int);
+    friend void ix_dspv_set_position(int, int);
+    friend void ix_dspv_set_volume(int, short);
+    friend void ix_dspv_set_pan(int, unsigned short);
+    friend void ix_dspv_set_frequency(int, unsigned int);
+    friend void ix_dspv_set_bits_per_sample(int, int);
+    friend void ix_dspv_set_channels(int, int);
+    friend void ix_dspv_recalc_mix(int);
+    friend void ix_dspv_mix(void *, unsigned int);
+    friend void ix_dsp_set_master_volume(unsigned short);
+    friend void ix_dsps_alloc(int, unsigned int, int, int, int);
+    friend void ix_dsps_prepare(int);
+    friend void ix_dsps_play(int);
+    friend void ix_dsps_stop(int);
+    friend void ix_dsps_set_volume(int, unsigned short);
+    friend int ix_dsps_get_buffer_free(int);
 };
 
 /* Sample and sound layouts are fixed by system.cpp/sound.cpp field accesses. */
@@ -179,7 +209,6 @@ void ix_dspv_set_bits_per_sample(int voice, int bps);          /* 0x00446D2C  8 
 void ix_dspv_set_channels(int voice, int ch);                  /* 0x00446DF5  1 or 2 */
 void ix_dspv_set_flag4(int voice, int on);                     /* 0x00446956 */
 void ix_dspv_recalc_mix(int voice);                            /* 0x00446EBF */
-extern "C" void ix_dspv_mix(void *outputBuffer, unsigned int outputBytes); /* 0x00446F74 */
 
 /* --------------------------------------------------------------------------
  * DSP stream.  Array at 0x00598138, stride 0x38; count at 0x00598130.
@@ -193,6 +222,7 @@ enum IxStreamFlags {
 };
 
 struct IxStream {                       /* 0x38 bytes */
+private:
     unsigned int   flags;               /* +0x00 */
     unsigned char *buffer;              /* +0x04 */
     unsigned int   size;                /* +0x08 */
@@ -202,6 +232,18 @@ struct IxStream {                       /* 0x38 bytes */
     unsigned char *lockPtr;             /* +0x18 */
     int            lockLen;             /* +0x1C */
     CRITICAL_SECTION cs;                /* +0x20, 24 bytes */
+
+    friend void ix_dsps_alloc(int, unsigned int, int, int, int);
+    friend void ix_dsps_free(int);
+    friend void ix_dsps_prepare(int);
+    friend void ix_dsps_play(int);
+    friend void ix_dsps_stop(int);
+    friend void ix_dsps_set_volume(int, unsigned short);
+    friend unsigned int ix_dsps_get_flags(int);
+    friend int ix_dsps_get_buffer_free(int);
+    friend void ix_dsps_lock(int, unsigned int,
+                             unsigned char **, unsigned int *);
+    friend void ix_dsps_unlock(int);
 };
 
 extern IxStream streams[];         /* 0x00598138 */
@@ -227,8 +269,6 @@ void ix_dsps_unlock(int stream);                 /* 0x00445E3C */
  * -------------------------------------------------------------------------- */
 DWORD WINAPI ix_mixer_thread_proc(void *parameter); /* 0x00445F60 */
 int  ix_mixer_service(void);                     /* 0x004463FC */
-void ix_mixer_static_initializer(void);           /* 0x004467A0 */
-void ix_mixer_static_initialization_hook(void);   /* 0x004467B5 */
 const char *ix_dsp_result_to_text(int hr);       /* 0x00444F97 */
 
 int  ix_dsp_init(void);                          /* 0x00444910 */
@@ -249,8 +289,6 @@ void *ix_dsp_alloc(unsigned int bytes);           /* 0x00445123 */
 void *ix_dsp_copy(void *destination, const void *source,
                   unsigned int bytes);           /* 0x00445140 */
 void ix_dsp_free(void *memory);                  /* 0x00445164 */
-void ix_dsp_static_initializer(void);            /* 0x00445190 */
-void ix_dsp_static_initialization_hook(void);    /* 0x004451A5 */
 
 extern "C" int  ix_system_init(void);            /* 0x00447200 */
 extern "C" void ix_system_service_sounds(void); /* 0x004472A7 */
