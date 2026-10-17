@@ -284,7 +284,7 @@ int SdlPlayGameSoundEffect(int soundNumber, int sourceObject, int looping)
     if (distance < 10)
         return 0;
     aiSoundEffectSourceActive[sourceObject + 1] = 1;
-    sprintf(szSfxWavePath, szSfxWaveFormat, soundNumber - 1);
+    sprintf(szSfxWavePath, "sfx%02i.wav", soundNumber - 1);
     SdlPlayWaveWithPan(szSfxWavePath, looping, distance, pan);
     return 1;
 }

@@ -400,25 +400,6 @@ short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
 };
 char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
     "Press any key when ready";
-short nMusicPlaybackMode = 0; /* 0x0046a9f8 */
-int bMusicCommandSuppressed = 0; /* 0x0046a9fc */
-short nMusicTrackComplete = 1; /* 0x0046aa04 */
-short nFuneralSequenceActive = 0; /* 0x0046aa10 */
-int nCurrentMusicTrack = -1; /* 0x0046aa14 */
-int nMusicStreamSet = -1; /* 0x0046aa18 */
-volatile int nInFlightMusicSlotA = -1; /* 0x0046aa24 */
-volatile int nInFlightMusicSlotB = -1; /* 0x0046aa2c */
-int nWaitForMusicEnabled = 1; /* 0x0046aa30 */
-int nFlightSoundEffectsEnabled = 1; /* 0x0046aa34 */
-int nInitialFlightMusicPending = 1; /* 0x0046aa38 */
-int nCombatMusicActive = 0; /* 0x0046aa3c */
-int nInFlightMusicActive = 0; /* 0x0046aa40 */
-short nPassingShipSoundObject = -1; /* 0x0046aa48 */
-short nPassingShipSoundCountdown = 0; /* 0x0046aa4c */
-unsigned char abFireworkSoundDescriptor[7] = { /* 0x0046ab70 */
-    0x00, 0x80, 0x40, 0x40, 0x3c, 0x00, 0x00
-};
-char szSfxWaveFormat[12] = "sfx%02i.wav"; /* 0x0046ad2c */
 unsigned char abTaggedAllocationPrefix[8] = { /* 0x0046ad88 */
     'j', 'e', 'f', 'f', 0, 0, 0, 0
 };

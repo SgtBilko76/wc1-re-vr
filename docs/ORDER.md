@@ -402,6 +402,33 @@ these private symbols from `view.obj` alongside the damage symbols.
 The BSS used by the view functions remains in temporary storage until its
 original declaration order is recovered.
 
+The music unit owns the initialized state beginning at `0x0046A9F8` and
+`aabSoundEffectDescriptors` at `0x0046AA50`. The descriptor table is 37
+records of eight bytes, with the last byte increasing from 0 through 36.
+The sole surviving caller, `TheEndFireWorks`, passes record 36 at
+`0x0046AB70`; the earlier seven-byte definition omitted its final index byte
+and all preceding records. The table remains writable, as in the original.
+Five state variables have references only within music and are private;
+the other state and the table remain shared. The map supplement resolves
+private music symbols from COFF in the same way as damage and view.
+
+This does not complete the music unit's layout. Its rebuilt `.data` is 768
+bytes versus the original 832-byte run ending before `0x0046AD38`. Six
+zero-valued slots at `0x0046AA00`, `0x0046AA08`, `0x0046AA1C`, `0x0046AA20`,
+`0x0046AA28`, and `0x0046AA44` lack identified declarations. The literal pool
+also contains an unreferenced `" queue_start "` at `0x0046AC98` and two unused
+`"sfx%02i.wav"` copies at `0x0046AD04` and `0x0046AD20`. Their combined 40
+bytes plus the 24 state bytes account for the remaining 64-byte difference.
+Do not fill these gaps with dummy globals or invented dead code.
+
+The linked-data audit checks the complete 296-byte descriptor table and 408
+bytes of used music literals in four separate runs. The final run also checks
+the following 80 bytes of screen allocation and memory-stack diagnostics.
+The run metadata is in `config/data-literals.h`; it deliberately excludes
+the unrecovered literals.
+These are partial data checks, not the complete-section guarantee provided
+for damage and view by `verify-unit-data`.
+
 Private C definitions require separate evidence: a trial moving the two
 MONODEBG variables to `static` storage in `mono.c` emitted the device handle
 before the installed flag, opposite to the original. Reversing their source

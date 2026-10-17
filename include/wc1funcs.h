@@ -1171,7 +1171,7 @@ void FlushSoundEffects(void);                                               /* 0
 void SceneLeaveHook();                                                /* 0x0042E3E0 */
 void SelectFlightMusicTrack(int track);                              /* 0x0042E3F0 */
 int MapMusicTrackToStreamerCommand(int track);                       /* 0x0042E520 */
-void ProcessMusicScriptCommand(int track, int command,
+int ProcessMusicScriptCommand(int track, int command,
                                short enabled);                       /* 0x0042E6F0 */
 unsigned int spacetrack(int track, int mode,
                         short enabled);                               /* 0x0042E880 */

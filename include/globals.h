@@ -266,11 +266,9 @@ extern short asCarrierLaunchFighterDeltaY[16]; /* 0x0046a5bc */
 extern short asCarrierLaunchViewData[16]; /* 0x0046a5dc */
 extern char szPressAnyKeyWhenReady[28]; /* 0x0046a5fc */
 extern short nMusicPlaybackMode; /* 0x0046a9f8 */
-extern int bMusicCommandSuppressed; /* 0x0046a9fc */
 extern short nMusicTrackComplete; /* 0x0046aa04 */
 extern short nFuneralSequenceActive; /* 0x0046aa10 */
 extern int nCurrentMusicTrack; /* 0x0046aa14 */
-extern int nMusicStreamSet; /* 0x0046aa18 */
 extern volatile int nInFlightMusicSlotA; /* 0x0046aa24 */
 extern volatile int nInFlightMusicSlotB; /* 0x0046aa2c */
 extern int nWaitForMusicEnabled; /* 0x0046aa30 */
@@ -278,10 +276,7 @@ extern int nFlightSoundEffectsEnabled; /* 0x0046aa34 */
 extern int nInitialFlightMusicPending; /* 0x0046aa38 */
 extern int nCombatMusicActive; /* 0x0046aa3c */
 extern int nInFlightMusicActive; /* 0x0046aa40 */
-extern short nPassingShipSoundObject; /* 0x0046aa48 */
-extern short nPassingShipSoundCountdown; /* 0x0046aa4c */
-extern unsigned char abFireworkSoundDescriptor[7]; /* 0x0046ab70 */
-extern char szSfxWaveFormat[12]; /* 0x0046ad2c */
+extern unsigned char aabSoundEffectDescriptors[37][8]; /* 0x0046aa50 */
 extern unsigned char abTaggedAllocationPrefix[8]; /* 0x0046ad88 */
 extern const char *apszCampaignVictoryText[4]; /* 0x0046ad90 */
 extern const char *pszTigerClawEscapeOpening; /* 0x0046ada0 */

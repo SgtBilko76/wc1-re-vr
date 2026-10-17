@@ -69,11 +69,17 @@ including three-character graphics-mode names and the empty string. Its
 ordinary string-content fallback cannot resolve those short strings.
 The damage literal pool similarly establishes the two-character `"Ok"`
 severity string's position; the separate unit-data check enforces all offsets.
+Four separately checked spans cover 408 bytes of used music literals and
+the following 80 bytes of screen diagnostics. They preserve original newlines
+and trailing spaces; the three unused literals between these runs remain
+unrecovered. Its 296-byte sound-descriptor table is
+checked directly through the source declaration. These partial checks do not
+establish the complete music section or its absolute placement.
 
 LINK 4.20 omits private C data symbols from its public map. The build preserves
 that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
-`WC1.map` with the four private damage symbols and seven private view symbols
-added. Their addresses come
+`WC1.map` with the four private damage symbols, seven private view symbols,
+and five private music symbols added. Their addresses come
 from the object's COFF symbols, public section anchors, and linked `DIR32`
 references with PE `HIGHLOW` relocations. Conflicting anchors or unresolved
 symbols fail the build. This step changes only comparison metadata; it does

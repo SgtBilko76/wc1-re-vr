@@ -38,6 +38,17 @@ for similarity decisions.
   scanner's ending pointer directly. Ordinary `strcpy` calls produce the
   shared eight-byte readout copies. This restores the original function size;
   the placement of the excessive-range branch remains different.
+- Preserve diagnostic whitespace. The music wrappers' original literals
+  include newlines, and `StopMusic` prints a trailing space before its stream
+  stop and a separate newline afterwards. Normalized function comparisons
+  alone did not expose these different strings; linked literal-span checks do.
+- `ProcessMusicScriptCommand` returns zero when the track is disabled or
+  commands are suppressed, and one after dispatch. Its stop-command and
+  repeated-track exits leave EAX unspecified, so retain their bare `return`
+  statements in the integer-returning C function. The only caller discards
+  the result. Declaring the function `void` omitted the two explicit result
+  instructions and shortened its aligned span by 16 bytes. The restored
+  return type and paths produce an exact function comparison.
 - Single-use console strings are literals: the constructor's font and spinner,
   and the formatted logger's newline. Their offsets alone also fit named arrays,
   but arrays impose eight-byte object alignment. Literal storage reproduces the

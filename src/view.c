@@ -234,7 +234,7 @@ short TheEndFireWorks(Viewport *viewport, short count)
                     ((unsigned int (__cdecl *)(
                         const unsigned char *, int, int, short, short,
                         int))SoundFxTick)(
-                            abFireworkSoundDescriptor,
+                            aabSoundEffectDescriptors[36],
                             0, 127,
                             (signed char)(
                                 127 -
