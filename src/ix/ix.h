@@ -5,16 +5,17 @@
  *  these source groups. They do not establish every object boundary;
  *  docs/ORDER.md records the independently established boundaries.
  *
- *      streamer.cpp  0x00442750 - 0x00443DA5
- *      thread.cpp    0x00443DA6 - 0x0044490F
+ *      streamer.cpp  0x00442750 - 0x00443B0F
+ *      thread.cpp    0x00443B10 - 0x004446FF
+ *      streamfile.cpp 0x00444700 - 0x0044490F
  *      dsp.cpp       0x00444910 - 0x004451B4
  *      dsps.cpp      0x004451B5 - 0x00445F5F
  *      mixer.cpp     0x00445F60 - 0x004467C4
  *      dspv.cpp      0x004467C5 - 0x00446F73
  *      dspmix.asm    0x00446F74 - 0x004471FF
- *      system.cpp    0x00447200 - 0x00447CD7
- *      sound.cpp     0x00447CD8 - 0x0044879B
- *      sample.cpp    0x0044879C - 0x004492DF
+ *      system.cpp    0x00447200 - 0x00447A1F
+ *      sound.cpp     0x00447A20 - 0x004486AF
+ *      sample.cpp    0x004486B0 - 0x004492DF
  *
  *  Everything from 0x004492E0 upward is the MSVC 4.2 static debug CRT.
  */

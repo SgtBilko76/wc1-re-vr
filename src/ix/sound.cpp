@@ -1,9 +1,9 @@
 /*
  *  ix / D:\Rnd\prj\ix\src\sound\sound.cpp
  *
- *  Original address range: 0x00447CD8 - 0x0044879B   (8 functions)
- *  Range is exact: recovered from this module's own assert __FILE__ anchors in
- *  the shipped debug build (see docs/ORDER.md).
+ *  Original address range: 0x00447A20 - 0x004486AF   (14 functions)
+ *  Assert paths identify the source; linker INT3 fill establishes the object
+ *  boundaries (see docs/ORDER.md).
  *
  *  Implement in ADDRESS ORDER -- MSVC emits functions in source order, so the
  *  list below is the original source order of this file.
@@ -11,6 +11,92 @@
 #include "ix.h"
 
 #define IX_SOUND_FILE "D:\\Rnd\\prj\\ix\\src\\sound\\sound.cpp"
+
+/* Function start: 0x00447A20 */
+void IxSound::ix_system_sound_init(IxSample *newSample,
+                                   unsigned char newBasePriority,
+                                   unsigned int initialVolume,
+                                   int newPitchOffset,
+                                   unsigned short newPan)
+{
+    flags = IX_SOUND_ALLOCATED;
+    voice = -1;
+    sample = newSample;
+    pitchOffset = newPitchOffset;
+    volume = 0xffff;
+    pan = newPan;
+    basePriority = newBasePriority;
+    previous = 0;
+    next = previous;
+    stopTime = (unsigned int)-1;
+    startTime = stopTime;
+    priority = ((int)volume << 8) / 0xffff +
+               (pitchOffset << 8) / 0xac44 + basePriority;
+    next = pFreeSoundList;
+    previous = 0;
+    if (pFreeSoundList != 0)
+        pFreeSoundList->previous = this;
+    pFreeSoundList = this;
+}
+
+/* Function start: 0x00447B17 */
+void IxSound::ix_system_sound_construct(IxSample *newSample,
+                                        unsigned char newBasePriority)
+{
+    ix_system_sound_init(newSample, newBasePriority, 0xffff, 0, 0);
+}
+
+/* Function start: 0x00447B48 */
+void IxSound::ix_system_sound_construct_centred(IxSample *newSample)
+{
+    ix_system_sound_init(newSample, 0x80, 0xffff, 0, 0);
+}
+
+/* Function start: 0x00447B7A */
+void __fastcall ix_sound_unlink_from_free_list(IxSound *sound)
+{
+    if (sound == pFreeSoundList)
+        pFreeSoundList = sound->next;
+    if (sound->next != 0)
+        sound->next->previous = sound->previous;
+    if (sound->previous != 0)
+        sound->previous->next = sound->next;
+    sound->flags &= ~IX_SOUND_ALLOCATED;
+}
+
+/* Function start: 0x00447BE7 */
+void IxSound::ix_system_sound_set_volume(unsigned short newVolume)
+{
+    flags |= IX_SOUND_VOLUME_DIRTY;
+    volume = newVolume;
+    ix_sound_reprioritise();
+}
+
+/* Function start: 0x00447C18 */
+void IxSound::ix_system_sound_set_pan(unsigned short newPan)
+{
+    flags |= IX_SOUND_PAN_DIRTY;
+    pan = newPan;
+}
+
+/* Function start: 0x00447C44 */
+void IxSound::ix_system_sound_set_frequency(int newPitchOffset)
+{
+    flags |= IX_SOUND_FREQUENCY_DIRTY;
+    if (-(int)(sample->frequency - 1) <= newPitchOffset) {
+        pitchOffset = newPitchOffset < 0xac44 ? newPitchOffset : 0xac44;
+    } else {
+        pitchOffset = -(int)(sample->frequency - 1);
+    }
+    ix_sound_reprioritise();
+}
+
+/* Function start: 0x00447CAF */
+void IxSound::ix_system_sound_set_priority(unsigned char newBasePriority)
+{
+    basePriority = newBasePriority;
+    ix_sound_reprioritise();
+}
 
 /* Function start: 0x00447CD8 */   /* source line 103 */
 extern "C" void __fastcall ix_sound_start(IxSound *sound)
@@ -269,31 +355,4 @@ void IxSound::ix_sound_set_delete_on_stop(int enabled)
 extern "C" int __fastcall ix_sound_is_playing(IxSound *sound)
 {
     return (sound->flags & IX_SOUND_PLAYING) != 0;
-}
-
-/* Function start: 0x004486B0 */
-void IxSample::ix_sample_construct(void)
-{
-    flags = 0;
-    buffer = 0;
-    next = pSampleList;
-    previous = 0;
-    if (pSampleList != 0)
-        pSampleList->previous = this;
-    pSampleList = this;
-}
-
-/* Function start: 0x0044870F */
-void IxSample::ix_sample_destruct(void)
-{
-    if (buffer != 0) {
-        ix_dsp_free(buffer);
-        buffer = 0;
-    }
-    if (this == pSampleList)
-        pSampleList = next;
-    if (next != 0)
-        next->previous = previous;
-    if (previous != 0)
-        previous->next = next;
 }

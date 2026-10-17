@@ -1,9 +1,9 @@
 /*
  *  ix / D:\Rnd\prj\ix\src\sound\sample.cpp
  *
- *  Original address range: 0x0044879C - 0x004492DF   (4 functions)
- *  Range is exact: recovered from this module's own assert __FILE__ anchors in
- *  the shipped debug build (see docs/ORDER.md).
+ *  Original address range: 0x004486B0 - 0x004492DF   (6 functions)
+ *  Assert paths identify the source; linker INT3 fill establishes the object
+ *  boundaries (see docs/ORDER.md).
  *
  *  Implement in ADDRESS ORDER -- MSVC emits functions in source order, so the
  *  list below is the original source order of this file.
@@ -58,6 +58,33 @@ struct IxWaveFormat {
 #ifdef SDL_PORT
 #pragma pack(pop)
 #endif
+
+/* Function start: 0x004486B0 */
+void IxSample::ix_sample_construct(void)
+{
+    flags = 0;
+    buffer = 0;
+    next = pSampleList;
+    previous = 0;
+    if (pSampleList != 0)
+        pSampleList->previous = this;
+    pSampleList = this;
+}
+
+/* Function start: 0x0044870F */
+void IxSample::ix_sample_destruct(void)
+{
+    if (buffer != 0) {
+        ix_dsp_free(buffer);
+        buffer = 0;
+    }
+    if (this == pSampleList)
+        pSampleList = next;
+    if (next != 0)
+        next->previous = previous;
+    if (previous != 0)
+        previous->next = next;
+}
 
 /* Function start: 0x0044879C */   /* source line(s) 166;169;170;193;195;197: sample already ready! | FORM id not found! | AIFF id not found! | Unsupported number of ch */
 int IxSample::ix_sample_load_aiff(void *data, int bytes)

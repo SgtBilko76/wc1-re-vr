@@ -288,13 +288,15 @@ DREAMM_MOUNTS = -mount rw:C=hd \
 # MSVC emits functions in source order and the linker concatenates objects in
 # command-line order, so address order == link order.
 #
-# The ix order is EXACT, recovered from live assert __FILE__ anchors in the
-# shipped debug build; each module occupies one contiguous address range:
-#     streamer.cpp 0x00442750   thread.cpp 0x00443da6   dsp.cpp    0x00444910
+# The ix function order follows live assert __FILE__ anchors in the shipped
+# debug build. INT3 fill establishes the streamer/sound object boundaries;
+# the DSP initializer ownership remains provisional (see docs/ORDER.md):
+#     streamer.cpp 0x00442750   thread.cpp 0x00443b10   dsp.cpp    0x00444910
+#     streamfile.cpp 0x00444700 (between thread.cpp and dsp.cpp)
 #     dsps.cpp     0x004451b5   mixer.cpp  0x00445f60   dspv.cpp   0x004467c5
-#     system.cpp   0x00447200   sound.cpp  0x00447cd8   sample.cpp 0x0044879c
+#     system.cpp   0x00447200   sound.cpp  0x00447a20   sample.cpp 0x004486b0
 # The anchors name three source trees, and each was a separate library:
-#     D:\Rnd\Prj\ix\Src\Streamer\   streamer.cpp thread.cpp
+#     D:\Rnd\Prj\ix\Src\Streamer\   streamer.cpp thread.cpp stream-file methods
 #     D:\rnd\prj\ix\win95\dsp\      dsp.cpp dsps.cpp mixer.cpp dspv.cpp
 #     D:\Rnd\prj\ix\src\sound\      system.cpp sound.cpp sample.cpp
 # LINK pulls library members in the order their symbols are first needed, which
@@ -358,7 +360,8 @@ SRCS_IX_FILE = src/ix/ixfile.cpp
 
 SRCS_IX_STREAMER = \
 	src/ix/streamer.cpp \
-	src/ix/thread.cpp
+	src/ix/thread.cpp \
+	src/ix/streamfile.cpp
 
 SRCS_IX_DSP = \
 	src/ix/dsp.cpp \
@@ -450,6 +453,7 @@ MODERN_IX_SRCS = \
 	src/ix/ixlog.cpp \
 	src/ix/streamer.cpp \
 	src/ix/thread.cpp \
+	src/ix/streamfile.cpp \
 	src/ix/dsp.cpp \
 	src/ix/dsps.cpp \
 	src/ix/mixer.cpp \

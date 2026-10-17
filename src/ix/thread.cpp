@@ -1,12 +1,9 @@
 /*
- *  ix / D:\Rnd\Prj\ix\Src\Streamer\thread.cpp
+ *  ix streamer worker thread.
  *
- *  Original address range: 0x00443DA6 - 0x0044490F   (11 functions)
- *  Range is exact: recovered from this module's own assert __FILE__ anchors in
- *  the shipped debug build (see docs/ORDER.md).
- *
- *  Implement in ADDRESS ORDER -- MSVC emits functions in source order, so the
- *  list below is the original source order of this file.
+ *  Original object range: 0x00443B10 - 0x004446FF (seven functions).
+ *  INT3 fill separates this group from the streamer API and stream-file
+ *  methods. The thread.cpp assert paths anchor its interior; see ORDER.md.
  */
 #include "ix.h"
 #include <stdlib.h>
@@ -15,6 +12,109 @@
 #pragma function(memcpy)
 
 #define IX_THREAD_FILE "D:\\Rnd\\Prj\\ix\\Src\\Streamer\\thread.cpp"
+
+/* Function start: 0x00443B10 */
+DWORD WINAPI ix_streamer_thread_proc(void *parameter)
+{
+    DWORD timeout;
+
+    timeout = 0;
+    EnterCriticalSection(&csStreamerThread);
+    dwStreamerState |= IX_STREAMER_THREAD_RUNNING;
+    while ((dwStreamerState & IX_STREAMER_SHUTDOWN) == 0) {
+        dwStreamerThreadTick++;
+        EnterCriticalSection(&csStreamer);
+        if ((dwStreamerState & IX_STREAMER_FILE_OPEN) != 0) {
+            if ((dwStreamerState &
+                 IX_STREAMER_REPREPARE_AUDIO) != 0) {
+                if ((dwStreamerState &
+                     IX_STREAMER_DSP_PLAYING) != 0) {
+                    ix_dsps_stop(0);
+                    dwStreamerState &=
+                        ~IX_STREAMER_DSP_PLAYING;
+                }
+                ix_dsps_prepare(0);
+                dwStreamerState &=
+                    ~(IX_STREAMER_REPREPARE_AUDIO |
+                      IX_STREAMER_END_TRIGGERED);
+            }
+            if ((dwStreamerState &
+                 (IX_STREAMER_HAS_AUDIO | IX_STREAMER_AUDIO_PLAYING)) ==
+                (IX_STREAMER_HAS_AUDIO | IX_STREAMER_AUDIO_PLAYING)) {
+                timeout = ix_streamer_service_audio();
+                if ((dwStreamerState &
+                     IX_STREAMER_AUDIO_PAUSED) != 0) {
+                    if ((dwStreamerState &
+                         IX_STREAMER_DSP_PAUSED) == 0) {
+                        ix_dsps_stop(0);
+                        dwStreamerState |=
+                            IX_STREAMER_DSP_PAUSED;
+                    }
+                } else {
+                    if ((dwStreamerState &
+                         IX_STREAMER_DSP_PAUSED) != 0) {
+                        ix_dsps_play(0);
+                        dwStreamerState &=
+                            ~IX_STREAMER_DSP_PAUSED;
+                    }
+                }
+            } else {
+                timeout = ix_thread_service_streams();
+                if ((dwStreamerState &
+                     IX_STREAMER_DSP_PLAYING) != 0) {
+                    ix_dsps_stop(0);
+                    dwStreamerState &=
+                        ~(IX_STREAMER_DSP_PLAYING |
+                          IX_STREAMER_DSP_PAUSED);
+                }
+            }
+            LeaveCriticalSection(&csStreamer);
+            WaitForSingleObject(hStreamerWakeEvent, timeout);
+            ResetEvent(hStreamerWakeEvent);
+        } else {
+            if ((dwStreamerState & IX_STREAMER_DSP_PLAYING) != 0) {
+                ix_dsps_stop(0);
+                dwStreamerState &=
+                    ~(IX_STREAMER_DSP_PLAYING | IX_STREAMER_DSP_PAUSED);
+            }
+            LeaveCriticalSection(&csStreamer);
+            WaitForSingleObject(hStreamerWakeEvent, INFINITE);
+            ResetEvent(hStreamerWakeEvent);
+        }
+    }
+    dwStreamerState &= ~IX_STREAMER_THREAD_RUNNING;
+    LeaveCriticalSection(&csStreamerThread);
+    (void)parameter;
+    return 0;
+}
+
+/* Function start: 0x00443CC0 */
+unsigned int ix_streamer_service_audio(void)
+{
+    unsigned int bytesUntilStop;
+
+    if ((dwStreamerState & IX_STREAMER_END_TRIGGERED) != 0) {
+        bytesUntilStop = pStreamerHeader->audioBufferSize -
+                         ix_dsps_get_buffer_free(0);
+        Sleep((bytesUntilStop * 1000U) /
+              nStreamerBytesPerSecond);
+        dwStreamerState &= 0xfffff7db;
+        ix_dsps_stop(0);
+    } else if ((dwStreamerState &
+                IX_STREAMER_DSP_PLAYING) == 0) {
+        dwStreamerState |= IX_STREAMER_DSP_PLAYING;
+        ix_dsps_prepare(0);
+        while ((unsigned int)ix_dsps_get_buffer_free(0) >
+               ix_thread_get_audio_chunk_size())
+            ix_thread_lock_stream_buffer();
+        ix_dsps_play(0);
+    } else {
+        while ((unsigned int)ix_dsps_get_buffer_free(0) >
+               ix_thread_get_audio_chunk_size())
+            ix_thread_lock_stream_buffer();
+    }
+    return ix_thread_service_streams();
+}
 
 /* Function start: 0x00443DA6 */   /* source line(s) 196: File chunk without packet! */
 void ix_thread_handle_file_chunk(IxStreamFile *streamFile)
@@ -312,71 +412,4 @@ unsigned int ix_thread_get_audio_chunk_size(void)
             nStreamerAudioChunk].fileEnd - fileOffset;
     }
     return 0;
-}
-
-/* Function start: 0x00444700 */
-unsigned int IxStreamFile::ix_stream_file_read(void *newDestination,
-                                                unsigned int bytes)
-{
-    ix_stream_file_wait();
-    EnterCriticalSection(&csStreamerFileQueue);
-    if (position + bytes > size)
-        bytes = size - position;
-    if (bytes > 0) {
-        destination = (unsigned char *)newDestination;
-        remaining = bytes;
-        flags |= IX_STREAM_FILE_READING;
-        if (previous != 0)
-            previous->next = next;
-        if (next == 0)
-            pStreamerIdleFiles = previous;
-        else
-            next->previous = previous;
-        previous = pStreamerReadQueue;
-        next = 0;
-        if (pStreamerReadQueue != 0)
-            pStreamerReadQueue->next = this;
-        pStreamerReadQueue = this;
-    }
-    LeaveCriticalSection(&csStreamerFileQueue);
-    SetEvent(hStreamerWakeEvent);
-    return bytes;
-}
-
-/* Function start: 0x00444809 */
-void IxStreamFile::ix_stream_file_seek(unsigned int newPosition)
-{
-    ix_stream_file_wait();
-    if (newPosition >= 0)
-        position = size < newPosition ? size : newPosition;
-    else
-        position = 0;
-}
-
-/* Function start: 0x0044485B */
-unsigned int IxStreamFile::ix_stream_file_tell(void)
-{
-    ix_stream_file_wait();
-    return position;
-}
-
-/* Function start: 0x0044487F */
-unsigned int IxStreamFile::ix_stream_file_size(void)
-{
-    return size;
-}
-
-/* Function start: 0x0044489B */
-void IxStreamFile::ix_stream_file_wait(void)
-{
-    if ((flags & IX_STREAM_FILE_READING) != 0) {
-        WaitForSingleObject(completionEvent, INFINITE);
-        ResetEvent(completionEvent);
-    }
-}
-
-/* Function start: 0x004448D9 */
-int IxStreamFile::ix_stream_file_is_reading(void)
-{
-    return (flags & IX_STREAM_FILE_READING) != 0;
 }

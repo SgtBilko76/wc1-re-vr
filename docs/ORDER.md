@@ -20,29 +20,44 @@ remain provisional.
 
 | Range | Source | Library |
 | --- | --- | --- |
-| `0x00442750`–`0x00443DA5` | `src/ix/streamer.cpp` | streamer |
-| `0x00443DA6`–`0x0044490F` | `src/ix/thread.cpp` | streamer |
+| `0x00442750`–`0x00443B0F` | `src/ix/streamer.cpp` | streamer |
+| `0x00443B10`–`0x004446FF` | `src/ix/thread.cpp` | streamer |
+| `0x00444700`–`0x0044490F` | `src/ix/streamfile.cpp` | streamer |
 | `0x00444910`–`0x004451B4` | `src/ix/dsp.cpp` | dsp |
 | `0x004451B5`–`0x00445F5F` | `src/ix/dsps.cpp` | dsp |
 | `0x00445F60`–`0x004467C4` | `src/ix/mixer.cpp` | dsp |
 | `0x004467C5`–`0x00446F73` | `src/ix/dspv.cpp` | dsp |
 | `0x00446F74`–`0x004471FF` | `src/ix/dspmix.asm` | dsp |
-| `0x00447200`–`0x00447CD7` | `src/ix/system.cpp` | sound |
-| `0x00447CD8`–`0x0044879B` | `src/ix/sound.cpp` | sound |
-| `0x0044879C`–`0x004492DF` | `src/ix/sample.cpp` | sound |
+| `0x00447200`–`0x00447A1F` | `src/ix/system.cpp` | sound |
+| `0x00447A20`–`0x004486AF` | `src/ix/sound.cpp` | sound |
+| `0x004486B0`–`0x004492DF` | `src/ix/sample.cpp` | sound |
 | `0x004614C0`–`0x0046162F` | `src/ix/lzo1x.cpp` | lzo |
 | `0x00461630`–`0x004617BF` | `src/ix/ixfile.cpp` | file |
 
-These source-file anchors establish function order, but do not establish every
-object boundary. The retail image has INT3 fill at `0x004446F6`–`0x004446FF`
-before the stream-file methods, at `0x00445181`–`0x0044518F` before the first
-initializer pair, and at `0x00446795`–`0x0044679F` before the second pair.
-Conversely, the first thread, stream-DSP, and voice-DSP functions follow their
-predecessors without alignment. The initializer pairs may belong to the
-following source groups; their current placement at the ends of `dsp.cpp`
-and `mixer.cpp` is not proof of ownership. Recover the original declarations
-and object grouping rather than inserting padding or registering hand-written
-initializer wrappers.
+Diagnostic source-file anchors establish function order, but the first
+diagnostic in a file need not occur in its first function. Linker INT3 fill
+establishes these object boundaries:
+
+| Fill bytes | Following object |
+| --- | --- |
+| `0x00443B09`–`0x00443B0F` (7) | `thread.cpp`, beginning with `ix_streamer_thread_proc` |
+| `0x004446F6`–`0x004446FF` (10) | the six `IxStreamFile` methods in `streamfile.cpp` |
+| `0x00447A19`–`0x00447A1F` (7) | `sound.cpp`, beginning with `IxSound::ix_system_sound_init` |
+| `0x004486A6`–`0x004486AF` (10) | `sample.cpp`, beginning with `IxSample::ix_sample_construct` |
+
+The stream-file object's original filename is not present in the diagnostic
+strings. `streamfile.cpp` describes its contents. The unaligned entries at
+`0x00443DA6`, `0x00447CD8`, and `0x0044879C` are interior functions, not object
+starts. Keeping them in their preceding groups lets the compiler and linker
+produce the observed boundaries without explicit padding.
+
+The retail image also has INT3 fill at `0x00445181`–`0x0044518F` before the
+first initializer pair and at `0x00446795`–`0x0044679F` before the second pair.
+The first stream-DSP and voice-DSP functions follow these pairs without
+alignment. The pairs may belong to the following source groups; their current
+placement at the ends of `dsp.cpp` and `mixer.cpp` is not proof of ownership.
+Recover the original declarations rather than inserting padding or registering
+hand-written initializer wrappers.
 
 The voice-control group ends with `ix_dspv_recalc_mix`'s `RET` at
 `0x00446F70`, followed by three INT3 bytes. The separately assembled mixer
@@ -82,7 +97,7 @@ line. The reference build reproduces all of them:
 | DirectSound and DirectDraw thunks follow `sample.cpp`, DSOUND first | `dsound.lib`, `ddraw.lib` after the ix libraries |
 | `wincrt0.obj` sits between `strncmp.obj` and the CRT members only ix needs | No `/ENTRY`; LINK adds the entry point after the objects |
 | `_CrtDbgReport` and `strncmp`, needed first by `ix_log_printf`, precede `wincrt0.obj` | `ixlog.obj` on the command line, the other ix units in libraries |
-| ix members appear streamer, thread, dsp, dsps, mixer, dspv, system, sound, sample | Streamer, dsp and sound libraries searched in that order |
+| ix members appear streamer, thread, stream-file, dsp, dsps, mixer, dspv, system, sound, sample | Streamer, dsp and sound libraries searched in that order |
 | LZO decoder after the second-pass `RtlUnwind` thunk, then INT3 padding and the file module, before the OLDNAMES members | The two in libraries of their own, decoder first, after `kernel32.lib` and before the other ix libraries |
 | `strupr`, `xtoa`, `flength`, `cprintf`, `chdir` are pulled on the second pass | The game calls the old names, resolved through OLDNAMES |
 
