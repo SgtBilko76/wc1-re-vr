@@ -235,7 +235,7 @@ void set_objects_data(short obj, enum ObjectType type, short owner)
     init_ijk(obj);
     asObjectCollisionRadius[obj] = typeData->collisionRadius;
     awObjectMass[obj] = typeData->mass;
-    asObjectScale[obj] = typeData->scale;
+    awObjectScale[obj] = typeData->scale;
     asObjectAfterburnerVelocity[obj] =
         typeData->afterburnerVelocity;
     asShipAccumulatedDamage[obj] = 0;
@@ -661,7 +661,7 @@ int onboard_explosion(short obj)
     if (debris != -1) {
         set_objects_data(debris, OBJECT_TYPE_EXPLOSION2, obj);
         objectOffset = (int)obj * sizeof(FixedVector);
-        asObjectScale[debris] <<= 2;
+        awObjectScale[debris] <<= 2;
         asObjectCounter[debris] = 6;
         aShipVelocity[debris] =
             *(FixedVector *)(void *)
@@ -1239,7 +1239,7 @@ short ShipExplosion(short obj)
     unsigned short originalScale;
     short explosion;
 
-    originalScale = (unsigned short)asObjectScale[obj];
+    originalScale = (unsigned short)awObjectScale[obj];
     explosion = find_vacant_3d_object();
     if (explosion == -1) {
         if (aeObjectClass[obj] ==
@@ -1265,8 +1265,8 @@ short ShipExplosion(short obj)
 #endif
     set_objects_data(explosion, OBJECT_TYPE_EXPLOSION1,
                      (short)acObjectOwner[explosion]);
-    asObjectScale[explosion] = (short)(
-        (unsigned short)asObjectScale[explosion] *
+    awObjectScale[explosion] = (short)(
+        (unsigned short)awObjectScale[explosion] *
         originalScale >> 8);
     return explosion;
 }
@@ -1333,7 +1333,7 @@ short Explosion(short obj)
         set_objects_data(obj, explosionType,
                          acObjectOwner[obj]);
         if (aeObjectClass[obj] == OBJECT_CLASS_ASTEROID)
-            asObjectScale[obj] = 0x380;
+            awObjectScale[obj] = 0x380;
     }
     if (objectClass != OBJECT_CLASS_CAPITAL_SHIP)
         explosion_shock_wave(
@@ -2201,7 +2201,7 @@ unsigned int place_exhaust_on_ships(void)
                         scale -= RandomInRange(0, 32);
                         if (abShipExhaustHeat[shipIndex] == 0)
                             scale = (short)(scale - 32);
-                        asObjectScale[object] = scale;
+                        awObjectScale[object] = scale;
                         asObjectDistance[object] = *animation++;
                         asObjectScreenAngle[object] =
                             flip_angle(ship, *animation++);
@@ -2323,7 +2323,7 @@ unsigned int reposition_fixed_child_objects(void)
                 (unsigned short)
                     asObjectScreenScale[parentIndex] *
                 (unsigned short)
-                    asObjectScale[objectIndex] >> 8);
+                    awObjectScale[objectIndex] >> 8);
         }
         object++;
     } while (object <= SPACE_LAST_MOVING_OBJECT);

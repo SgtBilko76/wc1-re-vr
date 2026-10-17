@@ -921,7 +921,7 @@ unsigned int house_keep_objects(void)
             if (count_down(obj) > 0) {
                 if (aeShipManeuver[obj] ==
                         MANEUVER_WARPING_OUT)
-                    asObjectScale[obj] >>= 1;
+                    awObjectScale[obj] >>= 1;
                 if (aeSpecialManeuver[obj] ==
                         SPECIAL_MANEUVER_UNKNOWN_9 &&
                     aeObjectClass[obj] ==
@@ -1218,11 +1218,11 @@ unsigned int animate_shape(short obj)
     }
 
     if ((command & 0x0c00) == 0x0400) {
-        asObjectScale[obj] +=
-            (command & 0x3f) * (asObjectScale[obj] >> 6);
+        awObjectScale[obj] +=
+            (command & 0x3f) * (awObjectScale[obj] >> 6);
     } else if ((command & 0x0c00) == 0x0800) {
-        asObjectScale[obj] -=
-            (command & 0x3f) * (asObjectScale[obj] >> 6);
+        awObjectScale[obj] -=
+            (command & 0x3f) * (awObjectScale[obj] >> 6);
     } else {
         command &= 0x3f;
         asObjectViewFrame[obj] = command;
@@ -1280,8 +1280,8 @@ unsigned int animate_object(short obj)
             (enum ObjectType)((unsigned short)RandomInRange(0, 2) +
                               OBJECT_TYPE_RED_SPARK),
             obj);
-        asObjectScale[effect] =
-            asObjectScale[obj];
+        awObjectScale[effect] =
+            awObjectScale[obj];
         if (RandomInRange(0, 3) == 0)
             PlaySfxWaveFileByNumber(7, obj, 0, 0);
         break;
@@ -1373,10 +1373,10 @@ int object_collision(short obj)
                 inflict_damage(obj, partner, projectileDamage,
                                &relativeVelocity);
             }
-            savedScale = asObjectScale[obj];
+            savedScale = awObjectScale[obj];
             set_objects_data(obj, OBJECT_TYPE_LASER_SPARK,
                              acObjectOwner[obj]);
-            asObjectScale[obj] = (short)(savedScale * 2);
+            awObjectScale[obj] = (short)(savedScale * 2);
             aShipVelocity[obj] =
                 aShipVelocity[partner];
             if (aeObjectClass[partner] == OBJECT_CLASS_ASTEROID) {

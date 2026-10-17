@@ -902,7 +902,7 @@ static void SwcTransformObjectsToView(void)
             /* +0x434e divides the positive 64-bit value 0xa00000*256.
              * Widen before multiplying so nearby sprites cannot wrap. */
             scale = INT64_C(0xa0000000) / (distance - radius);
-            scale = ((int64_t)asObjectScale[object] * scale) >> 16;
+            scale = ((int64_t)awObjectScale[object] * scale) >> 16;
             asObjectScreenScale[object] = (short)SDL_clamp(scale, 0, 8192);
             if (asObjectScreenScale[object] <= 4)
                 continue;

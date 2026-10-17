@@ -487,7 +487,7 @@ extern signed char acObjectCollisionGraceTicks[ /* 0x0059ddb0 */
     SPACE_OBJECT_COUNT];
 extern ObjectResourceSlot aObjectResourceSlots[4]; /* 0x0059ddf0 */
 extern signed char acShipDestroyedWeaponCount[16]; /* 0x0059de30 */
-extern short asObjectScale[SPACE_OBJECT_COUNT]; /* 0x0059de40 */
+extern unsigned short awObjectScale[SPACE_OBJECT_COUNT]; /* 0x0059de40 */
 extern short asShipAccumulatedDamage[SPACE_OBJECT_COUNT]; /* 0x0059dee0 */
 extern signed char acShipIonDriveDamage[16]; /* 0x0059d4a0 */
 extern short asObjectAnimationDelay[SPACE_OBJECT_COUNT]; /* 0x0059b660 */

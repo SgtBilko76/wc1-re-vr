@@ -224,7 +224,7 @@ unsigned int ShowCarrierLaunchSequence(signed char sceneObject)
             }
             aeObjectClass[0] = OBJECT_CLASS_SHIP;
             approachScale = (short)(
-                ((unsigned int)(unsigned short)asObjectScale[0]
+                ((unsigned int)(unsigned short)awObjectScale[0]
                     << 4) / approachDistance);
             aeObjectClass[object] = OBJECT_CLASS_SHIP;
             asObjectScreenX[0] =

@@ -22,6 +22,15 @@ for similarity decisions.
   before dividing force or computing mass ratios. The former `radarRadius`
   name and signed type were misleading. `awObjectMass` preserves the original
   storage while expressing those reads directly.
+- The runtime scale array at `0x0059DE40` is also unsigned. The original
+  `house_keep_objects` halves it with a word `SHR`, and `animate_shape`
+  uses `SHR` in both scale-command calculations. `transform_objects_to_your_view`,
+  `ShowCarrierLaunchSequence`, `ShipExplosion`, and `reposition_fixed_child_objects`
+  zero-extend their scale reads. Declaring `awObjectScale` as unsigned short
+  reproduces those logical shifts without per-use casts; a signed array
+  incorrectly preserves the high bit while shifting. Its storage size and
+  original address annotation stay unchanged. The full function report
+  improves only the two shift users and preserves every other result.
 - Preserve visible local-variable order, branch direction, fall-through, and
   epilogue placement. Equivalent C often emits different instructions.
 - `FormatTextTokens` uses the VC4.20 `va_list` and `va_arg` macros. Its native
@@ -373,8 +382,9 @@ for similarity decisions.
   component, and their difference. Distinct projectile and collision damage
   words reproduce the observed local lifetimes. Keep the no-collision update
   in the final `else`, and nest the response limits as `MinInt(MaxInt(...), ...)`.
-  These choices recover most of the routine; its current 96-byte frame still
-  exceeds the original 92 bytes because the compiler spills the mass pointer.
+  These choices recover most of the routine. Its retained frame is 92 bytes,
+  matching the original; other unit contexts increase it to 96 bytes because
+  the compiler spills the mass pointer.
   An explicit mass pointer, a `register` qualifier, and a shared scale local
   did not recover the original allocation and are not retained.
 - Check argument widths at callers even when the callee ignores an argument.
@@ -1069,6 +1079,19 @@ for similarity decisions.
   random index to a short introduced a stack spill and reduced its match.
   These trials are not retained. Negating the combined valid-index condition
   in `ix_dsps_prepare` also left its reversed comparison unchanged.
+- A second switch in `animate_shape` reproduces the original 32-bit scale
+  command tests and raises mnemonic similarity to 99.04%, but is not retained:
+  it changes the following `hit_asteroid` from exact to nine differing
+  instructions and enlarges `object_collision` by sixteen bytes, including
+  its extra four-byte spill. The animation's scale stores still merge where
+  the original keeps two stores, and the object index and type exchange
+  registers. Saving a real scale-change word improves the delay-register
+  allocation but leaves those regressions. Promoted indices, explicit delay
+  assignment, subtraction and product rewrites, default-case order, a
+  descriptive type-local rename, and typed animation-array access do not
+  resolve them. A guarded decrement loop and a register hint in `hit_asteroid`
+  also leave its exchanged registers unchanged. The previous reconstruction is
+  retained with only the independently proven unsigned-scale correction.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

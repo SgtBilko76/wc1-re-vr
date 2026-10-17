@@ -1295,7 +1295,7 @@ void transform_objects_to_your_view(void)
                     distance - objectRadius);
                 asObjectScreenScale[objectIndex] = (short)(
                     MultiplyFixed((unsigned short)
-                                      asObjectScale[objectIndex],
+                                      awObjectScale[objectIndex],
                                   scaleFactor) >> 8);
                 if ((unsigned short)asObjectScreenScale[
                         objectIndex] >

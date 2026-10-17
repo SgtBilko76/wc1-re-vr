@@ -649,7 +649,7 @@ signed char acObjectCollisionGraceTicks[ /* 0x0059ddb0 */
     SPACE_OBJECT_COUNT];
 ObjectResourceSlot aObjectResourceSlots[4]; /* 0x0059ddf0 */
 signed char acShipDestroyedWeaponCount[16]; /* 0x0059de30 */
-short asObjectScale[SPACE_OBJECT_COUNT]; /* 0x0059de40 */
+unsigned short awObjectScale[SPACE_OBJECT_COUNT]; /* 0x0059de40 */
 signed char acVduModeStackDepth[16]; /* 0x0059dec0 */
 signed char acShipSpawnNavPoint[16]; /* 0x0059ded0 */
 short asShipAccumulatedDamage[SPACE_OBJECT_COUNT]; /* 0x0059dee0 */

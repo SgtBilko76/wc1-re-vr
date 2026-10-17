@@ -423,8 +423,8 @@ unsigned int ShowTigerClawEscapeScene(void)
                                  -1);
                 ScaleFixedVector(&aShipForwardVector[61],
                                  0x271000, &jumpOffset);
-                asObjectScale[effect] =
-                    (short)(asObjectScale[effect] << 2);
+                awObjectScale[effect] =
+                    (short)(awObjectScale[effect] << 2);
                 zero_vector(&aShipVelocity[effect]);
                 AddFixedVectors(&aShipPosition[61],
                                 &jumpOffset,
