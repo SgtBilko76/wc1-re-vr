@@ -178,6 +178,20 @@ for similarity decisions.
   activation and mouse clicks reach the same flag assignment; cursor events
   and unhandled events go directly to the common redraw. Its frame-timer
   result is tested in AX even though the timer function returns a full int.
+- `RecRoom` likewise uses switches for event types, keyboard activation, and
+  menu regions. Keep its byte keyboard-click flag separate from the short
+  room-refresh flag. Only the two pilot regions test their shape pointers;
+  Shotglass enters the shared conversation directly. Recompute the campaign
+  roster index after the first pilot's loading and formatting calls, and
+  write through the base-label pointers. The second pilot's sentinel test
+  deliberately still reads the first pilot's animation ID, as in the binary.
+  Preserve the separate character-mask tests and the shape-pointer recheck
+  after obtaining the first pilot's bounds; copy the resulting viewport
+  rectangle unconditionally. Restart Shotglass's animation through a byte
+  local, and advance each animation pointer inside its draw-call argument.
+  Saving the frame first changes register scheduling. These source forms
+  reproduce the complete 2,976-byte function span, including both switch
+  tables, under the relocated function comparison.
 - `ReadTextInput` dispatches both the input byte and the input mode with
   switches. This retains the zero-extended key for character classification
   and places Enter/Escape and uppercase/numeric branches after their defaults.

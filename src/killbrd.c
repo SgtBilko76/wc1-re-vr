@@ -169,22 +169,21 @@ short RecRoom(void)
     Viewport shotglassWork;
     signed char animationIds[3];
     signed char *animations[3];
+    signed char animationId;
     unsigned char clicked;
     unsigned char firstFrame;
     short characterMask;
     short eventType;
-    short frame;
     short index;
+    short personality;
+    short refreshRoom;
     short region;
     short result;
     int lastChalkboardTick;
-    int rosterOffset;
-    int personality;
 
     result = 0;
     lastChalkboardTick = 0;
     firstFrame = 0;
-    characterMask = 0;
     apszRecRoomMenuLabels[0] =
         apszRecRoomBaseLabels[0];
     apszRecRoomMenuLabels[1] =
@@ -201,9 +200,9 @@ short RecRoom(void)
         asCampaignPilotFiles[nCampaignDataSet], 2);
 
     animationIds[0] = (signed char)(RandomInRange(0, 3) + 9);
-    apRecRoomCharacterShapes[0] = 0;
-    apRecRoomCharacterShapes[1] = 0;
     apRecRoomCharacterShapes[2] = 0;
+    apRecRoomCharacterShapes[1] = 0;
+    apRecRoomCharacterShapes[0] = 0;
     aRecRoomMenuRegions[0].left = 400;
     aRecRoomMenuRegions[0].top = 400;
     aRecRoomMenuRegions[0].right = 401;
@@ -220,13 +219,11 @@ short RecRoom(void)
                         aRecRoomCharacterOrigins[0].y,
                         apRecRoomCharacterShapes[0], 0);
 
-    rosterOffset = ((int)stCampaignState.currentMission +
-                    (int)stCampaignState.currentSeries * 4) *
-                       2 - 8;
-    animationIds[1] =
-        (signed char)pRecRoomRoster[rosterOffset];
+    animationIds[1] = (signed char)pRecRoomRoster[
+        (stCampaignState.currentSeries * 4 +
+         stCampaignState.currentMission) * 2 - 8];
     if (animationIds[1] != -1) {
-        personality = (int)animationIds[1];
+        personality = (short)animationIds[1];
         if (stCampaignState
                 .personalityDeathMission[personality] == 0) {
             apRecRoomCharacterShapes[1] =
@@ -237,19 +234,21 @@ short RecRoom(void)
                 aRecRoomCharacterOrigins[1].x,
                 aRecRoomCharacterOrigins[1].y,
                 apRecRoomCharacterShapes[1], 0);
-            sprintf(szTalkToFirstPilot,
+            sprintf(apszRecRoomBaseLabels[1],
                     szTalkToPilotFormat1,
                     apWingmanPilots[personality]->callsign);
         } else {
-            sprintf(szTalkToFirstPilot,
+            sprintf(apszRecRoomBaseLabels[1],
                     szTalkToPilotFormat1 + 12);
         }
     }
 
-    animationIds[2] =
-        (signed char)pRecRoomRoster[rosterOffset + 1];
+    animationIds[2] = (signed char)pRecRoomRoster[
+        (stCampaignState.currentSeries * 4 +
+         stCampaignState.currentMission) * 2 - 7];
+    /* The original tests the first pilot's sentinel here too. */
     if (animationIds[1] != -1) {
-        personality = (int)animationIds[2];
+        personality = (short)animationIds[2];
         if (stCampaignState
                 .personalityDeathMission[personality] == 0) {
             apRecRoomCharacterShapes[2] =
@@ -260,23 +259,24 @@ short RecRoom(void)
                 aRecRoomCharacterOrigins[2].x,
                 aRecRoomCharacterOrigins[2].y,
                 apRecRoomCharacterShapes[2], 0);
-            sprintf(szTalkToSecondPilot,
+            sprintf(apszRecRoomBaseLabels[2],
                     szTalkToPilotFormat2,
                     apWingmanPilots[personality]->callsign);
         } else {
-            sprintf(szTalkToSecondPilot,
+            sprintf(apszRecRoomBaseLabels[2],
                     szTalkToPilotFormat2 + 12);
         }
     }
 
+    characterMask = 0;
     ReleasePacketHandle(pRecRoomRoster);
     if (apRecRoomCharacterShapes[2] != 0)
         characterMask = 1;
-    if (apRecRoomCharacterShapes[1] != 0) {
+    if (apRecRoomCharacterShapes[1] != 0)
         characterMask = 2;
-        if (apRecRoomCharacterShapes[2] != 0)
-            characterMask = 3;
-    }
+    if (apRecRoomCharacterShapes[1] != 0 &&
+        apRecRoomCharacterShapes[2] != 0)
+        characterMask = 3;
 
     SetViewportRect(&stSceneBuffer, 0, 0, 319, 199);
     InitializeRoomViewports();
@@ -327,6 +327,8 @@ short RecRoom(void)
             aRecRoomCharacterOrigins[1].y,
             apRecRoomCharacterShapes[1],
             (short)*animations[1]);
+    }
+    if (apRecRoomCharacterShapes[1] != 0) {
         *(ShortRect *)&pilotWork.left = firstPilotBounds;
         if (apRecRoomCharacterShapes[2] != 0) {
             UnionRectBounds((ShortRect *)&pilotWork.left,
@@ -335,11 +337,8 @@ short RecRoom(void)
     } else if (apRecRoomCharacterShapes[2] != 0) {
         *(ShortRect *)&pilotWork.left = secondPilotBounds;
     }
-    if (apRecRoomCharacterShapes[1] != 0 ||
-        apRecRoomCharacterShapes[2] != 0) {
-        *(ShortRect *)&pilotDestination.left =
-            *(ShortRect *)&pilotWork.left;
-    }
+    *(ShortRect *)&pilotDestination.left =
+        *(ShortRect *)&pilotWork.left;
 
     WarpMouseTo(160, 100);
     GetShapeFrameBounds(
@@ -361,22 +360,23 @@ short RecRoom(void)
             SetFrameTimerPeriodDirect(0);
         }
 
-        if (IsFrameTickElapsed() != 0) {
+        if ((short)IsFrameTickElapsed() != 0) {
             DrawSpriteDefault(&pilotWork, 0, 0,
                               pRecRoomBackgroundShape, 0);
             for (index = 0; index < 3; index++) {
                 if (apRecRoomCharacterShapes[index] != 0) {
                     if (*animations[index] == -1) {
                         if (index == 0) {
-                            animationIds[0] =
+                            animationId =
                                 (signed char)(RandomInRange(0, 3) + 9);
-                            if (animationIds[0] == 11 &&
+                            if (animationId == 11 &&
                                 RandomInRange(0, 3) != 0)
-                                animationIds[0]--;
+                                animationId--;
+                        } else {
+                            animationId = animationIds[index];
                         }
                         animations[index] =
-                            apRecRoomAnimations[
-                                (int)animationIds[index]];
+                            apRecRoomAnimations[(int)animationId];
                     }
 
                     if (index > 0) {
@@ -385,13 +385,12 @@ short RecRoom(void)
                             aRecRoomCharacterOrigins[index].x,
                             aRecRoomCharacterOrigins[index].y,
                             apRecRoomCharacterShapes[index], 0);
-                        frame = (short)*animations[index]++;
                         DrawSpriteDefault(
                             &pilotWork,
                             aRecRoomCharacterOrigins[index].x,
                             aRecRoomCharacterOrigins[index].y,
                             apRecRoomCharacterShapes[index],
-                            frame);
+                            (short)*animations[index]++);
                     } else {
                         UnionRectBounds(
                             (ShortRect *)&shotglassWork.left,
@@ -401,13 +400,12 @@ short RecRoom(void)
                         DrawSpriteDefault(
                             &shotglassWork, 0, 0,
                             pRecRoomBackgroundShape, 0);
-                        frame = (short)*animations[index]++;
                         DrawSpriteDefault(
                             &shotglassWork,
                             aRecRoomCharacterOrigins[index].x,
                             aRecRoomCharacterOrigins[index].y,
                             apRecRoomCharacterShapes[index],
-                            frame);
+                            (short)*animations[index]++);
                         GetShapeFrameBounds(
                             &nextFrameBounds.left,
                             aRecRoomCharacterOrigins[index].x,
@@ -467,67 +465,76 @@ short RecRoom(void)
             SetFrameTimerPeriodDirect(9);
         }
 
-        clicked = 0;
         eventType = PollInputEvent(&event, 0xff);
-        if (eventType == 3 || eventType == 5) {
+        switch (eventType) {
+        case 3:
+        case 5:
+            clicked = 0;
             ClearInputKeyStatePreservingModifiers();
-            if ((short)event.value == 0x1c ||
-                (short)event.value == 0x39) {
+            switch ((short)event.value) {
+            case 0x1c:
+            case 0x39:
                 clicked = 1;
-            } else {
+                break;
+            default:
                 MoveMenuPointerFromKeyboard(&event);
+                break;
             }
-        } else if (eventType == 2 || eventType == 10) {
-            clicked = 1;
-        } else if (eventType == 13) {
-            UpdateRoomMenuCursor();
-        }
-
-        if (clicked != 0) {
+            if (clicked == 0)
+                break;
+            /* Fall through to the shared mouse/keyboard activation. */
+        case 2:
+        case 10:
+            refreshRoom = 1;
             region = FindMenuRegionAtPoint(
                 event.x, event.y, aRecRoomMenuRegions);
             LeaveAllocationScope();
-            if (region >= 0 && region <= 2) {
-                if (apRecRoomCharacterShapes[region] != 0) {
-                    free_constellation();
-                    ReleasePacketHandle(pRecRoomBackgroundShape);
-                    stSceneBuffer.bottom = 127;
-                    stScreen.top = 24;
-                    stScreen.bottom = 151;
-                    InitializeConversationText();
-                    ClearViewport(&stRoomScreenViewport,
-                                  cBlackColour);
-                    pConversationBackdropShape =
-                        FetchDiskPacketRetrying(
-                            5, 1, 0);
-                    SceneDirector(
-                        2,
-                        apRecRoomSceneData[region],
-                        apRecRoomTextData[region]);
-                    bEscapePressed = 0;
-                    SetEventManagerPump(PollMenuInputDevices);
-                    FreePacketAndClear(
-                        &pConversationBackdropShape, 0);
-                    SetFrameTimerPeriodDirect(1);
-                    stScreen.top = 0;
-                    stScreen.bottom = 199;
-                    stSceneBuffer.bottom = 199;
-                    stConstellationViewport =
-                        stSceneBuffer;
-                    stConstellationViewport.left = 54;
-                    stConstellationViewport.top = 35;
-                    stConstellationViewport.right = 146;
-                    stConstellationViewport.bottom = 72;
-                    init_constellation(0);
-                    InitializeConstellationField(
-                        &stConstellationViewport, -1, 6);
-                    pRecRoomBackgroundShape =
-                        FetchDiskPacketRetrying(
-                            5, 0, 0);
-                    ClearViewport(&stRoomScreenViewport,
-                                  cBlackColour);
-                }
-            } else if (region == 3) {
+            switch (region) {
+            case 1:
+            case 2:
+                if (apRecRoomCharacterShapes[region] == 0)
+                    break;
+                /* Shotglass enters this path without the shape check. */
+            case 0:
+                free_constellation();
+                ReleasePacketHandle(pRecRoomBackgroundShape);
+                stSceneBuffer.bottom = 127;
+                stScreen.top = 24;
+                stScreen.bottom = 151;
+                InitializeConversationText();
+                ClearViewport(&stRoomScreenViewport,
+                              cBlackColour);
+                pConversationBackdropShape =
+                    FetchDiskPacketRetrying(
+                        5, 1, 0);
+                SceneDirector(
+                    2,
+                    apRecRoomSceneData[region],
+                    apRecRoomTextData[region]);
+                bEscapePressed = 0;
+                SetEventManagerPump(PollMenuInputDevices);
+                FreePacketAndClear(
+                    &pConversationBackdropShape, 0);
+                SetFrameTimerPeriodDirect(1);
+                stScreen.top = 0;
+                stScreen.bottom = 199;
+                stSceneBuffer.bottom = 199;
+                stConstellationViewport =
+                    stSceneBuffer;
+                stConstellationViewport.left = 54;
+                stConstellationViewport.right = 146;
+                stConstellationViewport.top = 35;
+                stConstellationViewport.bottom = 72;
+                init_constellation(0);
+                InitializeConstellationField(
+                    &stConstellationViewport, -1, 6);
+                pRecRoomBackgroundShape =
+                    FetchDiskPacketRetrying(
+                        5, 0, 0);
+                ClearViewport(&stRoomScreenViewport,
+                              cBlackColour);
+                break;
+            case 3:
                 FlushInputEvents();
                 if ((int)(nTickCount60Hz - lastChalkboardTick) >
                     nInputTickScale) {
@@ -535,18 +542,26 @@ short RecRoom(void)
                     ClearViewport(&stSceneBuffer, cBlackColour);
                     lastChalkboardTick = (int)nTickCount60Hz;
                 }
-            } else if (region == 4 || region == 5) {
+                break;
+            case 4:
+            case 5:
                 result = region;
-            } else {
-                clicked = 0;
+                break;
+            default:
+                refreshRoom = 0;
                 EnterAllocationScope();
+                break;
             }
 
             stRoomMouseViewport = stScreen;
             stMouseCursorState.viewport = &stRoomMouseViewport;
             bInputMode = 1;
-            if (clicked != 0)
+            if (refreshRoom != 0)
                 firstFrame = 0;
+            break;
+        case 13:
+            UpdateRoomMenuCursor();
+            break;
         }
 
         ShowMemoryStatusDebug();
