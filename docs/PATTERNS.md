@@ -202,7 +202,8 @@ for similarity decisions.
   original function size and 98.51% mnemonic similarity. The sorting address
   calculations and context-initialization scheduling still differ; cached
   score expressions, reversed comparisons, and extra cached indices did not
-  resolve them.
+  resolve them. Removing the viewport copy also removes the extra `stScreen`
+  read reported by the global-access audit.
 - `ReadTextInput` dispatches both the input byte and the input mode with
   switches. This retains the zero-extended key for character classification
   and places Enter/Escape and uppercase/numeric branches after their defaults.
