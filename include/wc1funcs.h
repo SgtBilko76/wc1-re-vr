@@ -1714,7 +1714,7 @@ void DrawSolidColourSpriteScaled(Viewport *viewport, short x, short y,
                                  unsigned char *shape, short frame,
                                  short angle, short scale, short flip,
                                  short colour);                        /* 0x00442000 */
-int GetTransformedShapeBounds(Viewport *viewport, short x, short y,
+short GetTransformedShapeBounds(Viewport *viewport, short x, short y,
                               unsigned char *shape, short frame,
                               short angle, short scale, short flip,
                               short *bounds);                         /* 0x00442050 */

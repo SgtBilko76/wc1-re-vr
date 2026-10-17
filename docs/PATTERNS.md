@@ -231,6 +231,30 @@ for similarity decisions.
   `RestoreSpriteBackground` and `GetShapeFrameCorners` routines. Keep checking
   the complete unit rather than retaining an unused declaration to influence
   the compiler.
+- `DrawFontGlyph` reloads the font through its text context after writing the
+  palette translation entries and again when advancing the cursor. Retaining
+  the initial font pointer across those writes omits original memory reads.
+  On the viewport's top row, load the row-offset word once, test its high bit,
+  and add its unsigned value only when that bit is clear. A direct memory-bit
+  test followed by another offset read produces a different branch sequence.
+  Keep the row and background initialization before the font-colour reads.
+  These changes retain the original size at 91.62% mnemonic similarity;
+  register allocation and scheduling remain different. Folding the font's
+  split-byte offset directly into the source-pointer expression removes an
+  unnecessary local and preserves the exact later `DrawFilledViewportRect`.
+- `GetTransformedShapeBounds` returns a short through an integer intersection
+  flag. Its null-shape branch assigns the point-in-viewport comparison to that
+  integer before returning; this emits full-width constant results, whereas
+  direct short returns change the instruction width. Read all four signed
+  frame extents before scaling. The first zero-coefficient corrections use
+  increments; the second pair assigns one. Keep the transformed left edge as
+  an int until the short comparison and output store: narrowing the whole
+  calculation early replaces the original 32-bit subtraction sequence with
+  word operations. These forms recover 87.25% mnemonic similarity at the
+  original 432-byte span and eight-byte local frame. The remaining coefficient
+  scheduling and temporary allocation did not improve with separate scaling
+  statements, in-place span sums, accumulated products, or reuse of the Y
+  argument for the top edge.
 - `CaptureSpriteBackground` and `RestoreSpriteBackground` also read both
   coordinate words into short locals before promotion. Keep separate command
   pointer advances for the two words. Restoration calculates the run end

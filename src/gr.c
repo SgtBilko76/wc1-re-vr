@@ -227,19 +227,18 @@ void RasterLineHook(const void *marker)
 void DrawFontGlyph(char character, TextContext *context, int height,
                    int width, int y)
 {
-    unsigned char *font = context->font;
+    int row = y;
+    unsigned char background = context->backgroundColour;
+    unsigned char fontColour = context->font[2];
+    unsigned char fontBackground = context->font[3];
     Viewport *viewport = context->viewport;
     unsigned char colour = context->colour;
-    unsigned char background = context->backgroundColour;
-    unsigned char fontColour = font[2];
-    unsigned char fontBackground = font[3];
-    int row = y;
     unsigned char *characterData;
     unsigned char *source;
     unsigned char *destination;
     unsigned char translated;
-    unsigned int bitmapOffset;
     unsigned int destinationOffset;
+    unsigned short rowOffset;
     short characterIndex;
     int column;
 
@@ -255,18 +254,21 @@ void DrawFontGlyph(char character, TextContext *context, int height,
         characterIndex != 0x99 && characterIndex != 0x9a &&
         characterIndex != 0xe1) {
 #endif
-        characterData = font + characterIndex;
-        bitmapOffset = ((unsigned int)characterData[0x204] << 8) +
-                       characterData[0x104];
-        source = font + bitmapOffset;
+        characterData = context->font + characterIndex;
+        source = context->font +
+                 (((unsigned int)characterData[0x204] << 8) +
+                  characterData[0x104]);
         if (fontColour == colour && fontBackground == background) {
             for (; height-- != 0; row++) {
-                if (viewport->top == row &&
-                    (viewport->rowOffsets[row] & 0x8000) != 0)
+                if (viewport->top == row) {
                     destinationOffset = (unsigned int)context->cursorX;
-                else
+                    rowOffset = viewport->rowOffsets[row];
+                    if ((rowOffset & 0x8000) == 0)
+                        destinationOffset += rowOffset;
+                } else {
                     destinationOffset = viewport->rowOffsets[row] +
                                         (unsigned int)context->cursorX;
+                }
                 destination = viewport->pixels + destinationOffset;
                 for (column = width; column-- != 0;) {
                     if (*source != 0xff)
@@ -277,12 +279,15 @@ void DrawFontGlyph(char character, TextContext *context, int height,
             }
         } else {
             for (; height-- != 0; row++) {
-                if (viewport->top == row &&
-                    (viewport->rowOffsets[row] & 0x8000) != 0)
+                if (viewport->top == row) {
                     destinationOffset = (unsigned int)context->cursorX;
-                else
+                    rowOffset = viewport->rowOffsets[row];
+                    if ((rowOffset & 0x8000) == 0)
+                        destinationOffset += rowOffset;
+                } else {
                     destinationOffset = viewport->rowOffsets[row] +
                                         (unsigned int)context->cursorX;
+                }
                 destination = viewport->pixels + destinationOffset;
                 for (column = width; column-- != 0;) {
                     translated = abPaletteTranslation[*source];
@@ -293,7 +298,7 @@ void DrawFontGlyph(char character, TextContext *context, int height,
                 }
             }
         }
-        context->cursorX += font[4 + characterIndex];
+        context->cursorX += context->font[4 + characterIndex];
         abPaletteTranslation[fontColour] = fontColour;
         abPaletteTranslation[fontBackground] = fontBackground;
 #ifndef SDL_PORT
@@ -870,55 +875,62 @@ void DrawSolidColourSpriteScaled(Viewport *viewport, short x, short y,
 }
 
 /* Function start: 0x442050 */
-int GetTransformedShapeBounds(Viewport *viewport, short x, short y,
+short GetTransformedShapeBounds(Viewport *viewport, short x, short y,
                               unsigned char *shape, short frame,
                               short angle, short scale, short flip,
                               short *bounds)
 {
-    short *frameData;
+    ShapeFrameExtents *frameData;
     int frameOffset;
     int leftExtent;
+    int rightExtent;
     int topExtent;
+    int bottomExtent;
     int absoluteCosine;
     int absoluteSine;
-    int horizontalExtent;
+    int horizontalSpan;
+    int verticalSpan;
     int transformedHeight;
     int transformedWidth;
-    short left;
+    int left;
     short top;
     short right;
     short bottom;
+    int intersects = 0;
 
     if (shape == 0) {
-        if (viewport->left <= x && x <= viewport->right &&
-            viewport->top <= y && y <= viewport->bottom)
-            return 1;
-        return 0;
+        intersects = viewport->left <= x && x <= viewport->right &&
+                     viewport->top <= y && y <= viewport->bottom;
+        return intersects;
     }
     CheckHeapBlockSignature(shape);
     frameOffset = frame * 4 + 4;
     if (frameOffset <= (int)*(unsigned short *)(shape + 4)) {
-        frameData = (short *)(shape + *(int *)(shape + frameOffset));
-        leftExtent = frameData[1];
-        topExtent = frameData[2];
+        frameData = (ShapeFrameExtents *)(
+            shape + *(int *)(shape + frameOffset));
+        leftExtent = frameData->left;
+        rightExtent = frameData->right;
+        topExtent = frameData->top;
+        bottomExtent = frameData->bottom;
         absoluteCosine =
             (int)(awAbsoluteCosine[angle] * scale) >> 8;
         absoluteSine =
             (int)(awAbsoluteSine[angle] * scale) >> 8;
         if (absoluteCosine == 0)
-            absoluteCosine = 1;
+            absoluteCosine++;
         if (absoluteSine == 0)
-            absoluteSine = 1;
-        horizontalExtent = topExtent + frameData[3];
+            absoluteSine++;
+        horizontalSpan = rightExtent + leftExtent;
+        verticalSpan = topExtent + bottomExtent;
         transformedHeight =
-            absoluteSine * (frameData[0] + leftExtent) +
-            absoluteCosine * horizontalExtent;
+            absoluteSine * horizontalSpan +
+            absoluteCosine * verticalSpan;
         if ((char)transformedHeight != 0)
             transformedHeight += 0x100;
         transformedHeight >>= 8;
         transformedWidth =
-            absoluteCosine * (frameData[0] + leftExtent) +
-            absoluteSine * horizontalExtent;
+            absoluteCosine * horizontalSpan +
+            absoluteSine * verticalSpan;
         if ((char)transformedWidth != 0)
             transformedWidth += 0x100;
         transformedWidth >>= 8;
@@ -929,21 +941,23 @@ int GetTransformedShapeBounds(Viewport *viewport, short x, short y,
         top = (short)(y - (absoluteSine * leftExtent >> 8) -
                       (absoluteCosine * topExtent >> 8));
         bottom = (short)(transformedHeight + top);
-        left = (short)(((absoluteSine * topExtent >> 8) -
-                        (absoluteCosine * leftExtent >> 8) + x) -
-                       ((absoluteSine * horizontalExtent >> 8) + 1));
+        left = ((absoluteSine * topExtent >> 8) -
+                (absoluteCosine * leftExtent >> 8) + x) -
+               ((absoluteSine * verticalSpan >> 8) + 1);
         right = (short)(transformedWidth + left);
-        if (viewport->left <= right && left <= viewport->right &&
+        if (viewport->left <= right && (short)left <= viewport->right &&
             viewport->top <= bottom && top <= viewport->bottom) {
-            bounds[0] = left;
+            bounds[0] = (short)left;
             bounds[2] = right;
             bounds[1] = top;
             bounds[3] = bottom;
-            return 1;
+            intersects = 1;
+        } else {
+            intersects = 0;
         }
     }
     (void)flip;
-    return 0;
+    return intersects;
 }
 
 /* Function start: 0x442200 */
