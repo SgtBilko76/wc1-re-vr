@@ -88,7 +88,7 @@ unsigned int select_new_release_weapon(enum ObjectType preferredType)
 {
     signed char weaponCount;
     int currentWeapon;
-    signed char firstWeapon;
+    short firstWeapon;
     signed char weapon;
     ShipWeaponSlot *weaponSlots;
 

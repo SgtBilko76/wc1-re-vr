@@ -351,8 +351,8 @@ unsigned int PlayScrambleHangarScene(void)
 unsigned int DrawScrambleActor(short actorIndex)
 {
     signed char frame;
-    int control;
     signed char animationFrame;
+    unsigned char control;
     short x;
     short y;
 
@@ -387,19 +387,19 @@ unsigned int DrawScrambleActor(short actorIndex)
             frame = animationFrame;
     }
 
-    x = aScrambleAnimationActors[actorIndex].deltaX +
-        aScrambleAnimationActors[actorIndex].x;
-    aScrambleAnimationActors[actorIndex].x = x;
-    y = aScrambleAnimationActors[actorIndex].deltaY +
-        aScrambleAnimationActors[actorIndex].y;
-    aScrambleAnimationActors[actorIndex].y = y;
+    frame += aScrambleAnimationActors[actorIndex].baseFrame;
+    x = nScrambleBackgroundRightX +
+        (aScrambleAnimationActors[actorIndex].x +=
+         aScrambleAnimationActors[actorIndex].deltaX);
+    y = nScrambleBackgroundY +
+        (aScrambleAnimationActors[actorIndex].y +=
+         aScrambleAnimationActors[actorIndex].deltaY);
     DrawSpriteScaled(
         pScrambleViewport,
-        (short)(nScrambleBackgroundRightX + x),
-        (short)(nScrambleBackgroundY + y),
+        x,
+        y,
         aScrambleAnimationActors[actorIndex].shape,
-        (short)(frame +
-                aScrambleAnimationActors[actorIndex].baseFrame),
+        (short)frame,
         aScrambleAnimationActors[actorIndex].angle,
         aScrambleAnimationActors[actorIndex].scale,
         aScrambleAnimationActors[actorIndex].flip);

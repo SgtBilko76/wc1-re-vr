@@ -95,18 +95,15 @@ short IsCommMenuIdle(void)
 /* Function start: 0x430CB0 */
 void AppendCommMenuChoice(const char *text, short command)
 {
-    short index;
+    int index;
 
     if (nCommMenuReuseMode == 1) {
-        index = nCommMenuChoiceCount;
-        if (apszCommMenuChoiceText[index] != text ||
-            abCommMenuChoiceCommand[index] != command)
+        if (apszCommMenuChoiceText[nCommMenuChoiceCount] != text ||
+            abCommMenuChoiceCommand[nCommMenuChoiceCount] != command)
             nCommMenuReuseMode = 0;
-    } else {
-        index = nCommMenuChoiceCount;
     }
+    index = nCommMenuChoiceCount++;
     apszCommMenuChoiceText[index] = text;
-    nCommMenuChoiceCount = index + 1;
     abCommMenuChoiceCommand[index] = (signed char)command;
 }
 

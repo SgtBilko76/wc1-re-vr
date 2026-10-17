@@ -785,15 +785,15 @@ for similarity decisions.
   is eleven additional exact functions, one fewer size mismatch, and
   32 fewer bytes of total absolute size error. These remaining differences
   must be resolved in source; they are not reasons to omit original arguments.
-- `AppendCommMenuChoice` loads its choice index within the reuse branch or
-  the alternate path, then uses it for the shared stores. Assigning the index
-  in an explicit `else` improves the changed header context from 73.08% to
-  80.77%, recovering the original SI index and EDX text registers. CL still
-  hoists the common load ahead of the branch, so sixteen bytes remain missing.
-  Direct global subscripts, an explicit shared-store label, and `register`
-  did not recover the original schedule. No previously exact function loses
-  its match; calibration has four additional differing instructions, while
-  `UnionRectBounds` has two fewer, both at unchanged sizes and mnemonic scores.
+- `AppendCommMenuChoice` compares existing choices through the global count,
+  then saves that count's post-increment result in a 32-bit index for the two
+  shared stores. This preserves the original branch-specific count loads and
+  gives an exact 128-byte span. A short index copied before the shared stores
+  let CL hoist its load across the reuse branch, removing seven instruction
+  bytes and shortening the aligned span by sixteen. The earlier explicit
+  `else`, shared-store label, and `register` trials did not fix that lifetime;
+  keeping the post-increment at the index capture does. No other function's
+  report changes with this correction.
 - `prepare_mission` retains the player's mission index as a word through
   `load_ship`, `set_objects_data`, and `Set_up_ship_info`. Use that index for
   the mission-record fields rather than caching a record pointer and later
@@ -952,6 +952,32 @@ for similarity decisions.
   explicit promoted indices, a cached collision radius, and moving the byte
   offset calculation all retained the incorrect twelve-byte frame and reduced
   similarity. These trials are reverted; its original frame is sixteen bytes.
+- `select_new_release_weapon` retains the starting cycle index as a signed
+  word, even though its running index and weapon count are signed bytes.
+  The original sign-extends DL into DI and later compares AX with DI.
+  Correcting that one local raises similarity from 87.88% to 94.90% while
+  preserving the 336-byte span. The preferred-type search still reuses a
+  cached count where the original reloads memory, and several comparisons
+  have reversed operands. Changing the search to `do`/`while` or using plain
+  `char` for the count did not help; reading the count through a signed-byte
+  pointer or moving the current-weapon capture into its test made it worse.
+  Those trials are not retained.
+- `DrawScrambleActor` retains the script-control mask as an unsigned byte
+  and adds the base frame to its signed-byte frame before sign-extending the
+  draw argument. A 16-bit frame sum omits the original byte wrapping.
+  Each screen coordinate combines its background offset with the actor's
+  compound position update. This recovers the exact coordinate and draw-call
+  sequence and raises similarity from 81.94% to 97.22%, with the original
+  256-byte span. Fourteen instructions still differ because the script index
+  and control mask exchange BL and DL, moving the initial index load past
+  the scale calculation. Descriptive local renames and removing the frame
+  mask's redundant cast did not help; a promoted actor-index local was worse.
+  Separate world-coordinate and screen-coordinate additions also gave a
+  different schedule and are not retained.
+- `evaluate_damage` still moves the front-armour contribution after the
+  other armour terms. A short running accumulator, explicit word casts on
+  each quotient, and changing the source addition order all produced the
+  same differing instruction sequence. These trials are not retained.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must
