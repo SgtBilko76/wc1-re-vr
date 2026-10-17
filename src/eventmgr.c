@@ -1,11 +1,17 @@
 /*
  *  Event manager, mouse pointer, and frame timer.
  *
- *  Address range 0x4355f0-0x436cff (provisional -- see docs/ORDER.md).
+ *  The provisional address range is recorded in docs/ORDER.md.
  *  The FM Towns executable preserves the original source name
  *  "source\\eventmgr.c" for this unit.
  */
 #include "wc1.h"
+
+/* The SDL renderer also reads the saved cursor background. */
+#ifndef SDL_PORT
+static
+#endif
+unsigned char abCursorSaveArea[0x1000]; /* 0x004865a8 */
 
 /* Function start: 0x4355F0 */
 void TranslatePolledInputEvent(unsigned short type, unsigned int value)

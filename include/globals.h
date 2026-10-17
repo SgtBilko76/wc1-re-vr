@@ -408,7 +408,6 @@ extern char szWriteDataFileError[0x40]; /* 0x00475da0 */
 extern char szSeekDataFileError[0x80]; /* 0x00475de0 */
 extern int bMonoDebugInstalled; /* 0x00475e70 */
 extern HANDLE hMonoDebugDevice; /* 0x00475e74 */
-extern char szSfxWavePath[0xc8]; /* 0x00476558 */
 extern short DAT_00475e78;
 extern unsigned char bCurrentManeuverReroll; /* 0x00475e7c */
 extern unsigned char abMouseCursorBackground[0x400]; /* 0x00475ff0 */
@@ -438,7 +437,6 @@ extern unsigned char abDIBPaletteCache[1024]; /* 0x00486110 */
 extern float fMeasuredFrameRate; /* 0x00486510 */
 extern int bDIBSlamPending; /* 0x00486518 */
 extern char szSpaceFlightMaxFpsMessage[0x80]; /* 0x00486528 */
-extern unsigned char abCursorSaveArea[0x1000]; /* 0x004865a8 */
 extern RasterClip stRasterClip; /* 0x00496fc0 */
 extern unsigned char abSolidColourTranslation[256]; /* 0x00497648 */
 extern unsigned char abShapeRLEScratch[0x100000]; /* 0x00497748 */

@@ -688,7 +688,6 @@ LARGE_INTEGER liFlightAfterCockpit; /* 0x00476530 */
 int nFlightInputTicks; /* 0x00476538 */
 LARGE_INTEGER liFlightAfterRender; /* 0x00476540 */
 int nFlightRenderTicks; /* 0x00476548 */
-char szSfxWavePath[0xc8]; /* 0x00476558 */
 unsigned char szFrameRateText[32]; /* 0x00476620 */
 unsigned int DAT_00476640;
 unsigned int DAT_00476644;
@@ -704,7 +703,6 @@ unsigned char abDIBPaletteCache[1024]; /* 0x00486110 */
 float fMeasuredFrameRate; /* 0x00486510 */
 int bDIBSlamPending; /* 0x00486518 */
 char szSpaceFlightMaxFpsMessage[0x80]; /* 0x00486528 */
-unsigned char abCursorSaveArea[0x1000]; /* 0x004865a8 */
 RasterClip stRasterClip; /* 0x00496fc0 */
 unsigned char abSolidColourTranslation[256]; /* 0x00497648 */
 unsigned char abShapeRLEScratch[0x100000]; /* 0x00497748 */

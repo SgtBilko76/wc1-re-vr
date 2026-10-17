@@ -186,6 +186,9 @@ void SdlStopAudio(void);
  * diagnostic build defines SDL_PORT_LEGACY_DEBUG_OUTPUT. */
 void SdlOutputDebugString(const char *text);
 void SdlPumpEvents(void);
+/* Buffers private to the original units, shared with SDL adapters here. */
+extern char szSfxWavePath[0xc8]; /* 0x00476558 */
+extern unsigned char abCursorSaveArea[0x1000]; /* 0x004865a8 */
 void SdlSetMouseGrab(int enabled);
 void SdlDrawViewportStatic(struct Viewport *viewport, int effect,
                               unsigned short colour);

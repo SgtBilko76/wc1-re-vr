@@ -373,8 +373,25 @@ Their former tentative definitions in `globals.c` became independently
 ordered linker common symbols. The unit-data gate now verifies their owner,
 relative symbol offsets, complete object `.bss` sizes, and zero-filled bytes.
 Their absolute addresses and the intervening uninitialized storage remain
-unrecovered. The adjacent `szSfxWavePath` buffer belongs to the following music
-code and is not part of these blocks.
+unrecovered.
+
+The 200-byte `szSfxWavePath` buffer at `0x00476558` now resides in `music.c`.
+Its two original references both occur in `PlaySfxWaveFileByNumber`: `sprintf`
+formats the filename into it, then `playWAVE` receives the same buffer. Its
+end is immediately before the DirectDraw frame-rate text at `0x00476620`.
+The private uninitialized definition produces a 200-byte `.bss` section.
+The unit-data gate checks its owner and size, and the sound pointers, damage
+state, and this buffer as one 212-byte run with no intervening alignment bytes.
+
+The cursor save buffer at `0x004865A8` similarly belongs to `eventmgr.c`.
+Its three original references occur in the mouse-background capture and
+restore routines in that unit. The 4,096-byte buffer ends immediately before
+the graphics workspace at `0x004875A8`; it is distinct from the cockpit's
+1,024-byte mouse-background buffer at `0x00475FF0`. Its private definition
+produces the original `.bss` storage and size. The gate verifies it together
+with the recovered graphics prefix as a 68,120-byte run, with no inter-object
+padding. These buffers remain shared only in the SDL build, whose audio and
+renderer adapters use them through declarations in `wc1sdl.h`.
 
 The graphics workspace begins at `0x004875A8` with a 20-byte `RasterSurface`,
 four alignment bytes, and the 64,000-byte transformation buffer at

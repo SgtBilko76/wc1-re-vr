@@ -60,7 +60,8 @@ bytes. The room and graphics units form another 3,542-byte run, including
 four alignment bytes. These checks catch correct individual blocks linked
 at incorrect relative positions.
 The same gate checks the uninitialized blocks owned by pilot (4 bytes),
-sound (8), and damage (4). These must be genuine COFF `.bss` sections with no raw data
+sound (8), damage (4), music (200), and eventmgr (4,096).
+These must be genuine COFF `.bss` sections with no raw data
 or relocations, and their linker symbols must belong to the expected object
 at the recovered relative offsets. Binary-comp compares the loader-visible
 zero-filled bytes. These checks establish local storage and layout;
@@ -70,6 +71,11 @@ The graphics check covers only its 64,024-byte uninitialized prefix: the
 buffer. It requires the current 64,024-byte COFF section and both private
 symbols at the original offsets. The remaining graphics storage is still
 unrecovered, so this is explicitly a partial-section check.
+The sound, damage, and music blocks must also form one 212-byte run; the cursor
+buffer and graphics prefix must form one 68,120-byte run. Both require the original
+unit positions with no inter-object padding. Pointer-free runs use
+binary-comp's direct address comparison, while runs containing pointers use
+its relocation-aware comparison.
 `make verify-barracks-data` retains the barracks-only check.
 
 Three explicitly marked partial-section checks cover `game.c`: two scalar

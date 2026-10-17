@@ -355,6 +355,12 @@ UNITS = {
     'damage-bss': UnitData(0x00476554, 4, (
         ('nDisplayedComponentDamage', 0x00),
     ), frozenset(), storage='.bss', owner='damage.obj'),
+    'music-bss': UnitData(0x00476558, 200, (
+        ('szSfxWavePath', 0x00),
+    ), frozenset(), storage='.bss', owner='music.obj'),
+    'eventmgr-bss': UnitData(0x004865A8, 4096, (
+        ('abCursorSaveArea', 0x00),
+    ), frozenset(), storage='.bss', owner='eventmgr.obj'),
 }
 
 
@@ -363,6 +369,8 @@ ADJACENT_UNITS = (
     ('damage', 'view'),
     ('ending', 'input', 'comm', 'video', 'joycal'),
     ('killbrd', 'gr'),
+    ('sound', 'damage-bss', 'music-bss'),
+    ('eventmgr-bss', 'gr-bss-prefix'),
 )
 
 
@@ -501,7 +509,12 @@ def main() -> int:
         rebuilt_bytes = rebuilt.read(rebuilt_start, size)
         require(original_bytes is not None and rebuilt_bytes is not None,
                 'cannot read adjacent data run')
-        require(relocated_pointer_match(original_bytes, rebuilt_bytes, {}, ranges),
+        if pointers:
+            matches = relocated_pointer_match(original_bytes, rebuilt_bytes, {}, ranges)
+        else:
+            matches = AddressComparison(original_start, size, rebuilt_start,
+                                        original_bytes, rebuilt_bytes).matches
+        require(matches,
                 'adjacent data run differs, including inter-object alignment bytes')
         padding = size - sum(UNITS[unit].size for unit in group)
         print(f'{group[0]} through {group[-1]}: {size} adjacent data bytes match; '

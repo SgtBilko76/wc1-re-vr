@@ -116,12 +116,22 @@ for similarity decisions.
   produces linker common symbols with different positions. Restore proven
   ownership and verify object storage as well as zero values; zero-filled
   memory by itself cannot establish a matching layout. The following private
-  C damage-display variable needs `static` to retain its `.bss` storage.
+  C damage-display variable needs `static` to retain its `.bss` storage,
+  as do the music filename buffer and event-manager cursor save buffer.
+  The latter two remain externally visible only in the SDL build, whose
+  adapters share them through the SDL-only header. The original build keeps
+  their definitions private and uninitialized in the owning C units.
 - Put a global's address comment before its declaration or after its final
   semicolon. A comment inside a multiline initializer is recognized by the
   layout audit but missed by the linked-data comparison's simpler parser.
   Put it before the declaration when interior comments contain semicolons,
   as in `aObjectTypeData`; those can terminate the simpler parser's scan.
+- `DIBupdate`'s destination calculation still adds the surface pointer before
+  the horizontal offset; the original adds the horizontal offset first.
+  Parenthesizing the integer offset, writing the offset before the pointer,
+  and separating pointer assignment from `+=` all produce the same two
+  differing instructions under the current declarations. Those variations
+  were reverted; the function has its original size but is not byte-exact.
 - Keep direct array-field accesses when the original repeatedly uses an index
   plus an absolute field address. A cached structure pointer can produce the
   same mnemonics with shorter displacements, changing the function's size.

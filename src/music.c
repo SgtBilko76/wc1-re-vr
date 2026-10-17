@@ -66,6 +66,12 @@ unsigned char aabSoundEffectDescriptors[37][8] = {
     { 0x00, 0x80, 0x40, 0x40, 0x3c, 0x00, 0x00, 0x24 }
 };
 
+/* The SDL audio adapter also uses this filename buffer. */
+#ifndef SDL_PORT
+static
+#endif
+char szSfxWavePath[0xc8]; /* 0x00476558 */
+
 /* Function start: 0x42E320 */
 void FadeMusic(void)
 {
