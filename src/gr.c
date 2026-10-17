@@ -1,7 +1,7 @@
 /*
  *  Rasteriser primitives and screen-space effects.
  *
- *  Address range 440c00-44269f (provisional -- see docs/ORDER.md).
+ *  Address range 4408a0-44269f (provisional -- see docs/ORDER.md).
  *  Boundary evidence: PROVEN by name: shadow_draw, fizzle_fade, snow_viewport.
  */
 #include "wc1.h"
@@ -10,6 +10,215 @@ const char szGameRegistryKey[42] =
     "Software\\Origin Systems\\WC: Kilrathi Saga"; /* 0x004631c8 */
 const char szCheaterRegistryValue[8] = "Cheater"; /* 0x004631f8 */
 
+/* Function start: 0x4408A0 */
+void CheckHeapBlockSignature(unsigned char *shape)
+{
+    if (*(int *)(shape - 8) != 0x6666656a)
+        exit_squadron(szInvalidShapeAllocation);
+}
+
+/* Function start: 0x4408C0 */
+unsigned char *GetPreparedShapeData(unsigned char *shape)
+{
+#ifdef SDL_PORT
+    return *(unsigned char **)(shape - 8 - sizeof(unsigned char *));
+#else
+    return *(unsigned char **)(shape - 4);
+#endif
+}
+
+/* Function start: 0x4408D0 */
+short __stdcall GetShapeFrameCount(unsigned char *shape)
+{
+    CheckHeapBlockSignature(shape);
+    return (short)((*(unsigned short *)(shape + 4) >> 2) - 1);
+}
+
+/* Function start: 0x4408F0 */
+void GetShapeFrameExtents(unsigned char *shape, short frame,
+                          short *width, short *height,
+                          short *leftExtent, short *topExtent)
+{
+    int rightExtent;
+#ifndef SDL_PORT
+    short *frameHeader;
+#endif
+    int frameOffset;
+    int left;
+    int top;
+    int bottom;
+#ifdef SDL_PORT
+    short frameExtents[4];
+#endif
+
+    frameOffset = (int)(short)(frame * 4 + 4);
+    if (frameOffset < (int)*(unsigned short *)(shape + 4)) {
+#ifdef SDL_PORT
+        memcpy(frameExtents, shape + *(int *)(shape + frameOffset),
+               sizeof(frameExtents));
+        rightExtent = frameExtents[0];
+        left = frameExtents[1];
+        top = frameExtents[2];
+        bottom = frameExtents[3];
+#else
+        frameHeader = (short *)(shape + *(int *)(shape + frameOffset));
+        rightExtent = *frameHeader++;
+        left = *frameHeader++;
+        top = *frameHeader++;
+        bottom = *frameHeader;
+#endif
+        *width = (short)(left + rightExtent + 1);
+        *height = (short)(top + bottom + 1);
+        *leftExtent = (short)left;
+        *topExtent = (short)top;
+    }
+}
+
+/* Function start: 0x440960 */
+void DecodeShapeFrame(unsigned char *shape, short frame,
+                      unsigned char *bitmap, int width, int height,
+                      int leftExtent, int topExtent)
+{
+    unsigned char *commands;
+    unsigned char *destination;
+    unsigned char code;
+    unsigned char colour;
+    unsigned short rowCode;
+    unsigned short runLength;
+    short copyLength;
+    short maximumX;
+    short maximumY;
+    short sourceX;
+    short sourceY;
+    int frameOffset;
+    int x;
+    int y;
+    int runRight;
+    int skip;
+
+    if (shape == 0 || frame < 0)
+        return;
+    frameOffset = (int)(short)(frame * 4 + 4);
+    if (frameOffset >= (int)*(unsigned short *)(shape + 4))
+        return;
+
+    maximumX = (short)(width - 1);
+    maximumY = (short)(height - 1);
+    commands = shape + *(int *)(shape + frameOffset) + 8;
+#ifdef SDL_PORT
+    memcpy(&rowCode, commands, sizeof(rowCode));
+#else
+    rowCode = *(unsigned short *)commands;
+#endif
+    commands += 2;
+    while (rowCode != 0) {
+#ifdef SDL_PORT
+        memcpy(&sourceX, commands, sizeof(sourceX));
+#else
+        sourceX = *(short *)commands;
+#endif
+        commands += 2;
+#ifdef SDL_PORT
+        memcpy(&sourceY, commands, sizeof(sourceY));
+#else
+        sourceY = *(short *)commands;
+#endif
+        commands += 2;
+        x = leftExtent + sourceX;
+        y = topExtent + sourceY;
+        destination = bitmap + y * width + x;
+        if ((rowCode & 1) != 0) {
+            rowCode >>= 1;
+            while (rowCode != 0) {
+                code = *commands;
+                commands++;
+                if ((code & 1) != 0) {
+                    code >>= 1;
+                    colour = *commands;
+                    commands++;
+                    runLength = code;
+                    rowCode = (unsigned short)(rowCode - runLength);
+                    if (y >= 0 && y <= maximumY) {
+                        runRight = x + runLength - 1;
+                        if (x <= maximumX && runRight >= 0) {
+                            skip = 0;
+                            copyLength = (short)runLength;
+                            if (x < 0) {
+                                copyLength =
+                                    (short)(copyLength + (short)x);
+                                skip = -x;
+                            }
+                            if (maximumX < runRight)
+                                copyLength = (short)(copyLength -
+                                                       runRight + maximumX);
+                            memset(destination + skip, colour,
+                                   (short)copyLength);
+                        }
+                    }
+                    x += runLength;
+                    destination += runLength;
+                } else {
+                    code >>= 1;
+                    runLength = code;
+                    rowCode = (unsigned short)(rowCode - runLength);
+                    if (y >= 0 && y <= maximumY) {
+                        runRight = x + runLength - 1;
+                        if (x <= maximumX && runRight >= 0) {
+                            skip = 0;
+                            copyLength = (short)runLength;
+                            if (x < 0) {
+                                copyLength =
+                                    (short)(copyLength + (short)x);
+                                skip = -x;
+                            }
+                            if (maximumX < runRight)
+                                copyLength = (short)(copyLength -
+                                                       runRight + maximumX);
+                            memcpy(destination + skip, commands + skip,
+                                   (short)copyLength);
+                        }
+                    }
+                    commands += runLength;
+                    x += runLength;
+                    destination += runLength;
+                }
+            }
+        } else {
+            rowCode >>= 1;
+            if (y >= 0 && y <= maximumY) {
+                runRight = x + rowCode - 1;
+                if (x <= maximumX && runRight >= 0) {
+                    skip = 0;
+                    copyLength = (short)rowCode;
+                    if (x < 0) {
+                        copyLength = (short)(copyLength + (short)x);
+                        skip = -x;
+                    }
+                    if (maximumX < runRight)
+                        copyLength = (short)(copyLength -
+                                                     runRight + maximumX);
+                    memcpy(destination + skip, commands + skip,
+                           (short)copyLength);
+                }
+            }
+            commands += rowCode;
+        }
+#ifdef SDL_PORT
+        memcpy(&rowCode, commands, sizeof(rowCode));
+#else
+        rowCode = *(unsigned short *)commands;
+#endif
+        commands += 2;
+    }
+}
+
+/* Function start: 0x440BE0 */
+int SignExtendClipCoord(volatile short v)
+{
+    if ((unsigned short)v < 0xfdc0)
+        return (unsigned short)v;
+    return (int)(short)v;
+}
 /* Function start: 0x440C00 */
 void ValidateViewportBounds(Viewport *viewport, RasterSurface *surface,
                             RasterClip *clip)

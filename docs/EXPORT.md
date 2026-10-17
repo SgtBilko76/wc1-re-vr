@@ -41,7 +41,7 @@ handwritten stand-ins; the separate gate covers the 74 generated code bytes.
 initialized-data sections recovered for barracks (632 bytes), fade (2),
 debug (34), disk (523), ship (286), init (550), logic (447), trainsim (511),
 damage (390), view (289), ending (457), input (6), comm (520), video (10),
-and joycal (42).
+joycal (42), and killbrd (1,508).
 It delegates byte matching to binary-comp, allowing one address shift per
 block, and verifies object sizes, global positions, and pointer relocations.
 String-content fallback is disabled so duplicate or empty literals cannot
@@ -105,12 +105,21 @@ that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
 `WC1.map` with the four private damage symbols, seven private view symbols,
 five private music symbols, eight private ending symbols, two private
 comm symbols, two private joycal symbols, ten private dib symbols,
-eighteen private game symbols, and seventeen private screens symbols added.
+eighteen private game symbols, seventeen private screens symbols, and
+twenty-two private killbrd symbols added.
 Their addresses come from the object's COFF symbols, public section anchors,
 and linked `DIR32`
 references with PE `HIGHLOW` relocations. Conflicting anchors or unresolved
 symbols fail the build. This step changes only comparison metadata; it does
 not modify the executable or infer addresses from the original binary.
+
+The room literal metadata covers all 328 bytes from the one-space label
+through the final chalk-board format. It resolves short and empty strings
+by their positions in that complete pool. The kill-board unit gate checks
+these same bytes together with the initial campaign/pilot records, animation
+sequences, menu state, all intervening alignment, and all 24 pointer targets.
+The source initializer audit serializes `ShortPoint` as two signed halfwords;
+its size alone is insufficient to distinguish the coordinate fields.
 
 Keep address annotations outside initializers so the linked-data inventory
 can see them. For the 7,830-byte object-type table, the annotation precedes

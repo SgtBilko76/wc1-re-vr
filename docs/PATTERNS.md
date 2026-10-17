@@ -47,6 +47,13 @@ for similarity decisions.
   include newlines, and `StopMusic` prints a trailing space before its stream
   stop and a separate newline afterwards. Normalized function comparisons
   alone did not expose these different strings; linked literal-span checks do.
+- `RecRoom`'s two pilot-name formats each have a separate empty-string
+  literal in the dead-pilot branch. They are not offsets into padded format
+  arrays. `InitializeRoomMenu` reads the first byte of its own empty literal;
+  spelling that expression directly preserves the original byte load under
+  CL 4.20. The chalk-board KIA argument is emitted before its format string,
+  as the original data order requires. The complete room-data gate checks
+  these short literals and every repeated format without string fallback.
 - `ReturnToBriefingLongShot` clears ten local flag bytes with ten explicit
   zero initializers. An empty-string initializer instead emits a separate
   literal and clears the trailing bytes through a different sequence. Its

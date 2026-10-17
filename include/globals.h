@@ -384,54 +384,8 @@ extern RasterClip *pGifRasterTarget; /* 0x0046ff28 */
 extern unsigned char abRasterPaletteTranslation[256]; /* 0x0046ff2c */
 extern RLETransformVertex aRLETransformVertices[4]; /* 0x0047002c */
 extern int anRLESourceSteps[4]; /* 0x0047007c */
-extern const char *pszBlankRoomMenuLabel; /* 0x00470090 */
 extern const char *apszPilotRankNames[5]; /* 0x00470098 */
 extern CampaignState stInitialCampaignState; /* 0x004700b0 */
-extern PilotRecord aInitialPilotRecords[9]; /* 0x00470108 */
-extern signed char abSpiritRecRoomAnimation[48]; /* 0x00470260 */
-extern signed char abHunterRecRoomAnimation[40]; /* 0x00470290 */
-extern signed char abAngelRecRoomAnimation[48]; /* 0x004702b8 */
-extern signed char abKnightRecRoomAnimation[40]; /* 0x004702e8 */
-extern signed char abIcemanRecRoomAnimation[40]; /* 0x00470310 */
-extern signed char abManiacRecRoomAnimation[24]; /* 0x00470338 */
-extern signed char abPaladinRecRoomAnimation[56]; /* 0x00470350 */
-extern signed char abBossmanRecRoomAnimation[48]; /* 0x00470388 */
-extern signed char abShotglassIdleAnimation[24]; /* 0x004703b8 */
-extern signed char abShotglassGlassAnimation[32]; /* 0x004703d0 */
-extern signed char abShotglassPourAnimation[80]; /* 0x004703f0 */
-extern signed char abShotglassWipeAnimation[24]; /* 0x00470440 */
-extern signed char *apRecRoomAnimations[14]; /* 0x00470458 */
-extern ShortPoint aRecRoomCharacterOrigins[3]; /* 0x00470490 */
-extern short nRecRoomPanelOriginX; /* 0x0047049c */
-extern short nRecRoomPanelOriginY; /* 0x0047049e */
-extern TitleMenuRegion aRecRoomMenuRegions[7]; /* 0x004704a0 */
-extern char *apszRecRoomBaseLabels[3]; /* 0x004704e8 */
-extern char *apszRecRoomMenuLabels[6]; /* 0x004704f8 */
-extern CampaignDate stChalkBoardDate; /* 0x00470514 */
-extern short asChalkBoardPilotOrder[9]; /* 0x00470518 */
-extern char szBlankRoomMenuLabel[4]; /* 0x0047052c */
-extern char szSecondLieutenantRank[8]; /* 0x00470530 */
-extern char szFirstLieutenantRank[8]; /* 0x00470538 */
-extern char szCaptainRank[8]; /* 0x00470540 */
-extern char szMajorRank[8]; /* 0x00470548 */
-extern char szLieutenantColonelRank[12]; /* 0x00470550 */
-extern char szTalkToShotglass[20]; /* 0x0047055c */
-extern char szTalkToFirstPilot[24]; /* 0x00470570 */
-extern char szTalkToSecondPilot[24]; /* 0x00470588 */
-extern char szCheckPilotScores[20]; /* 0x004705a0 */
-extern char szEnterBarracks[16]; /* 0x004705b4 */
-extern char szFlyTrainingMission[24]; /* 0x004705c4 */
-extern char szRoomMenuLabelFormat[12]; /* 0x004705dc */
-extern char szEmptyRoomMenuLabel[4]; /* 0x004705e8 */
-extern char szTalkToPilotFormat1[16]; /* 0x004705ec */
-extern char szTalkToPilotFormat2[16]; /* 0x004705fc */
-extern char szChalkBoardHeading[32]; /* 0x0047060c */
-extern char szChalkBoardPilotHeading[12]; /* 0x0047062c */
-extern char szChalkBoardScoreHeading[20]; /* 0x00470638 */
-extern char szChalkBoardPilotFormat[12]; /* 0x0047064c */
-extern char szChalkBoardScoreFormat[12]; /* 0x00470658 */
-extern char szKilledInAction[4]; /* 0x00470664 */
-extern char szChalkBoardKiaFormat[16]; /* 0x00470668 */
 extern unsigned char abPaletteTranslation[256]; /* 0x00470678 */
 extern unsigned short awAbsoluteCosine[360]; /* 0x00470778 */
 extern unsigned short awAbsoluteSine[360]; /* 0x00470a48 */

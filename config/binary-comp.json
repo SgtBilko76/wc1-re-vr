@@ -203,10 +203,36 @@
         "CODE_GLOBAL_NOT_IN_SRC:0x0046e670": "Compiler-emitted text-format literal in DrawFuneralLongShot, src/screens.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's 970-byte screens-medals span; the separate 40-byte gap remains unresolved and /Gf is disabled.",
         "CODE_GLOBAL_NOT_IN_SRC:0x0046e6d0": "szRasterDriverName (\"MCGA.DLL\") is defined by the hand-written raster library in src/raster.asm; its C definition serves only the SDL build.",
         "CODE_GLOBAL_NOT_IN_SRC:0x0046e6d1": "szRasterDriverName (\"MCGA.DLL\") is defined by the hand-written raster library in src/raster.asm; its C definition serves only the SDL build.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x0047052c": "Compiler-emitted one-space literal in pszBlankRoomMenuLabel, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470530": "Compiler-emitted rank-name literal in apszPilotRankNames[0], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470538": "Compiler-emitted rank-name literal in apszPilotRankNames[1], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470540": "Compiler-emitted rank-name literal in apszPilotRankNames[2], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470548": "Compiler-emitted rank-name literal in apszPilotRankNames[3], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470550": "Compiler-emitted rank-name literal in apszPilotRankNames[4], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x0047055c": "Compiler-emitted room-label literal in apszRecRoomBaseLabels[0], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470570": "Compiler-emitted mutable room-label literal in apszRecRoomBaseLabels[1], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470588": "Compiler-emitted separate mutable room-label literal in apszRecRoomBaseLabels[2], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x004705a0": "Compiler-emitted room-label literal in apszRecRoomMenuLabels[3], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x004705b4": "Compiler-emitted room-label literal in apszRecRoomMenuLabels[4], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x004705c4": "Compiler-emitted room-label literal in apszRecRoomMenuLabels[5], src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x004705dc": "Compiler-emitted format literal in DrawRoomMenuLabel, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x004705e8": "Compiler-emitted empty literal read by InitializeRoomMenu, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x004705ec": "Compiler-emitted first pilot-name format literal in RecRoom, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x004705fc": "Compiler-emitted second pilot-name format literal in RecRoom, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x0047060c": "Compiler-emitted carrier-heading literal in ShowChalkBoard, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x0047062c": "Compiler-emitted pilot-heading literal in ShowChalkBoard, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470638": "Compiler-emitted score-heading literal in ShowChalkBoard, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x0047064c": "Compiler-emitted pilot format literal in ShowChalkBoard, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470658": "Compiler-emitted score format literal in ShowChalkBoard, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470664": "Compiler-emitted KIA literal in ShowChalkBoard, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
+        "CODE_GLOBAL_NOT_IN_SRC:0x00470668": "Compiler-emitted KIA format literal in ShowChalkBoard, src/killbrd.c. Its bytes, relative position, and any pointer target are checked by verify-unit-data's complete 1,508-byte killbrd block; /Gf is disabled.",
         "ORIGINAL_INDEXED_GLOBAL_ESCAPE:0x004699a4": "LoadGamePaletteFile intentionally copies the 14-byte legacy colour map across the four-byte-aligned colour globals beginning here; the rebuilt globals retain the same declaration order and spacing."
       }
     },
     "struct_formats": {
+      "ShortPoint": {
+        "format": "<hh"
+      },
       "CampaignDate": {
         "format": "<hh"
       }

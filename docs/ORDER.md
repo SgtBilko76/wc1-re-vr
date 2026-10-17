@@ -168,8 +168,8 @@ sits at one constant offset from the original.
 | `src/eventmgr.c` | `0x4355F0`–`0x436CFF` |
 | `src/screens.c` | `0x436D00`–`0x439C3F` |
 | `src/raster.asm` | `0x439C40`–`0x43F635` |
-| `src/killbrd.c` | `0x43F640`–`0x440BFF` |
-| `src/gr.c` | `0x440C00`–`0x44269F` |
+| `src/killbrd.c` | `0x43F640`–`0x44089F` |
+| `src/gr.c` | `0x4408A0`–`0x44269F` |
 
 The provisional main/HUD split follows the existing function groups:
 `player_input` at `0x004285D0` and the three following view-input functions
@@ -569,6 +569,31 @@ loop still uses only 48 samples. Keeping ten explicit zero initializers for
 `ReturnToBriefingLongShot`'s local flags also removes the extra empty-string
 literal produced by `char active[10] = ""`; the complete 262-byte literal
 pool now has the original contents, duplicate formats, and alignment.
+
+The room/kill-board initialized-data block runs from `0x00470090` through
+`0x00470673`, after the raster library. Its 25 declarations now reside in
+`killbrd.c`; 22 are private, while the pilot-rank names, initial campaign
+state, and room-transition flag remain shared. The complete 1,508-byte
+section matches with one address shift, including 24 pointer relocations
+and the 328-byte literal pool. The initial pilot records retain their inline
+name/callsign arrays. The menu-label pointer arrays instead hold separate
+compiler-emitted literals, including two writable pilot-name placeholders.
+
+The adjacent words `{158, 28}` at `0x0047049C` and `0x0047049E` are represented
+as `ShortPoint stRecRoomPanelOrigin`. Two independent short definitions insert
+alignment between them and move the following menu table by eight bytes.
+The paired representation preserves the observed four bytes and the complete
+section layout. No inbound reference establishes the original symbol or
+declaration form; it is not claimed as recovered source spelling.
+
+`ResetCampaignData` at `0x00440800` copies the unit's initial campaign and
+pilot records. The shape helpers beginning with `CheckHeapBlockSignature`
+at `0x004408A0` use the following graphics literal pool instead: its first
+diagnostic is at `0x00470D18`, after the palette and trigonometric tables.
+The six helpers through `SignExtendClipCoord` now open `gr.c`, ahead of
+`ValidateViewportBounds`. The literal-free packet-section reader at
+`0x00440840` retains its provisional placement at the end of `killbrd.c`;
+the exact boundary around that one routine remains unproven.
 
 Private C definitions require separate evidence: a trial moving the two
 MONODEBG variables to `static` storage in `mono.c` emitted the device handle

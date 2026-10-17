@@ -41,3 +41,8 @@ unsigned char abMusicAndScreenLiterals[92]; /* 0x0046ad2c */
  * the DirectDraw error names. Includes repeated diagnostics and all internal
  * alignment bytes; the initialized state preceding it remains incomplete. */
 unsigned char abDIBDiagnosticLiterals[3620]; /* 0x0046b1d8 */
+
+/* killbrd.c: rank names, mutable room labels, and chalk-board formats.
+ * The complete pool resolves the one-space label and distinct empty strings;
+ * verify-unit-data also checks every offset and pointer in the whole unit. */
+unsigned char abRoomStringLiterals[328]; /* 0x0047052c */

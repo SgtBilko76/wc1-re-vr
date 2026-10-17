@@ -1,11 +1,178 @@
 /*
- *  Kill board, conversation scenes and save-slot flags.
+ *  Kill board, conversation scenes, and initial campaign state.
  *
- *  Address range 0x43f640-0x440bff (provisional -- see docs/ORDER.md).
- *  Boundary evidence: ShowTigersClawKillBoard/RunConversationScene; string band 0x4705DC-0x470668;
- *  the INT3 fill after the raster library ends at its first function.
+ *  The original function window is recorded in docs/ORDER.md.
+ *  Room state precedes the rank, menu-label, and chalk-board literals.
  */
 #include "wc1.h"
+
+/* 0x00470090 */
+static const char *pszBlankRoomMenuLabel =
+    " ";
+/* 0x00470098 */
+const char *apszPilotRankNames[5] = {
+    "2ND LT.",
+    "1ST LT.",
+    "CAPTAIN",
+    "MAJOR",
+    "LT. COL."
+};
+/* 0x004700b0 */
+CampaignState stInitialCampaignState = {
+    0,
+    OBJECT_TYPE_HORNET,
+    {0, 0, 0, 0, 0},
+    {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    0,
+    1,
+    0,
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {1, 1, 1, 1},
+    {110, 2654},
+    {6, 0},
+    0,
+    0,
+    0,
+    0
+};
+/* 0x00470108 */
+static PilotRecord aInitialPilotRecords[9] = {
+    {"TANAKA",   "SPIRIT",  3, 1, 11, 14, 1},
+    {"ST.JOHN",  "HUNTER",  4, 2, 25, 32, 4},
+    {"CHEN",     "BOSSMAN", 1, 3, 35, 37, 2},
+    {"CASEY",    "ICEMAN",  0, 3, 28, 43, 1},
+    {"DEVEREAUX", "ANGEL",   0, 2, 22, 20, 1},
+    {"TAGGART",  "PALADIN", 2, 3, 42, 34, 2},
+    {"MARSHALL", "MANIAC",  4, 0, 5, 6, 1},
+    {"KHUMALO",  "KNIGHT",  3, 2, 18, 23, 3},
+    {"PELLEY",   "GOBLIN",  0, 0, 0, 0, 0}
+};
+/* 0x00470260 */
+static signed char abSpiritRecRoomAnimation[48] = {
+    0, 0, 0, 0, 1, 1, 2, 2, 1, 1, 2, 3, 4, 3, 3, 4,
+    3, 4, 3, 4, 5, 3, 4, 5, 3, 4, 3, 4, 3, 4, 5, 3,
+    2, 2, 2, 3, 2, 2, 2, 1, 1, 1, -1, 0, 0, 0, 0, 0
+};
+/* 0x00470290 */
+static signed char abHunterRecRoomAnimation[40] = {
+    0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 2, 2,
+    3, 3, 4, 4, 5, 3, 3, 4, 4, 5, 5, 5, 2, 2, 1, 1,
+    0, 0, -1, 0, 0, 0, 0, 0
+};
+/* 0x004702b8 */
+static signed char abAngelRecRoomAnimation[48] = {
+    3, 4, 3, 3, 4, 3, 4, 4, 3, 4, 3, 4, 0, 0, 0, 2,
+    0, 2, 0, 1, 0, 2, 0, 0, 2, 0, 1, 0, 2, 3, 3, 4,
+    3, 4, 4, 5, 5, 5, 5, 5, -1, 0, 0, 0, 0, 0, 0, 0
+};
+/* 0x004702e8 */
+static signed char abKnightRecRoomAnimation[40] = {
+    0, 0, 0, 0, 0, 1, 0, 1, 0, 5, 0, 0, 1, 2, 3, 4,
+    4, 3, 2, 2, 2, 3, 4, 4, 5, 5, 0, 0, 1, 0, 1, 2,
+    1, 0, 1, -1, 0, 0, 0, 0
+};
+/* 0x00470310 */
+static signed char abIcemanRecRoomAnimation[40] = {
+    0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 3, 3, 3, 3,
+    4, 4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 3,
+    3, 2, 2, 1, 0, 0, -1, 0
+};
+/* 0x00470338 */
+static signed char abManiacRecRoomAnimation[24] = {
+    0, 1, 2, 0, 1, 2, 0, 3, 2, 0, 1, 1,
+    0, 4, 2, 0, 1, 2, 0, 5, 5, 5, 5, -1
+};
+/* 0x00470350 */
+static signed char abPaladinRecRoomAnimation[56] = {
+    0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 2, 2, 2, 3, 2,
+    2, 3, 2, 3, 2, 3, 2, 4, 4, 2, 3, 2, 3, 2, 3, 2,
+    3, 2, 3, 4, 4, 5, 5, 4, 4, 4, 4, 5, 5, 4, 2, 2,
+    2, -1, 0, 0, 0, 0, 0, 0
+};
+/* 0x00470388 */
+static signed char abBossmanRecRoomAnimation[48] = {
+    3, 3, 3, 2, 3, 2, 3, 2, 3, 3, 2, 3, 1, 3, 1, 3,
+    0, 3, 0, 3, 0, 2, 1, 2, 1, 3, 3, 4, 5, 5, 4, 5,
+    4, 5, 1, 3, 1, 3, 1, 3, -1, 0, 0, 0, 0, 0, 0, 0
+};
+/* 0x004703b8 */
+static signed char abShotglassIdleAnimation[24] = {
+    0, 0, 0, 0, 0, 1, 1, 0, 0, 2, 2, 0,
+    0, 3, 3, 3, -1, 0, 0, 0, 0, 0, 0, 0
+};
+/* 0x004703d0 */
+static signed char abShotglassGlassAnimation[32] = {
+    3, 6, 7, 8, 8, 9, 9, 10, 10, 10, 12, 11, 10, 12, 11, 10,
+    12, 11, 10, 12, 11, 10, 13, 13, 13, 10, 9, 8, 8, 3, 3, -1
+};
+/* 0x004703f0 */
+static signed char abShotglassPourAnimation[80] = {
+    3, 3, 6, 6, 7, 8, 8, 14, 15, 15, 16, 17, 18, 18, 18, 18,
+    17, 19, 19, 20, 20, 21, 20, 21, 20, 21, 20, 21, 20, 21, 20, 21,
+    22, 22, 23, 24, 24, 25, 25, 26, 26, 27, 28, 28, 28, 29, 30, 31,
+    31, 31, 31, 31, 32, 32, 31, 31, 31, 33, 33, 32, 34, 34, 35, 35,
+    36, 36, 37, 37, 37, 38, 38, 39, 40, 3, 3, 3, -1, 0, 0, 0
+};
+/* 0x00470440 */
+static signed char abShotglassWipeAnimation[24] = {
+    3, 4, 3, 4, 5, 3, 4, 3, 5, 6, 3, 3,
+    3, 3, 4, 3, 4, 3, -1, 0, 0, 0, 0, 0
+};
+/* 0x00470458 */
+static signed char *apRecRoomAnimations[14] = {
+    abSpiritRecRoomAnimation,
+    abHunterRecRoomAnimation,
+    abBossmanRecRoomAnimation,
+    abIcemanRecRoomAnimation,
+    abAngelRecRoomAnimation,
+    abPaladinRecRoomAnimation,
+    abManiacRecRoomAnimation,
+    abKnightRecRoomAnimation,
+    0,
+    abShotglassIdleAnimation,
+    abShotglassGlassAnimation,
+    abShotglassPourAnimation,
+    abShotglassWipeAnimation,
+    0
+};
+/* 0x00470490 */
+static ShortPoint aRecRoomCharacterOrigins[3] = {
+    {94, 59}, {161, 79}, {202, 79}
+};
+/* 0x0047049c */
+static ShortPoint stRecRoomPanelOrigin = {158, 28};
+/* 0x004704a0 */
+static TitleMenuRegion aRecRoomMenuRegions[7] = {
+    { 1, 94, 59, 130, 95 },
+    { 1, 161, 79, 180, 95 },
+    { 1, 210, 79, 240, 95 },
+    { 1, 180, 50, 250, 75 },
+    { 1, 275, 50, 319, 135 },
+    { 1, 0, 100, 120, 190 },
+    { -1, 0, 0, 0, 0 }
+};
+/* 0x004704e8 */
+static char *apszRecRoomBaseLabels[3] = {
+    "Talk to SHOTGLASS.",
+    "Talk to ??????????????",
+    "Talk to ??????????????"
+};
+/* 0x004704f8 */
+static char *apszRecRoomMenuLabels[6] = {
+    0, 0, 0,
+    "Check pilot scores",
+    "Enter barracks",
+    "Fly training mission"
+};
+/* 0x00470510 */
+int bPanRoomTransition = 0;
+/* 0x00470514 */
+static CampaignDate stChalkBoardDate = {-1, -1};
+/* 0x00470518 */
+static short asChalkBoardPilotOrder[9] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8
+};
 
 /* Function start: 0x43F640 */
 void CorrectPointers(void)
@@ -43,7 +210,7 @@ void DrawRoomMenuLabel(TextContext *context, const char *label)
 {
     DosStrcpy(szTextScratchBuffer, label);
     SetTextContext(context);
-    FormatTextBufferFromStart(szRoomMenuLabelFormat,
+    FormatTextBufferFromStart("%X%Y%s%P",
                               0, 188,
                               szTextScratchBuffer);
 }
@@ -87,7 +254,7 @@ void InitializeRoomMenu(const TitleMenuRegion *regions, char **labels,
     stRoomMenuTextContext.text = text;
     stRoomMenuTextContext.textCursor = text;
     stRoomMenuTextContext.alignment = alignment;
-    *text = szEmptyRoomMenuLabel[0];
+    *text = ""[0];
     InitializeTextContextFromFont(&stRoomMenuTextContext,
                                   0, cViewportClearColour,
                                   -1);
@@ -235,11 +402,11 @@ short RecRoom(void)
                 aRecRoomCharacterOrigins[1].y,
                 apRecRoomCharacterShapes[1], 0);
             sprintf(apszRecRoomBaseLabels[1],
-                    szTalkToPilotFormat1,
+                    "Talk to %s.",
                     apWingmanPilots[personality]->callsign);
         } else {
             sprintf(apszRecRoomBaseLabels[1],
-                    szTalkToPilotFormat1 + 12);
+                    "");
         }
     }
 
@@ -260,11 +427,11 @@ short RecRoom(void)
                 aRecRoomCharacterOrigins[2].y,
                 apRecRoomCharacterShapes[2], 0);
             sprintf(apszRecRoomBaseLabels[2],
-                    szTalkToPilotFormat2,
+                    "Talk to %s.",
                     apWingmanPilots[personality]->callsign);
         } else {
             sprintf(apszRecRoomBaseLabels[2],
-                    szTalkToPilotFormat2 + 12);
+                    "");
         }
     }
 
@@ -662,11 +829,11 @@ void ShowChalkBoard(void)
                           0, 0, background, 0);
         context.alignment = 2;
         SetTextContext(&context);
-        FormatTextBufferFromStart(szChalkBoardHeading,
+        FormatTextBufferFromStart("%X%YCARRIER - TIGER'S CLAW%P",
                                   0, 10);
-        DrawFormattedText(szChalkBoardPilotHeading,
+        DrawFormattedText("%X%YPILOT",
                           60, 24);
-        DrawFormattedText(szChalkBoardScoreHeading,
+        DrawFormattedText("%X%YSORTIES KILLS",
                           185, 24);
         rowY = 46;
         index = 0;
@@ -674,22 +841,22 @@ void ShowChalkBoard(void)
             pilot = asChalkBoardPilotOrder[index];
             DosStrcpy(pilotName, aPilotRecords[pilot].name);
             strupr(pilotName);
-            DrawFormattedText(szChalkBoardPilotFormat,
+            DrawFormattedText("%X%Y%s %s",
                               10, rowY,
                               apszPilotRankNames[aPilotRecords[pilot].rank],
                               pilotName);
             if (pilot == 8 ||
                 stCampaignState
                     .personalityDeathMission[pilot] == 0) {
-                DrawFormattedText(szChalkBoardScoreFormat,
+                DrawFormattedText("%X%Y%d%X%d",
                                   230, rowY,
                                   aPilotRecords[pilot].missions,
                                   280,
                                   aPilotRecords[pilot].kills);
             } else {
-                DrawFormattedText(szChalkBoardKiaFormat,
+                DrawFormattedText("%X%Y     %s",
                                   230, rowY,
-                                  szKilledInAction);
+                                  "KIA");
             }
         }
         DIBslam();
@@ -736,214 +903,4 @@ short __stdcall ReadPacketSectionData(PacketSectionHandle *handle,
         return 0;
     handle->position += length;
     return 1;
-}
-
-/* Function start: 0x4408A0 */
-void CheckHeapBlockSignature(unsigned char *shape)
-{
-    if (*(int *)(shape - 8) != 0x6666656a)
-        exit_squadron(szInvalidShapeAllocation);
-}
-
-/* Function start: 0x4408C0 */
-unsigned char *GetPreparedShapeData(unsigned char *shape)
-{
-#ifdef SDL_PORT
-    return *(unsigned char **)(shape - 8 - sizeof(unsigned char *));
-#else
-    return *(unsigned char **)(shape - 4);
-#endif
-}
-
-/* Function start: 0x4408D0 */
-short __stdcall GetShapeFrameCount(unsigned char *shape)
-{
-    CheckHeapBlockSignature(shape);
-    return (short)((*(unsigned short *)(shape + 4) >> 2) - 1);
-}
-
-/* Function start: 0x4408F0 */
-void GetShapeFrameExtents(unsigned char *shape, short frame,
-                          short *width, short *height,
-                          short *leftExtent, short *topExtent)
-{
-    int rightExtent;
-#ifndef SDL_PORT
-    short *frameHeader;
-#endif
-    int frameOffset;
-    int left;
-    int top;
-    int bottom;
-#ifdef SDL_PORT
-    short frameExtents[4];
-#endif
-
-    frameOffset = (int)(short)(frame * 4 + 4);
-    if (frameOffset < (int)*(unsigned short *)(shape + 4)) {
-#ifdef SDL_PORT
-        memcpy(frameExtents, shape + *(int *)(shape + frameOffset),
-               sizeof(frameExtents));
-        rightExtent = frameExtents[0];
-        left = frameExtents[1];
-        top = frameExtents[2];
-        bottom = frameExtents[3];
-#else
-        frameHeader = (short *)(shape + *(int *)(shape + frameOffset));
-        rightExtent = *frameHeader++;
-        left = *frameHeader++;
-        top = *frameHeader++;
-        bottom = *frameHeader;
-#endif
-        *width = (short)(left + rightExtent + 1);
-        *height = (short)(top + bottom + 1);
-        *leftExtent = (short)left;
-        *topExtent = (short)top;
-    }
-}
-
-/* Function start: 0x440960 */
-void DecodeShapeFrame(unsigned char *shape, short frame,
-                      unsigned char *bitmap, int width, int height,
-                      int leftExtent, int topExtent)
-{
-    unsigned char *commands;
-    unsigned char *destination;
-    unsigned char code;
-    unsigned char colour;
-    unsigned short rowCode;
-    unsigned short runLength;
-    short copyLength;
-    short maximumX;
-    short maximumY;
-    short sourceX;
-    short sourceY;
-    int frameOffset;
-    int x;
-    int y;
-    int runRight;
-    int skip;
-
-    if (shape == 0 || frame < 0)
-        return;
-    frameOffset = (int)(short)(frame * 4 + 4);
-    if (frameOffset >= (int)*(unsigned short *)(shape + 4))
-        return;
-
-    maximumX = (short)(width - 1);
-    maximumY = (short)(height - 1);
-    commands = shape + *(int *)(shape + frameOffset) + 8;
-#ifdef SDL_PORT
-    memcpy(&rowCode, commands, sizeof(rowCode));
-#else
-    rowCode = *(unsigned short *)commands;
-#endif
-    commands += 2;
-    while (rowCode != 0) {
-#ifdef SDL_PORT
-        memcpy(&sourceX, commands, sizeof(sourceX));
-#else
-        sourceX = *(short *)commands;
-#endif
-        commands += 2;
-#ifdef SDL_PORT
-        memcpy(&sourceY, commands, sizeof(sourceY));
-#else
-        sourceY = *(short *)commands;
-#endif
-        commands += 2;
-        x = leftExtent + sourceX;
-        y = topExtent + sourceY;
-        destination = bitmap + y * width + x;
-        if ((rowCode & 1) != 0) {
-            rowCode >>= 1;
-            while (rowCode != 0) {
-                code = *commands;
-                commands++;
-                if ((code & 1) != 0) {
-                    code >>= 1;
-                    colour = *commands;
-                    commands++;
-                    runLength = code;
-                    rowCode = (unsigned short)(rowCode - runLength);
-                    if (y >= 0 && y <= maximumY) {
-                        runRight = x + runLength - 1;
-                        if (x <= maximumX && runRight >= 0) {
-                            skip = 0;
-                            copyLength = (short)runLength;
-                            if (x < 0) {
-                                copyLength =
-                                    (short)(copyLength + (short)x);
-                                skip = -x;
-                            }
-                            if (maximumX < runRight)
-                                copyLength = (short)(copyLength -
-                                                       runRight + maximumX);
-                            memset(destination + skip, colour,
-                                   (short)copyLength);
-                        }
-                    }
-                    x += runLength;
-                    destination += runLength;
-                } else {
-                    code >>= 1;
-                    runLength = code;
-                    rowCode = (unsigned short)(rowCode - runLength);
-                    if (y >= 0 && y <= maximumY) {
-                        runRight = x + runLength - 1;
-                        if (x <= maximumX && runRight >= 0) {
-                            skip = 0;
-                            copyLength = (short)runLength;
-                            if (x < 0) {
-                                copyLength =
-                                    (short)(copyLength + (short)x);
-                                skip = -x;
-                            }
-                            if (maximumX < runRight)
-                                copyLength = (short)(copyLength -
-                                                       runRight + maximumX);
-                            memcpy(destination + skip, commands + skip,
-                                   (short)copyLength);
-                        }
-                    }
-                    commands += runLength;
-                    x += runLength;
-                    destination += runLength;
-                }
-            }
-        } else {
-            rowCode >>= 1;
-            if (y >= 0 && y <= maximumY) {
-                runRight = x + rowCode - 1;
-                if (x <= maximumX && runRight >= 0) {
-                    skip = 0;
-                    copyLength = (short)rowCode;
-                    if (x < 0) {
-                        copyLength = (short)(copyLength + (short)x);
-                        skip = -x;
-                    }
-                    if (maximumX < runRight)
-                        copyLength = (short)(copyLength -
-                                                     runRight + maximumX);
-                    memcpy(destination + skip, commands + skip,
-                           (short)copyLength);
-                }
-            }
-            commands += rowCode;
-        }
-#ifdef SDL_PORT
-        memcpy(&rowCode, commands, sizeof(rowCode));
-#else
-        rowCode = *(unsigned short *)commands;
-#endif
-        commands += 2;
-    }
-}
-
-/* Function start: 0x440BE0 */
-int SignExtendClipCoord(volatile short v)
-{
-    if ((unsigned short)v < 0xfdc0)
-        return (unsigned short)v;
-    return (int)(short)v;
 }
