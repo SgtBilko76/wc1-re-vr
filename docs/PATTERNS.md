@@ -919,6 +919,39 @@ for similarity decisions.
   range local does not fix this and perturbs `scan_for_enemy`; reversing the
   comparison operands also leaves the original difference. Both trials are
   reverted.
+- `get_player_input` copies each twelve-byte input sample with an inlined
+  `memcpy`. This also recovers the earlier guard's original load, test,
+  increment, and store, raising similarity from 86.44% to 96.61% without
+  changing its 224-byte span. Eleven instructions still differ: comparison
+  operand direction, early guard-decrement scheduling, and the copy's final
+  load/store order. Explicit guard, destination-pointer, and sampled-field
+  locals did not improve the result and could perturb neighbouring functions.
+  Reversing comparison operands or moving the early decrement after the copy
+  also failed to recover the original sequence; those trials are not retained.
+- The flight-control mouse coordinates passed to `SetMousePosition` stay
+  32-bit through the division and increment. Narrowing them to `short` first
+  inserts conversions absent from the original. The target-lock key case
+  handles a new press before the repeated-key `else` path. Together with
+  restricting the later event-modifier ejection fallback to SDL, these changes
+  recover `HandleSpaceFlightControls`' 3,184-byte span at 95.69% similarity.
+  The native ejection path tests only `GetControlKeyState`'s result; the
+  fallback added in commit `e28f61c` remains available in the modern port.
+  Register allocation, viewport-mode increment arguments, and several cached
+  global loads still differ. Reversing the previous/current-key comparison
+  did not recover the original initial byte register and is not retained.
+- `UpdateArcadeScoreDisplay` tests both countdowns with `<= 0`, preserving
+  the original zero comparison and `TEST AX,AX` after decrement. Using `< 1`
+  emits different jumps and an extra instruction byte that increases the
+  aligned span by sixteen bytes. The complete 224-byte function now matches.
+- `objective_lost` indexes its mission record directly, without copying the
+  objective parameter or type into redundant locals. Its own comparison is
+  unchanged, but the resulting unit allocation restores exact matches in
+  `target_locking` and `place_damage_on_cockpit`. A cached record pointer and
+  a widened index did not improve the objective routine. Neither did a signed
+  state local with a nonzero test. In `onboard_explosion`, direct array access,
+  explicit promoted indices, a cached collision radius, and moving the byte
+  offset calculation all retained the incorrect twelve-byte frame and reduced
+  similarity. These trials are reverted; its original frame is sixteen bytes.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

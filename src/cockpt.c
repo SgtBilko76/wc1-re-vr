@@ -1462,15 +1462,11 @@ void update_objective_location(short objective)
 /* Function start: 0x415850 */
 unsigned int objective_lost(short objective)
 {
-    short objectiveIndex;
     unsigned short state;
-    int objectiveType;
 
-    objectiveIndex = objective;
     state = aMissionShips[
-        aMissionObjectives[objectiveIndex].index].state;
-    objectiveType = aMissionObjectives[objectiveIndex].type;
-    switch (objectiveType) {
+        aMissionObjectives[objective].index].state;
+    switch (aMissionObjectives[objective].type) {
         case 2:
         case 3:
             return state >= 1;

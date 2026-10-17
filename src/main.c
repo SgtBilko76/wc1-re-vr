@@ -589,14 +589,14 @@ void get_player_input(void)
                 device = (int)nActiveInputDevice;
                 sample = &aInputDeviceSamples[device];
                 bInputPollingGuard--;
-                stLastPolledFlightInput = *sample;
+                memcpy(&stLastPolledFlightInput, sample, sizeof(*sample));
                 return;
             }
         } else {
             TranslatePolledInputEvent(6, 0);
             device = (int)nActiveInputDevice;
             sample = &aInputDeviceSamples[device];
-            stLastPolledFlightInput = *sample;
+            memcpy(&stLastPolledFlightInput, sample, sizeof(*sample));
         }
         bInputPollingGuard--;
     }
@@ -1420,8 +1420,12 @@ int HandleSpaceFlightControls(void)
             break;
         case 0x12:
             if (notRepeated &&
+#ifdef SDL_PORT
                 (control != 0 ||
                  (wCurrentInputModifiers & 0x2000) != 0) &&
+#else
+                control != 0 &&
+#endif
                 acPlayerComponentDamage[7] != 4) {
                 if (RandomInRange(
                         0, acPlayerComponentDamage[7]) == 0)
@@ -1523,8 +1527,8 @@ int HandleSpaceFlightControls(void)
                         initialize_cockpit(
                             cScreenViewportMode++);
                         SetMousePosition(
-                            (short)(((int)stSpaceBuffer.right -
-                                     (int)stSpaceBuffer.left) / 2 + 1),
+                            ((int)stSpaceBuffer.right -
+                             (int)stSpaceBuffer.left) / 2 + 1,
                             nViewCenterY);
                     } else {
                         SetViewportRect(
@@ -1534,10 +1538,10 @@ int HandleSpaceFlightControls(void)
                         initialize_cockpit(
                             cScreenViewportMode++);
                         SetMousePosition(
-                            (short)(((int)stSpaceBuffer.right -
-                                     (int)stSpaceBuffer.left) / 2 + 1),
-                            (short)(((int)stSpaceBuffer.bottom -
-                                     (int)stSpaceBuffer.top) / 2));
+                            ((int)stSpaceBuffer.right -
+                             (int)stSpaceBuffer.left) / 2 + 1,
+                            ((int)stSpaceBuffer.bottom -
+                             (int)stSpaceBuffer.top) / 2);
                     }
                 } else {
                     bMouseCursorVisible = 0;
@@ -1802,15 +1806,16 @@ primary_controls_complete:
         }
         break;
     case 0x26:
-        if (notRepeated == 0) {
+        if (notRepeated) {
+            nTargetLockMode =
+                (short)(nTargetLockMode == 0);
+            PlaySfxWaveFileByNumber(0x19, -1, 0);
+            if (get_mode(1) == 3) {
+                InvalidateVduMode(1);
+                return 0;
+            }
+        } else {
             init_player_input();
-            return 0;
-        }
-        nTargetLockMode =
-            (short)(nTargetLockMode == 0);
-        PlaySfxWaveFileByNumber(0x19, -1, 0);
-        if (get_mode(1) == 3) {
-            InvalidateVduMode(1);
             return 0;
         }
         break;
@@ -1893,10 +1898,10 @@ void UpdateArcadeScoreDisplay(void)
     if (nTrainSimActive != 0) {
         SetTextContext(&stHudMessageTextContext);
         DrawArcadeScorePanel(10, 10);
-        if (nArcadeBonusCountdown < 1) {
+        if (nArcadeBonusCountdown <= 0) {
             nArcadeScore++;
             nArcadeTimeRemaining--;
-            if (nArcadeTimeRemaining < 1) {
+            if (nArcadeTimeRemaining <= 0) {
                 nArcadeState = 4;
                 return;
             }
