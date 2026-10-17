@@ -20,6 +20,11 @@ unsigned char abNavStringLiterals[360]; /* 0x00468758 */
  * The complete unit gate also checks the opening-text and credit pointers. */
 unsigned char abTitleStringLiterals[1062]; /* 0x00468adc */
 
+/* joystick.c: the five calibration prompts and three separate j.cal literals.
+ * The unit gate resolves this literal-only section from COFF and linked code
+ * relocations and verifies its position between title and space state. */
+unsigned char abJoystickCalibrationLiterals[238]; /* 0x00468f04 */
+
 /* damage.c: component and severity names, report headings, and both distinct
  * status-format literals. The complete pool also resolves the short "Ok"
  * pointer; verify-unit-data independently checks every position in its unit.

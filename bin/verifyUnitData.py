@@ -16,6 +16,8 @@ from pathlib import Path
 import struct
 import sys
 
+from appendStaticSymbols import recover_layout
+
 from binary_comp.analyzers.data import (
     AddressComparison, RelocatedAddressRange, relocated_pointer_match,
 )
@@ -86,6 +88,12 @@ UNITS = {
     ), frozenset((0x000, *range(0x128, 0x174, 4), 0x1B0, 0x1B8)), (
         ('aObjectTypeData', 0x00466458, 58 * 0x87),
     )),
+    'joystick': UnitData(0x00468F04, 238, (), frozenset()),
+    'spc': UnitData(0x00468FF4, 12, (
+        ('nCapitalShipViewDistance', 0x00),
+        ('bLandingAuthorized', 0x04),
+        ('bAlternateChaseView', 0x08),
+    ), frozenset()),
     'barracks': UnitData(0x004693C8, 632, (
         ('aBarracksBunkOrigins', 0x00),
         ('apszSaveCampaignMenuLabels', 0x20),
@@ -420,7 +428,7 @@ UNITS = {
 
 
 ADJACENT_UNITS = (
-    ('nav', 'nearheap', 'gameflow', 'title'),
+    ('nav', 'nearheap', 'gameflow', 'title', 'joystick', 'spc'),
     ('barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),
     ('damage', 'view'),
     ('ending', 'input', 'comm', 'video', 'joycal'),
@@ -490,7 +498,16 @@ def main() -> int:
     for unit in args.unit or UNITS:
         block = UNITS[unit]
         owner = block.owner or unit + '.obj'
-        start = address(owner, block.globals[0][0])
+        if block.globals:
+            start = address(owner, block.globals[0][0])
+        else:
+            sections, _, bases = recover_layout(args.objects_root / owner,
+                                                 symbols, rebuilt)
+            matches = [bases[index] for index, section in sections.items()
+                       if section[0] == block.storage and index in bases]
+            require(len(matches) == 1,
+                    f'{owner}: cannot resolve the {block.storage} section base')
+            start = matches[0]
         starts[unit] = start
         section_size = block.size if block.section_size is None else block.section_size
         require(section_size >= block.size,

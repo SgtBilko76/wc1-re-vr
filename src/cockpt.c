@@ -2,7 +2,7 @@
  *  Cockpit HUD (Mac `cockpt` compilation unit): weapon, damage, target,
  *  objective, message, and pilot displays.
  *
- *  Address range 413000-417fff (provisional -- see docs/ORDER.md).
+ *  Address range 413a10-417fff (provisional -- see docs/ORDER.md).
  *  Boundary evidence: the Mac `cockpt` symbol list identifies the surviving
  *  functions throughout this Win32 range; port-specific split helpers remain
  *  interleaved in their original address order.

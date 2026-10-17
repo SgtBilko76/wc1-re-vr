@@ -162,7 +162,6 @@ extern int bGraphicsActive; /* 0x00469a20 */
 extern PacketResourceDescriptor aCommon3SpaceResources[12]; /* 0x00469bc0 */
 extern int nCapitalShipViewDistance; /* 0x00468ff4 */
 extern unsigned char bLandingAuthorized; /* 0x00468ff8 */
-extern int bAlternateChaseView; /* 0x00468ffc */
 extern unsigned char *pCockpitPilotShape; /* 0x0046905c */
 extern unsigned int bIntroSceneResourcesActive; /* 0x00469d48 */
 extern PacketResourceDescriptor aMissionResourceDescriptors[5]; /* 0x00469c20 */

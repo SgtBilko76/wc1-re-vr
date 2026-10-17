@@ -136,8 +136,9 @@ sits at one constant offset from the original.
 | `src/nearheap.c` | `0x40E890`–`0x40EFDF` |
 | `src/gameflow.c` | `0x40EFE0`–`0x40FA2F` |
 | `src/title.c` | `0x40FA30`–`0x4102AF` |
-| `src/spc.c` | `0x4102B0`–`0x412FFF` |
-| `src/cockpt.c` | `0x413000`–`0x417FFF` |
+| `src/joystick.c` | `0x4102B0`–`0x41073F` |
+| `src/spc.c` | `0x410740`–`0x413A0F` |
+| `src/cockpt.c` | `0x413A10`–`0x417FFF` |
 | `src/geom.c` | `0x418000`–`0x41A9CF` |
 | `src/barracks.c` | `0x41A9D0`–`0x41C50F` |
 | `src/fade.c` | `0x41C510`–`0x41C75F` |
@@ -202,6 +203,8 @@ ownership and qualifiers:
 | `0x004688C0`–`0x004688CB` | `nearheap.c`: near-heap state and descriptor limit |
 | `0x004688CC`–`0x0046890B` | `gameflow.c`: campaign state and the following viewport-disposal diagnostic; the helper's unit ownership remains provisional |
 | `0x00468910`–`0x00468F01` | `title.c`: opening-text pointer, Secret Missions message, credits, title-menu and resource records, and the following cinematic literals |
+| `0x00468F04`–`0x00468FF1` | `joystick.c`: five interactive calibration prompts and three separate calibration-file literals |
+| `0x00468FF4`–`0x00468FFF` | `spc.c`: capital-ship view distance, landing authorization, and alternate chase-view state |
 | `0x004693C8`–`0x0046963F` | `barracks.c`: bunk origins, menu pointers, modal bounds/state, campaign file numbers, and the following string literals |
 | `0x00469640`–`0x00469641` | `fade.c`: palette-transition initialization flag |
 | `0x00469644`–`0x00469665` | `debug.cpp`: console count, keyboard state/hook, and font, spinner, and newline literals |
@@ -244,10 +247,30 @@ name does not claim recovery of the original identifier. The opening-text
 pointer and all nineteen non-null credit pointers target the following
 1,062-byte literal pool, which retains the original spelling and newlines.
 
+The interactive calibration prompts follow the title literals at `0x00468F04`.
+The three `"j.cal"` literals at `0x00468FDC`, `0x00468FE4`, and `0x00468FEC`
+belong respectively to calibration failure, file opening, and write failure.
+They remain separate use-site literals. Initialized space state follows at
+`0x00468FF4`, proving an object boundary after the calibration literal pool.
+The three calibration/button-wait functions now occupy `joystick.c`; its
+238-byte `.data` section has no named globals. The title/joystick code boundary
+follows their distinct behavior and call groups; contiguous literal storage
+alone does not prove that particular division.
+
+The following space state occupies twelve initialized bytes. The alternate
+chase-view flag has only local original references and is private in the native
+build; the SDL camera adapter retains access through the SDL-only header.
+`SetFleetOverviewView` remains at the start of `spc.c` provisionally: it has no
+unit-local data to establish its exact original ownership. The Mac `spc`
+symbol run identifies `rotate_eye_to_goal` through `object_intelligence`;
+the next recovered function, `EmitTextString` at `0x00413A10`, begins the
+cockpit window. These windows no longer overlap the surviving space functions.
+
 The unit-data gate checks the complete reconstructed `.data` sections:
-navigation (608 bytes), near-heap (12), campaign flow (64), and title (1,522).
-It also checks the combined 2,210-byte run and all 48 pointer relocations,
-including the four alignment bytes before title. The six referenced colour
+navigation (608 bytes), near-heap (12), campaign flow (64), title (1,522),
+joystick (238), and space state (12). It also checks the combined 2,464-byte run
+and all 48 pointer relocations, including four alignment bytes before title
+and two each before joystick and space state. The six referenced colour
 variables and the two title resource-record pointers must resolve to their
 original globals and field offsets. This proves the data layout independently
 of the provisional internal code boundaries.

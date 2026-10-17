@@ -21,7 +21,8 @@ def require(condition: bool, message: str) -> None:
         raise ValueError(message)
 
 
-def recover(path: Path, entries, image: PEImage) -> list[tuple[str, int]]:
+def recover_layout(path: Path, entries, image: PEImage) -> tuple[dict, dict, dict]:
+    """Resolve object section bases independently of original-image contents."""
     data = path.read_bytes()
     machine, count, _, symbol_offset, symbol_count, optional, _ = \
         struct.unpack_from('<HHIIIHH', data)
@@ -65,17 +66,16 @@ def recover(path: Path, entries, image: PEImage) -> list[tuple[str, int]]:
         require(len(matches) == 1, f'{path}: missing or ambiguous public {name}')
         set_base(section, matches[0] - value)
 
-    local_names = {index: match.group(1)
-                   for index, (name, _, section, storage) in symbols.items()
-                   if section > 0 and storage == 3
-                   and (match := re.fullmatch(r'(_\w+)\$S\d+', name))}
+    data_targets = {index for index, (_, _, section, _) in symbols.items()
+                    if section > 0 and
+                    sections[section][0] in ('.data', '.bss', '.rdata')}
     relocations = image.relocations()
     for source_section, (_, size, raw, start, count) in sections.items():
         if source_section not in bases:
             continue
         for index in range(count):
             offset, target, kind = struct.unpack_from('<IIH', data, start + index * 10)
-            if target not in local_names or kind != 6:  # IMAGE_REL_I386_DIR32
+            if target not in data_targets or kind != 6:  # IMAGE_REL_I386_DIR32
                 continue
             require(offset + 4 <= size, f'{path}: relocation outside section')
             site = bases[source_section] + offset
@@ -84,8 +84,18 @@ def recover(path: Path, entries, image: PEImage) -> list[tuple[str, int]]:
             require(linked is not None, f'{path}: unreadable relocation at {site:#x}')
             value = struct.unpack('<I', linked)[0] - struct.unpack_from('<I', data, raw + offset)[0]
             _, symbol_value, target_section, _ = symbols[target]
-            set_base(target_section, value - symbol_value)
+            # Indexed references can have negative addends, encoded as DWORDs.
+            set_base(target_section, (value - symbol_value) & 0xFFFFFFFF)
 
+    return sections, symbols, bases
+
+
+def recover(path: Path, entries, image: PEImage) -> list[tuple[str, int]]:
+    sections, symbols, bases = recover_layout(path, entries, image)
+    local_names = {index: match.group(1)
+                   for index, (name, _, section, storage) in symbols.items()
+                   if section > 0 and storage == 3
+                   and (match := re.fullmatch(r'(_\w+)\$S\d+', name))}
     result = []
     for index, name in local_names.items():
         _, offset, section, _ = symbols[index]

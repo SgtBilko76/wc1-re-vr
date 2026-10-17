@@ -18,6 +18,14 @@ for similarity decisions.
   storage while expressing those reads directly.
 - Preserve visible local-variable order, branch direction, fall-through, and
   epilogue placement. Equivalent C often emits different instructions.
+- `CalibrateJoystickInteractive` sets text alignment before testing the loaded
+  font. Each sampled axis supplies both its 32-bit global and its 16-bit saved
+  calibration word; chained assignments preserve the original load/store order.
+  Its range divisors and four scale factors remain in registers until clamped.
+  The zero-scale clamps increment in left, up, right, down order, followed by
+  the global stores. Real locals for these values reproduce that sequence and
+  retain the original 36-byte stack frame. Register allocation and the final
+  bound calculations still differ; the aligned span remains sixteen bytes short.
 - In `/Od` code, keep explicit pointer locals when the original stores them.
 - Repeat identical literals at each use site; string pooling was disabled.
   In `DIBcascade`, write the surface-lock failure branch before the success

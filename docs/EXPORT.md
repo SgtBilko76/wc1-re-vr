@@ -41,7 +41,7 @@ code bytes.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
 initialized-data sections recovered for nav (608 bytes), nearheap (12),
-gameflow (64), title (1,522), barracks (632), fade (2),
+gameflow (64), title (1,522), joystick (238), spc (12), barracks (632), fade (2),
 debug (34), disk (523), ship (286), init (550), logic (447), trainsim (511),
 damage (390), view (289), ending (457), input (6), comm (520), video (10),
 joycal (42), killbrd (1,508), and gr (2,030). It also checks gr's complete
@@ -83,15 +83,25 @@ Navigation, cockpit cursor storage, and the console pointer form another
 and all three owner positions.
 `make verify-barracks-data` retains the barracks-only check.
 
-The navigation, near-heap, campaign-flow, and title `.data` sections are checked
-as complete blocks of 608, 12, 64, and 1,522 bytes and as one 2,210-byte run.
-The combined check includes four alignment bytes and 48 pointer relocations.
+The navigation, near-heap, campaign-flow, title, joystick, and space `.data`
+sections are checked as complete blocks of 608, 12, 64, 1,522, 238, and 12 bytes
+and as one 2,464-byte run. The combined check includes eight alignment bytes
+and 48 pointer relocations.
 The title block includes the restored 279-byte Secret Missions message.
-The navigation and title literal metadata covers 360 and 1,062 bytes, allowing
-the linked-data audit to resolve the individual string pointers. The full
+The navigation, title, and joystick literal metadata covers 360, 1,062, and
+238 bytes, allowing the linked-data audit to resolve individual string pointers. The full
 unit checks retain their stricter positional checks for duplicate strings.
 The internal near-heap/campaign and viewport-helper boundaries remain
-provisional as described in `docs/ORDER.md`.
+provisional as described in `docs/ORDER.md`, as do the title/joystick division
+and the fleet-view helper's exact owner.
+
+The joystick section contains only compiler literals, so it has no public
+data symbol to anchor the comparison. The unit gate uses the same COFF layout
+resolver as the private-symbol map: public code symbols establish the code
+base, and linked `DIR32` operands establish the literal section's base. Every
+such operand must have a PE `HIGHLOW` relocation and agree on that base.
+This also rejects a reference redirected to another byte-identical `"j.cal"`
+copy. A strict binary-comp address comparison then checks all 238 bytes.
 
 Three explicitly marked partial-section checks cover `game.c`: two scalar
 state runs of 112 and 21 bytes, and the 6,652-byte run of scripts, mission
@@ -134,8 +144,9 @@ still prevent a complete-unit layout claim for `dib.c`.
 LINK 4.20 omits private C data symbols from its public map. The build preserves
 that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
 `WC1.map` with eight private nav symbols, two private nearheap symbols,
-three private gameflow symbols, six private title symbols, one private cockpt
-symbol, four private damage symbols, seven private view symbols,
+three private gameflow symbols, six private title symbols, one private spc
+symbol, one private cockpt symbol, four private damage symbols,
+seven private view symbols,
 six private music symbols, eight private ending symbols, two private
 comm symbols, two private joycal symbols, ten private dib symbols,
 eighteen private game symbols, one private eventmgr symbol,
@@ -146,6 +157,9 @@ and linked `DIR32`
 references with PE `HIGHLOW` relocations. Conflicting anchors or unresolved
 symbols fail the build. This step changes only comparison metadata; it does
 not modify the executable or infer addresses from the original binary.
+The shared resolver handles both named storage and compiler literals. COFF
+addends are subtracted modulo 32 bits: indexed references can encode negative
+offsets as unsigned DWORDs, as the communication unit's ace-name lookup does.
 
 The room literal metadata covers all 328 bytes from the one-space label
 through the final chalk-board format. It resolves short and empty strings
