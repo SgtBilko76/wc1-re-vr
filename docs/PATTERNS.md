@@ -989,12 +989,31 @@ for similarity decisions.
   and mantissa evaluation order. Adding masks to every mantissa byte did
   not resolve them. Its reported size also includes following import stubs
   and alignment; `docs/EXPORT.md` records the separate body comparison.
-- `close_behind` still loads the range argument before its target-range
-  global, reversing the original comparison and adding one instruction byte
-  that pushes the span over its 32-byte alignment boundary. A saved target
-  range local does not fix this and perturbs `scan_for_enemy`; reversing the
-  comparison operands also leaves the original difference. Both trials are
-  reverted.
+- `close_behind` keeps its range parameter in memory by qualifying that
+  parameter as volatile. This recovers the original global load into AX and
+  the complete 32-byte span; the shared prototype and calling convention
+  are unchanged. The qualifier is a matching declaration choice, not proof
+  of the original source spelling. The remaining `CMP` and conditional jump
+  have reversed operands and direction. Reversing the source comparison,
+  with or without the qualifier, does not fix them. A saved target-range
+  local also failed and perturbed `scan_for_enemy`; it is not retained.
+- `set_up_screen_viewport` selects static geometry with switch cases four
+  and five. CL emits the original lower-bound `JL`, upper-bound `JLE`, and
+  packet-geometry fall-through; equivalent if/goto forms place the static
+  geometry first. Store the height directly in `nScreenHeight`, then divide
+  that word for the vertical center. This keeps the geometry pointer in ECX
+  and the height in DX, eliminating the extra ESI save/restore and recovering
+  the original 336-byte span. Both screen dimensions already have short
+  declarations, so their stores need no pointer casts. All mnemonics now
+  match; the origin-Y load/store pair in each branch still uses CX where
+  the original uses DX. A separate origin-Y local does not alter that result.
+- `sort_viable_target_list` still lacks the original spill of the next outer
+  index. A volatile short plus chained inner-index assignment recovers an
+  eight-byte frame, but places the word at a different offset, caches an
+  extra distance pointer, and leaves the span sixteen bytes short. Explicit
+  candidate-distance storage does not change the retained code; ordinary
+  nested for loops change register allocation without recovering the spill.
+  These trials are not retained.
 - `get_player_input` copies each twelve-byte input sample with an inlined
   `memcpy`. This also recovers the earlier guard's original load, test,
   increment, and store, raising similarity from 86.44% to 96.61% without

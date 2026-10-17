@@ -756,7 +756,7 @@ unsigned int get_rear_spot(short obj, unsigned short distance,
 }
 
 /* Function start: 0x422F60 */
-unsigned int close_behind(short range)
+unsigned int close_behind(volatile short range)
 {
     if (nTargetRange < range &&
         nTargetFacing < -0x32)

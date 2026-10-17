@@ -907,38 +907,33 @@ void intro_drawbackgroundships(void)
 void set_up_screen_viewport(signed char mode)
 {
     int modeIndex;
-    short viewportHeight;
     short viewportWidth;
     const ScreenViewportGeometry *viewportGeometry;
 
     cScreenViewportMode = mode;
     modeIndex = (int)mode;
-    if (modeIndex >= 4) {
-        if (modeIndex <= 5)
-            goto static_geometry;
+    switch (modeIndex) {
+    case 4:
+    case 5:
+        pScreenViewportGeometry =
+            &aScreenViewportGeometry[modeIndex];
+        break;
+    default:
+        pScreenViewportGeometry =
+            (const ScreenViewportGeometry *)(
+                (const unsigned char *)pScreenViewportPacket +
+                pScreenViewportPacket
+                    ->geometryOffsets[modeIndex]);
+        break;
     }
-
-    pScreenViewportGeometry =
-        (const ScreenViewportGeometry *)(
-            (const unsigned char *)pScreenViewportPacket +
-            pScreenViewportPacket
-                ->geometryOffsets[modeIndex]);
-    goto geometry_ready;
-
-static_geometry:
-    pScreenViewportGeometry =
-        &aScreenViewportGeometry[modeIndex];
-
-geometry_ready:
 
     if (bCockpitlessView != 0 && bCockpitlessView != -2) {
         viewportWidth = pScreenViewportGeometry->width;
         viewportGeometry = pScreenViewportGeometry;
-        *(short *)&nScreenWidth = viewportWidth;
+        nScreenWidth = viewportWidth;
         nViewCenterX = (short)(viewportWidth / 2);
-        viewportHeight = viewportGeometry->height;
-        nViewCenterY = (short)(viewportHeight / 2);
-        *(short *)&nScreenHeight = viewportHeight;
+        nScreenHeight = viewportGeometry->height;
+        nViewCenterY = (short)(nScreenHeight / 2);
         nViewportOriginX = viewportGeometry->originX;
         nViewportOriginY = viewportGeometry->originY;
         switch ((int)cCockpitView) {
@@ -955,18 +950,17 @@ geometry_ready:
             nViewCenterY += 50;
             break;
         }
-        *(short *)&nScreenWidth = 320;
-        *(short *)&nScreenHeight = 200;
+        nScreenWidth = 320;
+        nScreenHeight = 200;
         return;
     }
 
     viewportWidth = pScreenViewportGeometry->width;
     viewportGeometry = pScreenViewportGeometry;
-    *(short *)&nScreenWidth = viewportWidth;
+    nScreenWidth = viewportWidth;
     nViewCenterX = (short)(viewportWidth / 2);
-    viewportHeight = viewportGeometry->height;
-    nViewCenterY = (short)(viewportHeight / 2);
-    *(short *)&nScreenHeight = viewportHeight;
+    nScreenHeight = viewportGeometry->height;
+    nViewCenterY = (short)(nScreenHeight / 2);
     nViewportOriginX = viewportGeometry->originX;
     nViewportOriginY = viewportGeometry->originY;
 }
