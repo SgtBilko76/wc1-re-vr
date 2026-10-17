@@ -387,7 +387,6 @@ void BuildMap(short showPlayer)
 {
     MissionNavPoint *navPoint;
     MissionShipRecord *missionShip;
-    MissionObjective *objective;
     const NavMapObjectiveStyle *style;
     unsigned short labelColour;
     short missionShipIndex;
@@ -405,29 +404,32 @@ void BuildMap(short showPlayer)
                                   2, cPrimaryTextColour, -1);
     stNavLabelTextContext.alignment = 0;
     SetTextContext(&stNavLabelTextContext);
+    navPoint = aMissionNavPoints;
     ResetNavMapLabels();
     ResetNavMapReservedAreas();
     SetScale();
 
-    for (navPoint = aMissionNavPoints;
-         navPoint->type != 0;
+    for (; navPoint->type != 0;
          navPoint++) {
         for (slot = 0; slot < 10; slot++) {
             missionShipIndex = navPoint->missionShips[slot];
             if (missionShipIndex != -1) {
                 missionShip = &aMissionShips[missionShipIndex];
-                if (missionShip->type == OBJECT_TYPE_ASTEROID_FIELD) {
+                switch (missionShip->type) {
+                case OBJECT_TYPE_ASTEROID_FIELD:
                     DrawNavHazardMarker(navPoint->position,
                                         missionShip->position,
                                         missionShip->speed,
                                         cAsteroidColour, cAsteroidColour,
                                         "Asteroids");
-                } else if (missionShip->type == OBJECT_TYPE_MINE_FIELD) {
+                    break;
+                case OBJECT_TYPE_MINE_FIELD:
                     DrawNavHazardMarker(navPoint->position,
                                         missionShip->position,
                                         missionShip->speed,
                                         cRedColour, cRedColour,
                                         "Mines");
+                    break;
                 }
             }
         }
@@ -436,16 +438,17 @@ void BuildMap(short showPlayer)
     for (objectiveIndex = 0;
          objectiveIndex < (short)cMissionObjectiveCount;
          objectiveIndex++) {
-        objective = &aMissionObjectives[objectiveIndex];
         if (mobile_objective(objectiveIndex) == 0 ||
             (aMissionShips[
-                 (signed char)objective->index].state == 0 &&
+                 (signed char)aMissionObjectives[objectiveIndex].index]
+                     .state == 0 &&
              achieved(objectiveIndex) == 0)) {
             ScaleNavMapCoordinates(&x, &y,
-                                   objective->mapX, objective->mapY);
+                                   aMissionObjectives[objectiveIndex].mapX,
+                                   aMissionObjectives[objectiveIndex].mapY);
             if (hidden_objective(objectiveIndex) == 0) {
                 style = &aNavMapObjectiveStyles[
-                    objective->type];
+                    aMissionObjectives[objectiveIndex].type];
                 if (visited(objectiveIndex) == 0)
                     DrawViewportPixel(&stSceneBuffer, x, y,
                                       *style->unvisitedColour);
@@ -475,7 +478,8 @@ void BuildMap(short showPlayer)
                     nNavMapLabelCount;
                 AddUniqueObjectiveNavLabel(
                     x, y, labelColour, objective_name(objectiveIndex),
-                    objectiveIndex, (short)objective->index);
+                    objectiveIndex,
+                    (short)aMissionObjectives[objectiveIndex].index);
             }
         }
     }

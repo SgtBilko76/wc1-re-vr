@@ -344,8 +344,8 @@ void vdu_polygon(signed char bar, short percent)
     short direction;
     short left;
     short top;
-    short right;
     short bottom;
+    short right;
     short length;
     short extent;
     signed char filledFrame;
@@ -1019,18 +1019,22 @@ void RemovePlayerReleaseWeapon(signed char weapon)
 void fire_computer_graphic_missile(void)
 {
     short visible;
+    signed char frame;
 
-    if (cReleaseWeaponDisplayFrame == -1)
+    frame = cReleaseWeaponDisplayFrame;
+    if (frame == -1)
         return;
     visible = nCameraViewMode == 0 && get_mode(0) == 1;
+    frame = cReleaseWeaponDisplayFrame;
     if (cReleaseWeaponDisplayState != 0) {
         RestoreSpriteBackground(
             &stLeftVdu, pReleaseWeaponDisplayBackground,
             nReleaseWeaponDisplayX,
             nReleaseWeaponDisplayY,
             pCockpitWeaponShape,
-            cReleaseWeaponDisplayFrame);
+            frame);
     }
+    frame = cReleaseWeaponDisplayFrame;
     if (nReleaseWeaponDisplayY > stLeftVdu.top - 10 &&
         nReleaseWeaponDisplayY < stLeftVdu.bottom) {
         if (eReleaseWeaponDisplayType ==
@@ -1048,7 +1052,7 @@ void fire_computer_graphic_missile(void)
                 nReleaseWeaponDisplayX,
                 nReleaseWeaponDisplayY,
                 pCockpitWeaponShape,
-                cReleaseWeaponDisplayFrame);
+                frame);
             DrawSpriteDefault(
                 &stLeftVdu, nReleaseWeaponDisplayX,
                 nReleaseWeaponDisplayY,
@@ -1838,8 +1842,10 @@ short decrement_lock_time(short screenX)
 void target_locking(signed char target)
 {
     enum ObjectType weaponType;
-    short x;
     short y;
+    short x;
+    short countdown;
+    int radiusSquared;
 
     if (target != -1 &&
         aeShipSide[(short)target] != aeShipSide[0] &&
@@ -1848,11 +1854,14 @@ void target_locking(signed char target)
         if (x == -0x7fff)
             return;
         y = asObjectScreenY[(short)target];
-        if (nTargetLockCountdown < -1) {
-            nTargetLockCountdown++;
+        countdown = nTargetLockCountdown;
+        if (countdown < -1) {
+            nTargetLockCountdown = ++countdown;
             return;
         }
-        if (x * x + y * y > 0xe10) {
+        radiusSquared = y * y;
+        radiusSquared += x * x;
+        if (radiusSquared > 0xe10) {
             lock_off();
             return;
         }
@@ -1871,28 +1880,25 @@ void target_locking(signed char target)
             &aShipWeapons[0][1] +
             nSelectedReleaseWeaponIndex * 7);
 #endif
-        if (weaponType != OBJECT_TYPE_HEAT_SEEKING_MISSILE) {
-            if (weaponType != OBJECT_TYPE_IMAGE_RECOGNITION_MISSILE) {
+        switch (weaponType) {
+        default:
+            lock_off();
+            return;
+        case OBJECT_TYPE_HEAT_SEEKING_MISSILE:
+            get_facing_range_from_object(0, (short)target);
+            if (nTargetFacing > -0x41) {
                 lock_off();
                 return;
             }
-            goto image_recognition_lock;
-        }
-
-        get_facing_range_from_object(0, (short)target);
-        if (nTargetFacing > -0x41) {
-            lock_off();
+            if (starting_lock(0x12) == 0)
+                decrement_lock_time(x);
             return;
-        }
-        if (starting_lock(0x12) == 0)
+        case OBJECT_TYPE_IMAGE_RECOGNITION_MISSILE:
+            if (starting_lock(0x20) != 0)
+                return;
             decrement_lock_time(x);
-        return;
-
-image_recognition_lock:
-        if (starting_lock(0x20) != 0)
             return;
-        decrement_lock_time(x);
-        return;
+        }
     }
     lock_off();
 }
@@ -2803,6 +2809,8 @@ void cockpit_explosion(void)
 /* Function start: 0x4178A0 */
 void place_damage_on_cockpit(short damage)
 {
+    unsigned int *state;
+
 #ifdef SDL_PORT
     if (SdlSwcFlightActive()) {
         SdlSwcCockpitDamage(damage);
@@ -2810,13 +2818,15 @@ void place_damage_on_cockpit(short damage)
     }
 #endif
     if (nCameraViewMode == 0 && nTrainSimActive == 0 &&
-        anCockpitDamageState[damage] == 0) {
-        nPendingCockpitDamage = damage;
-        anCockpitDamageState[damage] = 1;
+        *(state = &anCockpitDamageState[damage]) == 0) {
         if (pCockpitExplosionShape == 0) {
+            nPendingCockpitDamage = damage;
+            *state = 1;
             explosion_draw();
             return;
         }
+        nPendingCockpitDamage = damage;
+        *state = 1;
         if (IsCockpitExplosionActive() == 0) {
             stCockpitExplosionPosition =
                 aaCockpitDamagePositions[

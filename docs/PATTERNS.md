@@ -266,8 +266,8 @@ for similarity decisions.
   operand differences still remaining.
 - `vdu_polygon` indexes the cockpit-bar table by view and bar directly.
   Initialize its retained length word within the extent expression; loading
-  it beforehand or caching the view index changes allocation and shortens
-  the routine. The frame swap saves the empty frame first. Direct indexing
+  it beforehand or caching the view index shortened the routine in earlier
+  trials. The frame swap saves the empty frame first. Direct indexing
   recovers sixteen missing bytes, but the viewport bound reads and register
   allocation remain unresolved. Chained field assignments and reusing the
   percentage argument did not improve the match; copying the frame bytes
@@ -275,6 +275,41 @@ for similarity decisions.
   the length local leaves this function's instructions unchanged but alters
   register allocation in later mission functions. Check the entire unit
   when changing locals, not just the edited function.
+  Declaring bottom before right improves the current match to 88.52%, but
+  its aligned span remains 32 bytes short. Moving the right-bound store
+  before the bottom-bound load does not change the generated instructions.
+- `fire_computer_graphic_missile` retains a signed-byte frame across the
+  coordinate calculations. Refresh it after the VDU-mode query and after
+  restoring the old background; use that value for background capture, then
+  reload the global for drawing. These lifetimes reproduce the original
+  frame reads and recover sixteen bytes, restoring the 336-byte span at
+  85.87%. Explicit shape/background pointer locals and a promoted Y local
+  did not improve the match and are not retained. Coordinate caching and
+  an extra saved register remain different.
+- `target_locking` dispatches through a weapon-type switch, with the
+  heat-seeking body before image recognition. Keep the countdown in a
+  short local, increment it, and store it before returning. Accumulate the
+  squared screen distance in a real int local in two steps, and declare
+  the short Y coordinate before X. Together these choices recover the
+  original branch order, register allocation, and complete 256-byte span
+  exactly. Reversing a single sum expression or moving the countdown
+  declaration alone did not reproduce the allocation; promoting Y into
+  the distance local before squaring it was worse.
+- `place_damage_on_cockpit` retains the selected damage-state pointer after
+  its two mode guards. Each explosion branch assigns both the pending
+  damage and its state. CL shares those assignments after testing the
+  shape pointer, preserving the original flags through the two stores.
+  This restores its exact match after changes earlier in the unit.
+  Hoisting the assignments in source delays the shape test; saving a
+  Boolean result instead adds arithmetic instructions and sixteen bytes.
+- The cockpit changes leave `cycle_onscreen_targets` with the equivalent
+  reversed comparison and branch, two differing instructions at unchanged
+  size. Reversing its source comparison, moving the target test into the
+  loop body, caching the target count, and reordering local declarations
+  do not recover the original order; those trials are reverted.
+  `draw_target_box` improves to 97.62% at unchanged size and differing-byte
+  count, while `print_message_text` returns to 95.83% with its existing
+  sixteen-byte excess. Neither function's source changed in this batch.
 - `print_message_text` keeps its character limit as a short and initializes
   the two wrapping pointers after measuring the viewport. Test the character
   just written to the output buffer so CL retains the loaded byte instead
@@ -707,6 +742,14 @@ for similarity decisions.
   EDI, adding the array bases at each use. Direct typed subscripts reproduce
   this allocation and the reloads, restore sixteen bytes, and give an exact
   comparison for the complete 432-byte function.
+- `BuildMap` likewise indexes mission objectives directly instead of
+  retaining a record pointer. Hazard dispatch is a switch with asteroid
+  and mine cases. Initialize the navigation-point pointer immediately
+  after `SetTextContext` in source: CL schedules its load just before
+  `InitializeTextContextFromFont`, matching the original. Initializing
+  before text setup or in the loop header leaves scheduling differences.
+  These choices recover 32 bytes and match the complete 928-byte span,
+  including its switch tables and alignment.
 - `init_ship` retains the record's full-width object type through its calls.
   Its normal and hazard paths form an `if`/`else`, with an immediate return
   after successful ship setup and a shared final return for failed setup or
