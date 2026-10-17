@@ -112,6 +112,12 @@ static unsigned short awAbsoluteSine[360] = {
      53,  49,  45,  40,  36,  31,  27,  22,  18,  13,   9,   4
 };
 
+/* 0x004875a8 */
+static RasterSurface stRasterSurface;
+
+/* 0x004875c0 */
+static unsigned char abShapeTransformScratch[0xfa00];
+
 /* Function start: 0x4408A0 */
 void CheckHeapBlockSignature(unsigned char *shape)
 {

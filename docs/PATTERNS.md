@@ -340,13 +340,23 @@ for similarity decisions.
   coordinate words into short locals before promotion. Keep separate command
   pointer advances for the two words. Restoration calculates the run end
   inside the second horizontal-bound test; capture retains its preceding
-  assignment. Together these forms recover restoration's original size and
-  reduce the pair's differing instructions to 157/220 and 161/224. Capture's
-  mnemonic score falls slightly despite fewer byte differences. The original
+  assignment. These forms preserve the original aligned function sizes.
+  The original
   spills the run length while retaining clipping values in registers; this
   allocation remains unresolved. Narrowing the run-length declaration's
   scope, adding a register hint to the skip, caching promoted bounds, and
   duplicating the cursor updates did not improve the match.
+  Separating screen-pointer initialization from its offset addition also
+  emits the same bytes, as do register hints on both clipping locals.
+  Computing the run length before the command-type branch adds a byte copy
+  and moves the row count into a register, worsening both functions. These
+  trials are not retained.
+- `rotate_about_j` multiplies the forward component by sine before multiplying
+  the saved right component by cosine. After correcting graphics-workspace
+  visibility, CL evaluates these addition terms in the opposite order.
+  Swapping the source terms does not change its output. An explicit product
+  local restores call order but reduces the stack frame from eight bytes to
+  four and worsens the function-size mismatch, so it is not retained.
 - `ReadTextInput` dispatches both the input byte and the input mode with
   switches. This retains the zero-extended key for character classification
   and places Enter/Escape and uppercase/numeric branches after their defaults.

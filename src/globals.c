@@ -705,8 +705,6 @@ float fMeasuredFrameRate; /* 0x00486510 */
 int bDIBSlamPending; /* 0x00486518 */
 char szSpaceFlightMaxFpsMessage[0x80]; /* 0x00486528 */
 unsigned char abCursorSaveArea[0x1000]; /* 0x004865a8 */
-RasterSurface stRasterSurface; /* 0x004875a8 */
-unsigned char abShapeTransformScratch[0xfa00]; /* 0x004875c0 */
 RasterClip stRasterClip; /* 0x00496fc0 */
 unsigned char abSolidColourTranslation[256]; /* 0x00497648 */
 unsigned char abShapeRLEScratch[0x100000]; /* 0x00497748 */

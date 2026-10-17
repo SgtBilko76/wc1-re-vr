@@ -341,6 +341,10 @@ UNITS = {
         ('szGameRegistryKey', 0x00),
         ('szCheaterRegistryValue', 0x30),
     ), frozenset(), storage='.rdata', owner='gr.obj'),
+    'gr-bss-prefix': UnitData(0x004875A8, 64024, (
+        ('stRasterSurface', 0x00),
+        ('abShapeTransformScratch', 0x18),
+    ), frozenset(), storage='.bss', owner='gr.obj', section_size=64024),
     # The original owner is unresolved. This verifies the constants and
     # their relative layout in the temporary globals object's .rdata only.
     'globals-angular': UnitData(0x004630DC, 12, (

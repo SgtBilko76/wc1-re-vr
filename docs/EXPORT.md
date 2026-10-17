@@ -65,6 +65,11 @@ or relocations, and their linker symbols must belong to the expected object
 at the recovered relative offsets. Binary-comp compares the loader-visible
 zero-filled bytes. These checks establish local storage and layout;
 they do not claim that the surrounding uninitialized region matches.
+The graphics check covers only its 64,024-byte uninitialized prefix: the
+20-byte raster surface, four alignment bytes, and 64,000-byte transformation
+buffer. It requires the current 64,024-byte COFF section and both private
+symbols at the original offsets. The remaining graphics storage is still
+unrecovered, so this is explicitly a partial-section check.
 `make verify-barracks-data` retains the barracks-only check.
 
 Three explicitly marked partial-section checks cover `game.c`: two scalar
@@ -111,7 +116,7 @@ that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
 five private music symbols, eight private ending symbols, two private
 comm symbols, two private joycal symbols, ten private dib symbols,
 eighteen private game symbols, seventeen private screens symbols,
-twenty-two private killbrd symbols, and three private gr symbols added.
+twenty-two private killbrd symbols, and five private gr symbols added.
 Their addresses come from the object's COFF symbols, public section anchors,
 and linked `DIR32`
 references with PE `HIGHLOW` relocations. Conflicting anchors or unresolved

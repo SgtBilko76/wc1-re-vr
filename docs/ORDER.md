@@ -376,6 +376,20 @@ Their absolute addresses and the intervening uninitialized storage remain
 unrecovered. The adjacent `szSfxWavePath` buffer belongs to the following music
 code and is not part of these blocks.
 
+The graphics workspace begins at `0x004875A8` with a 20-byte `RasterSurface`,
+four alignment bytes, and the 64,000-byte transformation buffer at
+`0x004875C0`. Their identified direct references are confined to `gr.c`.
+Private static definitions there reproduce this 64,024-byte prefix as genuine
+COFF `.bss`, with the buffer at offset `0x18`. The partial-section gate checks
+both owner symbols, their offsets, uninitialized storage flags, and all
+loader-visible bytes. Their absolute placement and the rest of the graphics
+workspace remain unrecovered.
+
+A trial moving the other five private graphics/streaming variables together
+put the stream path before the RLE buffer and the raster clip before the
+raster surface, contrary to the original. Those definitions remain in
+temporary storage; the matching prefix does not establish the later layout.
+
 The damage-display unit starts with `show_damage_disp` at `0x0042C800`.
 Its initialized tables start at `0x0046A748`, after the sound/configuration
 literal pool ending at `0x0046A73F`. CL places a unit's initialized definitions
