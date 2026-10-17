@@ -2079,23 +2079,12 @@ int Title_Sequence(void)
         optionCount = 2;
         menuOptions[1] = 1;
     }
-    if (optionCount < 4) {
-        short *fillWord;
-        unsigned int fillCount;
-
-        fillWord = &menuOptions[optionCount];
-        fillCount = 4 - optionCount;
-        do {
-            *fillWord++ = -1;
-            fillCount--;
-        } while (fillCount != 0);
-    }
+    for (; optionCount < 4; optionCount++)
+        menuOptions[optionCount] = -1;
 
     menuIndex = 0;
     do {
-        if (menuOptions[menuIndex] == -1) {
-            aTitleMenuRegions[menuIndex].frame = -1;
-        } else {
+        if (menuOptions[menuIndex] != -1) {
             aTitleMenuRegions[menuIndex].frame = 1;
             if (menuOptions[menuIndex] < 3) {
                 GetShapeFrameBounds(
@@ -2110,6 +2099,8 @@ int Title_Sequence(void)
                     aTitleMenuRegions[menuIndex].top,
                     alternateMenuShape, 0);
             }
+        } else {
+            aTitleMenuRegions[menuIndex].frame = -1;
         }
         menuIndex++;
     } while (menuIndex < 4);

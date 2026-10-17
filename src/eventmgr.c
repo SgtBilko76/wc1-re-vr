@@ -825,49 +825,25 @@ void intro_drawbackgroundships(void)
     unsigned char *shape;
     int objectClass;
     int obj;
-    int dwordOffset;
-    int shortOffset;
-    int zero;
 
-    obj = 0;
-    shortOffset = 0;
-    zero = 0;
-    dwordOffset = 0;
-    for (; dwordOffset < SPACE_OBJECT_COUNT * (int)sizeof(int);
-         shortOffset += sizeof(short),
-         dwordOffset += sizeof(int),
-         obj++) {
-        if (*(enum ObjectType *)((unsigned char *)aeObjectType +
-                                 dwordOffset) < zero)
+    for (obj = 0; obj < SPACE_OBJECT_COUNT; obj++) {
+        if (aeObjectType[obj] < 0)
             return;
-        objectClass = *(enum ObjectClass *)(
-            (unsigned char *)aeObjectClass + dwordOffset);
+        objectClass = aeObjectClass[obj];
         if (objectClass != OBJECT_CLASS_NULL) {
             switch (objectClass) {
             default:
-#ifdef SDL_PORT
                 shape = apObjectShape[obj];
-#else
-                shape = *(unsigned char **)(
-                    (unsigned char *)apObjectShape +
-                    dwordOffset);
-#endif
                 if (shape != 0) {
                     DrawSolidColourSpriteScaled(
                         &stSpaceBuffer,
-                        *(short *)((unsigned char *)asObjectDrawX +
-                                   shortOffset),
-                        *(short *)((unsigned char *)asObjectDrawY +
-                                   shortOffset),
+                        asObjectDrawX[obj],
+                        asObjectDrawY[obj],
                         shape,
-                        *(short *)((unsigned char *)asObjectViewFrame +
-                                   shortOffset),
-                        *(short *)((unsigned char *)asObjectScreenAngle +
-                                   shortOffset),
-                        *(short *)((unsigned char *)asObjectScreenScale +
-                                   shortOffset),
-                        *(short *)((unsigned char *)asObjectFlip +
-                                   shortOffset),
+                        asObjectViewFrame[obj],
+                        asObjectScreenAngle[obj],
+                        asObjectScreenScale[obj],
+                        asObjectFlip[obj],
                         cPrimaryViewBufferColour);
                 }
                 break;
@@ -878,26 +854,23 @@ void intro_drawbackgroundships(void)
             case OBJECT_CLASS_PLANET:
 #endif
             case OBJECT_CLASS_DUST:
-                if (obj == nNavPointerObject)
-#ifdef SDL_PORT
-                    shape = apObjectShape[obj];
-#else
-                    shape = *(unsigned char **)(
-                        (unsigned char *)apObjectShape +
-                        dwordOffset);
-#endif
-                else
-                    shape = pConstellationShape;
-                DrawSolidColourSprite(
-                    &stSpaceBuffer,
-                    *(short *)((unsigned char *)asObjectDrawX +
-                               shortOffset),
-                    *(short *)((unsigned char *)asObjectDrawY +
-                               shortOffset),
-                    shape,
-                    *(short *)((unsigned char *)asObjectViewFrame +
-                               shortOffset),
-                    cPrimaryViewBufferColour);
+                if (obj == nNavPointerObject) {
+                    DrawSolidColourSprite(
+                        &stSpaceBuffer,
+                        asObjectDrawX[obj],
+                        asObjectDrawY[obj],
+                        apObjectShape[obj],
+                        asObjectViewFrame[obj],
+                        cPrimaryViewBufferColour);
+                } else {
+                    DrawSolidColourSprite(
+                        &stSpaceBuffer,
+                        asObjectDrawX[obj],
+                        asObjectDrawY[obj],
+                        pConstellationShape,
+                        asObjectViewFrame[obj],
+                        cPrimaryViewBufferColour);
+                }
                 break;
             }
         }

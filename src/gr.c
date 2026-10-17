@@ -608,9 +608,9 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
 /* Function start: 0x441A40 */
 void DrawSolidColourSprite(Viewport *viewport, short x, short y,
                            unsigned char *shape, short frame,
-                           unsigned char colour)
+                           short colour)
 {
-    SetSolidColourTranslation(colour);
+    SetSolidColourTranslation((unsigned char)colour);
     DrawSpriteTransformed(viewport, x, y, shape, frame, 0,
                           0x100, 0x100, 0, 1);
 }
@@ -769,9 +769,9 @@ void DrawSpriteScaled(Viewport *viewport, short x, short y,
 void DrawSolidColourSpriteScaled(Viewport *viewport, short x, short y,
                                  unsigned char *shape, short frame,
                                  short angle, short scale, short flip,
-                                 unsigned char colour)
+                                 short colour)
 {
-    SetSolidColourTranslation(colour);
+    SetSolidColourTranslation((unsigned char)colour);
     DrawSpriteTransformed(viewport, x, y, shape, frame, angle,
                           scale, scale, flip, 1);
 }

@@ -1669,7 +1669,7 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
                              short frame);                          /* 0x00441740 */
 void DrawSolidColourSprite(Viewport *viewport, short x, short y,
                            unsigned char *shape, short frame,
-                           unsigned char colour);                    /* 0x00441A40 */
+                           short colour);                            /* 0x00441A40 */
 void CopyViewportContents(Viewport *source, Viewport *destination);    /* 0x00441A90 */
 void ClearViewport(Viewport *viewport, short colour);                  /* 0x00441AE0 */
 void DrawViewportPixel(Viewport *viewport, short x, short y,
@@ -1700,7 +1700,7 @@ void DrawSpriteScaled(Viewport *viewport, short x, short y,
 void DrawSolidColourSpriteScaled(Viewport *viewport, short x, short y,
                                  unsigned char *shape, short frame,
                                  short angle, short scale, short flip,
-                                 unsigned char colour);                /* 0x00442000 */
+                                 short colour);                        /* 0x00442000 */
 int GetTransformedShapeBounds(Viewport *viewport, short x, short y,
                               unsigned char *shape, short frame,
                               short angle, short scale, short flip,

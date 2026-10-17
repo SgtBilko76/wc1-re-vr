@@ -31,6 +31,21 @@ for similarity decisions.
 - Check argument widths at callers even when the callee ignores an argument.
   `GetTransformedShapeBounds` takes a short flip value: widening it to `int`
   adds a sign extension in `easy2see` that the original does not contain.
+  The solid-colour sprite functions likewise take a short colour value even
+  though `SetSolidColourTranslation` uses only its low byte. Their callers
+  extend byte colours into AX before pushing them.
+- A shared call in the executable can come from calls in both source branches.
+  In `intro_drawbackgroundships`, separate sprite calls let CL 4.20 prepare
+  the common colour and frame arguments before selecting the shape. Selecting
+  the shape first, including with a conditional argument, moves those pushes
+  after the branch and does not reproduce the original instruction order.
+- A typed loop filling a short array can compile to `REP STOSD` followed by
+  `REP STOSW`. `Title_Sequence` uses this to mark unused menu options as -1;
+  a byte-oriented `memset` produces a different remainder sequence.
+- Preserve a shared sentinel write after a variable-length list is built.
+  `process_player_input` writes one or two keys through an advancing pointer,
+  then appends -1. Writing a separate sentinel in each switch case changes
+  the original common tail.
 - Signedness matters even for 32-bit fields. In `IxStream`, `pending` and
   `lockLen` are signed counts, while the consumed-byte delta is unsigned.
   The original tests `pending` with a signed comparison and updates it

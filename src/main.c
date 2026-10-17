@@ -485,36 +485,33 @@ int process_player_input(void)
     short finished;
     short handled;
 
-    finished = 0;
     handled = 1;
+    finished = 0;
     shift = GetShiftKeyState();
     control = GetControlKeyState();
+    key = keys;
     switch ((signed char)bCurrentKey) {
     case 0x47:
-        keys[0] = 0x48;
-        keys[1] = 0x4b;
-        keys[2] = -1;
+        *key++ = 0x48;
+        *key++ = 0x4b;
         break;
     case 0x49:
-        keys[0] = 0x48;
-        keys[1] = 0x4d;
-        keys[2] = -1;
+        *key++ = 0x48;
+        *key++ = 0x4d;
         break;
     case 0x4f:
-        keys[0] = 0x50;
-        keys[1] = 0x4b;
-        keys[2] = -1;
+        *key++ = 0x50;
+        *key++ = 0x4b;
         break;
     case 0x51:
-        keys[0] = 0x50;
-        keys[1] = 0x4d;
-        keys[2] = -1;
+        *key++ = 0x50;
+        *key++ = 0x4d;
         break;
     default:
-        keys[0] = (short)(signed char)bCurrentKey;
-        keys[1] = -1;
+        *key++ = (short)(signed char)bCurrentKey;
         break;
     }
+    *key = -1;
 
     key = keys;
     while (finished == 0) {
@@ -558,17 +555,7 @@ int process_player_input(void)
             bMouseCursorVisible = 0;
             if (nPitchInput < 0) {
                 nPitchInput = 0;
-            } else if (control == 0) {
-                if (shift != 0)
-                    nPitchInput = 9;
-                if (nPitchInput < 9 ||
-                    cPreviousKey < 0) {
-                    bMouseCursorVisible = 0;
-                    nPitchInput++;
-                } else {
-                    nPitchInput--;
-                }
-            } else {
+            } else if (control != 0) {
                 nSfxVolumeSetting++;
                 if (nSfxVolumeSetting > 20)
                     nSfxVolumeSetting = 20;
@@ -577,6 +564,15 @@ int process_player_input(void)
                     nSfxVolumeSetting / 2]);
                 ShowOnScreenMessage(0, 0, "SFX VOLUME: %d.",
                                     nSfxVolumeSetting / 2);
+            } else {
+                if (shift != 0)
+                    nPitchInput = 9;
+                if (nPitchInput < 9 ||
+                    cPreviousKey < 0) {
+                    nPitchInput++;
+                } else {
+                    nPitchInput--;
+                }
             }
             break;
         case 0x4b:
@@ -648,18 +644,7 @@ int process_player_input(void)
             bMouseCursorVisible = 0;
             if (nPitchInput > 0) {
                 nPitchInput = 0;
-            } else if (control == 0) {
-                if (shift != 0)
-                    nPitchInput = -9;
-                if (nPitchInput > -9)
-                    nPitchInput--;
-                else if (cPreviousKey < 0)
-                    nPitchInput--;
-                else {
-                    bMouseCursorVisible = 0;
-                    nPitchInput++;
-                }
-            } else {
+            } else if (control != 0) {
                 nSfxVolumeSetting--;
                 if (nSfxVolumeSetting < 0)
                     nSfxVolumeSetting = 0;
@@ -668,6 +653,16 @@ int process_player_input(void)
                 SaveVolumeSettingsToRegistry();
                 ShowOnScreenMessage(0, 0, "SFX VOLUME: %d.",
                                     nSfxVolumeSetting / 2);
+            } else {
+                if (shift != 0)
+                    nPitchInput = -9;
+                if (nPitchInput > -9)
+                    nPitchInput--;
+                else if (cPreviousKey < 0)
+                    nPitchInput--;
+                else {
+                    nPitchInput++;
+                }
             }
             break;
         case -1:
