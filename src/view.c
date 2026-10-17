@@ -759,8 +759,8 @@ unsigned short __stdcall AllocateViewport(Viewport *viewport,
 
     top = (unsigned short)viewport->top;
     height = (unsigned short)(viewport->bottom - top + 1);
+    width = (unsigned short)(viewport->right - viewport->left + 1);
     left = viewport->left;
-    width = (unsigned short)(viewport->right - left + 1);
     nAllocateViewportCalls++;
     if (nVideoMode != 0x13)
         LogDisplayMode("not MCGA");
@@ -790,7 +790,7 @@ unsigned short __stdcall AllocateViewport(Viewport *viewport,
         offset = (short)(offset + width);
     } while ((unsigned int)row < (unsigned int)height + 2);
     if (clearColour != -1)
-        ClearViewport(viewport, (unsigned char)clearColour);
+        ClearViewport(viewport, clearColour);
     return 1;
 }
 

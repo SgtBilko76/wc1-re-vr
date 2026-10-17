@@ -895,16 +895,17 @@ short no_objectives_achieved(void)
 short wing_status(short personality)
 {
     int deathMission;
+    int currentMission;
 
     deathMission =
         stCampaignState.personalityDeathMission[personality];
     if (deathMission == 0)
         return 3;
-    if ((int)stCampaignState.currentMission +
-            (int)stCampaignState.currentSeries * 4 == deathMission)
+    currentMission = stCampaignState.currentMission +
+                     stCampaignState.currentSeries * 4;
+    if (currentMission == deathMission)
         return 1;
-    if ((int)stCampaignState.currentMission +
-            (int)stCampaignState.currentSeries * 4 > deathMission)
+    if (currentMission > deathMission)
         return 2;
 }
 

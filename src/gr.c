@@ -546,11 +546,11 @@ void DrawFontGlyph(char character, TextContext *context, int height,
 {
     int row = y;
     unsigned char background = context->backgroundColour;
+    unsigned char *characterData = context->font;
     Viewport *viewport = context->viewport;
-    unsigned char fontColour = context->font[2];
-    unsigned char fontBackground = context->font[3];
+    unsigned char fontColour = characterData[2];
+    unsigned char fontBackground = characterData[3];
     unsigned char colour = context->colour;
-    unsigned char *characterData;
     unsigned char *source;
     unsigned char *destination;
     unsigned char translated;

@@ -497,12 +497,20 @@ for similarity decisions.
   Keep the row and background initialization before the font-colour reads.
   Load the viewport pointer before those font-colour bytes as well. With the
   two following diagnostic functions now delimited separately, the original
-  span is 512 bytes; the current 544-byte body reaches 92.22% similarity.
+  span is 512 bytes; the current rebuilt span is 544 bytes.
+  Initialize the existing character-data pointer from the font before loading
+  the viewport, and use it for the two initial font-colour reads. Reload it
+  after writing the palette entries, as before. This retains the second
+  font-colour byte in a register for the translation-table store and reaches
+  91.62% similarity with the current declarations, up from 90.42%.
   Explicit row-offset pointer locals did not recover the size and changed
   the previously exact palette-marker function, so they are not retained.
   Register allocation and scheduling remain different. Keep the font's
   split-byte offset in the source-pointer expression; a separate offset
-  local also perturbs later functions.
+  local also perturbs later functions. Reversing pointer-addition operands
+  or adding a row register hint emitted the same code. Using the argument
+  directly as the row reduced the frame below the original 24 bytes;
+  reusing the source pointer for the character lookup introduced a spill.
 - `GetTransformedShapeBounds` returns a short through an integer intersection
   flag. Its null-shape branch assigns the point-in-viewport comparison to that
   integer before returning; this emits full-width constant results, whereas
@@ -978,6 +986,31 @@ for similarity decisions.
   other armour terms. A short running accumulator, explicit word casts on
   each quotient, and changing the source addition order all produced the
   same differing instruction sequence. These trials are not retained.
+- `wing_status` saves the current campaign mission number in an int local
+  after its no-death guard, then uses it in both comparisons. Repeating the
+  arithmetic in each condition makes CL reverse the shared comparison and
+  final branch. The saved value recovers the complete 64-byte span exactly.
+- `AllocateViewport` calculates width directly from the two viewport fields
+  before saving the left edge. This keeps the original `SUB CX,AX` and delays
+  the left-edge stack store until after the display-mode comparison. Pass
+  the clear-colour word unchanged to `ClearViewport`; narrowing it to a byte
+  adds an absent `MOVZX AX,AL`. These two changes retain the 320-byte span,
+  raise similarity from 84.16% to 87.13%, and reduce differing instructions
+  from 99 to 55 of 101. The original also reloads the row-table field in its
+  loop and uses a signed, initially guarded comparison against height plus
+  two. Applying those forms together changed register allocation and added
+  sixteen bytes. Moving the offset initialization before the second allocation
+  improved scheduling but did not recover the size. Widening top increased
+  the local frame; widening height, removing the temporary allocation pointer,
+  and removing unsigned promotion casts did not improve the retained result.
+  These broader trials are not retained.
+- The constellation routines still need their original register lifetimes.
+  Removing the initializer's promoted particle-index local, using separate
+  short counters, or initializing height before width did not recover its
+  saved height and register-held particle counter. Narrowing the draw routine's
+  random index to a short introduced a stack spill and reduced its match.
+  These trials are not retained. Negating the combined valid-index condition
+  in `ix_dsps_prepare` also left its reversed comparison unchanged.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must
