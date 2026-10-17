@@ -889,6 +889,37 @@ for similarity decisions.
   assignments in `add_statistics` likewise did not improve its allocation;
   those trial forms are not retained.
 
+- The AIFF and WAV sample loaders retain the file pointer in the outer scope
+  and declare their end and chunk pointers in the subsequent chunk-walking
+  block. This reproduces their original -4, -8, and -12 stack slots under
+  `/Od`; merely reordering the outer declarations does not. Keep explicit
+  default/break cases in both switches. Their otherwise unreachable jumps
+  are present in the original spans and account for five bytes in each.
+  The AIFF payload's byte-swap loop reads unsigned words. Its channel-count
+  swap masks after the left shift, while the bits-per-sample swap masks
+  before the right shift. These expressions recover the different original
+  byte-register sequences; cast the channel count to unsigned before the
+  left shift to preserve the operation for negative input without signed
+  shift overflow. Both complete loader spans, 1,263 and 953 bytes, now match.
+  The AIFF expression correction also restores the following WAV loop's
+  comparison order. A `for` loop, reversed comparison operands, alternate
+  pointer casts, and an additive byte-swap form did not improve these
+  routines and are not retained.
+- The extended-number converter masks the exponent's second input byte
+  with `0xFF`, producing the original `MOV CH,CL` and direct low-byte load.
+  Its signed-result dispatch has an explicit `else`, preserving the
+  unreachable jump after the negative return. The 378-byte body and all
+  mnemonics match, but 45 instructions still differ in local stack slots
+  and mantissa evaluation order. Adding masks to every mantissa byte did
+  not resolve them. Its reported size also includes following import stubs
+  and alignment; `docs/EXPORT.md` records the separate body comparison.
+- `close_behind` still loads the range argument before its target-range
+  global, reversing the original comparison and adding one instruction byte
+  that pushes the span over its 32-byte alignment boundary. A saved target
+  range local does not fix this and perturbs `scan_for_enemy`; reversing the
+  comparison operands also leaves the original difference. Both trials are
+  reverted.
+
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must
 immediately precede its definition; validate annotations with

@@ -30,7 +30,7 @@ remain provisional.
 | `0x00446F74`–`0x004471FF` | `src/ix/dspmix.asm` | dsp |
 | `0x00447200`–`0x00447A1F` | `src/ix/system.cpp` | sound |
 | `0x00447A20`–`0x004486AF` | `src/ix/sound.cpp` | sound |
-| `0x004486B0`–`0x004492DF` | `src/ix/sample.cpp` | sound |
+| `0x004486B0`–`0x004492C5` | `src/ix/sample.cpp` | sound |
 | `0x004614C0`–`0x0046162F` | `src/ix/lzo1x.cpp` | lzo |
 | `0x00461630`–`0x004617BF` | `src/ix/ixfile.cpp` | file |
 
@@ -50,6 +50,12 @@ strings. `streamfile.cpp` describes its contents. The unaligned entries at
 `0x00443DA6`, `0x00447CD8`, and `0x0044879C` are interior functions, not object
 starts. Keeping them in their preceding groups lets the compiler and linker
 produce the observed boundaries without explicit padding.
+
+The sample object's final `RET 4` occupies `0x004492C3`–`0x004492C5`.
+Its six functions span 3,094 bytes. The following three six-byte import
+stubs belong to DirectSound and DirectDraw, followed by eight INT3 bytes
+before the CRT at `0x004492E0`; they are not part of `sample.cpp`.
+See `docs/EXPORT.md` for the report's handling of these import boundaries.
 
 The retail image also has INT3 fill at `0x00445181`–`0x0044518F` before the
 first initializer pair and at `0x00446795`–`0x0044679F` before the second pair.

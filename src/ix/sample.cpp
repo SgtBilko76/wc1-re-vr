@@ -1,7 +1,7 @@
 /*
  *  ix / D:\Rnd\prj\ix\src\sound\sample.cpp
  *
- *  Original address range: 0x004486B0 - 0x004492DF   (6 functions)
+ *  Original address range: 0x004486B0 - 0x004492C5   (6 functions)
  *  Assert paths identify the source; linker INT3 fill establishes the object
  *  boundaries (see docs/ORDER.md).
  *
@@ -89,11 +89,8 @@ void IxSample::ix_sample_destruct(void)
 /* Function start: 0x0044879C */   /* source line(s) 166;169;170;193;195;197: sample already ready! | FORM id not found! | AIFF id not found! | Unsupported number of ch */
 int IxSample::ix_sample_load_aiff(void *data, int bytes)
 {
-    unsigned char *end;
-    IxSampleChunk *chunk;
+    unsigned char *file = (unsigned char *)data;
 
-    unsigned char *file;
-    file = (unsigned char *)data;
     if ((flags & IX_SAMPLE_READY) != 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 166);
         ix_log_printf("sample already ready!");
@@ -110,88 +107,99 @@ int IxSample::ix_sample_load_aiff(void *data, int bytes)
         ix_log_printf("AIFF id not found!");
         return -1;
     }
-    end = (unsigned char *)data + bytes;
-    chunk = (IxSampleChunk *)((unsigned char *)data + 12);
-    while ((unsigned char *)chunk < end) {
-        chunk->size = IX_SWAP_DWORD(chunk->size);
-        switch (chunk->id) {
-        case 0x4d4d4f43: {
-            int sampleRate;
-            IxAiffCommonChunk *common;
+    {
+        unsigned char *end;
+        IxSampleChunk *chunk;
 
-            common = (IxAiffCommonChunk *)(chunk + 1);
-            common->channels = IX_SWAP_WORD(common->channels);
-            common->sampleFrames = IX_SWAP_DWORD(common->sampleFrames);
-            common->bitsPerSample = IX_SWAP_WORD(common->bitsPerSample);
-            sampleRate = (int)ix_sample_convert_from_ieee_extended(common->sampleRate);
-            rateNumerator = 1;
-            rateDenominator = rateNumerator;
-            if (common->channels != 1 && common->channels != 2) {
-                ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 193);
-                ix_log_printf("Unsupported number of channels in AIFF!");
-                return -1;
-            }
-            if (sampleRate < 4000 || sampleRate > 44100) {
-                ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 195);
-                ix_log_printf("Unsupported AIFF sample rate!");
-                return -1;
-            }
-            if (common->bitsPerSample != 8 && common->bitsPerSample != 16) {
-                ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 197);
-                ix_log_printf("Unsupported AIFF bits per sample!");
-                return -1;
-            }
-            bitsPerSample = common->bitsPerSample;
-            channels = common->channels;
-            frequency = sampleRate;
-            loopStart = 0;
-            loopEnd = (unsigned int)-1;
-            sampleCount = loopEnd;
-            bytesPerFrame = ((int)bitsPerSample / 8) * (int)channels;
-            break;
-        }
+        end = (unsigned char *)data + bytes;
+        chunk = (IxSampleChunk *)((unsigned char *)data + 12);
+        while ((unsigned char *)chunk < end) {
+            chunk->size = IX_SWAP_DWORD(chunk->size);
+            switch (chunk->id) {
+            case 0x4d4d4f43: {
+                int sampleRate;
+                IxAiffCommonChunk *common;
 
-        case 0x4b52414d: {
-            IxAiffMarker *marker;
-
-            marker = (IxAiffMarker *)(chunk + 1);
-            marker = (IxAiffMarker *)((unsigned char *)marker + 2);
-            loopStart = IX_SWAP_DWORD(marker->position);
-            marker = (IxAiffMarker *)((unsigned char *)marker +
-                                      marker->nameLength + sizeof(IxAiffMarker));
-#ifdef SDL_PORT
-            while (((uintptr_t)marker & 1) != 0)
-#else
-            while (((unsigned int)marker & 1) != 0)
-#endif
-                marker = (IxAiffMarker *)((unsigned char *)marker + 1);
-            loopEnd = IX_SWAP_DWORD(marker->position);
-            flags |= IX_SAMPLE_LOOPING;
-            break;
-        }
-
-        case 0x444e5353: {
-            int samplesRemaining;
-            short *samples;
-
-            buffer = (unsigned char *)ix_dsp_alloc(chunk->size);
-            sampleCount = chunk->size / bytesPerFrame;
-            if (loopEnd == (unsigned int)-1)
-                loopEnd = sampleCount;
-            if (bitsPerSample == 16) {
-                samples = (short *)(chunk + 1);
-                samplesRemaining = sampleCount * channels;
-                while (samplesRemaining--) {
-                    *samples = IX_SWAP_WORD(*samples);
-                    samples++;
+                common = (IxAiffCommonChunk *)(chunk + 1);
+                common->channels = (short)(
+                    (((unsigned int)common->channels << 8) & 0xff00) |
+                    ((common->channels >> 8) & 0xff));
+                common->sampleFrames = IX_SWAP_DWORD(common->sampleFrames);
+                common->bitsPerSample = (short)(
+                    ((common->bitsPerSample & 0xff00) >> 8) |
+                    ((common->bitsPerSample & 0xff) << 8));
+                sampleRate = (int)ix_sample_convert_from_ieee_extended(common->sampleRate);
+                rateNumerator = 1;
+                rateDenominator = rateNumerator;
+                if (common->channels != 1 && common->channels != 2) {
+                    ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 193);
+                    ix_log_printf("Unsupported number of channels in AIFF!");
+                    return -1;
                 }
+                if (sampleRate < 4000 || sampleRate > 44100) {
+                    ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 195);
+                    ix_log_printf("Unsupported AIFF sample rate!");
+                    return -1;
+                }
+                if (common->bitsPerSample != 8 && common->bitsPerSample != 16) {
+                    ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 197);
+                    ix_log_printf("Unsupported AIFF bits per sample!");
+                    return -1;
+                }
+                bitsPerSample = common->bitsPerSample;
+                channels = common->channels;
+                frequency = sampleRate;
+                loopStart = 0;
+                loopEnd = (unsigned int)-1;
+                sampleCount = loopEnd;
+                bytesPerFrame = ((int)bitsPerSample / 8) * (int)channels;
+                break;
             }
-            ix_dsp_copy(buffer, chunk + 1, chunk->size);
-            break;
+
+            case 0x4b52414d: {
+                IxAiffMarker *marker;
+
+                marker = (IxAiffMarker *)(chunk + 1);
+                marker = (IxAiffMarker *)((unsigned char *)marker + 2);
+                loopStart = IX_SWAP_DWORD(marker->position);
+                marker = (IxAiffMarker *)((unsigned char *)marker +
+                                          marker->nameLength + sizeof(IxAiffMarker));
+    #ifdef SDL_PORT
+                while (((uintptr_t)marker & 1) != 0)
+    #else
+                while (((unsigned int)marker & 1) != 0)
+    #endif
+                    marker = (IxAiffMarker *)((unsigned char *)marker + 1);
+                loopEnd = IX_SWAP_DWORD(marker->position);
+                flags |= IX_SAMPLE_LOOPING;
+                break;
+            }
+
+            case 0x444e5353: {
+                int samplesRemaining;
+                unsigned short *samples;
+
+                buffer = (unsigned char *)ix_dsp_alloc(chunk->size);
+                sampleCount = chunk->size / bytesPerFrame;
+                if (loopEnd == (unsigned int)-1)
+                    loopEnd = sampleCount;
+                if (bitsPerSample == 16) {
+                    samples = (unsigned short *)(chunk + 1);
+                    samplesRemaining = sampleCount * channels;
+                    while (samplesRemaining--) {
+                        *samples = IX_SWAP_WORD(*samples);
+                        samples++;
+                    }
+                }
+                ix_dsp_copy(buffer, chunk + 1, chunk->size);
+                break;
+            }
+            default:
+                break;
+            }
+            chunk = (IxSampleChunk *)((unsigned char *)chunk +
+                                      chunk->size + sizeof(IxSampleChunk));
         }
-        }
-        chunk = (IxSampleChunk *)((unsigned char *)chunk +
-                                  chunk->size + sizeof(IxSampleChunk));
     }
     flags &= ~IX_SAMPLE_LOADING;
     flags |= IX_SAMPLE_READY;
@@ -201,11 +209,8 @@ int IxSample::ix_sample_load_aiff(void *data, int bytes)
 /* Function start: 0x00448C8B */   /* source line(s) 261;264;265;279;281;283;285: sample already ready! | RIFF id not found! | WAVE id not found! | Unsupported number of ch */
 int IxSample::ix_sample_load_wav(void *data, int bytes)
 {
-    unsigned char *end;
-    IxSampleChunk *chunk;
+    unsigned char *file = (unsigned char *)data;
 
-    unsigned char *file;
-    file = (unsigned char *)data;
     if ((flags & IX_SAMPLE_READY) != 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 261);
         ix_log_printf("sample already ready!");
@@ -222,67 +227,74 @@ int IxSample::ix_sample_load_wav(void *data, int bytes)
         ix_log_printf("WAVE id not found!");
         return -1;
     }
-    end = (unsigned char *)data + bytes;
-    chunk = (IxSampleChunk *)((unsigned char *)data + 12);
-    while ((unsigned char *)chunk < end) {
-        switch (chunk->id) {
-        case 0x20746d66: {
-            IxWaveFormat *format;
+    {
+        unsigned char *end;
+        IxSampleChunk *chunk;
 
-            format = (IxWaveFormat *)(chunk + 1);
-            if (format->channels != 1 && format->channels != 2) {
-                ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 279);
-                ix_log_printf("Unsupported number of channels in WAV!");
-                return -1;
-            }
-            if (format->format != 1) {
-                ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 281);
-                ix_log_printf("Unsupported WAV format!");
-                return -1;
-            }
-            if (format->frequency < 4000 || format->frequency > 44100) {
-                ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 283);
-                ix_log_printf("Unsupported WAV sample rate!");
-                return -1;
-            }
-            if (format->bitsPerSample != 8 && format->bitsPerSample != 16) {
-                ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 285);
-                ix_log_printf("Unsupported WAV bits per sample!");
-                return -1;
-            }
-            bitsPerSample = format->bitsPerSample;
-            channels = format->channels;
-            frequency = format->frequency;
-            loopStart = 0;
-            loopEnd = (unsigned int)-1;
-            sampleCount = loopEnd;
-            bytesPerFrame = ((int)bitsPerSample / 8) * (int)channels;
-            rateNumerator = 1;
-            rateDenominator = rateNumerator;
-            break;
-        }
+        end = (unsigned char *)data + bytes;
+        chunk = (IxSampleChunk *)((unsigned char *)data + 12);
+        while ((unsigned char *)chunk < end) {
+            switch (chunk->id) {
+            case 0x20746d66: {
+                IxWaveFormat *format;
 
-        case 0x61746164: {
-            int samplesRemaining;
-            signed char *samples;
-
-            buffer = (unsigned char *)ix_dsp_alloc(chunk->size);
-            sampleCount = chunk->size / bytesPerFrame;
-            loopEnd = sampleCount;
-            if (bitsPerSample == 8) {
-                samples = (signed char *)(chunk + 1);
-                samplesRemaining = bytesPerFrame * sampleCount;
-                while (samplesRemaining--) {
-                    *samples = (signed char)(*samples - 0x80);
-                    samples++;
+                format = (IxWaveFormat *)(chunk + 1);
+                if (format->channels != 1 && format->channels != 2) {
+                    ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 279);
+                    ix_log_printf("Unsupported number of channels in WAV!");
+                    return -1;
                 }
+                if (format->format != 1) {
+                    ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 281);
+                    ix_log_printf("Unsupported WAV format!");
+                    return -1;
+                }
+                if (format->frequency < 4000 || format->frequency > 44100) {
+                    ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 283);
+                    ix_log_printf("Unsupported WAV sample rate!");
+                    return -1;
+                }
+                if (format->bitsPerSample != 8 && format->bitsPerSample != 16) {
+                    ix_log_printf("Warning [%s - %d]:\n", IX_SAMPLE_FILE, 285);
+                    ix_log_printf("Unsupported WAV bits per sample!");
+                    return -1;
+                }
+                bitsPerSample = format->bitsPerSample;
+                channels = format->channels;
+                frequency = format->frequency;
+                loopStart = 0;
+                loopEnd = (unsigned int)-1;
+                sampleCount = loopEnd;
+                bytesPerFrame = ((int)bitsPerSample / 8) * (int)channels;
+                rateNumerator = 1;
+                rateDenominator = rateNumerator;
+                break;
             }
-            ix_dsp_copy(buffer, chunk + 1, chunk->size);
-            break;
+
+            case 0x61746164: {
+                int samplesRemaining;
+                signed char *samples;
+
+                buffer = (unsigned char *)ix_dsp_alloc(chunk->size);
+                sampleCount = chunk->size / bytesPerFrame;
+                loopEnd = sampleCount;
+                if (bitsPerSample == 8) {
+                    samples = (signed char *)(chunk + 1);
+                    samplesRemaining = bytesPerFrame * sampleCount;
+                    while (samplesRemaining--) {
+                        *samples = (signed char)(*samples - 0x80);
+                        samples++;
+                    }
+                }
+                ix_dsp_copy(buffer, chunk + 1, chunk->size);
+                break;
+            }
+            default:
+                break;
+            }
+            chunk = (IxSampleChunk *)((unsigned char *)chunk +
+                                      chunk->size + sizeof(IxSampleChunk));
         }
-        }
-        chunk = (IxSampleChunk *)((unsigned char *)chunk +
-                                  chunk->size + sizeof(IxSampleChunk));
     }
     flags &= ~IX_SAMPLE_LOADING;
     flags |= IX_SAMPLE_READY;
@@ -325,7 +337,7 @@ long IxSample::ix_sample_convert_from_ieee_extended(unsigned char *bytes)
     unsigned char *source;
 
     source = bytes;
-    exponent = ((source[0] & 0x7f) << 8) | source[1];
+    exponent = ((source[0] & 0x7f) << 8) | (source[1] & 0xff);
     highMantissa = ((unsigned long)source[2] << 24) |
                    ((unsigned long)source[3] << 16) |
                    ((unsigned long)source[4] << 8) |
@@ -345,5 +357,6 @@ long IxSample::ix_sample_convert_from_ieee_extended(unsigned char *bytes)
     }
     if ((source[0] & 0x80) != 0)
         return (long)-value;
-    return (long)value;
+    else
+        return (long)value;
 }

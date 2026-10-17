@@ -15,7 +15,7 @@
  *      dspmix.asm    0x00446F74 - 0x004471FF
  *      system.cpp    0x00447200 - 0x00447A1F
  *      sound.cpp     0x00447A20 - 0x004486AF
- *      sample.cpp    0x004486B0 - 0x004492DF
+ *      sample.cpp    0x004486B0 - 0x004492C5
  *
  *  Everything from 0x004492E0 upward is the MSVC 4.2 static debug CRT.
  */
