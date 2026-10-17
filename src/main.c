@@ -13,12 +13,13 @@ int GameMain(short argc, char **argv)
 int main(short argc, char **argv)
 #endif
 {
-    char *argument;
+    char **argumentSlot;
     int animationDemo;
     int selection;
     int launchMission;
     short argumentCount;
     short argumentIndex;
+    short animationIndex;
     short mission;
     short series;
     short gameFlowResult;
@@ -54,18 +55,18 @@ int main(short argc, char **argv)
     for (argumentIndex = 0;
          argumentIndex < argumentCount;
          argumentIndex++) {
-        argument = pStartupArguments[argumentIndex];
-        if (strcmp("Origin", argument) == 0)
+        argumentSlot = &pStartupArguments[argumentIndex];
+        if (strcmp("Origin", (*argumentSlot)) == 0)
             nOriginDevUnlock = 1;
 
-        switch (argument[0]) {
+        switch ((*argumentSlot)[0]) {
         case '?':
             SystemDebugPrintf("Version %s.\n", pGameVersion);
         case '-':
-            if (argument[1] == 'm')
+            if ((*argumentSlot)[1] == 'm')
                 nShowMemoryStatus = 1;
             if (nOriginDevUnlock != 0) {
-                switch (argument[1]) {
+                switch ((*argumentSlot)[1]) {
                 case 'b':
                     bPlayerCollisionResponse = 0;
                     break;
@@ -83,12 +84,12 @@ int main(short argc, char **argv)
             break;
         case 'A':
         case 'a':
-            if (argument[1] == 's' || argument[1] == 'S') {
-                nStartNavPointOverride = (short)atoi(argument + 2);
+            if ((*argumentSlot)[1] == 's' || (*argumentSlot)[1] == 'S') {
+                nStartNavPointOverride = (short)atoi((*argumentSlot) + 2);
             } else {
                 nMusicPlaybackMode = 2;
                 nArcadeStartupParameter =
-                    (short)atoi(argument + 1);
+                    (short)atoi((*argumentSlot) + 1);
             }
             break;
         case 'E':
@@ -121,18 +122,18 @@ int main(short argc, char **argv)
             break;
         case 'm':
             if (nOriginDevUnlock != 0)
-                mission = (short)atoi(argument + 1);
+                mission = (short)atoi((*argumentSlot) + 1);
             break;
         case 's':
             if (nOriginDevUnlock != 0) {
                 bCampaignActive = 1;
-                series = (short)atoi(argument + 1);
+                series = (short)atoi((*argumentSlot) + 1);
             }
             break;
         case 'w':
             if (nOriginDevUnlock != 0) {
                 animationDemo = 1;
-                mission = (short)atoi(argument + 1);
+                animationIndex = (short)atoi((*argumentSlot) + 1);
             }
             break;
         }
@@ -153,7 +154,7 @@ int main(short argc, char **argv)
         SystemDebugPrintf("Pre animation: %lu.\n",
                           GetFixedOneMillionThunkAlt(0));
         WaitForKeyAcknowledge(0);
-        RunAnimationDemoLoop((signed char)mission);
+        RunAnimationDemoLoop((signed char)animationIndex);
         SystemDebugPrintf("Post animation: %lu.\n",
                           GetFixedOneMillionThunkAlt(0));
         WaitForKeyAcknowledge(0);
@@ -165,52 +166,52 @@ int main(short argc, char **argv)
     SetMusicStreamVolume((unsigned short)anVolumeLevels[
         nMusicVolumeSetting / 2]);
 
-    if (launchMission != 0) {
+    if (launchMission == 0) {
 #ifdef SDL_PORT
-        if (init_mission(series, mission) != 0) {
-            fprintf(stderr,
-                    "Mission SERIES=%d MISSION=%d is absent or invalid.\n",
-                    (int)series, (int)mission);
-            return 1;
+        SdlPlayDosStartupIntro();
+#endif
+        bEscapePressed = 0;
+        for (;;) {
+            FrameStartHook(0);
+            bCampaignStartupMode = 1;
+            selection = Title_Sequence();
+            switch (selection) {
+            case 0:
+                StartNewCampaign(0);
+                break;
+            case 2:
+                StartNewCampaign(1);
+                break;
+            case 3:
+                StartNewCampaign(2);
+                break;
+            default:
+                break;
+            }
+            gameFlowResult = GameFlow();
+            while (gameFlowResult != 0)
+                gameFlowResult = GameFlow();
         }
-#else
-        init_mission(series, mission);
-#endif
-#ifdef SDL_PORT
-        /* Use the normal campaign setup unless cockpitless mode was requested. */
-        if (bCockpitEnabled != 0)
-            LaunchPlayerShip();
-#endif
-        RunSpaceFlight(nStartNavPointOverride);
-        exit_squadron("Bye!");
-        return 0;
     }
 
 #ifdef SDL_PORT
-    SdlPlayDosStartupIntro();
-#endif
-    bEscapePressed = 0;
-    for (;;) {
-        FrameStartHook(0);
-        bCampaignStartupMode = 1;
-        selection = Title_Sequence();
-        switch (selection) {
-        case 0:
-            StartNewCampaign(0);
-            break;
-        case 2:
-            StartNewCampaign(1);
-            break;
-        case 3:
-            StartNewCampaign(2);
-            break;
-        default:
-            break;
-        }
-        gameFlowResult = GameFlow();
-        while (gameFlowResult != 0)
-            gameFlowResult = GameFlow();
+    if (init_mission(series, mission) != 0) {
+        fprintf(stderr,
+                "Mission SERIES=%d MISSION=%d is absent or invalid.\n",
+                (int)series, (int)mission);
+        return 1;
     }
+#else
+    init_mission(series, mission);
+#endif
+#ifdef SDL_PORT
+    /* Use the normal campaign setup unless cockpitless mode was requested. */
+    if (bCockpitEnabled != 0)
+        LaunchPlayerShip();
+#endif
+    RunSpaceFlight(nStartNavPointOverride);
+    exit_squadron("Bye!");
+    return 0;
 }
 
 /* Function start: 0x4279D0 */

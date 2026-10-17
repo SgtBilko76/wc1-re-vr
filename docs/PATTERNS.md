@@ -54,12 +54,13 @@ for similarity decisions.
   Do not infer this distinction from raw section size alone: trailing file
   padding can overlap the start of uninitialized storage.
 - Uninitialized C++ definitions have different storage from C tentative
-  definitions. The overlay pointer in `pilot.cpp` and the three private wave
-  and damage-display variables in `sound.c` naturally produce `.bss` in
+  definitions. The overlay pointer in `pilot.cpp` and the two private wave
+  variables in `sound.c` naturally produce `.bss` in
   declaration order. Keeping them in the temporary C globals unit instead
   produces linker common symbols with different positions. Restore proven
   ownership and verify object storage as well as zero values; zero-filled
-  memory by itself cannot establish a matching layout.
+  memory by itself cannot establish a matching layout. The following private
+  C damage-display variable needs `static` to retain its `.bss` storage.
 - Put a global's address comment before its declaration or after its final
   semicolon. A comment inside a multiline initializer is recognized by the
   layout audit but missed by the linked-data comparison's simpler parser.
@@ -473,6 +474,28 @@ for similarity decisions.
   input changes. Initial zeroing and fill-loop registers remain different;
   restoring the menu's cached index did not resolve them. No previously exact
   function loses its exact match in this change.
+
+- Startup's animation-demo index and mission index occupy distinct word
+  slots. The `w` option writes the former; the `m` option writes the latter.
+  Keep an argument-slot pointer through the option switch: the original
+  reloads the string pointer after `strcmp` and the version-print call.
+  The normal campaign loop falls through before the direct-mission path.
+  These choices recover the 20-byte frame and raise `main` from 82.95% to
+  96.62%; sixteen excess bytes and allocation differences remain.
+- `UpdateDamageDisplay` saves the prior component count in a word local
+  before counting damaged components. Comparing the promoted new byte count
+  with that saved word reproduces the original `MOVSX`/word comparison and
+  ESI save. Comparing the two byte values directly loses those instructions.
+  This recovers sixteen bytes and reaches 99.63%; CL still merges the two
+  count stores across the early-return branch, leaving a sixteen-byte deficit.
+- Shared declarations affect optimized CL 4.20 register allocation even in
+  units that do not use those declarations. Removing damage's private tables
+  and former named literals from `globals.h` changes unrelated functions:
+  `DIBsetPalette` becomes exact, while `ComputeVectorDelta` exchanges its
+  source and destination registers and loses its exact match. Check the
+  complete report after correcting header visibility. The damage split gives
+  57 newly exact functions and 55 formerly exact functions with differences;
+  its verified data layout does not imply every code comparison improves.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

@@ -39,7 +39,8 @@ handwritten stand-ins; the separate gate covers the 74 generated code bytes.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
 initialized-data sections recovered for barracks (632 bytes), fade (2),
-debug (34), disk (523), ship (286), init (550), logic (447), and trainsim (511).
+debug (34), disk (523), ship (286), init (550), logic (447), trainsim (511),
+and damage (390).
 It delegates byte matching to binary-comp, allowing one address shift per
 block, and verifies object sizes, global positions, and pointer relocations.
 String-content fallback is disabled so duplicate or empty literals cannot
@@ -49,11 +50,11 @@ relative layout; final absolute addresses remain a whole-executable task.
 The default check also verifies the seven adjacent units from barracks through
 logic as one 2,487-byte run, including all 13 inter-object alignment bytes.
 This catches correct individual blocks linked at incorrect relative positions.
-The same gate checks the uninitialized blocks owned by pilot (4 bytes) and
-sound (12 bytes). These must be genuine COFF `.bss` sections with no raw data
+The same gate checks the uninitialized blocks owned by pilot (4 bytes),
+sound (8), and damage (4). These must be genuine COFF `.bss` sections with no raw data
 or relocations, and their linker symbols must belong to the expected object
 at the recovered relative offsets. Binary-comp compares the loader-visible
-zero-filled bytes. These two checks establish local storage and layout;
+zero-filled bytes. These checks establish local storage and layout;
 they do not claim that the surrounding uninitialized region matches.
 `make verify-barracks-data` retains the barracks-only check.
 
@@ -64,6 +65,16 @@ to use the separate `out/globals-audit.c`. Binary-comp's unique-byte-sequence
 lookup locates the complete disk literal pool and verifies pointers into it,
 including three-character graphics-mode names and the empty string. Its
 ordinary string-content fallback cannot resolve those short strings.
+The damage literal pool similarly establishes the two-character `"Ok"`
+severity string's position; the separate unit-data check enforces all offsets.
+
+LINK 4.20 omits private C data symbols from its public map. The build preserves
+that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
+`WC1.map` with the four private damage symbols added. Their addresses come
+from the object's COFF symbols, public section anchors, and linked `DIR32`
+references with PE `HIGHLOW` relocations. Conflicting anchors or unresolved
+symbols fail the build. This step changes only comparison metadata; it does
+not modify the executable or infer addresses from the original binary.
 
 Keep address annotations outside initializers so the linked-data inventory
 can see them. For the 7,830-byte object-type table, the annotation precedes

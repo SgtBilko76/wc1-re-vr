@@ -9,3 +9,9 @@
  * alignment bytes, but excludes the following object's linker padding.
  */
 unsigned char abDiskStringLiterals[459]; /* 0x004696a8 */
+
+/* damage.c: component and severity names, report headings, and both distinct
+ * status-format literals. The complete pool also resolves the short "Ok"
+ * pointer; verify-unit-data independently checks every position in its unit.
+ */
+unsigned char abDamageStringLiterals[266]; /* 0x0046a7c4 */

@@ -31,6 +31,7 @@ class UnitData:
     pointers: frozenset[int]
     external_globals: tuple[tuple[str, int, int], ...] = ()
     storage: str = '.data'
+    owner: str | None = None
 
 
 UNITS = {
@@ -138,11 +139,20 @@ UNITS = {
     'pilot': UnitData(0x004763F0, 4, (
         ('pDebugOverlay', 0x00),
     ), frozenset(), storage='.bss'),
-    'sound': UnitData(0x0047654C, 12, (
+    'sound': UnitData(0x0047654C, 8, (
         ('pSnowStaticWave', 0x00),
         ('pSnowStaticSound', 0x04),
-        ('nDisplayedComponentDamage', 0x08),
     ), frozenset(), storage='.bss'),
+    'damage': UnitData(0x0046A748, 390, (
+        ('pDamageDisplayBackground', 0x00),
+        ('aDamageDisplayPositions', 0x08),
+        ('apszComponentNames', 0x30),
+        ('abDamageDisplayFrames', 0x58),
+        ('apszDamageSeverityNames', 0x68),
+    ), frozenset((*range(0x30, 0x54, 4), *range(0x68, 0x7C, 4)))),
+    'damage-bss': UnitData(0x00476554, 4, (
+        ('nDisplayedComponentDamage', 0x00),
+    ), frozenset(), storage='.bss', owner='damage.obj'),
 }
 
 
@@ -206,7 +216,7 @@ def main() -> int:
     starts = {}
     for unit in args.unit or UNITS:
         block = UNITS[unit]
-        owner = unit + '.obj'
+        owner = block.owner or unit + '.obj'
         start = address(owner, block.globals[0][0])
         starts[unit] = start
         require(data_section_size(str(args.objects_root / owner), block.storage) == block.size,

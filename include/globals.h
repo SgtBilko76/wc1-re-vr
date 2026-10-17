@@ -252,29 +252,7 @@ extern short nMousePitchInput; /* 0x0046a05c */
 extern char szSpaceBuffer[16]; /* 0x0046a1d0 */
 extern char szAllocateBufferTag[4]; /* 0x0046a1e0 */
 extern unsigned char *pDamageDisplayBackground; /* 0x0046a748 */
-extern ShortPoint aDamageDisplayPositions[9]; /* 0x0046a750 */
 extern const char *apszComponentNames[9]; /* 0x0046a778 */
-extern unsigned char abDamageDisplayFrames[9]; /* 0x0046a7a0 */
-extern const char *apszDamageSeverityNames[5]; /* 0x0046a7b0 */
-extern char szIonDrive[12]; /* 0x0046a7c4 */
-extern char szPowerPlant[12]; /* 0x0046a7d0 */
-extern char szShieldGenerator[16]; /* 0x0046a7dc */
-extern char szComputerSystem[16]; /* 0x0046a7ec */
-extern char szIntercomUnit[16]; /* 0x0046a7fc */
-extern char szTargetTracking[16]; /* 0x0046a80c */
-extern char szAccelerationAbsorbers[16]; /* 0x0046a81c */
-extern char szEjectorSystem[16]; /* 0x0046a82c */
-extern char szRepairSystems[16]; /* 0x0046a83c */
-extern char szDamageOk[4]; /* 0x0046a84c */
-extern char szDamageLight[8]; /* 0x0046a850 */
-extern char szDamageModerate[12]; /* 0x0046a858 */
-extern char szDamageHeavy[8]; /* 0x0046a864 */
-extern char szDamageDestroyed[12]; /* 0x0046a86c */
-extern char szDamageReport[16]; /* 0x0046a878 */
-extern char szNoInternalDamage[20]; /* 0x0046a888 */
-extern char szDamagedUnitCountFormat[20]; /* 0x0046a89c */
-extern char szDamageStatusFormat[16]; /* 0x0046a8b0 */
-extern char szDamageStatusFormatHighRes[16]; /* 0x0046a8c0 */
 extern ActiveSoundEntry *pActiveSoundHead; /* 0x0046a438 */
 extern ActiveSoundEntry *pActiveSoundTail; /* 0x0046a43c */
 extern int bAudioSystemInitialized; /* 0x0046a440 */

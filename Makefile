@@ -120,6 +120,7 @@ GAME_LIBS = \
 TARGET = WC1.EXE
 MAPFILE = WC1.map
 OUT_DIR = out
+LINKMAPFILE = $(OUT_DIR)/WC1.link.map
 
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
@@ -226,7 +227,7 @@ GLOBALS_MISSING_MAX_ADDRESS = 0x004751ff
 GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/cmpgn.c \
 	src/nav.c src/spc.c src/cockpt.c src/barracks.c src/fade.c src/debug.cpp \
 	src/disk.c src/ship.c src/init.c src/logic.c src/pilot.cpp src/trainsim.c \
-	src/sound.c src/music.c src/dib.c src/gr.c \
+	src/sound.c src/damage.c src/music.c src/dib.c src/gr.c \
 	src/ix/dsp.cpp src/ix/dsps.cpp src/ix/dspv.cpp
 GLOBALS_DEFINITION_SOURCES = src/globals.c $(GLOBALS_DISTRIBUTED_SOURCES)
 GLOBALS_AUDIT_SOURCE = $(OUT_DIR)/globals-audit.c
@@ -345,6 +346,7 @@ SRCS_ORDERED_CORE = \
 	src/hudmsg.c \
 	src/pload.c \
 	src/sound.c \
+	src/damage.c \
 	src/music.c \
 	src/screen.c \
 	src/dib.c \
@@ -423,6 +425,7 @@ MODERN_GAMEPLAY_SRCS = \
 	src/winsys.c \
 	src/cmpgn.c \
 	src/cockpt.c \
+	src/damage.c \
 	src/dib.c \
 	src/disk.c \
 	src/eventmgr.c \
@@ -764,9 +767,11 @@ ORIGINAL_TIMESTAMP = 0x32480D3C
 REFERENCE_HEADERS = include/wc1.h include/wcdata.h include/globals.h \
 	include/wc1funcs.h include/wc1extern.h
 
-$(TARGET): $(LINK_OBJS) $(IX_LIBS) Makefile | $(MSVCRT_DLL)
-	env LIB='$(GAME_LIBPATH)' $(LINK) $(LINKFLAGS) /MAP:$(MAPFILE) $(LINK_OBJS) $(GAME_LIBS) /OUT:$@
+$(TARGET): $(LINK_OBJS) $(IX_LIBS) Makefile bin/appendStaticSymbols.py | $(MSVCRT_DLL)
+	env LIB='$(GAME_LIBPATH)' $(LINK) $(LINKFLAGS) /MAP:$(LINKMAPFILE) $(LINK_OBJS) $(GAME_LIBS) /OUT:$@
 	@python3 bin/stampPeTimestamp.py $@ $(ORIGINAL_TIMESTAMP)
+	@python3 bin/appendStaticSymbols.py --map $(LINKMAPFILE) \
+		--rebuilt $@ --output $(MAPFILE) $(OUT_DIR)/damage.obj
 
 $(IX_LZO_LIB): $(call objects_of,$(SRCS_IX_LZO))
 $(IX_FILE_LIB): $(call objects_of,$(SRCS_IX_FILE))

@@ -400,32 +400,6 @@ short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
 };
 char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
     "Press any key when ready";
-unsigned char *pDamageDisplayBackground = 0; /* 0x0046a748 */
-ShortPoint aDamageDisplayPositions[9] = { /* 0x0046a750 */
-    {36, 37}, {36, 28}, {36, 30}, {36, 23}, {36, 19},
-    {36, 15}, {36, 24}, {36, 16}, {36, 22}
-};
-const char *apszComponentNames[9] = { /* 0x0046a778 */
-    szIonDrive,
-    szPowerPlant,
-    szShieldGenerator,
-    szComputerSystem,
-    szIntercomUnit,
-    szTargetTracking,
-    szAccelerationAbsorbers,
-    szEjectorSystem,
-    szRepairSystems
-};
-unsigned char abDamageDisplayFrames[9] = { /* 0x0046a7a0 */
-    21, 22, 23, 24, 25, 26, 27, 28, 29
-};
-const char *apszDamageSeverityNames[5] = { /* 0x0046a7b0 */
-    szDamageOk,
-    szDamageLight,
-    szDamageModerate,
-    szDamageHeavy,
-    szDamageDestroyed
-};
 short nScriptedViewObject = -1; /* 0x0046a8d0 */
 int bScriptedView = 0; /* 0x0046a8d4 */
 short asConstellationVelocity[16] = { /* 0x0046a8d8 */
@@ -2849,26 +2823,3 @@ char aszCommMenuText[0xe8] = /* 0x0046aff8 */
     "Keep radio silence\0\0"
     "Broadcast freely\0\0\0\0"
     "Request Landing";
-
-char szIonDrive[12] = "Ion drive"; /* 0x0046a7c4 */
-char szPowerPlant[12] = "Power plant"; /* 0x0046a7d0 */
-char szShieldGenerator[16] = "Shield gen'r"; /* 0x0046a7dc */
-char szComputerSystem[16] = "Computer sys"; /* 0x0046a7ec */
-char szIntercomUnit[16] = "InterCom unit"; /* 0x0046a7fc */
-char szTargetTracking[16] = "Target track"; /* 0x0046a80c */
-char szAccelerationAbsorbers[16] = "Accel absorbers"; /* 0x0046a81c */
-char szEjectorSystem[16] = "Ejector system"; /* 0x0046a82c */
-char szRepairSystems[16] = "Repair systems"; /* 0x0046a83c */
-char szDamageOk[4] = "Ok"; /* 0x0046a84c */
-char szDamageLight[8] = "Light"; /* 0x0046a850 */
-char szDamageModerate[12] = "Moderate"; /* 0x0046a858 */
-char szDamageHeavy[8] = "Heavy"; /* 0x0046a864 */
-char szDamageDestroyed[12] = "Destroyed"; /* 0x0046a86c */
-char szDamageReport[16] = "DAMAGE REPORT"; /* 0x0046a878 */
-char szNoInternalDamage[20] = /* 0x0046a888 */
-    "NO INTERNAL\n\nDAMAGE";
-char szDamagedUnitCountFormat[20] = /* 0x0046a89c */
-    "%d Unit%c Damaged";
-char szDamageStatusFormat[16] = "%s\nDamage: %s"; /* 0x0046a8b0 */
-char szDamageStatusFormatHighRes[16] = /* 0x0046a8c0 */
-    "%s\nDamage: %s";

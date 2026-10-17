@@ -150,8 +150,9 @@ sits at one constant offset from the original.
 | `src/main.c` | `0x4274E0`–`0x428E6F` |
 | `src/hudmsg.c` | `0x428E70`–`0x42AFFF` |
 | `src/pload.c` | `0x42B000`–`0x42B3FF` |
-| `src/sound.c` | `0x42B400`–`0x42CFFF` |
-| `src/music.c` | `0x42D000`–`0x42EFFF` |
+| `src/sound.c` | `0x42B400`–`0x42C7FF` |
+| `src/damage.c` | `0x42C800`–`0x42CDAF` |
+| `src/music.c` | `0x42CDB0`–`0x42EFFF` |
 | `src/screen.c` | `0x42EFC0`–`0x431EFF` |
 | `src/dib.c` | `0x431F00`–`0x43390F` |
 | `src/text.c` | `0x433910`–`0x433ABF` |
@@ -347,18 +348,39 @@ match with one address shift. The unreferenced word `10` at `0x00469DA0`
 and storage after the final simulator literal remain outside this recovered
 block; their ownership is not inferred from proximity.
 
-Two early uninitialized-data blocks now reside in their C++ owners:
+Three early uninitialized-data blocks now reside in their owners:
 `pDebugOverlay` at `0x004763F0` belongs to the console wrappers in `pilot.cpp`,
-and `pSnowStaticWave`, `pSnowStaticSound`, and `nDisplayedComponentDamage`
-occupy `0x0047654C`–`0x00476557` in `sound.c`. Every reference to these four
-variables comes from its respective owner. VC++ 4.20 emits four and twelve
-bytes of `.bss`, with the three sound globals at offsets 0, 4, and 8.
+`pSnowStaticWave` and `pSnowStaticSound` occupy `0x0047654C`–`0x00476553`
+in `sound.c`, and `nDisplayedComponentDamage` at `0x00476554` belongs to
+`damage.c`. Every reference to these four variables comes from its respective
+owner. VC++ 4.20 emits four and eight bytes of `.bss` in the C++ owners,
+with the two sound globals at offsets 0 and 4. The private damage variable
+uses C `static` storage to produce its four-byte `.bss` section.
 Their former tentative definitions in `globals.c` became independently
 ordered linker common symbols. The unit-data gate now verifies their owner,
 relative symbol offsets, complete object `.bss` sizes, and zero-filled bytes.
 Their absolute addresses and the intervening uninitialized storage remain
 unrecovered. The adjacent `szSfxWavePath` buffer belongs to the following music
-code and is not part of the sound block.
+code and is not part of these blocks.
+
+The damage-display unit starts with `show_damage_disp` at `0x0042C800`.
+Its initialized tables start at `0x0046A748`, after the sound/configuration
+literal pool ending at `0x0046A73F`. CL places a unit's initialized definitions
+before its literals, so these tables require a separate owner from `sound.c`.
+The display positions, component-name pointers, frame indices, and severity
+pointers precede the literal pool at `0x0046A7C4`. The component names and
+severity names are individual literals in their pointer initializers; named
+character arrays impose different alignment. The two status-format literals
+at `0x0046A8B0` and `0x0046A8C0` remain separate use-site strings.
+
+`verify-unit-data` verifies the entire 390-byte damage `.data` section,
+including all 14 pointers, and its separate four-byte `.bss`. The three
+private tables and private damage state have no declarations in the shared
+header. `WC1.map` gains their actual linked addresses from COFF symbols and
+relocations, as described in `docs/EXPORT.md`. Two alignment bytes follow the
+last literal before music's initialized state at `0x0046A8D0`.
+The constant-return routine at `0x0042CDA0` provisionally closes this unit;
+the following `parse_view_script` at `0x0042CDB0` belongs to `music.c`.
 
 Private C definitions require separate evidence: a trial moving the two
 MONODEBG variables to `static` storage in `mono.c` emitted the device handle
