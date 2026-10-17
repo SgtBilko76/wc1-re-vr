@@ -534,6 +534,13 @@ void __stdcall ApplyPackedMousePosition(ShortPoint point)
     SetMousePositionDuplicate(point.x, point.y);
 }
 
+/* Function start: 0x4361C0 */
+void __stdcall GetMouseCursorPosition(ShortPoint *point)
+{
+    point->x = stMouseCursorState.x;
+    point->y = stMouseCursorState.y;
+}
+
 /* Function start: 0x4361E0 */
 void SetFrameTimerPeriod(short period)
 {
@@ -569,6 +576,18 @@ int IsFrameTickElapsed(void)
 unsigned short GetSoundHardwareFlag(void)
 {
     return 1;
+}
+
+/* Function start: 0x436270 */
+void *AllocateUntaggedMemory(unsigned int size)
+{
+    return AllocateTaggedMemory(size, 0);
+}
+
+/* Function start: 0x436290 */
+void ReleaseUntaggedMemory(void *memory)
+{
+    ReleasePacketHandle(memory);
 }
 
 /* Function start: 0x4362A0 */
@@ -972,6 +991,12 @@ void StartupHook(unsigned int (*callback)(unsigned int, short))
 unsigned int JoystickEdgeHook(int button)
 {
     (void)button;
+}
+
+/* Function start: 0x436940 */
+void *AllocateSmallMemoryBlock(short size)
+{
+    return malloc(size);
 }
 
 /* Function start: 0x436950 */

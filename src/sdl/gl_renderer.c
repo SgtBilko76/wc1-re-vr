@@ -1013,10 +1013,10 @@ static void BuildSpaceViewMask(const ScreenViewportGeometry *geometry,
         x = *run++;
         y = *run++;
         length = (unsigned short)*run++;
-        /* fizzle_fade copies each run with one memcpy into a screen whose
-           rows are 320 contiguous bytes, so the count is a byte length and
-           a run may cover whole rows: the mode 4 geometry copies 320x128
-           as the single run (0, 24, 40960). */
+        /* BlitViewportScanlineRuns copies each run with one memcpy into a
+           screen whose rows are 320 contiguous bytes, so the count is a byte
+           length and a run may cover whole rows: the mode 4 geometry copies
+           320x128 as the single run (0, 24, 40960). */
         start = y * SDL_PORT_FRAME_WIDTH + x;
         if (start < 0) {
             length += start;

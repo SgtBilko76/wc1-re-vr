@@ -1179,6 +1179,7 @@ unsigned int spacetrack(int track, int mode,
 void StopMusicUnlessSuppressed(void);                                        /* 0x0042E8B0 */
 unsigned short GetMusicMode(void);                                /* 0x0042E8D0 */
 void wait_for_end_of_music(void);                                     /* 0x0042E900 */
+void WaitForMusicOrInput(void);                                       /* 0x0042E970 */
 void new_space_music_changes(short attacker, short victim);          /* 0x0042E9E0 */
 int changetrack(void);                                                /* 0x0042EAD0 */
 void gametrack(void);                                                 /* 0x0042EB60 */
@@ -1417,12 +1418,15 @@ void LeaveAllocationScope(void);                                                
 void __stdcall SetMouseCursorShape(unsigned char *shape, short frame); /* 0x004360F0 */
 void __stdcall SetMouseHomePosition(short x, short y);                /* 0x00436160 */
 void __stdcall ApplyPackedMousePosition(ShortPoint point);             /* 0x00436190 */
+void __stdcall GetMouseCursorPosition(ShortPoint *point);              /* 0x004361C0 */
 void SetFrameTimerPeriod(short period);                                   /* 0x004361E0 */
 void __stdcall SetFrameTimerAndWait(short period);                                       /* 0x004361F0 */
 void __stdcall SetFrameTimerPeriodDirect(short p);                    /* 0x00436210 */
 void WaitForFrameTick(void);                                          /* 0x00436230 */
 int IsFrameTickElapsed(void);                                            /* 0x00436240 */
 unsigned short GetSoundHardwareFlag(void);                                    /* 0x00436260 */
+void *AllocateUntaggedMemory(unsigned int size);                       /* 0x00436270 */
+void ReleaseUntaggedMemory(void *memory);                              /* 0x00436290 */
 void TimerResetHook(void);                                           /* 0x004362A0 */
 unsigned int GetVideoReleaseResult(void);                                      /* 0x004362B0 */
 unsigned short IdentityWord(unsigned short v);                         /* 0x004362C0 */
@@ -1441,6 +1445,7 @@ unsigned short GetNavRangeSentinel(void);                                   /* 0
 unsigned short GetOriginalFreeMemory(void);                                   /* 0x004368F0 */
 void StartupHook(unsigned int (*callback)(unsigned int, short));  /* 0x00436900 */
 unsigned int JoystickEdgeHook(int button);                         /* 0x00436910 */
+void *AllocateSmallMemoryBlock(short size);                           /* 0x00436940 */
 void FreeIfNotNull(void *p);                                            /* 0x00436950 */
 unsigned int GetStartupErrorCode(int vector);                       /* 0x00436970 */
 void ShutdownHook(int vector, void *handler);                       /* 0x00436980 */
@@ -1677,7 +1682,10 @@ void DrawViewportPixel(Viewport *viewport, short x, short y,
 int GetViewportPixel(Viewport *viewport, short x, short y);            /* 0x00441B60 */
 void DrawViewportLine(Viewport *viewport, short x1, short y1,
                       short x2, short y2, short colour);             /* 0x00441BA0 */
-void TriangleRasterizerHook(void);                                    /* 0x00441BF0 */
+void DrawViewportPolygonHook(Viewport *viewport, const ShortPoint *points,
+                             int count, int colour);                 /* 0x00441BF0 */
+void triangle(Viewport *viewport, const ShortPoint *points, int colour); /* 0x00441C00 */
+void shaded_triangle(Viewport *viewport);                             /* 0x00441C40 */
 void DrawFilledViewportRect(Viewport *viewport, short left, short top,
                             short right, short bottom,
                             short colour);                           /* 0x00441C70 */
@@ -1694,6 +1702,12 @@ void DrawViewportEllipseShadow(Viewport *viewport, short x, short y,
                                short verticalRadius,
                                short horizontalRadius,
                                short colour);                         /* 0x00441E70 */
+void shadow_draw(Viewport *viewport);                                 /* 0x00441EC0 */
+void DrawShapeFrameScaled(Viewport *viewport, unsigned char *shape,
+                          int frame, int x, int y, int angle,
+                          int scale);                                /* 0x00441EF0 */
+void GetShapeFrameCorners(unsigned char *shape, int frame, int x, int y,
+                          ShortPoint *corners, int *cornerCount);     /* 0x00441F30 */
 void DrawSpriteScaled(Viewport *viewport, short x, short y,
                       unsigned char *shape, short frame, short angle,
                       short scale, short flip);                       /* 0x00441FC0 */
@@ -1705,8 +1719,9 @@ int GetTransformedShapeBounds(Viewport *viewport, short x, short y,
                               unsigned char *shape, short frame,
                               short angle, short scale, short flip,
                               short *bounds);                         /* 0x00442050 */
-void fizzle_fade(Viewport *source, Viewport *destination,
-                 const ScreenViewportGeometry *geometry);            /* 0x00442200 */
+void BlitViewportScanlineRuns(Viewport *source, Viewport *destination,
+                              const ScreenViewportGeometry *geometry); /* 0x00442200 */
+void fizzle_fade(Viewport *source, Viewport *destination);             /* 0x004422D0 */
 void snow_viewport(Viewport *viewport, int effect,
                    unsigned short colour);                            /* 0x00442300 */
 void UpdateStreamerStoppedFlag(void);                                    /* 0x00442330 */
@@ -1715,12 +1730,15 @@ void InitializeAudioStreamer(HWND window);                            /* 0x00442
 void Streamer_open(const char *streamName);                           /* 0x004423B0 */
 void Streamer_play(void);                                             /* 0x00442430 */
 void Streamer_stop(void);                                                /* 0x00442460 */
+int GetStreamerTrigger(void);                                         /* 0x00442490 */
 void ClearStreamerTrigger(void);                                      /* 0x004424B0 */
 void Streamer_trigger(int trigger);                                   /* 0x004424D0 */
 void SetStreamerIntensity(unsigned char intensity);                   /* 0x00442520 */
 void ForceStreamerTrigger(int trigger);                               /* 0x00442550 */
 void SetMusicStreamVolume(unsigned short volume);                     /* 0x00442590 */
+unsigned int GetMusicStreamVolume(void);                              /* 0x004425B0 */
 void Streamer_close(void);                                            /* 0x004425D0 */
+void ShutdownAudioStreamer(void);                                     /* 0x004425F0 */
 int ReadCheaterFlagFromRegistry(void);                                /* 0x00442600 */
 int ix_system_init(void);                                              /* 0x00447200 */
 void ix_system_service_sounds(void);                                     /* 0x004472A7 */
@@ -1746,7 +1764,9 @@ void ix_streamer_audio_play(void);                                    /* 0x00443
 void ix_streamer_audio_stop(void);                                    /* 0x00443253 */
 void ix_streamer_set_intensity(unsigned char intensity);              /* 0x0044336B */
 void ix_streamer_set_trigger(char trigger);                           /* 0x004433C1 */
+char ix_streamer_get_trigger(void);                                   /* 0x00443419 */
 void ix_streamer_force_trigger(char trigger);                         /* 0x0044342E */
 void ix_streamer_set_volume(unsigned short volume);                   /* 0x004435BE */
+unsigned short ix_streamer_get_volume(void);                          /* 0x0044363B */
 
 #endif /* GAME_FUNCS_H */

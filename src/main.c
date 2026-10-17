@@ -261,8 +261,8 @@ unsigned int dump_buffer_to_screen(void)
         CopyViewportContents(&stSpaceBuffer, &stScreen);
         break;
     default:
-        fizzle_fade(&stSpaceBuffer, &stScreen,
-                    pScreenViewportGeometry);
+        BlitViewportScanlineRuns(&stSpaceBuffer, &stScreen,
+                                 pScreenViewportGeometry);
         break;
     }
     ShowMemoryStatusDebug();

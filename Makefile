@@ -223,7 +223,7 @@ GLOBALS_MISSING_MAX_ADDRESS = 0x004751ff
 # binary-comp currently accepts one definition source, so generate a parser-only
 # manifest from globals.c and the declaration block at the top of each owner.
 GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/cmpgn.c \
-	src/nav.c src/spc.c src/cockpt.c src/barracks.c src/ship.c src/dib.c src/gr.c \
+	src/nav.c src/spc.c src/cockpt.c src/barracks.c src/ship.c src/music.c src/dib.c src/gr.c \
 	src/ix/dsp.cpp src/ix/dsps.cpp src/ix/dspv.cpp
 GLOBALS_DEFINITION_SOURCES = src/globals.c $(GLOBALS_DISTRIBUTED_SOURCES)
 GLOBALS_AUDIT_SOURCE = $(OUT_DIR)/globals-audit.c
@@ -896,7 +896,7 @@ compare-func: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
 
 # Regenerate code-full/ straight from the original PE with Capstone.
 export-asm: | $(ORIGINAL_EXE)
-	@$(BINARY_COMP) export-asm $(BC) $(EXPORT_ASM_FLAGS)
+	@$(BINARY_COMP) export-asm $(BC) --map "$(abspath config/original-boundaries.map.txt)" $(EXPORT_ASM_FLAGS)
 
 # Split near-miss functions into source-reachable vs allocator churn.
 triage: $(TARGET) | code-full $(ORIGINAL_EXE)

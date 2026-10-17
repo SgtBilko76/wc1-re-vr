@@ -19,12 +19,20 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'src')
 INVENTORY = os.path.join(ROOT, 'out', 'funcs_v5.json')
+SOURCE_MAP = os.path.join(SRC, 'map')
 SKIP = {'void', 'if', 'while', 'for', 'return', 'TODO', 'switch', 'sizeof'}
 
 
 def main():
     fix = '--fix' in sys.argv
     fl = {int(f['address'], 16): f['name'] for f in json.load(open(INVENTORY))}
+    # The tracked map records corrections to the seeded inventory, including
+    # names whose diagnostic strings were attributed to a preceding function.
+    with open(SOURCE_MAP) as source_map:
+        for line in source_map:
+            entry = re.fullmatch(r'0x([0-9A-Fa-f]+)\s+(\S+)\s*', line)
+            if entry:
+                fl[int(entry.group(1), 16)] = entry.group(2)
     byname = {}
     for addr, name in fl.items():
         byname.setdefault(name, addr)

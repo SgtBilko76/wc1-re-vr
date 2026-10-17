@@ -1,0 +1,37 @@
+# Recovered original function boundaries, not an original linker map.
+# These starts were verified in WC1.ORI.EXE between implemented functions.
+# MSVC map syntax lets binary-comp preserve them across clean exports.
+# eventmgr.obj is the reconstruction's provisional owner (docs/ORDER.md).
+# FUN names mark unknown intent; none of these entries supplies source code.
+# Remove an entry here when its source annotation provides the boundary.
+# The jump-only entry at 00436390 is compiler glue; do not hand-write it.
+# The apparent 004393F0 entry is switch-table data and is deliberately excluded.
+
+ 0001:000345e0 _FUN_004355E0 004355e0 f eventmgr.obj
+ 0001:00034dd0 _FUN_00435DD0 00435dd0 f eventmgr.obj
+ 0001:00034e00 _FUN_00435E00 00435e00 f eventmgr.obj
+ 0001:00034e10 _FUN_00435E10 00435e10 f eventmgr.obj
+ 0001:000350c0 _FUN_004360C0 004360c0 f eventmgr.obj
+ 0001:00035250 _FUN_00436250 00436250 f eventmgr.obj
+ 0001:00035280 _FUN_00436280 00436280 f eventmgr.obj
+ 0001:00035300 _FUN_00436300 00436300 f eventmgr.obj
+ 0001:00035310 _FUN_00436310 00436310 f eventmgr.obj
+ 0001:00035320 _FUN_00436320 00436320 f eventmgr.obj
+ 0001:00035330 _FUN_00436330 00436330 f eventmgr.obj
+ 0001:00035340 _FUN_00436340 00436340 f eventmgr.obj
+ 0001:00035350 _FUN_00436350 00436350 f eventmgr.obj
+ 0001:00035360 _FUN_00436360 00436360 f eventmgr.obj
+ 0001:00035370 _FUN_00436370 00436370 f eventmgr.obj
+ 0001:00035380 _FUN_00436380 00436380 f eventmgr.obj
+ 0001:00035390 _FUN_00436390 00436390 f eventmgr.obj
+ 0001:00035400 _FUN_00436400 00436400 f eventmgr.obj
+ 0001:00035410 _FUN_00436410 00436410 f eventmgr.obj
+ 0001:00035890 _FUN_00436890 00436890 f eventmgr.obj
+ 0001:000358a0 _FUN_004368A0 004368a0 f eventmgr.obj
+ 0001:000358b0 _FUN_004368B0 004368b0 f eventmgr.obj
+ 0001:000358d0 _FUN_004368D0 004368d0 f eventmgr.obj
+ 0001:00035920 _FUN_00436920 00436920 f eventmgr.obj
+ 0001:00035930 _FUN_00436930 00436930 f eventmgr.obj
+ 0001:00035990 _FUN_00436990 00436990 f eventmgr.obj
+ 0001:000359f0 _FUN_004369F0 004369f0 f eventmgr.obj
+ 0001:00035ac0 _FUN_00436AC0 00436ac0 f eventmgr.obj

@@ -24,6 +24,11 @@ bin/nameOracle.py
 ```
 
 Inspect each reported call site because a wrapper may log a callee's name.
+The oracle includes discovery-export boundaries as well as the seeded Ghidra
+list. Without those boundaries it attributed `triangle`, `shaded_triangle`,
+`shadow_draw`, and `fizzle_fade` to preceding functions. Their actual entries
+are `0x00441C00`, `0x00441C40`, `0x00441EC0`, and `0x004422D0` respectively.
+The address audit uses the tracked `src/map` to correct stale inventory names.
 Before a rename, verify the address, arguments, return width, callers, strings,
 and final `RET`; then update declarations and call sites and run
 `make audit-addresses` plus `make compare-func`.

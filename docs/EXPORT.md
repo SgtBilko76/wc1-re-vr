@@ -14,6 +14,25 @@ make export-asm EXPORT_ASM_FLAGS=--clean
 This path uses `/* Function start: 0xADDR */` annotations and produces the
 disassembly needed by `compare-func`, `report`, and `order`.
 
+The seeded Ghidra list and automatic discovery both miss unreferenced routines.
+`config/original-boundaries.map.txt` preserves verified entry points that lack
+source annotations, using the MSVC map format accepted by `binary-comp`.
+It is recovered metadata, not an original linker map. `make export-asm` loads
+it even for clean exports. Remove an entry when its source annotation supplies
+the boundary, so the export takes the implemented function's name.
+
+A per-function `EXACT` result covers only that entry's
+span up to the next exported function, even if the next function has no source
+implementation. Cross-check `make compare-functions` address shifts before
+treating the report as complete code coverage. Review discovered entries
+against the raw bytes: a jump table can also look like an instruction stream.
+
+For literal identity of the complete files, including headers and relocations:
+
+```sh
+binary-comp byte-compare --fail-on-difference data/full/WC1.ORI.EXE WC1.EXE
+```
+
 For a complete refresh, run binary-comp's
 [`ExportToCompile.java`](https://github.com/gg-sl-oss/binary-comp/blob/main/ghidra_scripts/ExportToCompile.java)
 from Ghidra and point it at `code-full/`. That export also preserves Ghidra

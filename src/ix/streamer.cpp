@@ -76,10 +76,7 @@ extern "C" int ix_streamer_init(void)
 }
 
 /* Function start: 0x0044286F */   /* source line(s) 87: Streamer not ready for destroy */
-#ifdef SDL_PORT
-extern "C"
-#endif
-void ix_streamer_destroy(void)
+extern "C" void ix_streamer_destroy(void)
 {
     if ((dwStreamerState & IX_STREAMER_INITIALIZED) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 87);
@@ -425,7 +422,7 @@ extern "C" void ix_streamer_set_trigger(char trigger)
 }
 
 /* Function start: 0x00443419 */
-char ix_streamer_get_trigger(void)
+extern "C" char ix_streamer_get_trigger(void)
 {
     return cStreamerBranchTag;
 }
@@ -499,7 +496,7 @@ extern "C" void ix_streamer_set_volume(unsigned short volume)
 }
 
 /* Function start: 0x0044363B */
-unsigned short ix_streamer_get_volume(void)
+extern "C" unsigned short ix_streamer_get_volume(void)
 {
     return nStreamerVolume;
 }

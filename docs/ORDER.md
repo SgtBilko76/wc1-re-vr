@@ -186,3 +186,15 @@ INT3, the only such run in the core, up to `killbrd.obj` at `0x43F640`. Its
 when ownership and declaration order are proven. When a boundary changes,
 update this table and `SRCS_ORDERED_CORE` together, then run `make order` and
 `make verify`.
+
+The unreferenced music wait routine at `0x0042E970` reads a word at
+`0x0046AA0C` that the seeded global list omitted. Its original value is one.
+This is `nMusicWaitForInput` in `music.c`: when nonzero, it keeps polling for
+input even when the music status word is zero. The routine also respects the
+existing music-mode and wait-enable settings.
+
+Several unreferenced event and graphics routines likewise lie between entries
+in the seeded function map. Recovered entries are recorded in `src/map`;
+remaining discovery candidates include the rectangle routine at `0x00436AC0`
+and legacy event hooks. Do not replace these gaps with padding. The apparent
+entry at `0x004393F0` lies in a switch table/padding range and is not a function.

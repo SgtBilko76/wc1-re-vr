@@ -15,11 +15,14 @@ GitHub Sponsors](https://github.com/sponsors/neuromancer).
 
 ## Status
 
-All 1,485 identified functions have source implementations.
+The reference build works, but byte-for-byte reconstruction is incomplete.
+Unreferenced routines found between previously mapped functions are still
+being recovered.
 
 `make report` calculates per-function machine-code similarity to the retail
-executable; those scores measure reconstruction fidelity, not gameplay
-completeness.
+executable. It covers annotated functions and can miss unreconstructed code
+between them. Use `make compare` to check executable layout as well; neither
+score measures gameplay completeness.
 
 ## Similarity
 

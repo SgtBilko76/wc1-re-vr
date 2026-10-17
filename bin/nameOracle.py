@@ -89,8 +89,21 @@ def main():
             return None
         return s.decode('latin1')
 
-    funcs = sorted((int(r['address'], 16), r['name'])
-                   for r in csv.DictReader(open(CSV)))
+    names = {int(r['address'], 16): r['name']
+             for r in csv.DictReader(open(CSV))}
+    # The seeded database missed unreferenced entry points. Respect discovery
+    # boundaries so their diagnostic strings are not assigned to a neighbor.
+    export_dir = os.path.join(ROOT, 'code-full')
+    for filename in sorted(os.listdir(export_dir)):
+        match = re.fullmatch(r'FUN_([0-9a-fA-F]+)\.disassembled\.txt', filename)
+        if match is None:
+            continue
+        address = int(match.group(1), 16)
+        if address not in names:
+            with open(os.path.join(export_dir, filename)) as exported:
+                title = exported.readline().strip()
+            names[address] = title.removeprefix('Function: ')
+    funcs = sorted(names.items())
     starts = [f[0] for f in funcs]
 
     def enclosing(va):

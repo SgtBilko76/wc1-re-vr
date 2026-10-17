@@ -1,10 +1,12 @@
 /*
  *  Music state machine and the streaming music script.
  *
- *  Address range 0x42d000-0x42efff (provisional -- see docs/ORDER.md).
+ *  The provisional address range is recorded in docs/ORDER.md.
  *  Boundary evidence: PROVEN by the names the routines print: StopMusic, FadeMusic, SetMusicOn, ....
  */
 #include "wc1.h"
+
+short nMusicWaitForInput = 1; /* 0x0046AA0C */
 
 /* Function start: 0x42CDB0 */
 unsigned int parse_view_script(void)
@@ -1163,6 +1165,24 @@ void wait_for_end_of_music(void)
             if (nMusicTrackComplete != 0)
                 return;
         } while (bEscapePressed == 0 && CheckEscaped() == 0);
+        StopMusic(0);
+    }
+}
+
+/* Function start: 0x42E970 */
+void WaitForMusicOrInput(void)
+{
+    if (nMusicPlaybackMode != 0 && nMusicPlaybackMode != 3) {
+        if (nWaitForMusicEnabled == 0) {
+            StopMusicUnlessSuppressed();
+            return;
+        }
+        for (;;) {
+            if (nMusicWaitForInput == 0 && nMusicTrackComplete == 0)
+                return;
+            if (bEscapePressed != 0 || CheckEscaped() != 0)
+                break;
+        }
         StopMusic(0);
     }
 }

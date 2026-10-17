@@ -396,11 +396,7 @@ struct IxStreamFile {
 };
 
 extern "C" int ix_streamer_init(void);           /* 0x00442750 */
-#ifdef SDL_PORT
 extern "C" void ix_streamer_destroy(void);       /* 0x0044286F */
-#else
-void ix_streamer_destroy(void);                  /* 0x0044286F */
-#endif
 extern "C" void ix_streamer_configure(int option, void *value); /* 0x0044291E */
 void ix_streamer_set_dev_mode(int mode);         /* 0x0044293E */
 extern "C" int ix_streamer_open_stream_file(char *path); /* 0x004429B6 */
@@ -412,10 +408,10 @@ void ix_streamer_audio_reprepare(void);          /* 0x0044330F */
 extern "C" void ix_streamer_set_intensity(unsigned char intensity); /* 0x0044336B */
 unsigned char ix_streamer_get_intensity(void);   /* 0x004433AC */
 extern "C" void ix_streamer_set_trigger(char trigger); /* 0x004433C1 */
-char ix_streamer_get_trigger(void);              /* 0x00443419 */
+extern "C" char ix_streamer_get_trigger(void);   /* 0x00443419 */
 extern "C" void ix_streamer_force_trigger(char trigger); /* 0x0044342E */
 extern "C" void ix_streamer_set_volume(unsigned short vol); /* 0x004435BE */
-unsigned short ix_streamer_get_volume(void);     /* 0x0044363B */
+extern "C" unsigned short ix_streamer_get_volume(void); /* 0x0044363B */
 unsigned int ix_streamer_get_audio_chunk(void);  /* 0x00443651 */
 void ix_streamer_seek_chunk(unsigned int chunk); /* 0x00443666 */
 unsigned int ix_streamer_hash_name(unsigned char *name); /* 0x004436C0 */

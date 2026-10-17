@@ -674,8 +674,30 @@ void DrawViewportLine(Viewport *viewport, short x1, short y1,
 }
 
 /* Function start: 0x441BF0 */
-void TriangleRasterizerHook(void)
+void DrawViewportPolygonHook(Viewport *viewport, const ShortPoint *points,
+                             int count, int colour)
 {
+    (void)viewport;
+    (void)points;
+    (void)count;
+    (void)colour;
+}
+
+/* Function start: 0x441C00 */
+void triangle(Viewport *viewport, const ShortPoint *points, int colour)
+{
+    DrawViewportPolygonHook(viewport, points, 3, colour);
+    if (viewport->pixels == stScreen.pixels)
+        DIBslam();
+    RasterLineHook(szTriangle);
+}
+
+/* Function start: 0x441C40 */
+void shaded_triangle(Viewport *viewport)
+{
+    if (viewport->pixels == stScreen.pixels)
+        DIBslam();
+    RasterLineHook(szShadedTriangle);
 }
 
 /* Function start: 0x441C70 */
@@ -754,6 +776,64 @@ void DrawViewportEllipseShadow(Viewport *viewport, short x, short y,
                       horizontalRadius, verticalRadius, colour);
     if (viewport->pixels == stScreen.pixels)
         DIBslam();
+}
+
+/* Function start: 0x441EC0 */
+void shadow_draw(Viewport *viewport)
+{
+    if (viewport->pixels == stScreen.pixels)
+        DIBslam();
+    RasterLineHook(szShadowDraw);
+}
+
+/* Function start: 0x441EF0 */
+void DrawShapeFrameScaled(Viewport *viewport, unsigned char *shape,
+                          int frame, int x, int y, int angle, int scale)
+{
+    if (shape != 0 && frame >= 0)
+        DrawSpriteTransformed(viewport, x, y, shape, frame,
+                              angle, scale, scale, 0, 0);
+}
+
+/* The original packet frame begins with these four signed extents. */
+typedef struct ShapeFrameExtents {
+    short right;
+    short left;
+    short top;
+    short bottom;
+} ShapeFrameExtents;
+
+/* Function start: 0x441F30 */
+void GetShapeFrameCorners(unsigned char *shape, int frame, int x, int y,
+                          ShortPoint *corners, int *cornerCount)
+{
+    ShapeFrameExtents *extents;
+    int frameOffset;
+    int left;
+    int right;
+    int top;
+    int bottom;
+
+    *cornerCount = 0;
+    CheckHeapBlockSignature(shape);
+    frameOffset = frame * 4 + 4;
+    if ((int)*(unsigned short *)(shape + 4) >= frameOffset) {
+        extents = (ShapeFrameExtents *)(
+            shape + *(int *)(shape + frameOffset));
+        left = extents->left + x;
+        right = extents->right + x;
+        top = extents->top + y;
+        bottom = extents->bottom + y;
+        corners[0].x = (short)left;
+        corners[0].y = (short)top;
+        corners[1].x = (short)left;
+        corners[1].y = (short)bottom;
+        corners[2].x = (short)right;
+        corners[2].y = (short)bottom;
+        corners[3].x = (short)right;
+        corners[3].y = (short)top;
+        *cornerCount = 4;
+    }
 }
 
 /* Function start: 0x441FC0 */
@@ -854,8 +934,8 @@ int GetTransformedShapeBounds(Viewport *viewport, short x, short y,
 }
 
 /* Function start: 0x442200 */
-void fizzle_fade(Viewport *source, Viewport *destination,
-                 const ScreenViewportGeometry *geometry)
+void BlitViewportScanlineRuns(Viewport *source, Viewport *destination,
+                              const ScreenViewportGeometry *geometry)
 {
     const short *run;
     unsigned char *sourcePixels;
@@ -887,6 +967,15 @@ void fizzle_fade(Viewport *source, Viewport *destination,
         if (destination->pixels == stScreen.pixels)
             DIBslam();
     }
+}
+
+/* Function start: 0x4422D0 */
+void fizzle_fade(Viewport *source, Viewport *destination)
+{
+    if (destination->pixels == stScreen.pixels)
+        DIBslam();
+    RasterLineHook(szFizzleFade);
+    (void)source;
 }
 
 /* Function start: 0x442300 */
@@ -974,6 +1063,14 @@ void Streamer_stop(void)
     }
 }
 
+/* Function start: 0x442490 */
+int GetStreamerTrigger(void)
+{
+    if (bIxAudioEnabled == 0)
+        return 0;
+    return ix_streamer_get_trigger();
+}
+
 /* Function start: 0x4424B0 */
 void ClearStreamerTrigger(void)
 {
@@ -1026,6 +1123,14 @@ void SetMusicStreamVolume(unsigned short volume)
         ix_streamer_set_volume(volume);
 }
 
+/* Function start: 0x4425B0 */
+unsigned int GetMusicStreamVolume(void)
+{
+    if (bIxAudioEnabled == 0)
+        return 0;
+    return ix_streamer_get_volume();
+}
+
 /* Function start: 0x4425D0 */
 void Streamer_close(void)
 {
@@ -1033,6 +1138,13 @@ void Streamer_close(void)
         SoundDebugPrintf("Streamer_close");
         ix_streamer_close_stream_file();
     }
+}
+
+/* Function start: 0x4425F0 */
+void ShutdownAudioStreamer(void)
+{
+    if (bIxAudioEnabled != 0)
+        ix_streamer_destroy();
 }
 
 /* Function start: 0x442600 */
