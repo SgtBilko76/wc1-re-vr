@@ -400,45 +400,6 @@ short asCarrierLaunchViewData[16] = { /* 0x0046a5dc */
 };
 char szPressAnyKeyWhenReady[28] = /* 0x0046a5fc */
     "Press any key when ready";
-unsigned char abTaggedAllocationPrefix[8] = { /* 0x0046ad88 */
-    'j', 'e', 'f', 'f', 0, 0, 0, 0
-};
-const char *apszCampaignVictoryText[4] = { /* 0x0046ad90 */
-    szCampaignVictoryOpening,
-    szCampaignVictoryAttack,
-    szCampaignVictoryConclusion,
-    0
-};
-const char *pszTigerClawEscapeOpening = /* 0x0046ada0 */
-    szTigerClawEscapeOpening;
-const char *pszTigerClawEscapeJump = /* 0x0046ada4 */
-    szTigerClawEscapeJump;
-const char *pszTigerClawEscapeClosing = /* 0x0046ada8 */
-    szTigerClawEscapeClosing;
-ShortVector aCampaignVictoryProjectileOrigins[4] = { /* 0x0046adb0 */
-    { -55, 42, 0 }, { -68, 46, 0 },
-    { 60, 42, 16 }, { 73, 46, 16 }
-};
-const char *pszTheEnd = szTheEnd; /* 0x0046adc8 */
-const char *pszForNow = szForNow; /* 0x0046adcc */
-char szCampaignVictoryOpening[68] = /* 0x0046add0 */
-    "Destroying the remains of the Kilrathi naval power in the sector...";
-char szCampaignVictoryAttack[44] = /* 0x0046ae14 */
-    "The Tiger's Claw closes in for the kill...";
-char szCampaignVictoryConclusion[52] = /* 0x0046ae40 */
-    "And the last Kilrathi planet in the sector falls!";
-char szTigerClawEscapeOpening[64] = /* 0x0046ae74 */
-    "Fleeing from the overwelming Kilrathi forces in the sector...";
-char szTigerClawEscapeJump[48] = /* 0x0046aeb4 */
-    "The Tiger's Claw manages to jump out. Barely.";
-char szTigerClawEscapeClosing[44] = /* 0x0046aee4 */
-    "There'll be other sectors, other battles...";
-char szTheEnd[8] = "The End"; /* 0x0046af10 */
-char szForNow[12] = "For Now..."; /* 0x0046af18 */
-char szCampaignVictoryTextFormat[12] = "%X%Y%s%P"; /* 0x0046af24 */
-char szTigerClawEscapeOpeningFormat[12] = "%X%Y%s%P"; /* 0x0046af30 */
-char szTigerClawEscapeJumpFormat[12] = "%X%Y%s%P"; /* 0x0046af3c */
-char szTigerClawEscapeClosingFormat[12] = "%X%Y%s%P"; /* 0x0046af48 */
 short nInputDoubleClickInterval = 1; /* 0x0046af54 */
 short nMenuPointerSpeed = 2; /* 0x0046af58 */
 short nCommMenuChoiceCount = -1; /* 0x0046af60 */

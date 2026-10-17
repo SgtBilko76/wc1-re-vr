@@ -1,0 +1,538 @@
+/*
+ *  Campaign victory, retreat, and ending scenes.
+ *
+ *  Address range 42fa90-43070f (see docs/ORDER.md).
+ *  The adjacent tagged-allocation helpers remain in this provisional unit.
+ */
+#include "wc1.h"
+
+/* 0x0046ad88 */
+static unsigned char abTaggedAllocationPrefix[8] = {
+    'j', 'e', 'f', 'f', 0, 0, 0, 0
+};
+/* 0x0046ad90 */
+static const char *apszCampaignVictoryText[4] = {
+    "Destroying the remains of the Kilrathi naval power in the sector...",
+    "The Tiger's Claw closes in for the kill...",
+    "And the last Kilrathi planet in the sector falls!",
+    0
+};
+/* 0x0046ada0 */
+static const char *pszTigerClawEscapeOpening =
+    "Fleeing from the overwelming Kilrathi forces in the sector...";
+/* 0x0046ada4 */
+static const char *pszTigerClawEscapeJump =
+    "The Tiger's Claw manages to jump out. Barely.";
+/* 0x0046ada8 */
+static const char *pszTigerClawEscapeClosing =
+    "There'll be other sectors, other battles...";
+/* 0x0046adb0 */
+static ShortVector aCampaignVictoryProjectileOrigins[4] = {
+    { -55, 42, 0 }, { -68, 46, 0 },
+    { 60, 42, 16 }, { 73, 46, 16 }
+};
+static const char *pszTheEnd = "The End"; /* 0x0046adc8 */
+static const char *pszForNow = "For Now..."; /* 0x0046adcc */
+
+/* Function start: 0x42FA90 */
+void *AllocateTaggedMemory(unsigned int size, unsigned short flags)
+{
+    unsigned int *memory;
+    unsigned short tagged;
+
+    tagged = flags & 0x40;
+#ifdef SDL_PORT
+    if (tagged != 0)
+        size += 8 + sizeof(unsigned char *);
+#else
+    if (tagged != 0)
+        size += 8;
+#endif
+    memory = AllocateGuardedMemory(size);
+    if (tagged != 0) {
+#ifdef SDL_PORT
+        *(unsigned char **)memory = 0;
+        memcpy((unsigned char *)memory + sizeof(unsigned char *),
+               abTaggedAllocationPrefix,
+               sizeof(abTaggedAllocationPrefix));
+        memory = PushMemoryStackFrame(
+            memory, -(int)(8 + sizeof(unsigned char *)));
+#else
+        memcpy(memory, abTaggedAllocationPrefix,
+               sizeof(abTaggedAllocationPrefix));
+        memory = PushMemoryStackFrame(memory, -8);
+#endif
+    }
+    return memory;
+}
+
+/* Function start: 0x42FAE0 */
+void ReleasePacketHandle(void *handle)
+{
+    int group;
+    int i;
+
+    for (group = 0; group < 4; group++) {
+        for (i = 0; i < 0x25; i++) {
+            if (aapPacketReferences[group][i] == handle)
+                aapPacketReferences[group][i] = 0;
+        }
+    }
+    FreeGuardedAllocation(MapPacketHandleToBlock(handle));
+}
+
+/* Function start: 0x42FB20 */
+/* Tail-jump thunk to 0x004362E0, not a constant return -- Ghidra followed the
+ * jump and folded the callee's body into the display.  The optimized compiler
+ * emits the tail jump from this forwarding return. */
+unsigned int GetFixedOneMillionThunk(short memoryType)
+{
+    (void)memoryType;
+    return GetFixedOneMillion();
+}
+
+/* Function start: 0x42FB30 */
+unsigned int GetFixedOneMillionThunkAlt(short memoryType)
+{
+    (void)memoryType;
+    return GetFixedOneMillionAlt();
+}
+
+/* Function start: 0x42FB40 */
+void CreateCannedSceneObject(short *object, short yaw, short unusedPitch,
+                             short distance, unsigned char *shape,
+                             short frame, short type, short scale)
+{
+    (void)unusedPitch;
+    *object = find_vacant_3d_object();
+    if (*object != -1) {
+        aeObjectClass[*object] = OBJECT_CLASS_PLANET;
+        init_ijk(63);
+        alter_yaw(yaw, 63);
+        ScaleFixedVector(&aShipForwardVector[63],
+                         (int)distance << 8,
+                         &aShipPosition[*object]);
+        asObjectViewFrame[*object] = frame;
+        asObjectScreenAngle[*object] = type;
+        aeObjectType[*object] =
+            (enum ObjectType)asObjectScreenAngle[*object];
+        asObjectScreenScale[*object] = scale;
+        apObjectShape[*object] = shape;
+    }
+}
+
+/* Function start: 0x42FC00 */
+unsigned int ShowCampaignVictorySequence(void)
+{
+    CampaignVictoryProjectile projectiles[16];
+    unsigned char *planetShape;
+    unsigned char *projectileShape;
+    const ShortVector *origin;
+    CampaignVictoryProjectile *projectile;
+    short planetObject;
+    short spawnCountdown;
+    short vacant[2];
+    short vacantCount;
+    short textIndex;
+    short slot;
+    volatile short frame;
+    short animationFrame;
+    short elapsed;
+    int planetScale;
+    int verticalOffset;
+    int planetDepth;
+
+    PreloadMusicTrackHook(0x21);
+    spacetrack(0x21, 2, 1);
+    InitializeConversationText();
+    init_3Space_objects(0);
+    nCannedSceneMode = 2;
+    bIntroSceneResourcesActive = 0;
+    set_up_action_sphere(0x12);
+    planetShape =
+        FetchDiskPacketRetrying(9, 3, 0);
+    projectileShape =
+        FetchDiskPacketRetrying(9, 2, 0);
+    CreateCannedSceneObject(&planetObject, -4, 0, 30000,
+                            planetShape, 0, 0, 0x50);
+    nScriptedViewObject = 1;
+    initialize_scripted_view(asCampaignVictoryViewScript);
+    slot = 16;
+    projectile = projectiles;
+    do {
+        projectile->scale = -1;
+        projectile++;
+        slot--;
+    } while (slot != 0);
+
+    planetDepth = -1500;
+    frame = 0;
+    bEscapePressed = 0;
+    verticalOffset = -70000;
+    nFrameSkipCounter = 1;
+    do {
+        if (frame == 0)
+            textIndex = 0;
+        else if (frame == 100)
+            textIndex = 1;
+        else if (frame == 180)
+            textIndex = 2;
+        else
+            textIndex = -1;
+        if (textIndex != -1) {
+            ClearViewport(&stConversationTextViewport,
+                          cBlackColour);
+            SetTextContext(&stConversationTextContext);
+            FormatTextBufferFromStart(
+                "%X%Y%s%P", 0, 160,
+                apszCampaignVictoryText[textIndex]);
+        }
+
+        Update_3Space();
+        if (Draw_3Space_Frame() != 0) {
+            if (frame > 90)
+                asObjectScreenScale[planetObject]++;
+            if (asObjectCollisionRadius[61] < planetDepth) {
+                slot = 0;
+                projectile = projectiles;
+                do {
+                    if (projectile->scale != -1 &&
+                        asObjectCollisionRadius[61] <
+                            projectile->depth) {
+                        projectile->screenX =
+                            (short)(projectile->x / projectile->depth);
+                        projectile->screenY =
+                            (short)(projectile->y / projectile->depth);
+                        projectile->scale = 0x10000L / projectile->depth;
+                        if (projectile->scale < 16) {
+                            projectile->scale = -1;
+                        } else {
+                            DrawSpriteScaled(
+                                &stSpaceBuffer,
+                                (short)(projectile->screenX +
+                                        nViewCenterX),
+                                (short)(projectile->screenY +
+                                        nViewCenterY),
+                                projectileShape, 1, 0,
+                                (short)projectile->scale,
+                                projectile->flip);
+                            projectile->depth += 100;
+                            projectile->y += 4000;
+                        }
+                    }
+                    projectile++;
+                    slot++;
+                } while (slot < 16);
+
+                if (frame < 170 && --spawnCountdown < 1) {
+                    vacantCount = 0;
+                    slot = 0;
+                    projectile = projectiles;
+                    do {
+                        if (projectile->scale == -1) {
+                            vacant[vacantCount] = slot;
+                            vacantCount++;
+                            if (vacantCount == 2)
+                                break;
+                        }
+                        slot++;
+                        projectile++;
+                    } while (slot < 16);
+
+                    if (vacantCount > 1) {
+                        origin =
+                            &aCampaignVictoryProjectileOrigins[
+                                RandomBelowOrEqual(3)];
+                        projectile = &projectiles[vacant[0]];
+                        projectile->depth = planetDepth;
+                        projectile->x =
+                            ((origin->x * planetScale) >> 8) * planetDepth;
+                        projectile->y =
+                            ((origin->y * planetScale) >> 8) *
+                                projectile->depth + verticalOffset;
+                        projectile->scale = 0x100;
+                        projectile->flip = origin->z;
+                        projectile->depth += 40;
+
+                        projectile = &projectiles[vacant[1]];
+                        projectile->depth = planetDepth;
+                        projectile->x =
+                            (((origin->x - 4) * planetScale) >> 8) *
+                                planetDepth;
+                        projectile->y =
+                            ((origin->y * planetScale) >> 8) *
+                                projectile->depth + verticalOffset;
+                        projectile->scale = 0x100;
+                        projectile->flip = origin->z;
+                        projectile->depth += 40;
+                    }
+                    spawnCountdown = 8;
+                }
+
+                planetScale = 0x40000L / planetDepth;
+                DrawSpriteScaled(
+                    &stSpaceBuffer, nViewCenterX,
+                    (short)(nViewCenterY +
+                            verticalOffset / planetDepth),
+                    planetShape, 0, 0, (short)planetScale, 0);
+                verticalOffset += 200;
+            }
+            dump_buffer_to_screen();
+            clear_view_buffer();
+            DIBslam();
+            DIBslamReal();
+        }
+        planetDepth += 15;
+        if (bEscapePressed == 1)
+            break;
+        DIBslam();
+        DIBslamReal();
+        frame++;
+    } while (frame < 250);
+
+    ReleasePacketHandle(projectileShape);
+    ReleasePacketHandle(planetShape);
+    free_all_slots();
+    ReleaseTextFont(0);
+    free_3Space();
+    if (bEscapePressed != 1) {
+        planetShape =
+            FetchDiskPacketRetrying(9, 5, 0);
+        animationFrame = 1;
+        ClearViewport(&stScreen, cBlackColour);
+        WaitForVerticalBlankThunk();
+        DrawSpriteDefault(&stScreen, 0, 0, planetShape, 0);
+        elapsed = 0;
+        WaitForSceneAdvance(14, 0);
+        do {
+            SetFrameTimerPeriodDirect(8);
+            DrawSpriteDefault(&stScreen, 0, 0, planetShape,
+                              animationFrame++);
+            if (animationFrame > 17)
+                animationFrame = 12;
+            while ((short)IsFrameTickElapsed() == 0) {
+                if (bEscapePressed != 0 || CheckEscaped() != 0) {
+                    elapsed = 1000;
+                    break;
+                }
+            }
+            elapsed++;
+            DIBslam();
+            DIBslamReal();
+        } while (elapsed < 40);
+        ReleasePacketHandle(planetShape);
+        FadeViewportPaletteToColour(&stModalSourceViewport,
+                                    cBlackColour, 1);
+        ClearViewport(&stModalSourceViewport,
+                      cBlackColour);
+        DIBslam();
+        DIBslamReal();
+        RestoreGamePalette();
+    }
+
+    bEscapePressed = 0;
+    StopMusicUnlessSuppressed();
+    ReleaseMusicTrackHook(0x21);
+    bScriptedView = 0;
+    bIntroSceneResourcesActive = 1;
+    nCannedSceneMode = 0;
+    FadeViewportPaletteToColour(&stModalSourceViewport,
+                                cBlackColour, 1);
+    ClearViewport(&stModalSourceViewport,
+                  cBlackColour);
+    DIBslam();
+    DIBslamReal();
+    RestoreGamePalette();
+    return 0;
+}
+
+/* Function start: 0x430150 */
+unsigned int ShowTigerClawEscapeScene(void)
+{
+    unsigned char *escapeShape;
+    FixedVector jumpOffset;
+    short approachStep;
+    short frame;
+    short effect;
+    int depth;
+    int verticalOffset;
+
+    approachStep = 15;
+    PreloadMusicTrackHook(0x22);
+    spacetrack(0x22, 2, 1);
+    init_3Space_objects((short)stCampaignState.currentSeries);
+    nCannedSceneMode = 2;
+    bIntroSceneResourcesActive = 0;
+    InitializeConversationText();
+    set_up_action_sphere(0x13);
+    escapeShape =
+        FetchDiskPacketRetrying(9, 2, 0);
+    if (aObjectTypeData[
+            OBJECT_TYPE_HYPERSPACE_JUMP_FLASH].shapeSet == 0) {
+        aObjectTypeData[
+            OBJECT_TYPE_HYPERSPACE_JUMP_FLASH].shapeSet =
+                FetchDiskPacketRetrying(3, 14, 0);
+    }
+    nScriptedViewObject = 1;
+    initialize_scripted_view(asTigerClawEscapeViewScript);
+    ClearViewport(&stConversationTextViewport,
+                  cBlackColour);
+    SetTextContext(&stConversationTextContext);
+    FormatTextBufferFromStart(
+        "%X%Y%s%P", 0, 160,
+        pszTigerClawEscapeOpening);
+    nFrameSkipCounter = 1;
+    bEscapePressed = 0;
+    depth = -1000;
+    verticalOffset = -70000;
+    frame = 0;
+    do {
+        Update_3Space();
+        if (Draw_3Space_Frame() != 0) {
+            if (asObjectCollisionRadius[61] < depth &&
+                frame < 198) {
+                DrawSpriteScaled(
+                    &stSpaceBuffer, nViewCenterX,
+                    (short)(nViewCenterY +
+                            verticalOffset / depth),
+                    escapeShape, 0, 0, (short)(0x40000L / depth), 0);
+            }
+            dump_buffer_to_screen();
+            clear_view_buffer();
+        }
+        if (asObjectCollisionRadius[61] < depth)
+            verticalOffset += 400;
+        depth += approachStep;
+        if (frame > 170)
+            approachStep = (short)(approachStep + 10);
+
+        switch (frame) {
+        case 150:
+            ClearViewport(&stConversationTextViewport,
+                          cBlackColour);
+            SetTextContext(&stConversationTextContext);
+            FormatTextBufferFromStart(
+                "%X%Y%s%P", 0, 160,
+                pszTigerClawEscapeJump);
+            break;
+        case 190:
+            effect = find_vacant_3d_object();
+            if (effect != -1) {
+                set_objects_data(effect,
+                                 OBJECT_TYPE_HYPERSPACE_JUMP_FLASH,
+                                 -1);
+                ScaleFixedVector(&aShipForwardVector[61],
+                                 0x271000, &jumpOffset);
+                asObjectScale[effect] =
+                    (short)(asObjectScale[effect] << 2);
+                zero_vector(&aShipVelocity[effect]);
+                AddFixedVectors(&aShipPosition[61],
+                                &jumpOffset,
+                                &aShipPosition[effect]);
+            }
+            break;
+        case 198:
+            ClearViewport(&stSpaceBuffer,
+                          cViewportClearColour);
+            bViewportDirty = 1;
+            break;
+        case 210:
+            ClearViewport(&stConversationTextViewport,
+                          cBlackColour);
+            SetTextContext(&stConversationTextContext);
+            FormatTextBufferFromStart(
+                "%X%Y%s%P", 0, 160,
+                pszTigerClawEscapeClosing);
+            break;
+        }
+        if (bEscapePressed == 1)
+            break;
+        frame++;
+        DIBslam();
+        DIBslamReal();
+    } while (frame < 260);
+
+    ReleasePacketHandle(aObjectTypeData[
+        OBJECT_TYPE_HYPERSPACE_JUMP_FLASH].shapeSet);
+    aObjectTypeData[
+        OBJECT_TYPE_HYPERSPACE_JUMP_FLASH].shapeSet = 0;
+    ReleasePacketHandle(escapeShape);
+    free_all_slots();
+    ReleaseTextFont(0);
+    free_3Space();
+    ClearViewport(&stConversationTextViewport,
+                  cBlackColour);
+    StopMusicUnlessSuppressed();
+    ReleaseMusicTrackHook(0x22);
+    bScriptedView = 0;
+    nCannedSceneMode = 0;
+    bIntroSceneResourcesActive = 1;
+    return 0;
+}
+
+/* Function start: 0x4304F0 */
+unsigned int ShowTheEndScreen(short enableFireworks)
+{
+    short activeFireworks;
+    short frame;
+    short slot;
+
+    activeFireworks = 0;
+    SetEventManagerPump(get_player_input);
+    PreloadMusicTrackHook(0x17);
+    spacetrack(0x17, 2, 1);
+    InitializeConversationViewport();
+    ViewMedals();
+    ReleaseTextFont(0);
+    ClearViewport(&stModalSourceViewport, cBlackColour);
+    ClearViewport(&stSceneBuffer, cBlackColour);
+    InitializeFireworks();
+    pFireworkShape =
+        FetchDiskPacketRetrying(9, 0x11, 0);
+    pIntroFont =
+        FetchDiskPacketRetrying(9, 1, 0);
+    print_subtitle(&stSceneBuffer, 0x3a, pszTheEnd);
+    PanToScreen(&stSceneBuffer, &stScreen);
+    bEscapePressed = 0;
+    frame = 0;
+    nFrameSkipCounter = 1;
+    do {
+        ClearViewport(&stSceneBuffer, cBlackColour);
+        if (enableFireworks != 0 && activeFireworks != 0 &&
+            (RandomBelowOrEqual(100) < 40 || frame > 280)) {
+            slot = 0;
+            do {
+                if (aFireworks[slot].frame == -1) {
+                    aFireworks[slot].frame = 0;
+                    aFireworks[slot].x =
+                        RandomInRange(0, stSpaceBuffer.right);
+                    aFireworks[slot].y =
+                        RandomInRange(0, stSpaceBuffer.bottom);
+                    aFireworks[slot].variant = RandomInRange(0, 2);
+                    break;
+                }
+                slot++;
+            } while (slot < 30);
+        }
+        activeFireworks = TheEndFireWorks(&stSceneBuffer, 30);
+        if (frame < 160) {
+            print_subtitle(&stSceneBuffer, 0x3a,
+                           pszTheEnd);
+        } else if (frame > 190) {
+            StopMusic((short)(320 - frame));
+            print_subtitle(&stSceneBuffer, 0x3a,
+                           pszForNow);
+        }
+        frame++;
+        RefreshMemoryStatusOverlay();
+        DIBslam();
+        DIBslamReal();
+    } while (frame < 320);
+
+    ReleasePacketHandle(pFireworkShape);
+    ReleasePacketHandle(pIntroFont);
+    ResetScreenClipToFullHeight();
+    StopMusicUnlessSuppressed();
+    ReleaseMusicTrackHook(0x17);
+    return 0;
+}

@@ -154,7 +154,9 @@ sits at one constant offset from the original.
 | `src/damage.c` | `0x42C800`–`0x42CDAF` |
 | `src/view.c` | `0x42CDB0`–`0x42E31F` |
 | `src/music.c` | `0x42E320`–`0x42EFBF` |
-| `src/screen.c` | `0x42EFC0`–`0x431EFF` |
+| `src/screen.c` | `0x42EFC0`–`0x42FA8F` |
+| `src/ending.c` | `0x42FA90`–`0x43070F` |
+| `src/comm.c` | `0x430710`–`0x431EFF` |
 | `src/dib.c` | `0x431F00`–`0x43390F` |
 | `src/text.c` | `0x433910`–`0x433ABF` |
 | `src/smart.c` | `0x433AC0`–`0x434CCF` |
@@ -200,6 +202,7 @@ ownership and qualifiers:
 | `0x00469DA8`–`0x00469FA6` | `trainsim.c`: panel state, high-score name pointers, menu regions, simulator state, and the following UI literals |
 | `0x0046A748`–`0x0046A8CD` | `damage.c`: cockpit damage tables and the following report literals |
 | `0x0046A8D0`–`0x0046A9F0` | `view.c`: scripted-view state, constellation tables, packet settings, target armor rectangles, and the following target/display literals |
+| `0x0046AD88`–`0x0046AF50` | `ending.c`: allocation tag, campaign-ending pointers and projectile origins, subtitle literals, and four separate text formats |
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
 DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
@@ -428,6 +431,29 @@ The run metadata is in `config/data-literals.h`; it deliberately excludes
 the unrecovered literals.
 These are partial data checks, not the complete-section guarantee provided
 for damage and view by `verify-unit-data`.
+
+The next complete data block begins at `0x0046AD88`, after the screen and
+memory-stack diagnostics. `ending.c` groups the tagged-allocation helpers
+starting at `0x0042FA90` with the campaign-ending scenes through `0x0043070F`.
+The allocation tag occupies eight bytes, followed by the victory text table,
+retreat text pointers, four projectile origins, and two ending-title pointers.
+The original reads both dwords of the tag; retain the full eight-byte array.
+
+All eight variables have references confined to this group and are private.
+The text pointer initializers contain their own literals, followed by the
+four separate use-site `"%X%Y%s%P"` formats. Keeping named character arrays
+instead changes alignment and adds gaps. The full `.data` section is 457
+bytes, ending with the last format's terminator at `0x0046AF50`.
+`verify-unit-data` checks the complete block, all variable offsets, and all
+eight pointer targets with one address shift and no string fallback.
+
+The input state at `0x0046AF54` follows those literals and precedes the
+communication data. This separates the ending scenes from the subsequent
+input/menu code. `screen.c` now ends with `MapPacketHandleToBlock`, and
+`comm.c` begins with `UpdateInputDeviceTransitions` at `0x00430710`.
+The internal boundaries between the allocation helpers and ending scenes,
+and between input, communications, and graphics setup, remain provisional;
+these grouped placement windows do not establish original source filenames.
 
 Private C definitions require separate evidence: a trial moving the two
 MONODEBG variables to `static` storage in `mono.c` emitted the device handle

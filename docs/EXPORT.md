@@ -40,7 +40,7 @@ handwritten stand-ins; the separate gate covers the 74 generated code bytes.
 `make verify-unit-data`, also included in `make verify`, checks the complete
 initialized-data sections recovered for barracks (632 bytes), fade (2),
 debug (34), disk (523), ship (286), init (550), logic (447), trainsim (511),
-damage (390), and view (289).
+damage (390), view (289), and ending (457).
 It delegates byte matching to binary-comp, allowing one address shift per
 block, and verifies object sizes, global positions, and pointer relocations.
 String-content fallback is disabled so duplicate or empty literals cannot
@@ -72,15 +72,16 @@ severity string's position; the separate unit-data check enforces all offsets.
 Four separately checked spans cover 408 bytes of used music literals and
 the following 80 bytes of screen diagnostics. They preserve original newlines
 and trailing spaces; the three unused literals between these runs remain
-unrecovered. Its 296-byte sound-descriptor table is
-checked directly through the source declaration. These partial checks do not
+unrecovered. The 296-byte sound-descriptor table is checked directly through
+the source declaration. These partial checks do not
 establish the complete music section or its absolute placement.
 
 LINK 4.20 omits private C data symbols from its public map. The build preserves
 that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
 `WC1.map` with the four private damage symbols, seven private view symbols,
-and five private music symbols added. Their addresses come
-from the object's COFF symbols, public section anchors, and linked `DIR32`
+five private music symbols, and eight private ending symbols added. Their
+addresses come from the object's COFF symbols, public section anchors, and
+linked `DIR32`
 references with PE `HIGHLOW` relocations. Conflicting anchors or unresolved
 symbols fail the build. This step changes only comparison metadata; it does
 not modify the executable or infer addresses from the original binary.

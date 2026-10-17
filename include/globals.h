@@ -277,26 +277,6 @@ extern int nInitialFlightMusicPending; /* 0x0046aa38 */
 extern int nCombatMusicActive; /* 0x0046aa3c */
 extern int nInFlightMusicActive; /* 0x0046aa40 */
 extern unsigned char aabSoundEffectDescriptors[37][8]; /* 0x0046aa50 */
-extern unsigned char abTaggedAllocationPrefix[8]; /* 0x0046ad88 */
-extern const char *apszCampaignVictoryText[4]; /* 0x0046ad90 */
-extern const char *pszTigerClawEscapeOpening; /* 0x0046ada0 */
-extern const char *pszTigerClawEscapeJump; /* 0x0046ada4 */
-extern const char *pszTigerClawEscapeClosing; /* 0x0046ada8 */
-extern ShortVector aCampaignVictoryProjectileOrigins[4]; /* 0x0046adb0 */
-extern const char *pszTheEnd; /* 0x0046adc8 */
-extern const char *pszForNow; /* 0x0046adcc */
-extern char szCampaignVictoryOpening[68]; /* 0x0046add0 */
-extern char szCampaignVictoryAttack[44]; /* 0x0046ae14 */
-extern char szCampaignVictoryConclusion[52]; /* 0x0046ae40 */
-extern char szTigerClawEscapeOpening[64]; /* 0x0046ae74 */
-extern char szTigerClawEscapeJump[48]; /* 0x0046aeb4 */
-extern char szTigerClawEscapeClosing[44]; /* 0x0046aee4 */
-extern char szTheEnd[8]; /* 0x0046af10 */
-extern char szForNow[12]; /* 0x0046af18 */
-extern char szCampaignVictoryTextFormat[12]; /* 0x0046af24 */
-extern char szTigerClawEscapeOpeningFormat[12]; /* 0x0046af30 */
-extern char szTigerClawEscapeJumpFormat[12]; /* 0x0046af3c */
-extern char szTigerClawEscapeClosingFormat[12]; /* 0x0046af48 */
 extern short nCommMenuChoiceCount; /* 0x0046af60 */
 extern short nCommMenuReuseMode; /* 0x0046af64 */
 extern signed char cPendingCommMenuAction; /* 0x0046af6c */

@@ -161,6 +161,16 @@ UNITS = {
         ('wPacketCompressionFormatFlags', 0x54),
         ('aTargetArmorClipRects', 0x58),
     ), frozenset()),
+    'ending': UnitData(0x0046AD88, 457, (
+        ('abTaggedAllocationPrefix', 0x00),
+        ('apszCampaignVictoryText', 0x08),
+        ('pszTigerClawEscapeOpening', 0x18),
+        ('pszTigerClawEscapeJump', 0x1C),
+        ('pszTigerClawEscapeClosing', 0x20),
+        ('aCampaignVictoryProjectileOrigins', 0x28),
+        ('pszTheEnd', 0x40),
+        ('pszForNow', 0x44),
+    ), frozenset((0x08, 0x0C, 0x10, 0x18, 0x1C, 0x20, 0x40, 0x44))),
     'damage-bss': UnitData(0x00476554, 4, (
         ('nDisplayedComponentDamage', 0x00),
     ), frozenset(), storage='.bss', owner='damage.obj'),
