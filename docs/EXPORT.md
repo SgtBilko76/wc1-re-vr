@@ -40,7 +40,7 @@ handwritten stand-ins and recovery of the two graphics diagnostic functions
 code bytes.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
-initialized-data sections recovered for nav (608 bytes), nearheap (12),
+initialized-data sections recovered for objdata (9,773 bytes), nav (608), nearheap (12),
 gameflow (64), title (1,522), joystick (238), spc (12), version (13),
 barracks (632), fade (2),
 debug (34), disk (523), ship (286), init (550), logic (447), trainsim (511),
@@ -84,10 +84,16 @@ Navigation, cockpit cursor storage, and the console pointer form another
 and all three owner positions.
 `make verify-barracks-data` retains the barracks-only check.
 
-The navigation, near-heap, campaign-flow, title, joystick, and space `.data`
-sections are checked as complete blocks of 608, 12, 64, 1,522, 238, and 12 bytes
-and as one 2,464-byte run. The combined check includes eight alignment bytes
-and 48 pointer relocations.
+The object-data, navigation, near-heap, campaign-flow, title, joystick, and
+space `.data` sections are checked as complete blocks of 9,773, 608, 12, 64,
+1,522, 238, and 12 bytes and as one 12,240-byte run. The combined check includes
+11 alignment bytes and 128 pointer relocations.
+The object block contains 21 animation arrays, 58 object records, three
+coordinate tables, and 56 separate name literals. Its 80 pointers remain
+inside the block. The gate rejects a name pointer redirected to another
+byte-identical empty literal, as well as a shifted animation pointer.
+The 393-byte object-name metadata resolves this pool in the linked-data audit;
+the strict unit check also covers its exact position and final alignment.
 The title block includes the restored 279-byte Secret Missions message.
 The navigation, title, and joystick literal metadata covers 360, 1,062, and
 238 bytes, allowing the linked-data audit to resolve individual string pointers. The full
@@ -116,9 +122,10 @@ alignment bytes. Space state and the cockpit prefix form a separate 28-byte
 run. These checks leave the missing cockpit bytes explicitly unresolved.
 
 `bin/collectGlobalDefinitions.py` accepts data-only owners such as
-`version.c`: without an annotated function boundary, declarations extend from
-the owner include to the end of the file. The version object's `.data` size
-and pointer are verified by the same strict unit gate as the other owners.
+`objdata.c` and `version.c`: without an annotated function boundary,
+declarations extend from the owner include to the end of the file. Their
+`.data` sizes and pointers are verified by the same strict unit gate as the
+other owners.
 
 Three explicitly marked partial-section checks cover `game.c`: two scalar
 state runs of 112 and 21 bytes, and the 6,652-byte run of scripts, mission

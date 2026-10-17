@@ -40,6 +40,36 @@ class UnitData:
 
 
 UNITS = {
+    'objdata': UnitData(0x00466030, 9773, (
+        ('anAnimExplosion0', 0x000),
+        ('anAnimExplosion1', 0x030),
+        ('anAnimExplosion2', 0x088),
+        ('anAnimLaserSpark', 0x0C0),
+        ('anAnimBlueSpark', 0x0E0),
+        ('anAnimRedSpark', 0x0F8),
+        ('anAnimSparkTrail', 0x110),
+        ('anAnimGirder', 0x128),
+        ('anAnimTubing', 0x148),
+        ('anAnimGlass', 0x168),
+        ('anAnimORing', 0x1B0),
+        ('anAnimPipe', 0x1D0),
+        ('anAnimMetalSheet', 0x1F0),
+        ('anAnimWing', 0x228),
+        ('anAnimMine', 0x270),
+        ('anAnimAsteroidForward', 0x2A8),
+        ('anAnimAsteroidShortForward', 0x2E8),
+        ('anAnimAsteroidReverse', 0x320),
+        ('anAnimAsteroidShortReverse', 0x360),
+        ('anAnimEjectedPilot', 0x398),
+        ('anAnimHyperspaceJumpFlash', 0x3D0),
+        ('aObjectTypeData', 0x428),
+        ('aChildOffsets', 0x22C0),
+        ('aWeaponDisplayPositions', 0x2410),
+        ('aWeaponDisplayOrigins', 0x2490),
+    ), frozenset((*[0x428 + row * 0x87
+                    for row in range(58) if row not in (22, 23)],
+                  *[0x428 + row * 0x87 + 0x1C
+                    for row in range(33, 58) if row != 55]))),
     'nav': UnitData(0x00468660, 608, (
         ('nNavMapCoordinateScaling', 0x00),
         ('nNavMapScale', 0x04),
@@ -467,7 +497,7 @@ UNITS = {
 
 
 ADJACENT_UNITS = (
-    ('nav', 'nearheap', 'gameflow', 'title', 'joystick', 'spc'),
+    ('objdata', 'nav', 'nearheap', 'gameflow', 'title', 'joystick', 'spc'),
     ('spc', 'cockpt-prefix'),
     ('cockpt-tail', 'version', 'barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),
     ('barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),

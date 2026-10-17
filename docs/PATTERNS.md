@@ -148,12 +148,21 @@ for similarity decisions.
   layout audit but missed by the linked-data comparison's simpler parser.
   Put it before the declaration when interior comments contain semicolons,
   as in `aObjectTypeData`; those can terminate the simpler parser's scan.
-- `DIBupdate`'s destination calculation still adds the surface pointer before
-  the horizontal offset; the original adds the horizontal offset first.
-  Parenthesizing the integer offset, writing the offset before the pointer,
-  and separating pointer assignment from `+=` all produce the same two
-  differing instructions under the current declarations. Those variations
-  were reverted; the function has its original size but is not byte-exact.
+- Object display names are separate literals in the packed record initializers,
+  including 26 distinct empty strings. The compiler emits the complete pool
+  after the coordinate tables with four-byte literal alignment. The last empty
+  literal ends the object; the following three zero bytes are linker alignment
+  before navigation. A flattened character array incorrectly owns those bytes.
+- `DIBupdate` is sensitive to shared-header declarations. An earlier build
+  added the surface pointer before the horizontal offset, unlike the original.
+  Parenthesizing the offset, writing it before the pointer, and separating
+  assignment from `+=` did not resolve those two differing instructions.
+  Removing the obsolete shared object-name-array declaration changed
+  allocation again: `top` occupies EBP and `height` spills, shortening
+  the function by 32 bytes. A `register` hint, swapping the extent declarations,
+  and an explicitly guarded do/while loop did not improve its 84.11% result.
+  Reusing the right/bottom parameters as extents made it worse. These trials
+  were reverted; the original retains the row count in EBP and `top` in memory.
 - Keep direct array-field accesses when the original repeatedly uses an index
   plus an absolute field address. A cached structure pointer can produce the
   same mnemonics with shorter displacements, changing the function's size.

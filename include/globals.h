@@ -882,9 +882,4 @@ extern void (*apShipAiManeuverHandlers[47])(short, short); /* 0x004656a8 */
 
 extern ShortVector aShipFormationOffset[10]; /* 0x0059b520 */
 
-/* Ordered object names read directly out of the image; see include/wcdata.h.
- * These are packed variable-length strings, not fixed-stride entries, so the
- * game indexes them through a pointer table rather than by multiplication. */
-extern char aszObjectTypeDisplayNames[]; /* Hornet .. Star post, then weapons */ /* 0x004684d4 */
-
 #endif /* GAME_GLOBALS_H */

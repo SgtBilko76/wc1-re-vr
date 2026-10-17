@@ -10,6 +10,11 @@
  */
 unsigned char abDiskStringLiterals[459]; /* 0x004696a8 */
 
+/* objdata.c: the 56 object-name literals, including 26 separate empty names.
+ * The complete unit gate verifies every name pointer, all animation pointers,
+ * and the pool's position after the object and weapon-coordinate tables. */
+unsigned char abObjectNameLiterals[393]; /* 0x004684d4 */
+
 /* nav.c: mission names, map labels, legend formats, and viewport titles.
  * The complete unit gate also checks the three distinct "err" literals and
  * all 26 pointer targets, including the shared colour variables. */

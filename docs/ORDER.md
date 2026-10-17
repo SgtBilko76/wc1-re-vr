@@ -132,6 +132,7 @@ sits at one constant offset from the original.
 | `src/auto.c` | `0x403E50`–`0x40469F` |
 | `src/cmpgn.c` | `0x4046A0`–`0x40609F` |
 | `src/brains.c` | `0x4060A0`–`0x40CFFF` |
+| `src/objdata.c` | Data only; original code ownership is unresolved |
 | `src/nav.c` | `0x40D000`–`0x40E88F` |
 | `src/nearheap.c` | `0x40E890`–`0x40EFDF` |
 | `src/gameflow.c` | `0x40EFE0`–`0x40FA2F` |
@@ -200,6 +201,7 @@ ownership and qualifiers:
 | `0x004631C8`–`0x004631FF` | `gr.c`: constant registry-key and `Cheater` value-name arrays used by `ReadCheaterFlagFromRegistry` |
 | `0x00465040`–`0x00465057` | `winmain.c`: two initialized hazard counters and two writable eight-byte hazard tables |
 | `0x00465058`–`0x004650B3` | `winmain.c`: window/audio flags, heap counters, class/title arrays, and message-pump state; two intervening words remain unidentified |
+| `0x00466030`–`0x0046865C` | `objdata.c`: animation streams, object definitions, weapon coordinates, and object-name literals; original object name and associated code remain unknown |
 | `0x00468660`–`0x004688BF` | `nav.c`: map state, objective styles, mission-name pointers, and the following navigation literals |
 | `0x004688C0`–`0x004688CB` | `nearheap.c`: near-heap state and descriptor limit |
 | `0x004688CC`–`0x0046890B` | `gameflow.c`: campaign state and the following viewport-disposal diagnostic; the helper's unit ownership remains provisional |
@@ -223,6 +225,26 @@ ownership and qualifiers:
 | `0x0046AF60`–`0x0046B167` | `comm.c`: menu/video state, ace and menu-label pointers, and the complete communication literal pool |
 | `0x0046B168`–`0x0046B171` | `video.c`: video mode and the palette-allocation diagnostic literals |
 | `0x0046B178`–`0x0046B1A1` | `joycal.c`: graphics-mode table, two unused driver names, and both calibration-file literals |
+
+The object-data block begins after the pilot-speech diagnostic at
+`0x00466010` and ends with its name literals before navigation state at
+`0x00468660`. Initialized declarations cannot follow compiler literals in
+one CL 4.20 object, so both edges establish data boundaries. `objdata.c`
+describes the recovered contents; the original filename and any associated
+functions remain unknown. It is linked after the provisional brains group
+and before navigation without assigning it invented function ownership.
+
+Its 21 private animation arrays occupy 1,064 bytes, followed by 58 packed
+135-byte object records, two compiler alignment bytes, and the child-offset
+and weapon-coordinate tables. The 393-byte literal pool begins at
+`0x004684D4`. Each non-null display-name initializer owns its literal:
+30 nonempty names and 26 distinct empty names. The two all-zero object records
+have null names. The former flattened string array included the three
+linker alignment bytes before navigation; ordinary separate literals now
+reproduce that layout without explicit padding. All 80 relocations stay
+inside the block: 56 name pointers and 24 animation pointers. The strict
+unit gate checks all 9,773 bytes and all 25 declaration offsets, including
+interior animation targets and the separate empty-name addresses.
 
 The navigation unit's 360-byte literal pool follows its map state and pointer
 tables, ending immediately before the initialized near-heap state at
@@ -270,10 +292,11 @@ the next recovered function, `EmitTextString` at `0x00413A10`, begins the
 cockpit window. These windows no longer overlap the surviving space functions.
 
 The unit-data gate checks the complete reconstructed `.data` sections:
-navigation (608 bytes), near-heap (12), campaign flow (64), title (1,522),
-joystick (238), and space state (12). It also checks the combined 2,464-byte run
-and all 48 pointer relocations, including four alignment bytes before title
-and two each before joystick and space state. The six referenced colour
+object data (9,773 bytes), navigation (608), near-heap (12), campaign flow
+(64), title (1,522), joystick (238), and space state (12). It also checks the
+combined 12,240-byte run and all 128 pointer relocations, including three
+alignment bytes before navigation, four before title, and two each before
+joystick and space state. The six referenced colour
 variables and the two title resource-record pointers must resolve to their
 original globals and field offsets. This proves the data layout independently
 of the provisional internal code boundaries.
