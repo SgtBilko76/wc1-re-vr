@@ -1288,8 +1288,9 @@ void AppendCommMenuChoice(const char *text, short command)
         if (apszCommMenuChoiceText[index] != text ||
             abCommMenuChoiceCommand[index] != command)
             nCommMenuReuseMode = 0;
+    } else {
+        index = nCommMenuChoiceCount;
     }
-    index = nCommMenuChoiceCount;
     apszCommMenuChoiceText[index] = text;
     nCommMenuChoiceCount = index + 1;
     abCommMenuChoiceCommand[index] = (signed char)command;

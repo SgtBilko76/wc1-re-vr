@@ -496,6 +496,15 @@ for similarity decisions.
   complete report after correcting header visibility. The damage split gives
   57 newly exact functions and 55 formerly exact functions with differences;
   its verified data layout does not imply every code comparison improves.
+- `AppendCommMenuChoice` loads its choice index within the reuse branch or
+  the alternate path, then uses it for the shared stores. Assigning the index
+  in an explicit `else` improves the changed header context from 73.08% to
+  80.77%, recovering the original SI index and EDX text registers. CL still
+  hoists the common load ahead of the branch, so sixteen bytes remain missing.
+  Direct global subscripts, an explicit shared-store label, and `register`
+  did not recover the original schedule. No previously exact function loses
+  its match; calibration has four additional differing instructions, while
+  `UnionRectBounds` has two fewer, both at unchanged sizes and mnemonic scores.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must
