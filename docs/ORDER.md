@@ -182,7 +182,7 @@ ownership and qualifiers:
 | `0x004693C8`–`0x0046963F` | `barracks.c`: bunk origins, menu pointers, modal bounds/state, campaign file numbers, and the following string literals |
 | `0x00469644`–`0x00469667` | `debug.cpp`: console count, keyboard state/hook, font name, spinner, and newline arrays |
 | `0x00469668`–`0x00469872` | `disk.c`: graphics-mode and error-message pointers, disk marker, prompt settings, and the complete following literal pool |
-| `0x004698E0`–`0x0046994F` | `ship.c`: the writable explosion-debris table referenced by `Create_explosion_debris` |
+| `0x00469878`–`0x00469995` | `ship.c`: damage-system and debris tables, gun refire delays, and the following four HUD literals |
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
 DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
@@ -251,6 +251,20 @@ with one address shift. Five linker padding bytes precede the ship table at
 `0x00469878`. `make verify-unit-data` checks the barracks, debug, and disk
 blocks, their object sizes, and every global's relative position. Absolute
 placement remains dependent on the preceding units' data recovery.
+
+The ship unit's initialized data begins with the 50-word damage-system
+table at `0x00469878`. Four compiler alignment bytes precede the existing
+explosion-debris table at `0x004698E0`; the hit-debris types and gun refire
+delays follow at `0x00469950` and `0x0046995C`. All four tables are private
+to `ship.c`. The four HUD strings follow in function-use order at
+`0x00469960`, `0x00469974`, `0x00469984`, and `0x0046998C`. Writing these
+as literals at their use sites reproduces the original four-byte spacing;
+separate character arrays introduced extra alignment. The complete
+286-byte `ship.obj` data section matches literally through binary-comp,
+including its padding, with no relocations. Two linker padding bytes
+precede the next unit's scene-animation flag at `0x00469998`.
+`make verify-unit-data` covers this block as well, including the private
+explosion table that is absent from the linker's public-symbol list.
 
 The registry arrays occupy read-only data, whereas the same routine's
 `"reg cheating\n"` and `"reg not cheating\n"` diagnostic literals occupy

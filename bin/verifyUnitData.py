@@ -58,6 +58,11 @@ UNITS = {
         ('DAT_00469698', 0x30),
         ('nKeyboardPointerStep', 0x3C),
     ), frozenset((0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x30, 0x34))),
+    'ship': UnitData(0x00469878, 286, (
+        ('asPlayerDamageSystemTable', 0x00),
+        ('aeShipHitDebrisTypes', 0xD8),
+        ('acGunRefireDelay', 0xE4),
+    ), frozenset()),
 }
 
 

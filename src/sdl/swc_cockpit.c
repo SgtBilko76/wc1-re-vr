@@ -1082,7 +1082,7 @@ void SdlUpdateSwcCockpit(void)
      * fire_missile +0x38b0 rejects an unlocked shot silently; CODE_13's
      * lock/ITTS paths never draw WC1's two VDU message slots. */
     if (aHudMessageSlots[0].text != NULL && aHudMessageSlots[0].flashCount != 0 &&
-        strcmp(aHudMessageSlots[0].text, szNeedLock) != 0)
+        strcmp(aHudMessageSlots[0].text, "Need Lock") != 0)
         SdlSwcCockpitMessage(aHudMessageSlots[0].text,
             aHudMessageSlots[0].colour == cRedColour ? 0xd4 : 0x84, 1, -1);
     ClearHudGunReadouts();

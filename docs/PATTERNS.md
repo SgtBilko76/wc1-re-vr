@@ -111,6 +111,15 @@ for similarity decisions.
   the common colour and frame arguments before selecting the shape. Selecting
   the shape first, including with a conditional argument, moves those pushes
   after the branch and does not reproduce the original instruction order.
+- `your_internal_damage` likewise uses direct component-damage calls in
+  each switch branch. CL merges their common call and stack cleanup while
+  retaining the original constant pushes; assigning component and amount
+  locals before a shared source label introduces register moves instead.
+  Reject the wrong quadrant before handling drive damage, and use the
+  `quadrant == 1 ? 3 : 1` selection for the alternate damage table. The
+  first hull-damage event decrements the event count unconditionally before
+  calling `pilot_hit`. The random weapon index is narrowed to signed char
+  and then sign-extended to the short argument passed to `remove_weapon`.
 - A typed loop filling a short array can compile to `REP STOSD` followed by
   `REP STOSW`. `Title_Sequence` uses this to mark unused menu options as -1;
   a byte-oriented `memset` produces a different remainder sequence.

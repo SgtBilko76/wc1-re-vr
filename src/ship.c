@@ -8,6 +8,14 @@
  */
 #include "wc1.h"
 
+short asPlayerDamageSystemTable[50] = {
+    0, 8, 6, 5, 0, 3, 5, 5, 7, 6,
+    0, 8, 6, 5, 4, 3, 4, 0, 4, 4,
+    1, 2, 5, 2, 7, 3, 4, 7, 5, 1,
+    1, 4, 1, 5, 2, 3, 4, 7, 2, 1,
+    4, 4, 4, 4, 0, 8, 6, 5, 4, 0
+}; /* 0x00469878 */
+
 static enum ObjectType aaeExplosionDebris[4][7] = {
     {
         OBJECT_TYPE_DEBRIS_PIPE, OBJECT_TYPE_DEBRIS_O_RING,
@@ -35,6 +43,14 @@ static enum ObjectType aaeExplosionDebris[4][7] = {
         OBJECT_TYPE_DEBRIS_GLASS
     }
 }; /* 0x004698e0 */
+
+enum ObjectType aeShipHitDebrisTypes[3] = {
+    OBJECT_TYPE_DEBRIS_SHIP_GIRDER_CHUNK,
+    OBJECT_TYPE_DEBRIS_SHIP_TUBING,
+    OBJECT_TYPE_DEBRIS_O_RING
+}; /* 0x00469950 */
+
+signed char acGunRefireDelay[4] = {6, 10, 4, 0}; /* 0x0046995c */
 
 /* Function start: 0x41DEE0 */
 short initialize_object(short obj, enum ObjectType type, short owner)
@@ -825,9 +841,6 @@ int your_internal_damage(short attacker, short damage, short quadrant)
     short events;
     short system;
     signed char severity;
-    signed char component;
-    signed char amount;
-    short weaponCount;
 
     attackerClass = aeObjectClass[attacker];
     if (attackerClass == OBJECT_CLASS_PROJECTILE) {
@@ -838,7 +851,7 @@ int your_internal_damage(short attacker, short damage, short quadrant)
         tableGroup = 4;
         events = MaxShort(1, (short)(damage >> 7));
     } else {
-        tableGroup = (short)((quadrant == 1 ? 2 : 0) + 1);
+        tableGroup = quadrant == 1 ? 3 : 1;
         events = MaxShort(1, (short)(damage >> 5));
     }
     playerType = aeObjectType[0];
@@ -864,50 +877,41 @@ int your_internal_damage(short attacker, short damage, short quadrant)
         case 0:
             if (severity < 4)
                 pilot_hit(0);
-            else {
-                if (severity < 7) {
-                    amount = 2;
-                    component = 7;
-                } else {
-                    amount = 4;
-                    component = 6;
-                }
-                goto damage_component;
-            }
+            else if (severity < 7)
+                damage_your_component(7, 2, 4);
+            else
+                damage_your_component(6, 4, 4);
             break;
         case 1:
-            if (quadrant == 1) {
-                damage_your_component(0, 1, 3);
-                damage_ion_drive(0, 1, 3);
-            } else
+            if (quadrant != 1) {
                 events++;
+                break;
+            }
+            damage_your_component(0, 1, 3);
+            damage_ion_drive(0, 1, 3);
             break;
         case 2:
-            if (quadrant == 1) {
-                if (RandomBelowOrEqual(3) == 0) {
-                    return explode(attacker, 0);
-                }
-                if (damage_your_component(1, 1, 4) == 4)
-                    return explode(attacker, 0);
-            } else
+            if (quadrant != 1) {
                 events++;
+                break;
+            }
+            if (RandomBelowOrEqual(3) == 0)
+                return explode(attacker, 0);
+            if (damage_your_component(1, 1, 4) == 4)
+                return explode(attacker, 0);
             break;
         case 3:
-            if (severity > 8) {
-                amount = 2;
-                component = 8;
-                goto damage_component;
-            } else {
+            if (severity < 9) {
                 damage_your_component(2, 1, 4);
                 revise_shields(0);
-            }
+            } else
+                damage_your_component(8, 2, 4);
             break;
         case 4:
             acShipDamage[0]++;
             if (acShipDamage[0] == 1) {
+                events--;
                 pilot_hit(0);
-                if (events > 0)
-                    events--;
             } else if ((short)acShipDamage[0] >
                        aObjectTypeData[playerType].
                            damageCapacity) {
@@ -918,13 +922,12 @@ int your_internal_damage(short attacker, short damage, short quadrant)
             if (quadrant != 0) {
                 events++;
             } else {
-                weaponCount = (short)(signed char)aShipWeapons[0][0];
-                if (weaponCount > 0) {
+                if ((signed char)aShipWeapons[0][0] > 0) {
                     remove_weapon(0,
-                        RandomBelowOrEqual(
-                            (short)(weaponCount - 1)));
+                        (signed char)RandomBelowOrEqual(
+                            (short)((signed char)aShipWeapons[0][0] - 1)));
                     ShowComponentHitHudMessage(
-                        szWeaponDestroyed,
+                        "Weapon destroyed",
                         cRedColour, 8);
                 }
             }
@@ -944,28 +947,22 @@ int your_internal_damage(short attacker, short damage, short quadrant)
             if (RandomBelowOrEqual(1) != 0 ||
                 anShipFuel[0] < 0)
                 return explode(attacker, 0);
-            ShowComponentHitHudMessage(szFuelTanksHit,
+            ShowComponentHitHudMessage("Fuel tanks hit",
                                        cRedColour, 8);
             break;
         case 8:
             if (quadrant != 0) {
                 events++;
             } else {
-                if (severity > 6) {
-                    amount = 4;
-                    component = 5;
-                    goto damage_component;
-                } else {
+                if (severity < 7) {
                     damage_your_component(4, 2, 3);
-                    if (acPlayerComponentDamage[4] > 3)
+                    if (acPlayerComponentDamage[4] >= 4)
                         acShipCommunicator[0] = -1;
-                }
+                } else
+                    damage_your_component(5, 4, 4);
             }
             break;
         }
-        continue;
-damage_component:
-        damage_your_component(component, amount, 4);
     }
 }
 
@@ -984,7 +981,7 @@ short ReportComponentRepaired(short component, short minimumDamage)
     if (minimumDamage <
         (short)acPlayerComponentDamage[component]) {
         acPlayerComponentDamage[component]--;
-        sprintf(message, szComponentFixedFormat,
+        sprintf(message, "%s FIXD",
                 apszComponentNames[component]);
         ShowComponentHitHudMessage(message, cRedColour, 8);
         return 1;
@@ -2061,7 +2058,7 @@ int fire_missile(short ship)
                         nTargetLockCountdown != 0) {
                         if (get_mode(0) == 1)
                             ShowComponentHitHudMessage(
-                                szNeedLock,
+                                "Need Lock",
                                 cYellowColour, 3);
                         return -1;
                     }
@@ -2450,4 +2447,3 @@ void your_afterburner(void)
         PlaySfxWaveFileByNumber(12, -1, 0);
     }
 }
-

@@ -194,13 +194,6 @@ extern short nPaletteTransitionInitialise; /* 0x00469640 */
 extern DWORD dwDebugOverlayKey; /* 0x00469648 */
 extern DWORD dwDebugOverlayKeyLatch; /* 0x0046964c */
 extern short nDiskPromptBorderColour; /* 0x00469694 */
-extern short asPlayerDamageSystemTable[50]; /* 0x00469878 */
-extern enum ObjectType aeShipHitDebrisTypes[3]; /* 0x00469950 */
-extern signed char acGunRefireDelay[4]; /* 0x0046995c */
-extern char szWeaponDestroyed[20]; /* 0x00469960 */
-extern char szFuelTanksHit[16]; /* 0x00469974 */
-extern char szComponentFixedFormat[8]; /* 0x00469984 */
-extern char szNeedLock[12]; /* 0x0046998c */
 extern short bSlowSceneAnimation; /* 0x00469998 */
 extern unsigned char cBlackColour; /* 0x0046999c */
 extern unsigned char cViewportClearColour; /* 0x004699a0 */

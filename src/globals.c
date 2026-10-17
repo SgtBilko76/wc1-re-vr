@@ -329,23 +329,6 @@ int anPilotTurnInterval[18] = { /* 0x00465fc8 */
 char szErrorLoadingPilotSpeech[32] = /* 0x00466010 */
     "Error loading pilot speech";
 short nPaletteTransitionInitialise = 1; /* 0x00469640 */
-short asPlayerDamageSystemTable[50] = { /* 0x00469878 */
-    0, 8, 6, 5, 0, 3, 5, 5, 7, 6,
-    0, 8, 6, 5, 4, 3, 4, 0, 4, 4,
-    1, 2, 5, 2, 7, 3, 4, 7, 5, 1,
-    1, 4, 1, 5, 2, 3, 4, 7, 2, 1,
-    4, 4, 4, 4, 0, 8, 6, 5, 4, 0
-};
-enum ObjectType aeShipHitDebrisTypes[3] = { /* 0x00469950 */
-    OBJECT_TYPE_DEBRIS_SHIP_GIRDER_CHUNK,
-    OBJECT_TYPE_DEBRIS_SHIP_TUBING,
-    OBJECT_TYPE_DEBRIS_O_RING
-};
-signed char acGunRefireDelay[4] = {6, 10, 4, 0}; /* 0x0046995c */
-char szWeaponDestroyed[20] = "Weapon destroyed"; /* 0x00469960 */
-char szFuelTanksHit[16] = "Fuel tanks hit"; /* 0x00469974 */
-char szComponentFixedFormat[8] = "%s FIXD"; /* 0x00469984 */
-char szNeedLock[12] = "Need Lock"; /* 0x0046998c */
 short bSlowSceneAnimation = 0; /* 0x00469998 */
 unsigned char cBlackColour = 0; /* 0x0046999c */
 unsigned char cViewportClearColour = 15; /* 0x004699a0 */

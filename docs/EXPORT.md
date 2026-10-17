@@ -39,8 +39,8 @@ handwritten stand-ins; the separate gate covers the 74 generated code bytes.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
 initialized-data sections recovered for barracks (632 bytes), debug (36),
-and disk (523). It delegates byte matching to binary-comp, allowing one
-address shift per block, and verifies object sizes, global positions, and
+disk (523), and ship (286). It delegates byte matching to binary-comp, allowing
+one address shift per block, and verifies object sizes, global positions, and
 pointer relocations. String-content fallback is disabled so duplicate or
 empty literals cannot conceal incorrect pointer targets. These checks prove
 relative layout; final absolute addresses remain a whole-executable task.
