@@ -1033,3 +1033,22 @@ or names. In particular, the jump entry targets
 the surrounding empty routines' purposes cannot be established by proximity
 alone. The function report does not score these absent implementations, so
 its average similarity must not be interpreted as whole-program completion.
+
+The rectangle routine's stack reads need particular care. Relative to ESP
+after its four register saves, its two arrays of sixteen 32-bit coordinates
+start at offsets `0x24` and `0x64`. The branch at `0x00436B97` compares the
+first X slot (`[ESP+0x24]`) with four; that slot was already initialized
+from the first rectangle's left coordinate. One selected index likewise
+loads `[ESP+0x14]`, where that coordinate was saved. Only the other two
+index slots, `[ESP+0x18]` and `[ESP+0x1C]`, have no preceding writes in the
+routine. Its four result stores alternate between offsets zero and two,
+so the maximum calls overwrite the earlier minimum results.
+
+Probes using two sixteen-element arrays, an uninitialized count, and three
+selected indices recovered the 432-byte span but only 89.66% instruction
+similarity, with different stack reads. Direct field expressions, LONG
+coordinate elements, a two-plane array, and a fourth selected-index element
+did not recover the original accesses; the fourth element also enlarged the
+frame from 148 to 152 bytes. These probes are not retained. In particular,
+do not infer four independent uninitialized scalars merely from the final
+branch and index loads: some of those slots already contain coordinates.

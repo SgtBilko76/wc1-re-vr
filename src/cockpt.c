@@ -2837,15 +2837,16 @@ void vid_transmit(void)
 {
     short randomFrame;
     short speaker;
-    unsigned char *background;
 
     speaker = nCommSpeakerObject;
     if (aeShipSide[speaker] == SIDE_NEUTRAL) {
         EndCommSessionWithWingman();
         return;
     }
+    /* The original repeats the cockpitless check after frame parity. */
     if ((bCockpitlessView != 0 ||
-         nRenderedSpaceFrame % 2 != 0) &&
+         nRenderedSpaceFrame % 2 != 0 ||
+         bCockpitlessView != 0) &&
         nCommPortraitIndex != -1 &&
         aapszPilotSpeech[nCommPortraitIndex] != 0 &&
         bVideoImagesSuppressed == 0) {
@@ -2872,14 +2873,15 @@ void vid_transmit(void)
         if (randomFrame < 3)
             nCommPortraitFrame = randomFrame;
         set_new_vdu(1);
-        if (aeShipSide[nCommSpeakerObject] ==
-            SIDE_IMPERIAL) {
-            background = pConfedCommBackground;
+        if (aeShipSide[nCommSpeakerObject] == SIDE_IMPERIAL) {
+            DrawSpriteDefault(
+                &stRightVdu, stRightVdu.left, stRightVdu.top,
+                pConfedCommBackground, 0);
         } else {
-            background = pKilrathiCommBackground;
+            DrawSpriteDefault(
+                &stRightVdu, stRightVdu.left, stRightVdu.top,
+                pKilrathiCommBackground, 0);
         }
-        DrawSpriteDefault(&stRightVdu, stRightVdu.left,
-                          stRightVdu.top, background, 0);
         DrawSpriteDefault(
             &stRightVdu, stRightVdu.left, stRightVdu.top,
             apCommPortraitShapes[nCommPortraitIndex],

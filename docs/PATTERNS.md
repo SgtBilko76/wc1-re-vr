@@ -323,6 +323,18 @@ for similarity decisions.
   Explicit break/index locals and alternate pointer initialization did not
   remove that difference. The full-unit check also recovers the exact
   `build_your_target_list` without changing that function's source.
+  Qualifying the read cursor as `const char *` likewise leaves the generated
+  instructions unchanged and is not retained.
+- `vid_transmit` tests the cockpitless-view flag both before and after its
+  frame-parity test. Keeping that repeated condition preserves EBX and the
+  second `TEST EBX,EBX`, restoring the missing sixteen-byte aligned block.
+  Its background-selection branches each contain their own sprite draw call.
+  CL merges those calls, placing the common zero argument before the branch
+  and matching the subsequent coordinate loads and portrait draw. Assigning
+  a temporary background pointer or using a conditional expression in one
+  shared call instead changes argument scheduling. The repeated guard and
+  separate source calls reproduce the entire 432-byte span exactly, up from
+  91.06% similarity, without changing other function comparisons.
 - `fire_afterburner` measures velocity before querying the maximum velocity.
   Save the measured speed in a real int local before the comparison: CL 4.20
   evaluates the two calls in the opposite order when both appear directly
