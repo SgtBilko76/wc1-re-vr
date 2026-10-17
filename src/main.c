@@ -1,7 +1,7 @@
 /*
  *  WINGLEADER main module.
  *
- *  Address range 0x4274e0-0x427fff (provisional -- see docs/ORDER.md).
+ *  Address range 0x4274e0-0x428e6f (provisional -- see docs/ORDER.md).
  *  Boundary evidence: main() at 0x004274E0, confirmed against the leaked DOS source screenshot.
  */
 #include "wc1.h"
@@ -733,6 +733,8 @@ unsigned int player_input(void)
     short queuedKeyEvent;
     short horizontal;
     short vertical;
+    short horizontalMagnitude;
+    short verticalMagnitude;
     short yawInput;
     short pitchInput;
     int keyboardRoll;
@@ -747,8 +749,8 @@ unsigned int player_input(void)
     nPreviousRollInput = nRollInput;
     keyboardRoll = 0;
     eventType = PollInputEvent(&event, 0xff);
+    wCurrentInputModifiers = (unsigned short)event.modifiers;
     modifiers = event.modifiers;
-    wCurrentInputModifiers = (unsigned short)modifiers;
     TranslatePolledInputEvent((unsigned short)eventType, event.value);
     bJoystickEventQueued = IsInputEventQueued(6);
     bMouseMoveEventQueued = IsInputEventQueued(13);
@@ -772,7 +774,7 @@ unsigned int player_input(void)
         } else {
             bMouseAfterburnerControl = 0;
             process_player_input();
-            switch (bCurrentKey) {
+            switch ((signed char)bCurrentKey) {
             case 0x33:
             case 0x34:
             case 0x52:
@@ -785,9 +787,7 @@ unsigned int player_input(void)
     if (bMouseButtonEventQueued == 0) {
         buttons = bHostSecondaryMouseButton * 2 |
                   bHostPrimaryMouseButton;
-        if (buttons == 0) {
-            bAfterburnerButtonLatched = 0;
-        } else {
+        if (buttons != 0) {
             if (buttons == 3) {
                 bCurrentKey = 0x1c;
             } else if (buttons == 1) {
@@ -796,10 +796,13 @@ unsigned int player_input(void)
             }
             if ((buttons & 2) == 0)
                 cPreviousKey = 0;
-            if (cPreviousKey == 0x0f && buttons == 2)
+            if (cPreviousKey == 0x0f && buttons == 2) {
                 bCurrentKey = 0x0f;
-            if (buttons == 1)
-                fire_players_lasers();
+                if (buttons == 1)
+                    fire_players_lasers();
+            }
+        } else {
+            bAfterburnerButtonLatched = 0;
         }
     }
 
@@ -827,17 +830,16 @@ unsigned int player_input(void)
                 bAfterburnerButtonLatched = 1;
             }
             if (cPreviousKey == 0x0f &&
-                (short)event.value == 2)
+                (short)event.value == 2) {
                 bCurrentKey = 0x0f;
-            if ((short)event.value == 1)
-                fire_players_lasers();
+                if ((short)event.value == 1)
+                    fire_players_lasers();
+            }
             dwLastSecondaryButtonPress = nTickCount60Hz;
             break;
         case 3:
         case 5:
             bMouseAfterburnerControl = 0;
-            wCurrentInputModifiers =
-                (unsigned short)event.modifiers;
             bCurrentKey = (unsigned char)event.value;
             process_player_input();
             break;
@@ -901,34 +903,40 @@ unsigned int player_input(void)
                 bMouseCursorVisible = 1;
                 stMouseCursorState.frame = 2;
             }
-            if (bCockpitlessView == 0) {
+            if (bCockpitlessView != 0) {
+                switch (cCockpitView) {
+                case 0:
+                    event.y = (short)(event.y - 10);
+                    break;
+                case 1:
+                    event.y = (short)(event.y - 25);
+                    break;
+                }
+                horizontal = (short)(event.x +
+                    (stSpaceBuffer.left -
+                     stSpaceBuffer.right) / 2 + 1);
+                vertical = (short)(event.y - nViewCenterY);
+            } else {
                 horizontal = (short)(event.x +
                     (stSpaceBuffer.left -
                      stSpaceBuffer.right) / 2 + 1);
                 vertical = (short)(event.y +
                     (stSpaceBuffer.top - stSpaceBuffer.bottom) / 2);
-            } else {
-                if (cCockpitView == 0)
-                    event.y = (short)(event.y - 10);
-                else if (cCockpitView == 1)
-                    event.y = (short)(event.y - 25);
-                horizontal = (short)(event.x +
-                    (stSpaceBuffer.left -
-                     stSpaceBuffer.right) / 2 + 1);
-                vertical = (short)(event.y - nViewCenterY);
             }
             stMouseCursorState.x = event.x;
             stMouseCursorState.y = event.y;
+            horizontalMagnitude = (short)abs((int)horizontal);
+            verticalMagnitude = (short)abs((int)vertical);
             for (yawInput = 0;
                  asMouseYawThresholds[yawInput] <=
-                     abs((int)horizontal);
+                     horizontalMagnitude;
                  yawInput++)
                 ;
             if (horizontal < 0)
                 yawInput = (short)-yawInput;
             for (pitchInput = 0;
                  asMousePitchThresholds[pitchInput] <=
-                     abs((int)vertical);
+                     verticalMagnitude;
                  pitchInput++)
                 ;
             if (vertical < 0)
@@ -942,13 +950,13 @@ unsigned int player_input(void)
                 pitchInput = -8;
             if ((int)stSpaceBuffer.bottom <= (int)event.y + 4)
                 pitchInput = 8;
-            if (yawInput > 8)
+            if (yawInput >= 9)
                 yawInput = 8;
-            if (yawInput < -8)
+            if (yawInput <= -9)
                 yawInput = -8;
-            if (pitchInput > 8)
+            if (pitchInput >= 9)
                 pitchInput = 8;
-            if (pitchInput < -8)
+            if (pitchInput <= -9)
                 pitchInput = -8;
             if (afterburnerControl != 0) {
                 bMouseAfterburnerControl = 1;

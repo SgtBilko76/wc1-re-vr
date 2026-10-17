@@ -4258,9 +4258,14 @@ unsigned int init_intelligence_data(short obj)
         locate_ship(nHomeMissionShipIndex, missionSpot);
         break;
     case MISSION_TYPE_CANNED_SEQUENCE:
+#ifdef SDL_PORT
+        /* The native pointer does not fit in the legacy 32-bit AI slot. */
         apCannedSequence[obj] =
             aMissionShips[
                 nShipMissionIndices[obj]].behaviour.cannedSequence;
+#else
+        apCannedSequence[obj] = (const short *)aiPilotLevel[obj];
+#endif
         aiPilotLevel[obj] = 2;
         advance_canned_sequence(obj);
         break;
@@ -4268,13 +4273,13 @@ unsigned int init_intelligence_data(short obj)
         break;
     }
 
-    if (aiPilotLevel[obj] < 5)
-        acShipRating[obj] =
-            (signed char)~RATING_PROVINCIAL;
-    else
+    if (aiPilotLevel[obj] > 4)
         acShipRating[obj] =
             (signed char)(aiPilotLevel[obj] -
                           RATING_ACE_SPIRIT);
+    else
+        acShipRating[obj] =
+            (signed char)~RATING_PROVINCIAL;
     acShipStress[obj] = 0;
     return 0;
 }

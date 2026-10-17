@@ -365,6 +365,36 @@ for similarity decisions.
   `process_player_input` writes one or two keys through an advancing pointer,
   then appends -1. Writing a separate sentinel in each switch case changes
   the original common tail.
+- `player_input` saves the polled modifiers to their global before copying
+  them to a local. Its later keyboard-event cases do not overwrite that
+  global. Sign-extend the key for its switch, and retain the original nesting
+  of the mouse-button fire checks, including the apparently contradictory
+  tests after the previous-key check. The queued button case updates its
+  timestamp after that conditional, on both paths. Calculate both mouse
+  magnitudes once as signed shorts before their threshold loops; comparing
+  promoted `abs` results instead emits different arithmetic and increases
+  the frame. Handle the cockpitless branch first, switch on the signed view
+  byte, and clamp at >=9/<=-9. These changes recover the 28-byte frame and
+  raise similarity from 82.32% to 94.09%; sixteen excess bytes remain.
+  Global-load scheduling, store merging, and register allocation still
+  differ. The unchanged next-view selector also becomes exact under the
+  unit's resulting allocation; no previously exact function loses its match.
+- `init_intelligence_data` takes its canned-sequence pointer from the
+  existing 32-bit pilot-level slot before replacing that slot with 2. Reading
+  it again from the mission record adds an index calculation absent from the
+  original. The native build retains the full pointer from the mission record
+  because its pointer cannot fit in the legacy slot. Test pilot levels >4
+  before the default rating branch. The resulting 336-byte span matches the
+  original length at 93.33% similarity; register choices and vector-copy
+  scheduling still differ.
+- `draw_nav_pointer` stores its object index and clears the old screen X and
+  distance after the creation branch, including when the object already
+  exists. The original thus discards the previous projection before every
+  visibility check. Reload the global object index for the projected X, Y,
+  and distance stores, and narrow the masked screen width to a short before
+  shifting it. This restores its 512-byte span at 96.27% similarity. Creation
+  scheduling and a missing saved register still change stack offsets and
+  encodings; equal size is not an exact match.
 - Signedness matters even for 32-bit fields. In `IxStream`, `pending` and
   `lockLen` are signed counts, while the consumed-byte delta is unsigned.
   The original tests `pending` with a signed comparison and updates it

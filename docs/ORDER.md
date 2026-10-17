@@ -147,8 +147,8 @@ sits at one constant offset from the original.
 | `src/pilot.cpp` | `0x425730`–`0x425C2F` |
 | `src/trainsim.c` | `0x425C30`–`0x4272EF` |
 | `src/system.c` | `0x4272F0`–`0x4274DF` |
-| `src/main.c` | `0x4274E0`–`0x427FFF` |
-| `src/hudmsg.c` | `0x428000`–`0x42AFFF` |
+| `src/main.c` | `0x4274E0`–`0x428E6F` |
+| `src/hudmsg.c` | `0x428E70`–`0x42AFFF` |
 | `src/pload.c` | `0x42B000`–`0x42B3FF` |
 | `src/sound.c` | `0x42B400`–`0x42CFFF` |
 | `src/music.c` | `0x42D000`–`0x42EFFF` |
@@ -163,6 +163,12 @@ sits at one constant offset from the original.
 | `src/raster.asm` | `0x439C40`–`0x43F635` |
 | `src/killbrd.c` | `0x43F640`–`0x440BFF` |
 | `src/gr.c` | `0x440C00`–`0x44269F` |
+
+The provisional main/HUD split follows the existing function groups:
+`player_input` at `0x004285D0` and the three following view-input functions
+remain in `main.c`; `MeasureMessageWidth` at `0x00428E70` starts `hudmsg.c`.
+This corrects the former placement windows through the middle of the input
+group; it does not independently establish the original object boundary.
 
 `LoadPaletteTripletsFile` at `0x00404610` closes `auto.c`. Its `"rb"`
 literal is at `0x00465548`, immediately after the initialized autopilot

@@ -2201,17 +2201,10 @@ void draw_nav_pointer(void)
         aeObjectClass[object] = OBJECT_CLASS_PLANET;
         apObjectShape[object] =
             pTargetLockShape;
-        nNavPointerObject = object;
-        asObjectScreenX[object] = (short)0x8001;
-        asObjectDistance[object] = 0;
     }
-#ifdef SDL_PORT
-    /* SWC clears the old projection before every visibility check. */
-    if (SdlSwcFlightActive()) {
-        asObjectScreenX[object] = (short)0x8001;
-        asObjectDistance[object] = 0;
-    }
-#endif
+    nNavPointerObject = object;
+    asObjectScreenX[object] = (short)0x8001;
+    asObjectDistance[object] = 0;
     objectivePosition = aMissionObjectives[
         (signed char)cCurrentObjective].position;
     ComputeVectorDelta(&aShipPosition[EYE_OBJECT],
@@ -2227,17 +2220,17 @@ void draw_nav_pointer(void)
         return;
     if (DivideFixed(viewPosition.z, distance) < 0x94)
         return;
-    asObjectScreenX[object] = (short)(DivideFixed(
+    asObjectScreenX[nNavPointerObject] = (short)(DivideFixed(
         MultiplyFixed(
-            ((short)nScreenWidth & ~1) << 7,
+            (short)(nScreenWidth & ~1) << 7,
             viewPosition.x),
         viewPosition.z) >> 8);
-    asObjectScreenY[object] = (short)(DivideFixed(
+    asObjectScreenY[nNavPointerObject] = (short)(DivideFixed(
         MultiplyFixed(
-            ((short)nScreenWidth & ~1) << 7,
+            (short)(nScreenWidth & ~1) << 7,
             viewPosition.y),
         viewPosition.z) >> 8);
-    asObjectDistance[object] = 0x4a38;
+    asObjectDistance[nNavPointerObject] = 0x4a38;
 }
 
 /* Function start: 0x416AC0 */

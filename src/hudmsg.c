@@ -1,7 +1,7 @@
 /*
  *  On-screen message banners and the debug cheat keys.
  *
- *  Address range 0x428000-0x42afff (provisional -- see docs/ORDER.md).
+ *  Address range 0x428e70-0x42afff (provisional -- see docs/ORDER.md).
  *  Boundary evidence: ShowOnScreenMessage and its six callers; string band 0x46A24C-0x46A378.
  *  The Mac CODE 4 `targ` symbols prove the nested 0x42A8F0-0x42ACFF unit.
  *  The Mac CODE 15 `select` symbols prove the nested 0x42AD00-0x42AF9F unit.
