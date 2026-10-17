@@ -3403,27 +3403,26 @@ unsigned int init_mission(short series, short mission)
 /* Function start: 0x40B7A0 */
 void prepare_mission(void)
 {
-    MissionShipRecord *playerRecord;
+    short playerShip;
     short initial;
     short missionShip;
-    int pilot;
+    short pilot;
 
     stCampaignState.missionScore = 0;
     nWingmanKilledThisMission = 0;
+    playerShip = nPlayerMissionShipIndex;
     bPlayerDestroyed = 0;
     nWingmanKillCount = 0;
     nMissionMedalScore = 0;
     nPlayerKillCount = 0;
 
-    playerRecord =
-        &aMissionShips[nPlayerMissionShipIndex];
-    stCampaignState.playerShipType = playerRecord->type;
+    stCampaignState.playerShipType = aMissionShips[playerShip].type;
     load_ship(stCampaignState.playerShipType, 0);
     set_objects_data(0, stCampaignState.playerShipType, -1);
-    playerRecord->navPoint = nMissionEntryNavPoint;
+    aMissionShips[playerShip].navPoint = nMissionEntryNavPoint;
     if (nTrainSimActive == 0 && nStartNavPointOverride != -1)
-        playerRecord->navPoint = nStartNavPointOverride;
-    Set_up_ship_info(0, nPlayerMissionShipIndex, -1);
+        aMissionShips[playerShip].navPoint = nStartNavPointOverride;
+    Set_up_ship_info(0, playerShip, -1);
 
     memset(acPlayerComponentDamage, 0,
            sizeof(acPlayerComponentDamage));
@@ -3433,7 +3432,7 @@ void prepare_mission(void)
     do {
         missionShip = nInitialMissionShipIndices[initial];
         if (missionShip != -1) {
-            pilot = aMissionShips[missionShip].behaviour.pilot;
+            pilot = (short)aMissionShips[missionShip].behaviour.pilot;
             if (is_alive(pilot) != 0 &&
                 find_ships_sphere(missionShip) == -1) {
                 init_ship(missionShip, nMissionEntryNavPoint);
@@ -3459,7 +3458,8 @@ void prepare_mission(void)
 #else
     while (aMissionShips[missionShip].type !=
                OBJECT_TYPE_TIGERS_CLAW &&
-           missionShip < MISSION_SHIP_SCAN_LIMIT) {
+           (nCarrierMissionShipIndex = missionShip) <
+               MISSION_SHIP_SCAN_LIMIT) {
 #endif
         missionShip++;
         nCarrierMissionShipIndex = missionShip;

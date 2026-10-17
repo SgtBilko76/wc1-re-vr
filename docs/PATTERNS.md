@@ -505,6 +505,28 @@ for similarity decisions.
   did not recover the original schedule. No previously exact function loses
   its match; calibration has four additional differing instructions, while
   `UnionRectBounds` has two fewer, both at unchanged sizes and mnemonic scores.
+- `prepare_mission` retains the player's mission index as a word through
+  `load_ship`, `set_objects_data`, and `Set_up_ship_info`. Use that index for
+  the mission-record fields rather than caching a record pointer and later
+  reloading the global index. The initial-wingman loop reads only the low
+  word of each record's pilot value, then sign-extends it for `is_alive`.
+  A `short` local reproduces that load and both pilot-range comparisons.
+  The carrier search writes its current index in the limit test as well as
+  after incrementing it. Keeping both observed stores restores its 416-byte
+  span at 96.23%, up from 85.98% and a sixteen-byte deficit. Separate player
+  and loop indices preserve the other functions' allocation; reusing one
+  local perturbed three neighbouring functions. Four scheduling differences
+  remain, and fourteen instructions still differ at byte level.
+- The launcher's missing sixteen bytes are still unresolved. The original
+  holds `'-'` in EBX and uses immediate zero stores; CL instead holds zero
+  in EBX. Moving the command local outside the loop or using `strcmp` did
+  not change that choice; a direct conditional-expression switch was worse.
+  Similarly, reversing comparison/addition operands or renaming the stream
+  parameter did not alter the one-byte differences in the `/Od` DSP stream
+  functions. These trials are not retained. Distinguish such body differences
+  from the last function's linker padding: `ix_dsp_free` and
+  `ix_thread_get_audio_chunk_size` already have matching instruction bodies,
+  but their object-end alignment contributes size differences to the report.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must
