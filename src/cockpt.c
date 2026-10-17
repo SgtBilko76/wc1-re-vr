@@ -2,18 +2,19 @@
  *  Cockpit HUD (Mac `cockpt` compilation unit): weapon, damage, target,
  *  objective, message, and pilot displays.
  *
- *  Address range 413a10-417fff (provisional -- see docs/ORDER.md).
+ *  Address range 413a10-41807f (provisional -- see docs/ORDER.md).
  *  Boundary evidence: the Mac `cockpt` symbol list identifies the surviving
  *  functions throughout this Win32 range; port-specific split helpers remain
  *  interleaved in their original address order.
  */
 #include "wc1.h"
 
-short asVduSelectionSound[2] = { 0x7f, 0 }; /* 0x00469000 */
+static short asVduSelectionSound[2] = { 0x7f, 0 }; /* 0x00469000 */
 char *pszPendingHudMessage = 0; /* 0x00469004 */
-char *pszDisplayedHudMessage = 0; /* 0x00469008 */
-unsigned char cRenderedPilotHandFrame = 0xff; /* 0x0046900c */
-short asPilotHandOffsets[34] = { /* 0x00469018 */
+static char *pszDisplayedHudMessage = 0; /* 0x00469008 */
+static unsigned char cRenderedPilotHandFrame = 0xff; /* 0x0046900c */
+/* 0x00469018 */
+static short asPilotHandOffsets[34] = {
     6, -3, 7, 2, 7, 9, 7, 12, 8, 13, 0, -1, -1, -1,
     -4, -1, -6, -1, 6, 0, 8, 0, 10, 0, 13, 3, 8, -7,
     6, -9, 5, -11, 5, -14
@@ -23,14 +24,20 @@ unsigned char *pCockpitExplosionBackground = 0; /* 0x00469060 */
 unsigned char *pCockpitExplosionShape = 0; /* 0x00469064 */
 short nCockpitExplosionFrame = 8; /* 0x00469068 */
 unsigned char *pReleaseWeaponDisplayBackground = 0; /* 0x0046906c */
-signed char cReleaseWeaponDisplayFrame = -1; /* 0x00469070 */
-signed char cReleaseWeaponDisplayTicks = 0; /* 0x00469074 */
-signed char cReleaseWeaponDisplayState = 0; /* 0x00469078 */
-int nDisplayedObjectiveRange = 40000; /* 0x00469088 */
-char *pszObjectiveStatusMessage = /* 0x0046908c */
-    szObjectiveStatusMessage;
-short nScannerTargetObject = -1; /* 0x00469090 */
-int aiScannerGridRows[79] = { /* 0x00469098 */
+static signed char cReleaseWeaponDisplayFrame = -1; /* 0x00469070 */
+static signed char cReleaseWeaponDisplayTicks = 0; /* 0x00469074 */
+static signed char cReleaseWeaponDisplayState = 0; /* 0x00469078 */
+static char szNoWeaponName[5] = "None"; /* 0x00469080 */
+static int nDisplayedObjectiveRange = 40000; /* 0x00469088 */
+#ifdef SDL_PORT
+static char *pszObjectiveStatusMessage = szObjectiveStatusMessage;
+#else
+/* 0x0046908c */
+static char *pszObjectiveStatusMessage = "Wait for ??????????????????";
+#endif
+static short nScannerTargetObject = -1; /* 0x00469090 */
+/* 0x00469098 */
+static int aiScannerGridRows[79] = {
     5, 13, 16, -1,
     5, 13, 16, -1,
     5, 13, 16, -1,
@@ -52,18 +59,20 @@ int aiScannerGridRows[79] = { /* 0x00469098 */
     0, 1, 2, 3, -1,
     -2
 };
-const char *PTR_s_MISSILE_LOCKED_004691d4 = szMissileLocked;
-unsigned char bTargetBracketVisible = 1; /* 0x004691d8 */
-unsigned char abTargetBracketPadding[7] = {0}; /* 0x004691d9 */
-short asHudMessageOrigins[10] = { /* 0x004691e0 */
+/* 0x004691d4 */
+static const char *pszMissileLockedMessage = "MISSILE LOCKED ";
+static unsigned char bTargetBracketVisible = 1; /* 0x004691d8 */
+/* 0x004691e0 */
+static short asHudMessageOrigins[10] = {
     18, 14, 71, 5, 80, 29, 49, 27, 14, 13
 };
-short nTargetLockMarkerX = -0x7fff; /* 0x004691f4 */
-ShortRect stTargetBracketBounds = {-0x7fff, 0, 0, 0}; /* 0x004691f8 */
-ShortRect stPreviousTargetBracketBounds = {-0x7fff, 0, 0, 0}; /* 0x00469200 */
+static short nTargetLockMarkerX = -0x7fff; /* 0x004691f4 */
+static ShortRect stTargetBracketBounds = {-0x7fff, 0, 0, 0}; /* 0x004691f8 */
+static ShortRect stPreviousTargetBracketBounds = {-0x7fff, 0, 0, 0}; /* 0x00469200 */
 short nNavPointerObject = -1; /* 0x00469208 */
-Viewport stTrainSimVduSource = {0}; /* 0x00469210 */
-ShortPoint aaCockpitDamagePositions[5][4] = { /* 0x00469228 */
+static Viewport stTrainSimVduSource = {0}; /* 0x00469210 */
+/* 0x00469228 */
+static ShortPoint aaCockpitDamagePositions[5][4] = {
     {{224, 5}, {132, 96}, {233, 107}, {149, 161}},
     {{177, 6}, {153, 142}, {103, 140}, {55, 183}},
     {{107, 25}, {211, 32}, {21, 178}, {300, 178}},
@@ -73,31 +82,8 @@ ShortPoint aaCockpitDamagePositions[5][4] = { /* 0x00469228 */
 unsigned char *pConfedCommBackground = 0; /* 0x00469278 */
 unsigned char *pCommStaticShape = 0; /* 0x0046927c */
 unsigned char *pKilrathiCommBackground = 0; /* 0x00469280 */
-int nCommPortraitFrame = -1; /* 0x00469284 */
-int bForceDamageDisplayRedraw = 0; /* 0x00469288 */
-char szObjectiveStatusMessage[28] = /* 0x0046928c */
-    "Wait for ??????????????????";
-char szMissileLocked[16] = "MISSILE LOCKED "; /* 0x004692a8 */
-char szAlreadyNear[16] = "Already Near"; /* 0x004692b8 */
-char szEnemyNear[12] = "Enemy Near"; /* 0x004692c8 */
-char szHazardNear[12] = "Hazard Near"; /* 0x004692d4 */
-char szComponentHitFormat[8] = "%s HIT"; /* 0x004692e0 */
-char szCalculating[12] = "CALCULATING"; /* 0x0046931c */
-char szRangeKilometresSuffix[4] = " km"; /* 0x00469328 */
-char szNoObjective[8] = "NONE"; /* 0x0046932c */
-char szUnknownObjective[8] = "UNKNOWN"; /* 0x00469334 */
-char szCompNavigation[16] = "COMP NAVIGATION"; /* 0x0046933c */
-char szDestinationFormat[20] = /* 0x0046934c */
-    "\n\nDESTINATION\n  %s";
-char szNavigationRangeLabel[12] = "\n\nRANGE\n  "; /* 0x00469360 */
-char szNewObjectivePrompt[20] = /* 0x0046936c */
-    "\n\n(N)ew Objective";
-char szAlreadyVisited[16] = "Already Visited"; /* 0x00469380 */
-char szObjectiveReached[20] = "Objective Reached"; /* 0x00469390 */
-char szWaitForFormat[12] = "Wait for %s"; /* 0x004693a4 */
-unsigned char cEmptyHudMessage = 0; /* 0x004693b0 */
-char *pGameVersion = szGameVersion; /* 0x004693b4 */
-char szGameVersion[9] = "1.03F-95"; /* 0x004693b8 */
+static int nCommPortraitFrame = -1; /* 0x00469284 */
+static int bForceDamageDisplayRedraw = 0; /* 0x00469288 */
 
 /* 0x00475ff0 */
 static unsigned char abMouseCursorBackground[0x400];
@@ -119,7 +105,7 @@ void FormatTextTokens(void (__stdcall *writer)(int),
 #ifdef SDL_PORT
                       const char *format, va_list *arguments)
 #else
-                      const char *format, unsigned long *arguments)
+                      const char *format, va_list arguments)
 #endif
 {
     short character;
@@ -128,9 +114,11 @@ void FormatTextTokens(void (__stdcall *writer)(int),
 
     character = (signed char)*format++;
     while (character != 0) {
-        if (character != '%') {
+        switch (character) {
+        default:
             writer((short)character);
-        } else {
+            break;
+        case '%':
             character = (signed char)*format++;
             switch (character) {
             case 'B':
@@ -139,14 +127,14 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                     (unsigned char)va_arg(*arguments, int);
 #else
                 pCurrentTextContext->backgroundColour =
-                    (unsigned char)*arguments++;
+                    (unsigned char)va_arg(arguments, int);
 #endif
                 break;
             case 'D':
 #ifdef SDL_PORT
                 text = ltoa(va_arg(*arguments, long), number, 10);
 #else
-                text = ltoa((long)*arguments++, number, 10);
+                text = ltoa(va_arg(arguments, long), number, 10);
 #endif
                 EmitTextString(writer, text);
                 break;
@@ -156,7 +144,7 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                     (unsigned char)va_arg(*arguments, int);
 #else
                 pCurrentTextContext->colour =
-                    (unsigned char)*arguments++;
+                    (unsigned char)va_arg(arguments, int);
 #endif
                 break;
             case 'J':
@@ -165,7 +153,7 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                     (unsigned char)va_arg(*arguments, int);
 #else
                 pCurrentTextContext->alignment =
-                    (unsigned char)*arguments++;
+                    (unsigned char)va_arg(arguments, int);
 #endif
                 break;
             case 'P':
@@ -175,7 +163,7 @@ void FormatTextTokens(void (__stdcall *writer)(int),
 #ifdef SDL_PORT
                 text = ultoa(va_arg(*arguments, unsigned long), number, 10);
 #else
-                text = ultoa(*arguments++, number, 10);
+                text = ultoa(va_arg(arguments, unsigned long), number, 10);
 #endif
                 EmitTextString(writer, text);
                 break;
@@ -185,7 +173,7 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                     (short)va_arg(*arguments, int);
 #else
                 pCurrentTextContext->cursorX =
-                    (short)*arguments++;
+                    va_arg(arguments, short);
 #endif
                 break;
             case 'Y':
@@ -194,21 +182,21 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                     (short)va_arg(*arguments, int);
 #else
                 pCurrentTextContext->cursorY =
-                    (short)*arguments++;
+                    va_arg(arguments, short);
 #endif
                 break;
             case 'c':
 #ifdef SDL_PORT
                 writer((short)va_arg(*arguments, int));
 #else
-                writer((short)*arguments++);
+                writer(va_arg(arguments, short));
 #endif
                 break;
             case 'd':
 #ifdef SDL_PORT
                 text = itoa((short)va_arg(*arguments, int), number, 10);
 #else
-                text = itoa((int)(short)*arguments++, number, 10);
+                text = itoa((int)va_arg(arguments, short), number, 10);
 #endif
                 EmitTextString(writer, text);
                 break;
@@ -216,7 +204,7 @@ void FormatTextTokens(void (__stdcall *writer)(int),
 #ifdef SDL_PORT
                 text = va_arg(*arguments, char *);
 #else
-                text = (char *)*arguments++;
+                text = va_arg(arguments, char *);
 #endif
                 EmitTextString(writer, text);
                 break;
@@ -225,7 +213,7 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                 text = ultoa((unsigned short)va_arg(*arguments, unsigned int),
                              number, 10);
 #else
-                text = ultoa((unsigned short)*arguments++, number, 10);
+                text = ultoa(va_arg(arguments, unsigned short), number, 10);
 #endif
                 EmitTextString(writer, text);
                 break;
@@ -234,7 +222,7 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                 text = ultoa((unsigned short)va_arg(*arguments, unsigned int),
                              number, 16);
 #else
-                text = ultoa((unsigned short)*arguments++, number, 16);
+                text = ultoa(va_arg(arguments, unsigned short), number, 16);
 #endif
                 EmitTextString(writer, strupr(text));
                 break;
@@ -242,6 +230,7 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                 writer((short)character);
                 break;
             }
+            break;
         }
         character = (signed char)*format++;
     }
@@ -259,7 +248,7 @@ void DrawFormattedText(const char *format, ...)
     va_end(arguments);
 #else
     FormatTextTokens((void (__stdcall *)(int))DrawTextCharacter,
-                     format, (unsigned long *)(&format + 1));
+                     format, (va_list)(&format + 1));
 #endif
     if (pCurrentTextContext->viewport->pixels ==
         stScreen.pixels)
@@ -282,7 +271,7 @@ void FormatTextBufferFromStart(const char *format, ...)
     }
 #else
     FormatTextTokens((void (__stdcall *)(int))AppendTextCharacter,
-                     format, (unsigned long *)(&format + 1));
+                     format, (va_list)(&format + 1));
 #endif
     if (pCurrentTextContext->viewport->pixels ==
         stScreen.pixels)
@@ -301,7 +290,7 @@ void AppendFormattedText(const char *format, ...)
     va_end(arguments);
 #else
     FormatTextTokens((void (__stdcall *)(int))AppendTextCharacter,
-                     format, (unsigned long *)(&format + 1));
+                     format, (va_list)(&format + 1));
 #endif
     if (pCurrentTextContext->viewport->pixels ==
         stScreen.pixels)
@@ -983,7 +972,7 @@ int damage_your_component(char component, char amount, char maximum)
         vdu_malf(1, 0x18);
     }
     if (get_mode(0) == 2 || get_mode(0) == 1) {
-        sprintf(text, szComponentHitFormat,
+        sprintf(text, "%s HIT",
                 apszComponentNames[index]);
         ShowComponentHitHudMessage(text, (unsigned char)cRedColour, 5);
     }
@@ -1096,15 +1085,14 @@ void show_weapon_disp(void)
                      (short)(stLeftVdu.top + 5),
                      cPrimaryTextColour);
 
-    releaseName = "";
+    releaseName = szNoWeaponName;
     if (nSelectedReleaseWeaponIndex != -1)
         releaseName = aObjectTypeData[
             selectedWeapon->type].displayName;
     selectedGunType = eSelectedGunType;
-    gunName = "";
     switch ((int)selectedGunType) {
     case -1:
-        gunName = "";
+        gunName = szNoWeaponName;
         break;
     case 0x80:
         gunName = "Full Guns";
@@ -1181,7 +1169,7 @@ void flag_objective(short objective, unsigned char flags)
 void DrawCalculatingLabel(void)
 {
     if (nCurrentObjectiveRange <= 0) {
-        DrawCockpitReadout(0, szCalculating);
+        DrawCockpitReadout(0, "CALCULATING");
     } else {
         strcpy(szTextScratchBuffer +
                    strlen(ltoa((long)nCurrentObjectiveRange,
@@ -1197,10 +1185,10 @@ void DrawCalculatingLabel(void)
 const char *objective_name(short objective)
 {
     if (objective >= (short)cMissionObjectiveCount)
-        return szNoObjective;
+        return "NONE";
     if (*aMissionObjectives[objective].name == '?' &&
         sighted(objective) == 0)
-        return szUnknownObjective;
+        return "UNKNOWN";
     return aMissionObjectives[objective].displayName;
 }
 
@@ -1209,12 +1197,12 @@ void show_navigation_disp(void)
 {
     DrawTextAt(&stRightVduTextContext,
                stRightVdu.left, stRightVdu.top,
-               szCompNavigation, 2);
-    DrawFormattedText(szDestinationFormat,
+               "COMP NAVIGATION", 2);
+    DrawFormattedText("\n\nDESTINATION\n  %s",
                       objective_name((short)cCurrentObjective));
-    DrawFormattedText(szNavigationRangeLabel);
+    DrawFormattedText("\n\nRANGE\n  ");
     InitializeCockpitReadout(0, &stRightVduTextContext);
-    DrawFormattedText(szNewObjectivePrompt);
+    DrawFormattedText("\n\n(N)ew Objective");
     DrawCalculatingLabel();
 }
 
@@ -1383,26 +1371,26 @@ void flag_reached(short objective, short reached)
     markVisited = objective != cCurrentObjective;
     advanceDestination = 0;
     if (objective == cCurrentObjective) {
-        if (reached == 0 && escorting_a_ship() != 0 &&
-            carrierObject != -1 &&
-            aMissionObjectives[objective].index !=
+        if (reached != 0 || escorting_a_ship() == 0 ||
+            carrierObject == -1 ||
+            aMissionObjectives[objective].index ==
                 anShipMissionShip[0]) {
+            if (visited(objective) != 0)
+                CockpitMessage("Already Visited", cYellowColour, 4);
+            else
+                CockpitMessage("Objective Reached", cYellowColour, 4);
+            advanceDestination = markVisited = 1;
+        } else {
             if (objectiveType != 1 ||
                 aMissionShips[carrierMissionShip].state != 1) {
                 sprintf(pszObjectiveStatusMessage,
-                        szWaitForFormat,
+                        "Wait for %s",
                         aObjectTypeData[
                             aeObjectType[carrierObject]].
                                 displayName);
                 CockpitMessage(pszObjectiveStatusMessage,
                                cYellowColour, 4);
             }
-        } else {
-            if (visited(objective) != 0)
-                CockpitMessage(szAlreadyVisited, cYellowColour, 4);
-            else
-                CockpitMessage(szObjectiveReached, cYellowColour, 4);
-            advanceDestination = markVisited = 1;
         }
     }
     if (objectiveType != 1 && markVisited != 0) {
@@ -1803,7 +1791,7 @@ void lock_off(void)
 {
     if (nTargetLockCountdown > -1)
         bTargetLockReadoutDirty = 1;
-    remove_message(PTR_s_MISSILE_LOCKED_004691d4);
+    remove_message(pszMissileLockedMessage);
     nTargetLockCountdown = -1;
 }
 
@@ -1835,7 +1823,7 @@ short decrement_lock_time(short screenX)
             if (bTargetLockAcquired != 0) {
                 if (CheckTargetLockMalfunction() == 0)
                     PlaySfxWaveFileByNumber(0x16, -1, 0);
-                CockpitMessage(PTR_s_MISSILE_LOCKED_004691d4,
+                CockpitMessage(pszMissileLockedMessage,
                                cRedColour, 2);
                 return 1;
             }
@@ -1943,7 +1931,7 @@ void print_message_text(char *text, unsigned short colour)
         return;
 
     DosStrcpy(source, text);
-    wrapped[0] = (char)cEmptyHudMessage;
+    wrapped[0] = *"";
     viewport = *stHudMessageTextContext.viewport;
     context = stHudMessageTextContext;
     context.viewport = &viewport;

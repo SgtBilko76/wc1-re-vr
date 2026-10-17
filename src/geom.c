@@ -1,7 +1,7 @@
 /*
  *  Vector, angle and fixed-point geometry helpers.
  *
- *  Address range 418000-41a9cf (provisional -- see docs/ORDER.md).
+ *  Address range 418080-41a9cf (provisional -- see docs/ORDER.md).
  *  The modal-panel block at 41a9d0 belongs with the barracks data and
  *  save/load routines; get_right_shape closes this geometry range.
  */

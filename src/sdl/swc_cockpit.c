@@ -7,6 +7,8 @@
 
 #include <string.h>
 
+char szObjectiveStatusMessage[28] = "Wait for ??????????????????";
+
 typedef struct SwcCockpitFrame {
     SDL_Texture *texture;
     SDL_Rect bounds;

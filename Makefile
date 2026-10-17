@@ -225,7 +225,7 @@ GLOBALS_MISSING_MAX_ADDRESS = 0x004751ff
 # binary-comp currently accepts one definition source, so generate a parser-only
 # manifest from globals.c and the declaration block at the top of each owner.
 GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/cmpgn.c \
-	src/nav.c src/nearheap.c src/gameflow.c src/title.c src/spc.c src/cockpt.c \
+	src/nav.c src/nearheap.c src/gameflow.c src/title.c src/spc.c src/cockpt.c src/version.c \
 	src/barracks.c src/fade.c src/debug.cpp \
 	src/disk.c src/ship.c src/init.c src/logic.c src/pilot.cpp src/trainsim.c \
 	src/sound.c src/damage.c src/view.c src/music.c src/ending.c src/input.c \
@@ -337,6 +337,7 @@ SRCS_ORDERED_CORE = \
 	src/joystick.c \
 	src/spc.c \
 	src/cockpt.c \
+	src/version.c \
 	src/geom.c \
 	src/barracks.c \
 	src/fade.c \
@@ -475,6 +476,7 @@ MODERN_GAMEPLAY_SRCS = \
 	src/system.c \
 	src/trainsim.c \
 	src/game.c \
+	src/version.c \
 	src/video.c \
 	src/winmain.c
 

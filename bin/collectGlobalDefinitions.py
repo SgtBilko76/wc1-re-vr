@@ -172,7 +172,10 @@ def definition_block(path: Path) -> str:
     include_positions = [text.find(include) for include in OWNER_INCLUDES]
     include_at = min((pos for pos in include_positions if pos >= 0), default=-1)
     function_at = text.find(FUNCTION_MARKER)
-    if include_at < 0 or function_at < 0 or function_at <= include_at:
+    # Data-only owners, such as the version object, have no function boundary.
+    if function_at < 0:
+        function_at = len(text)
+    if include_at < 0 or function_at <= include_at:
         raise ValueError(f"cannot locate global-definition block in {path}")
     declarations_at = text.find("\n", include_at) + 1
     return text[declarations_at:function_at].strip() + "\n"

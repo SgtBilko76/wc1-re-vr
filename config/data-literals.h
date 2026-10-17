@@ -25,6 +25,11 @@ unsigned char abTitleStringLiterals[1062]; /* 0x00468adc */
  * relocations and verifies its position between title and space state. */
 unsigned char abJoystickCalibrationLiterals[238]; /* 0x00468f04 */
 
+/* cockpt.c: the writable objective-message literal, missile-lock message,
+ * weapon/navigation labels, arrival messages, and final empty HUD string.
+ * The partial unit gate checks all offsets and both stored string pointers. */
+unsigned char abCockpitStringLiterals[293]; /* 0x0046928c */
+
 /* damage.c: component and severity names, report headings, and both distinct
  * status-format literals. The complete pool also resolves the short "Ok"
  * pointer; verify-unit-data independently checks every position in its unit.

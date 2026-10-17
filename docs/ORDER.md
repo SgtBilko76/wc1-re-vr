@@ -138,8 +138,9 @@ sits at one constant offset from the original.
 | `src/title.c` | `0x40FA30`–`0x4102AF` |
 | `src/joystick.c` | `0x4102B0`–`0x41073F` |
 | `src/spc.c` | `0x410740`–`0x413A0F` |
-| `src/cockpt.c` | `0x413A10`–`0x417FFF` |
-| `src/geom.c` | `0x418000`–`0x41A9CF` |
+| `src/cockpt.c` | `0x413A10`–`0x41807F` |
+| `src/version.c` | Data only; original code ownership is unresolved |
+| `src/geom.c` | `0x418080`–`0x41A9CF` |
 | `src/barracks.c` | `0x41A9D0`–`0x41C50F` |
 | `src/fade.c` | `0x41C510`–`0x41C75F` |
 | `src/debug.cpp` | `0x41C760`–`0x41D0BF` |
@@ -205,6 +206,8 @@ ownership and qualifiers:
 | `0x00468910`–`0x00468F01` | `title.c`: opening-text pointer, Secret Missions message, credits, title-menu and resource records, and the following cinematic literals |
 | `0x00468F04`–`0x00468FF1` | `joystick.c`: five interactive calibration prompts and three separate calibration-file literals |
 | `0x00468FF4`–`0x00468FFF` | `spc.c`: capital-ship view distance, landing authorization, and alternate chase-view state |
+| `0x00469000`–`0x004693B0` | `cockpt.c`: cockpit state, shared weapon-name array, tables, and following message literals; eight zero bytes at `0x00469010` remain unrecovered |
+| `0x004693B4`–`0x004693C0` | `version.c`: version pointer and its following literal; original object name and associated code remain unknown |
 | `0x004693C8`–`0x0046963F` | `barracks.c`: bunk origins, menu pointers, modal bounds/state, campaign file numbers, and the following string literals |
 | `0x00469640`–`0x00469641` | `fade.c`: palette-transition initialization flag |
 | `0x00469644`–`0x00469665` | `debug.cpp`: console count, keyboard state/hook, and font, spinner, and newline literals |
@@ -274,6 +277,44 @@ and two each before joystick and space state. The six referenced colour
 variables and the two title resource-record pointers must resolve to their
 original globals and field offsets. This proves the data layout independently
 of the provisional internal code boundaries.
+
+The cockpit's `"None"` weapon name at `0x00469080` is a named array before
+the objective-range state. Both missing-weapon branches in `show_weapon_disp`
+reference that same array; the former empty literals changed the text and
+added extra storage. The seven bytes after the target-bracket visibility
+flag are compiler alignment before the message-origin array. A separately
+declared padding array added eight bytes and is removed.
+
+The 293-byte cockpit literal pool begins at `0x0046928C` with the writable
+objective-message initializer and missile-lock message. Its remaining labels
+are use-site literals. The objective pointer is written through by
+`flag_reached`, and the original PE keeps this literal writable. The SDL
+adapter instead retains its existing writable array in the SDL cockpit unit.
+The normal-arrival branch must precede the waiting branch in source to emit
+`"Already Visited"`, `"Objective Reached"`, and `"Wait for %s"` in that order,
+even though CL schedules the waiting path first in machine code. The final
+empty literal supplies the byte load in `print_message_text`.
+
+Twenty-two initialized cockpit declarations have only local original
+references and now have private storage; shared resource pointers, the pending
+message, and the navigation-pointer object retain external visibility. The
+unit-data gate checks a 16-byte prefix and a 921-byte tail, including every
+declared offset and both string pointers. The current COFF section has 937
+bytes. The unexplained eight zero bytes at `0x00469010`–`0x00469017` prevent a
+complete 945-byte cockpit match; their declaration and alignment split are
+unknown, so no storage is invented for them.
+
+The version pointer follows the cockpit literal pool at `0x004693B4`, proving
+another object boundary: CL emits initialized declarations before literals.
+A pointer initialized directly with `"1.03F-95"` reproduces the complete
+13-byte block. `version.c` isolates that data without assigning any geometry
+functions to it. Its original filename and whether it shared an object with
+some of those functions remain unresolved. Three alignment bytes separate
+the cockpit tail from version data, and seven precede the barracks tables.
+The tail, version, and seven following units through logic form a checked
+3,431-byte run with 62 pointer relocations and 23 alignment bytes. A separate
+28-byte check joins space state to the cockpit prefix. Neither bridges the
+unrecovered cockpit gap or establishes absolute placement.
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
 DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes

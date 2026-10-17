@@ -18,6 +18,15 @@ for similarity decisions.
   storage while expressing those reads directly.
 - Preserve visible local-variable order, branch direction, fall-through, and
   epilogue placement. Equivalent C often emits different instructions.
+- `FormatTextTokens` uses the VC4.20 `va_list` and `va_arg` macros. Its native
+  short and unsigned-short arguments consume four-byte slots while loading
+  only the original halfwords. Treating the cursor as an `unsigned long *`
+  instead changes argument-load order and width throughout the formatter.
+  The outer character dispatch is a `switch`: CL promotes the character
+  before comparing it with `%`, whereas an `if` keeps a short comparison.
+  Together these choices produce an exact function comparison, including
+  both dispatch tables and the original 64-byte stack frame. SDL continues
+  to use its platform's `va_list` with default argument promotions.
 - `CalibrateJoystickInteractive` sets text alignment before testing the loaded
   font. Each sampled axis supplies both its 32-bit global and its 16-bit saved
   calibration word; chained assignments preserve the original load/store order.
@@ -40,6 +49,11 @@ for similarity decisions.
   100-byte writable message array before its memory-reservation tables.
   Repeating the message at the call sites adds a duplicate to the literal
   pool and loses the original declaration order.
+- `flag_reached` writes its normal-arrival branch before its waiting branch
+  in source. CL still schedules the waiting path first, but emits the arrival
+  strings before the wait format, matching the cockpit literal pool. The
+  final empty HUD string remains a use-site literal whose first byte is read;
+  replacing it with an immediate zero omits original storage and a relocation.
 - The target display's empty string, three separate `" %s"` formats, and
   other labels are use-site literals. Keeping named arrays introduces extra
   eight-byte alignment and separates them from their following display-mode

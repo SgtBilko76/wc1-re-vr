@@ -391,7 +391,7 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                       const char *format, va_list *arguments);         /* 0x00413A40 */
 #else
 void FormatTextTokens(void (__stdcall *writer)(int),
-                      const char *format, unsigned long *arguments);    /* 0x00413A40 */
+                      const char *format, va_list arguments);    /* 0x00413A40 */
 #endif
 void DrawFormattedText(const char *format, ...);                        /* 0x00413C40 */
 void FormatTextBufferFromStart(const char *format, ...);                /* 0x00413C70 */

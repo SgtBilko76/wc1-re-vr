@@ -90,55 +90,19 @@ extern int bPlayerEjectedThisMission; /* 0x004688d4 */
 extern int bPlayerShipTypeChanged; /* 0x004688d8 */
 extern short nPreviousPlayerShipType; /* 0x004688dc */
 extern int bCampaignActive; /* 0x004688f0 */
-extern char szCalculating[12]; /* 0x0046931c */
-extern char szRangeKilometresSuffix[4]; /* 0x00469328 */
-extern char szNoObjective[8]; /* 0x0046932c */
-extern char szUnknownObjective[8]; /* 0x00469334 */
-extern char szCompNavigation[16]; /* 0x0046933c */
-extern char szDestinationFormat[20]; /* 0x0046934c */
-extern char szNavigationRangeLabel[12]; /* 0x00469360 */
-extern char szNewObjectivePrompt[20]; /* 0x0046936c */
-extern short asVduSelectionSound[2]; /* 0x00469000 */
 extern char *pszPendingHudMessage; /* 0x00469004 */
-extern char *pszDisplayedHudMessage; /* 0x00469008 */
-extern unsigned char cRenderedPilotHandFrame; /* 0x0046900c */
-extern short asPilotHandOffsets[34]; /* 0x00469018 */
 extern unsigned char *pCockpitExplosionBackground; /* 0x00469060 */
 extern unsigned char *pCockpitExplosionShape; /* 0x00469064 */
 extern short nCockpitExplosionFrame; /* 0x00469068 */
 extern unsigned char *pReleaseWeaponDisplayBackground; /* 0x0046906c */
-extern signed char cReleaseWeaponDisplayFrame; /* 0x00469070 */
-extern signed char cReleaseWeaponDisplayTicks; /* 0x00469074 */
-extern signed char cReleaseWeaponDisplayState; /* 0x00469078 */
-extern char *pszObjectiveStatusMessage; /* 0x0046908c */
-extern short nScannerTargetObject; /* 0x00469090 */
-extern int nDisplayedObjectiveRange; /* 0x00469088 */
-extern int aiScannerGridRows[79]; /* 0x00469098 */
-extern short nTargetLockMarkerX; /* 0x004691f4 */
-extern ShortRect stTargetBracketBounds; /* 0x004691f8 */
-extern ShortRect stPreviousTargetBracketBounds; /* 0x00469200 */
 extern short nNavPointerObject; /* 0x00469208 */
-extern Viewport stTrainSimVduSource; /* 0x00469210 */
 extern unsigned char *pConfedCommBackground; /* 0x00469278 */
 extern unsigned char *pCommStaticShape; /* 0x0046927c */
 extern unsigned char *pKilrathiCommBackground; /* 0x00469280 */
-extern int nCommPortraitFrame; /* 0x00469284 */
-extern int bForceDamageDisplayRedraw; /* 0x00469288 */
-extern char szObjectiveStatusMessage[28]; /* 0x0046928c */
-extern char szMissileLocked[16]; /* 0x004692a8 */
-extern char szAlreadyNear[16]; /* 0x004692b8 */
-extern char szEnemyNear[12]; /* 0x004692c8 */
-extern char szHazardNear[12]; /* 0x004692d4 */
-extern char szComponentHitFormat[8]; /* 0x004692e0 */
-extern char szAlreadyVisited[16]; /* 0x00469380 */
-extern char szObjectiveReached[20]; /* 0x00469390 */
-extern char szWaitForFormat[12]; /* 0x004693a4 */
 extern short asCampaignPilotFiles[3]; /* 0x00469450 */
 extern short asCampaignBriefingFiles[3]; /* 0x00469458 */
 extern short asMissionDataFiles[3]; /* 0x00469460 */
-extern unsigned char cEmptyHudMessage; /* 0x004693b0 */
 extern char *pGameVersion; /* 0x004693b4 */
-extern char szGameVersion[9]; /* 0x004693b8 */
 extern DWORD dwDebugOverlayKey; /* 0x00469648 */
 extern DWORD dwDebugOverlayKeyLatch; /* 0x0046964c */
 extern short nDiskPromptBorderColour; /* 0x00469694 */
@@ -852,12 +816,7 @@ extern int bMainWindowAlive; /* 0x005a8a3c */
 extern HINSTANCE hAppInstance; /* 0x005a8a40 */
 extern unsigned int nSessionStartTime; /* 0x005a8a44 */
 extern unsigned short awPaletteRgbWords[0x300]; /* 0x005a8a50 */
-extern const char *PTR_s_MISSILE_LOCKED_004691d4;
-extern unsigned char bTargetBracketVisible; /* 0x004691d8 */
-extern unsigned char abTargetBracketPadding[7]; /* 0x004691d9 */
-extern short asHudMessageOrigins[10]; /* 0x004691e0 */
 extern const char *apszKilrathiAceNames[4]; /* 0x0046af80 */
-extern ShortPoint aaCockpitDamagePositions[5][4]; /* 0x00469228 */
 extern unsigned long dwGameClockBase; /* 0x005a89a8 */
 
 extern unsigned char abCockpitLightState[7]; /* 0x005a7e70 */

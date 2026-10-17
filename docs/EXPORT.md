@@ -41,7 +41,8 @@ code bytes.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
 initialized-data sections recovered for nav (608 bytes), nearheap (12),
-gameflow (64), title (1,522), joystick (238), spc (12), barracks (632), fade (2),
+gameflow (64), title (1,522), joystick (238), spc (12), version (13),
+barracks (632), fade (2),
 debug (34), disk (523), ship (286), init (550), logic (447), trainsim (511),
 damage (390), view (289), ending (457), input (6), comm (520), video (10),
 joycal (42), killbrd (1,508), and gr (2,030). It also checks gr's complete
@@ -103,6 +104,22 @@ such operand must have a PE `HIGHLOW` relocation and agree on that base.
 This also rejects a reference redirected to another byte-identical `"j.cal"`
 copy. A strict binary-comp address comparison then checks all 238 bytes.
 
+Two partial-section checks cover the cockpit's 16-byte prefix and 921-byte
+tail. They verify 32 declarations and both string-pointer relocations and
+require the current 937-byte COFF section. Eight unexplained original zero
+bytes between the blocks prevent a complete-unit claim. The tail includes
+the full 293-byte literal pool, also represented in the linked-data metadata.
+The version pointer and its nine-byte literal form a separate complete
+13-byte block. The cockpit tail through version and the following units to
+logic must form a 3,431-byte run, including 62 pointer relocations and 23
+alignment bytes. Space state and the cockpit prefix form a separate 28-byte
+run. These checks leave the missing cockpit bytes explicitly unresolved.
+
+`bin/collectGlobalDefinitions.py` accepts data-only owners such as
+`version.c`: without an annotated function boundary, declarations extend from
+the owner include to the end of the file. The version object's `.data` size
+and pointer are verified by the same strict unit gate as the other owners.
+
 Three explicitly marked partial-section checks cover `game.c`: two scalar
 state runs of 112 and 21 bytes, and the 6,652-byte run of scripts, mission
 records, maneuver tables, and display literals. Each permits only one address
@@ -145,7 +162,7 @@ LINK 4.20 omits private C data symbols from its public map. The build preserves
 that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
 `WC1.map` with eight private nav symbols, two private nearheap symbols,
 three private gameflow symbols, six private title symbols, one private spc
-symbol, one private cockpt symbol, four private damage symbols,
+symbol, twenty-three private cockpt symbols, four private damage symbols,
 seven private view symbols,
 six private music symbols, eight private ending symbols, two private
 comm symbols, two private joycal symbols, ten private dib symbols,
