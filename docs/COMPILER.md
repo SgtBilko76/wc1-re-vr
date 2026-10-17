@@ -33,7 +33,9 @@ Evidence that constrains these settings:
 - Core operand-size prefixes reflect 16-bit DOS-era types. Use `short` where
   the original uses 16-bit operations; this is not a compiler flag.
 - The console allocation wrapper proves `pilot.cpp` needs construction cleanup.
-  Other units must not gain C++ exception handling.
+  The training-simulator routines following the console wrappers are in
+  `trainsim.c` and use the C core profile. Other units must not gain C++
+  exception handling.
 - `src/sound.c` directly calls `ix` member functions and matches only as C++.
 - The global `IxStream` and `IxVoice` arrays require non-aggregate record
   declarations to reproduce VC++ 4.20's empty `$E2`/`$E1` initializer pairs

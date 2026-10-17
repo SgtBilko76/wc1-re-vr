@@ -123,6 +123,16 @@ UNITS = {
         ('pCinematicViewBackdrop', 0x005A7C90, 4),
         ('pRearViewBackdrop', 0x005A7C94, 4),
     )),
+    'trainsim': UnitData(0x00469DA8, 511, (
+        ('stTrainSimPanelViewport', 0x00),
+        ('stTrainSimPanelBounds', 0x18),
+        ('szTrainSimTitle', 0x20),
+        ('apszBuiltInHighScoreNames', 0x38),
+        ('aTrainSimMissionRegions', 0x50),
+        ('nTrainSimActive', 0x84),
+        ('nTrainSimMission', 0x88),
+        ('nArcadeWave', 0x8C),
+    ), frozenset(range(0x38, 0x50, 4))),
 }
 
 

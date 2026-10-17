@@ -1009,7 +1009,7 @@ void DrawTextInputCursor(char character);                             /* 0x00426
 void ClearTextInputCharacter(short character);                        /* 0x00426140 */
 void ClearNextTextInputCharacter(short character);                    /* 0x004261D0 */
 short ReadTextInput(char *destination, short maximumLength,
-                    volatile short mode);                            /* 0x00426200 */
+                    short mode);                                     /* 0x00426200 */
 void ReadRequiredPilotField(short x, short y, const char *label,
                             char *destination,
                             short maximumLength);                    /* 0x004265A0 */

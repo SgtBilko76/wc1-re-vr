@@ -143,8 +143,9 @@ sits at one constant offset from the original.
 | `src/ship.c` | `0x41DEE0`–`0x4219BF` |
 | `src/init.c` | `0x4219C0`–`0x42200F` |
 | `src/logic.c` | `0x422010`–`0x42572F` |
-| `src/pilot.cpp` | `0x425730`–`0x426FFF` |
-| `src/system.c` | `0x427000`–`0x4274DF` |
+| `src/pilot.cpp` | `0x425730`–`0x425C2F` |
+| `src/trainsim.c` | `0x425C30`–`0x4272EF` |
+| `src/system.c` | `0x4272F0`–`0x4274DF` |
 | `src/main.c` | `0x4274E0`–`0x427FFF` |
 | `src/hudmsg.c` | `0x428000`–`0x42AFFF` |
 | `src/pload.c` | `0x42B000`–`0x42B3FF` |
@@ -186,6 +187,7 @@ ownership and qualifiers:
 | `0x00469878`–`0x00469995` | `ship.c`: damage-system and debris tables, gun refire delays, and the following four HUD literals |
 | `0x00469998`–`0x00469BBD` | `init.c`: graphics defaults, the shared low-memory message, reservation tables, and startup literals |
 | `0x00469BC0`–`0x00469D7E` | `logic.c`: resource descriptors, scene state, and the scene text-format literal |
+| `0x00469DA8`–`0x00469FA6` | `trainsim.c`: panel state, high-score name pointers, menu regions, simulator state, and the following UI literals |
 
 The GUID sequence includes `CLSID_DirectDrawClipper`, absent from the bundled
 DirectDraw header, between `CLSID_DirectDraw` and `IID_IDirectDraw`. The bytes
@@ -298,6 +300,24 @@ address. All other bytes and relative global positions match exactly.
 The initialization and logic checks also enforce each object's complete
 data size. Two alignment bytes separate the blocks, and one follows the
 scene-format literal before the pilot unit's data at `0x00469D80`.
+
+The training-simulator block starts at `0x00469DA8`, after the scene
+literals and the Win32 console wrappers. Its viewport, bounds, shared title
+array, six high-score name pointers, menu regions, and three simulator-state
+variables precede the literal pool at `0x00469E38`. The six names are separate
+literals in the pointer initializer, not a manually concatenated array.
+Empty pilot input, the text-flush token, and every following UI string are
+literals at their respective call sites. The title remains a named array:
+two calls use the same address before the pointer table.
+
+`trainsim.c` now contains `EraseTextContextBackground` through `RunTrainSim`,
+ending before the process-exit routines. These game functions use the C core
+profile; the console allocation wrapper and its `/GX` construction cleanup
+remain in `pilot.cpp`. That file's internal C/C++ boundary is still provisional.
+The complete 511-byte simulator data section and all six name-pointer targets
+match with one address shift. The unreferenced word `10` at `0x00469DA0`
+and storage after the final simulator literal remain outside this recovered
+block; their ownership is not inferred from proximity.
 
 The registry arrays occupy read-only data, whereas the same routine's
 `"reg cheating\n"` and `"reg not cheating\n"` diagnostic literals occupy

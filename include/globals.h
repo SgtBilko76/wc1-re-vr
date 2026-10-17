@@ -222,26 +222,7 @@ extern PacketResourceDescriptor aCockpitResourceDescriptors[19]; /* 0x00469c48 *
 extern char szMeanwhile[16]; /* 0x00469d80 */
 extern char szEmptyAnswerInput[4]; /* 0x00469d90 */
 extern char szAnswerLabel[9]; /* 0x00469d94 */
-extern Viewport stTrainSimPanelViewport; /* 0x00469da8 */
-extern ShortRect stTrainSimPanelBounds; /* 0x00469dc0 */
-extern char szTrainSimTitle[24]; /* 0x00469dc8 */
-extern unsigned char *apszBuiltInHighScoreNames[6]; /* 0x00469de0 */
 extern TitleMenuRegion aTrainSimMissionRegions[5]; /* 0x00469df8 */
-extern unsigned char aszBuiltInHighScores[48]; /* 0x00469e38 */
-extern char szEmptyPilotField[4]; /* 0x00469e68 */
-extern char szTextFlushToken[4]; /* 0x00469e6c */
-extern char szNewPilotPrompt[80]; /* 0x00469e70 */
-extern char szDefaultPilotName[8]; /* 0x00469ec0 */
-extern char szPilotNameLabel[12]; /* 0x00469ec8 */
-extern char szDefaultCallsign[12]; /* 0x00469ed4 */
-extern char szCallsignLabel[12]; /* 0x00469ee0 */
-extern char szCheaterCallsign[8]; /* 0x00469eec */
-extern char szHighScoreCongratulations[68]; /* 0x00469ef4 */
-extern char szLowScoreMessage[56]; /* 0x00469f38 */
-extern char szHighScoresHeading[16]; /* 0x00469f70 */
-extern char szHighScoreNumberFormat[8]; /* 0x00469f80 */
-extern char szHighScoreRowFormat[16]; /* 0x00469f88 */
-extern char szSelectEnemy[16]; /* 0x00469f98 */
 extern int nTrainSimActive; /* 0x00469e2c */
 extern short nTrainSimMission; /* 0x00469e30 */
 extern short nArcadeWave; /* 0x00469e34 */

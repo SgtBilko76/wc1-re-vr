@@ -99,6 +99,13 @@ for similarity decisions.
   activation and mouse clicks reach the same flag assignment; cursor events
   and unhandled events go directly to the common redraw. Its frame-timer
   result is tested in AX even though the timer function returns a full int.
+- `ReadTextInput` dispatches both the input byte and the input mode with
+  switches. This retains the zero-extended key for character classification
+  and places Enter/Escape and uppercase/numeric branches after their defaults.
+  Save the text pointer before the viewport pointer, then copy the viewport
+  through `pCurrentTextContext` after installing the input buffer. Using the
+  cached viewport pointer omits an original reload. The key itself holds the
+  translated character; no separate character temporary is needed.
 - Keep the observed form of record copies. In `LoadGame`, a byte source
   pointer and direct destination array fields retain the four original
   counted loops. Caching the destination base adds instructions; naming

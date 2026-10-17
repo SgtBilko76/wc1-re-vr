@@ -332,64 +332,6 @@ short nPaletteTransitionInitialise = 1; /* 0x00469640 */
 char szMeanwhile[16] = "Meanwhile..."; /* 0x00469d80 */
 char szEmptyAnswerInput[4] = ""; /* 0x00469d90 */
 char szAnswerLabel[9] = "Answer: "; /* 0x00469d94 */
-Viewport stTrainSimPanelViewport = {0}; /* 0x00469da8 */
-ShortRect stTrainSimPanelBounds = { /* 0x00469dc0 */
-    0x30, 0x1d, 0x110, 0x6d
-};
-char szTrainSimTitle[24] = "SQUADRON: TRAINSIM"; /* 0x00469dc8 */
-unsigned char *apszBuiltInHighScoreNames[6] = { /* 0x00469de0 */
-    &aszBuiltInHighScores[0],
-    &aszBuiltInHighScores[8],
-    &aszBuiltInHighScores[16],
-    &aszBuiltInHighScores[24],
-    &aszBuiltInHighScores[32],
-    &aszBuiltInHighScores[40]
-};
-TitleMenuRegion aTrainSimMissionRegions[5] = { /* 0x00469df8 */
-    { 1, 47, 29, 67, 49 },
-    { 1, 47, 89, 67, 109 },
-    { 1, 251, 29, 271, 49 },
-    { 1, 251, 89, 271, 109 },
-    { -1, 0, 0, 0, 0 }
-};
-int nTrainSimActive = 0; /* 0x00469e2c */
-short nTrainSimMission = 0; /* 0x00469e30 */
-short nArcadeWave = 0; /* 0x00469e34 */
-unsigned char aszBuiltInHighScores[48] = /* 0x00469e38 */
-    "BISHOP\0\0"
-    "GOBLIN\0\0"
-    "JEFFTEP\0"
-    "MANGLER\0"
-    "THE MAN\0"
-    "MONGO\0\0\0";
-char szEmptyPilotField[4] = ""; /* 0x00469e68 */
-char szTextFlushToken[4] = "%P"; /* 0x00469e6c */
-char szNewPilotPrompt[80] = /* 0x00469e70 */
-    "CONGRATULATIONS!\n"
-    "YOU HAVE A TOP SCORE!\n"
-    "PLEASE ENTER YOUR\n"
-    "NAME AND CALLSIGN:\n";
-char szDefaultPilotName[8] = "Blair"; /* 0x00469ec0 */
-char szPilotNameLabel[12] = "LAST NAME: "; /* 0x00469ec8 */
-char szDefaultCallsign[12] = "Maverick"; /* 0x00469ed4 */
-char szCallsignLabel[12] = "CALLSIGN : "; /* 0x00469ee0 */
-char szCheaterCallsign[8] = "CHEATER"; /* 0x00469eec */
-char szHighScoreCongratulations[68] = /* 0x00469ef4 */
-    "*******\n"
-    "CONGRATULATIONS!\n"
-    "YOU HAVE SCORE NUMBER\n"
-    ">>>> %d <<<<\n"
-    "*******";
-char szLowScoreMessage[56] = /* 0x00469f38 */
-    "> SORRY <\n\n"
-    "YOUR SCORE IS ONLY\n"
-    "%ld0\n\n"
-    "PLEASE PLAY AGAIN!";
-char szHighScoresHeading[16] = "%JHIGH SCORES%P"; /* 0x00469f70 */
-char szHighScoreNumberFormat[8] = "%0ld"; /* 0x00469f80 */
-char szHighScoreRowFormat[16] = /* 0x00469f88 */
-    "%X%Y%d. %s%X%s0";
-char szSelectEnemy[16] = "SELECT\nENEMY%P"; /* 0x00469f98 */
 int nCannedSceneMode = 0; /* 0x00469fac */
 int nArcadeState = 0; /* 0x00469fb0 */
 short nFrameSkipCounter = 1; /* 0x00469fb4 */
