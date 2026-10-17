@@ -2342,25 +2342,27 @@ unsigned int housekeep_power_plant_and_fuel(short ship)
 unsigned int replenish_shields(short ship)
 {
     signed char shield;
+    int shipIndex;
 
     if (ship == 0 && acPlayerComponentDamage[1] > 0 &&
         nSpaceFrame %
             (acPlayerComponentDamage[1] + 1) != 0)
         return 0;
+    shipIndex = ship;
     shield = 0;
     do {
         short maximum;
         short current;
 
-        maximum = aasShipMaximumShield[ship][shield];
-        if (aasShipShield[ship][shield] > maximum)
-            aasShipShield[ship][shield] = maximum;
-        current = aasShipShield[ship][shield];
+        maximum = aasShipMaximumShield[shipIndex][shield];
+        if (aasShipShield[shipIndex][shield] > maximum)
+            aasShipShield[shipIndex][shield] = maximum;
+        current = aasShipShield[shipIndex][shield];
         if (current < maximum &&
             nSpaceFrame %
                 aObjectTypeData[
-                    aeObjectType[ship]].animationDelay == 0) {
-            aasShipShield[ship][shield] =
+                    aeObjectType[shipIndex]].animationDelay == 0) {
+            aasShipShield[shipIndex][shield] =
                 (short)(current + 1);
         }
         shield++;

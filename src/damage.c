@@ -89,6 +89,7 @@ void show_damage_disp(void)
 void UpdateDamageDisplay(void)
 {
     short previousComponentCount;
+    signed char componentIndex;
     signed char componentCount;
     signed char component;
     signed char attempts;
@@ -96,13 +97,13 @@ void UpdateDamageDisplay(void)
 
     previousComponentCount = cDamagedComponentCount;
     componentCount = 0;
-    for (component = 0; component < 9; component++) {
-        if (acPlayerComponentDamage[component] >= 1)
+    for (componentIndex = 0; componentIndex < 9; componentIndex++) {
+        if (acPlayerComponentDamage[componentIndex] >= 1)
             componentCount++;
     }
 
+    cDamagedComponentCount = componentCount;
     if ((short)componentCount != previousComponentCount) {
-        cDamagedComponentCount = componentCount;
         InvalidateVduMode(0);
         return;
     }

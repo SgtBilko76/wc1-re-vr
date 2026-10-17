@@ -243,11 +243,11 @@ void *AllocateNearHeapBlockFromEnd(int size, unsigned short flags)
 void *AllocateNearHeapBlockByFlags(int size, unsigned short flags)
 {
     NearHeapBlock *block;
-    NearHeapBlock *lastBlock;
     int descriptorAddress;
     int shiftAddress;
     int allocationAddress;
-    unsigned int blockSize;
+    int blockSize;
+    unsigned int sizeAndFlags;
     unsigned int allocationFlags;
     unsigned short alignment;
 
@@ -273,25 +273,26 @@ void *AllocateNearHeapBlockByFlags(int size, unsigned short flags)
                nNearHeapBase + nNearHeapSize;
          descriptorAddress += 8) {
         block = DosNearPtrToFar(descriptorAddress);
-        blockSize = block->sizeAndFlags & 0xfffff;
-        if ((block->sizeAndFlags & 0x80000000) != 0)
+        sizeAndFlags = block->sizeAndFlags;
+        blockSize = sizeAndFlags & 0xfffff;
+        if ((sizeAndFlags & 0x80000000) != 0)
             continue;
-        if ((int)blockSize < size)
+        if (blockSize < size)
             continue;
-        if ((int)blockSize > size) {
+        if (blockSize > size) {
             if (nNearHeapBase -
                     nNearHeapMaxDescriptors * 8 +
                     nNearHeapSize >=
                 nNearHeapFirstDescriptor) {
-                lastBlock = DosNearPtrToFar(
+                block = DosNearPtrToFar(
                     nNearHeapBase +
                     nNearHeapSize - 8);
-                if ((lastBlock->sizeAndFlags & 0x80000000) == 0) {
-                    blockSize = lastBlock->sizeAndFlags & 0xfffff;
-                    if (lastBlock->address + blockSize ==
+                if ((block->sizeAndFlags & 0x80000000) == 0) {
+                    blockSize = block->sizeAndFlags & 0xfffff;
+                    if (block->address + blockSize ==
                             nNearHeapFirstDescriptor &&
-                        (int)blockSize > 8) {
-                        lastBlock->sizeAndFlags -= 8;
+                        blockSize > 8) {
+                        block->sizeAndFlags -= 8;
                         nNearHeapMaxDescriptors++;
                     }
                 }

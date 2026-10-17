@@ -736,8 +736,38 @@ for similarity decisions.
   before counting damaged components. Comparing the promoted new byte count
   with that saved word reproduces the original `MOVSX`/word comparison and
   ESI save. Comparing the two byte values directly loses those instructions.
-  This recovers sixteen bytes and reaches 99.63%; CL still merges the two
-  count stores across the early-return branch, leaving a sixteen-byte deficit.
+  Store the new count before the comparison, then store it again on the
+  unchanged-count path. Putting the first store inside the changed-count
+  branch lets CL merge the two stores and loses sixteen bytes. The counting
+  loop has its own signed-byte index, separate from the component selected
+  for display later. This recovers the initial BL index and ECX constant
+  without changing the later selection loop. The complete 1,072-byte span
+  now compares exactly.
+- `AllocateNearHeapBlockByFlags` reuses its descriptor pointer when examining
+  the last block; those pointer lifetimes do not overlap. A separate last-block
+  local changes common-subexpression handling, adds an alignment spill, and
+  enlarges the local frame from four bytes to eight. Keep the masked block
+  size signed and retain the raw size-and-flags value separately for the
+  allocation-bit test. Declare the masked size before the raw value to recover
+  their ECX and EDX allocation. These forms match the entire 464-byte span,
+  including alignment. Reversing the heap-base/size sum, introducing explicit
+  loaded-value locals in `GetNearHeapBlockSize`, and removing redundant casts
+  in the end allocator did not resolve their remaining differences; those
+  trials are not retained.
+- `replenish_shields` promotes its short ship argument to a retained integer
+  index after the damaged-power-plant guard. Use that index for the shield
+  and object-type arrays. This recovers the original 176-byte span and the
+  shield-update loop; nine instructions still differ in the prologue, guard,
+  and initial argument promotion. Moving the shield-value locals
+  to function scope worsens the loop allocation. A separate recharge divisor,
+  reversed index/counter declarations, and a parameter `register` hint do not
+  resolve the guard. These trials are not retained.
+- After the sound-flush declaration correction, `DecodeShapeFrame` remains
+  sixteen bytes short. Grouping the destination offset, separating the bitmap
+  assignment from its addition, and retaining an explicit row offset do not
+  recover the original extra register copy. Explicit promoted clipping bounds
+  also leave this function unchanged and perturb later graphics functions.
+  These trials are not retained.
 - Shared declarations affect optimized CL 4.20 register allocation even in
   units that do not use those declarations. Removing damage's private tables
   and former named literals from `globals.h` changes unrelated functions:
