@@ -1,11 +1,11 @@
 /*
  *  Autopilot travel and interstitial flight sequences.
  *
- *  Address range 0x403e50-0x40460f (provisional -- see docs/ORDER.md).
+ *  Address range 403e50-40469f (provisional -- see docs/ORDER.md).
  *  Boundary evidence: the Mac auto unit preserves visit_the_cinema,
  *  player_wingman, set_speed, auto_position, and auto_pilot_sequence in this
- *  exact order; the next Win32 function is a palette-file loader in another
- *  compilation unit.
+ *  exact order. The palette-file loader follows in this unit: its "rb"
+ *  literal follows the initialized formation count in the original data.
  */
 #include "wc1.h"
 

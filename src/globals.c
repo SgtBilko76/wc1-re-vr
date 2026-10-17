@@ -7,6 +7,8 @@
  */
 #include "wc1.h"
 
+typedef void (*ShipManeuverHandler)(short, short);
+
 /* The raster library's tables and variables.  The Win32 build takes them
  * from src/raster.asm, which keeps these first tables in its code segment;
  * the SDL build defines them here for the portable routines. */
@@ -3002,7 +3004,7 @@ unsigned char abManeuverRerollChance[47] = { /* 0x00465678 */
     0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0
 };
-void (*apShipAiManeuverHandlers[47])(short, short) = { /* 0x004656a8 */
+ShipManeuverHandler apShipAiManeuverHandlers[47] = { /* 0x004656a8 */
     /* 00 */ (void (*)(short, short))Mnone,
     /* 01 */ (void (*)(short, short))Mnone,
     /* 02 */ (void (*)(short, short))Mveer_away,

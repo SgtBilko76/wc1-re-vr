@@ -222,7 +222,8 @@ GLOBALS_MISSING_MAX_ADDRESS = 0x004751ff
 # Global definitions are migrating back to their original compilation units.
 # binary-comp currently accepts one definition source, so generate a parser-only
 # manifest from globals.c and the declaration block at the top of each owner.
-GLOBALS_DISTRIBUTED_SOURCES = src/nav.c src/spc.c src/cockpt.c src/ship.c
+GLOBALS_DISTRIBUTED_SOURCES = src/mono.c src/auto.c src/cmpgn.c \
+	src/nav.c src/spc.c src/cockpt.c src/ship.c
 GLOBALS_DEFINITION_SOURCES = src/globals.c $(GLOBALS_DISTRIBUTED_SOURCES)
 GLOBALS_AUDIT_SOURCE = $(OUT_DIR)/globals-audit.c
 
@@ -744,7 +745,10 @@ $(MSVCRT_SOURCE):
 # (1996-09-24 16:33:00 UTC) so a matching build is byte-identical.
 ORIGINAL_TIMESTAMP = 0x32480D3C
 
-$(TARGET): $(LINK_OBJS) $(IX_LIBS) | $(MSVCRT_DLL)
+REFERENCE_HEADERS = include/wc1.h include/wcdata.h include/globals.h \
+	include/wc1funcs.h include/wc1extern.h
+
+$(TARGET): $(LINK_OBJS) $(IX_LIBS) Makefile | $(MSVCRT_DLL)
 	env LIB='$(GAME_LIBPATH)' $(LINK) $(LINKFLAGS) /MAP:$(MAPFILE) $(LINK_OBJS) $(GAME_LIBS) /OUT:$@
 	@python3 bin/stampPeTimestamp.py $@ $(ORIGINAL_TIMESTAMP)
 
@@ -761,14 +765,14 @@ $(IX_LIBS): | $(WIBO) $(MSVCRT_DLL)
 # The game-side wave module calls directly into IxSample and IxSound member
 # functions.  Those ECX-based calls at 0x42B4A0 and 0x42B680 prove this one
 # source unit was compiled as C++ while retaining its original .c filename.
-$(OUT_DIR)/sound.obj $(OUT_DIR)/sound.asm: src/sound.c | $(WIBO) $(MSVCRT_DLL)
+$(OUT_DIR)/sound.obj $(OUT_DIR)/sound.asm: src/sound.c $(REFERENCE_HEADERS) Makefile | $(WIBO) $(MSVCRT_DLL)
 	@mkdir -p $(dir $(OUT_DIR)/sound)
 	@env INCLUDE='$(MSVC_INC)' $(CC) $(CFLAGS_CORE) /TP $< \
 		/Fo$(OUT_DIR)/sound.obj \
 		/Fa$(OUT_DIR)/sound.asm \
 		> $(OUT_DIR)/sound.stdout
 
-$(OUT_DIR)/%.obj $(OUT_DIR)/%.asm: src/%.c | $(WIBO) $(MSVCRT_DLL)
+$(OUT_DIR)/%.obj $(OUT_DIR)/%.asm: src/%.c $(REFERENCE_HEADERS) Makefile | $(WIBO) $(MSVCRT_DLL)
 	@mkdir -p $(dir $(OUT_DIR)/$*)
 	@env INCLUDE='$(MSVC_INC)' $(CC) $(CFLAGS_CORE) $< \
 		/Fo$(OUT_DIR)/$*.obj \
@@ -776,7 +780,7 @@ $(OUT_DIR)/%.obj $(OUT_DIR)/%.asm: src/%.c | $(WIBO) $(MSVCRT_DLL)
 		> $(OUT_DIR)/$*.stdout
 
 # ix/ is built unoptimised; see the CFLAGS_IX note above.
-$(OUT_DIR)/ix/%.obj $(OUT_DIR)/ix/%.asm: src/ix/%.cpp | $(WIBO) $(MSVCRT_DLL)
+$(OUT_DIR)/ix/%.obj $(OUT_DIR)/ix/%.asm: src/ix/%.cpp src/ix/ix.h Makefile | $(WIBO) $(MSVCRT_DLL)
 	@mkdir -p $(OUT_DIR)/ix
 	@env INCLUDE='$(MSVC_INC)' $(CC) $(CFLAGS_IX) /I src\\ix $< \
 		/Fo$(OUT_DIR)/ix/$*.obj \
@@ -788,7 +792,7 @@ $(OUT_DIR)/ix/%.obj $(OUT_DIR)/ix/%.asm: src/ix/%.cpp | $(WIBO) $(MSVCRT_DLL)
 # no such unwind records and stays on the core defaults.
 $(OUT_DIR)/pilot.obj $(OUT_DIR)/pilot.asm: CFLAGS_CORE_CPP_EXTRA = /GX
 
-$(OUT_DIR)/%.obj $(OUT_DIR)/%.asm: src/%.cpp | $(WIBO) $(MSVCRT_DLL)
+$(OUT_DIR)/%.obj $(OUT_DIR)/%.asm: src/%.cpp $(REFERENCE_HEADERS) Makefile | $(WIBO) $(MSVCRT_DLL)
 	@mkdir -p $(dir $(OUT_DIR)/$*)
 	@env INCLUDE='$(MSVC_INC)' $(CC) $(CFLAGS_CORE) $(CFLAGS_CORE_CPP_EXTRA) $< \
 		/Fo$(OUT_DIR)/$*.obj \
@@ -861,7 +865,7 @@ audit-addresses:
 audit-compiler-glue:
 	@python3 bin/auditCompilerGlue.py
 
-$(GLOBALS_AUDIT_SOURCE): bin/collectGlobalDefinitions.py include/wcdata.h $(GLOBALS_DEFINITION_SOURCES)
+$(GLOBALS_AUDIT_SOURCE): Makefile bin/collectGlobalDefinitions.py include/wcdata.h $(GLOBALS_DEFINITION_SOURCES)
 	@python3 bin/collectGlobalDefinitions.py \
 		--output $@ \
 		--constants-header include/wcdata.h \
@@ -974,6 +978,7 @@ audit-auto-complete-globals: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORI
 audit-rebuilt-global-layout: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
 	@$(BINARY_COMP) globals $(BC) \
 		--globals-source src/globals.c \
+		--globals-h src/globals.c \
 		--check-rebuilt-layout \
 		--no-address-warnings \
 		--fail-on-issues

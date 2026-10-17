@@ -1,9 +1,9 @@
 /*
  *  Campaign mission packet decoding (`cmpgn` in the Mac segment names).
  *
- *  Address range 0x404610-0x40609f (provisional -- see docs/ORDER.md).
- *  Boundary evidence: auto.c ends before 0x00404610 and brains.c begins at
- *  0x004060A0; LoadMissionData is the recovered function at 0x004059B0.
+ *  Address range 4046a0-40609f (provisional -- see docs/ORDER.md).
+ *  Boundary evidence: the ejection tables follow auto.c's palette-file mode
+ *  literal; brains.c begins at 4060a0. LoadMissionData is at 4059b0.
  */
 #include "wc1.h"
 

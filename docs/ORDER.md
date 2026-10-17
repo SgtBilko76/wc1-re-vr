@@ -65,8 +65,8 @@ sits at one constant offset from the original.
 | `src/winmain.c` | `0x401000`–`0x402DFF` |
 | `src/winsys.c` | `0x402E00`–`0x4034FF` |
 | `src/mono.c` | `0x403500`–`0x403E4F` |
-| `src/auto.c` | `0x403E50`–`0x40460F` |
-| `src/cmpgn.c` | `0x404610`–`0x40609F` |
+| `src/auto.c` | `0x403E50`–`0x40469F` |
+| `src/cmpgn.c` | `0x4046A0`–`0x40609F` |
 | `src/brains.c` | `0x4060A0`–`0x40CFFF` |
 | `src/nav.c` | `0x40D000`–`0x40FFFF` |
 | `src/spc.c` | `0x410000`–`0x412FFF` |
@@ -96,6 +96,14 @@ sits at one constant offset from the original.
 | `src/raster.asm` | `0x439C40`–`0x43F635` |
 | `src/killbrd.c` | `0x43F640`–`0x440BFF` |
 | `src/gr.c` | `0x440C00`–`0x44269F` |
+
+`LoadPaletteTripletsFile` at `0x00404610` closes `auto.c`. Its `"rb"`
+literal is at `0x00465548`, immediately after the initialized autopilot
+formation count at `0x00465544` and before the ejection tables at
+`0x00465550`. The campaign unit starts with `ejection_sequence` at
+`0x004046A0`. The packet error word at `0x00465460` similarly precedes
+`mono.c`'s data-file error strings. These initialized globals are kept in
+their owning units and included in the distributed global audits.
 
 The raster library is the one assembled object, and its edges are proven.
 CL pads every optimized function with NOPs to a 16-byte boundary, so the
