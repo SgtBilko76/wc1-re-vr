@@ -1,7 +1,7 @@
 /*
  *  ix / D:\rnd\prj\ix\win95\dsp\mixer.cpp
  *
- *  Original address range: 0x00445F60 - 0x004467C4   (4 functions)
+ *  Original address range: 0x00445F60 - 0x0044679F   (2 functions)
  *  Range is exact: recovered from this module's own assert __FILE__ anchors in
  *  the shipped debug build (see docs/ORDER.md).
  *
@@ -52,11 +52,11 @@ DWORD WINAPI ix_mixer_thread_proc(void *parameter)
     SdlStopAudio();
     return 0;
 #else
-    DSCAPS driverCaps;
-    PCMWAVEFORMAT format;
-    DSBUFFERDESC bufferDescription;
-    HRESULT result;
-    DSBCAPS bufferCaps;
+    DSCAPS soundCaps;
+    PCMWAVEFORMAT outputFormat;
+    DSBUFFERDESC bufferDescriptor;
+    HRESULT resultCode;
+    DSBCAPS primaryCaps;
 
     dwDspFlags |= 4;
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
@@ -74,11 +74,11 @@ DWORD WINAPI ix_mixer_thread_proc(void *parameter)
         exit(-1);
     }
 
-    memset(&driverCaps, 0, 0x60);
-    driverCaps.dwSize = 0x60;
-    pDirectSound->GetCaps(&driverCaps);
+    memset(&soundCaps, 0, 0x60);
+    soundCaps.dwSize = 0x60;
+    pDirectSound->GetCaps(&soundCaps);
     if ((dwDspFlags & 0x10) == 0 &&
-        (driverCaps.dwFlags &
+        (soundCaps.dwFlags &
          (DSCAPS_PRIMARY16BIT | DSCAPS_PRIMARYSTEREO)) !=
         (DSCAPS_PRIMARY16BIT | DSCAPS_PRIMARYSTEREO)) {
         ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 60);
@@ -92,55 +92,55 @@ DWORD WINAPI ix_mixer_thread_proc(void *parameter)
         }
     }
 
-    memset(&format, 0, 0x10);
-    format.wf.wFormatTag = WAVE_FORMAT_PCM;
-    format.wf.nChannels = 2;
-    format.wf.nSamplesPerSec = 22050;
-    format.wf.nBlockAlign = 4;
-    format.wf.nAvgBytesPerSec = 88200;
-    format.wBitsPerSample = 16;
+    memset(&outputFormat, 0, 0x10);
+    outputFormat.wf.wFormatTag = WAVE_FORMAT_PCM;
+    outputFormat.wf.nChannels = 2;
+    outputFormat.wf.nSamplesPerSec = 22050;
+    outputFormat.wf.nBlockAlign = 4;
+    outputFormat.wf.nAvgBytesPerSec = 88200;
+    outputFormat.wBitsPerSample = 16;
 
-    memset(&bufferDescription, 0, 0x14);
-    bufferDescription.dwSize = 0x14;
-    bufferDescription.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME;
-    result = pDirectSound->CreateSoundBuffer(
-        &bufferDescription, &pPrimarySoundBuffer, 0);
-    if (result != DS_OK) {
+    memset(&bufferDescriptor, 0, 0x14);
+    bufferDescriptor.dwSize = 0x14;
+    bufferDescriptor.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME;
+    resultCode = pDirectSound->CreateSoundBuffer(
+        &bufferDescriptor, &pPrimarySoundBuffer, 0);
+    if (resultCode != DS_OK) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_MIXER_FILE, 81);
         ix_log_printf("Failed to create primary buffer");
         exit(-1);
     }
 
-    result = pPrimarySoundBuffer->SetFormat(
-        (LPWAVEFORMATEX)&format);
-    if (result != DS_OK) {
+    resultCode = pPrimarySoundBuffer->SetFormat(
+        (LPWAVEFORMATEX)&outputFormat);
+    if (resultCode != DS_OK) {
         ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 84);
         ix_log_printf("Failed to SetFormat, %s",
-                      ix_dsp_result_to_text(result));
+                      ix_dsp_result_to_text(resultCode));
     }
     if ((dwDspFlags & 0x10) != 0) {
-        memset(&bufferDescription, 0, 0x14);
-        bufferDescription.dwSize = 0x14;
-        bufferDescription.dwFlags = DSBCAPS_CTRLVOLUME;
-        bufferDescription.dwBufferBytes = 0x8000;
-        bufferDescription.lpwfxFormat = (LPWAVEFORMATEX)&format;
-        result = pDirectSound->CreateSoundBuffer(
-            &bufferDescription, &pMixerBuffer, 0);
-        if (result != DS_OK) {
+        memset(&bufferDescriptor, 0, 0x14);
+        bufferDescriptor.dwSize = 0x14;
+        bufferDescriptor.dwFlags = DSBCAPS_CTRLVOLUME;
+        bufferDescriptor.dwBufferBytes = 0x8000;
+        bufferDescriptor.lpwfxFormat = (LPWAVEFORMATEX)&outputFormat;
+        resultCode = pDirectSound->CreateSoundBuffer(
+            &bufferDescriptor, &pMixerBuffer, 0);
+        if (resultCode != DS_OK) {
             ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 96);
             ix_log_printf("Failed to CreateSoundBuffer, %s",
-                          ix_dsp_result_to_text(result));
+                          ix_dsp_result_to_text(resultCode));
             return (DWORD)-1;
         }
         dwMixerBufferSize = 0x8000;
         ix_log_printf("secondary buffer, size = %d\n",
                       dwMixerBufferSize);
     } else {
-        memset(&bufferCaps, 0, 0x14);
-        bufferCaps.dwSize = 0x14;
-        pPrimarySoundBuffer->GetCaps(&bufferCaps);
+        memset(&primaryCaps, 0, 0x14);
+        primaryCaps.dwSize = 0x14;
+        pPrimarySoundBuffer->GetCaps(&primaryCaps);
         pMixerBuffer = pPrimarySoundBuffer;
-        dwMixerBufferSize = bufferCaps.dwBufferBytes;
+        dwMixerBufferSize = primaryCaps.dwBufferBytes;
         ix_log_printf("primary buffer, size = %d\n",
                       dwMixerBufferSize);
     }
@@ -181,42 +181,46 @@ int ix_mixer_service(void)
     return 0;
 #else
     DWORD delay;
-    HRESULT result;
-    void *firstBuffer;
-    DWORD firstBytes;
-    void *secondBuffer;
-    DWORD secondBytes;
-    DWORD playCursor;
-    DWORD hardwareWriteCursor;
-    int bufferedBytes;
+    HRESULT startupResult;
+    void *initialBuffer;
+    DWORD startupBytes;
 
     delay = 0x42;
-    result = pMixerBuffer->Lock(
-        0, 0x2df0, &firstBuffer, &firstBytes, 0, 0, 0);
-    if (result != DS_OK) {
+    startupResult = pMixerBuffer->Lock(
+        0, 0x2df0, &initialBuffer, &startupBytes, 0, 0, 0);
+    if (startupResult != DS_OK) {
         ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 150);
-        ix_log_printf("Failed to Lock, %s", ix_dsp_result_to_text(result));
+        ix_log_printf("Failed to Lock, %s", ix_dsp_result_to_text(startupResult));
         return -1;
     }
     EnterCriticalSection(&csMixer);
-    ix_dspv_mix(firstBuffer, firstBytes);
+    ix_dspv_mix(initialBuffer, startupBytes);
     LeaveCriticalSection(&csMixer);
-    result = pMixerBuffer->Unlock(firstBuffer, firstBytes, 0, 0);
-    if (result != DS_OK) {
+    startupResult = pMixerBuffer->Unlock(initialBuffer, startupBytes, 0, 0);
+    if (startupResult != DS_OK) {
         ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 157);
-        ix_log_printf("Failed to Unlock, %s", ix_dsp_result_to_text(result));
+        ix_log_printf("Failed to Unlock, %s", ix_dsp_result_to_text(startupResult));
         return -1;
     }
-    result = pMixerBuffer->Play(0, 0, DSBPLAY_LOOPING);
-    if (result != DS_OK) {
+    startupResult = pMixerBuffer->Play(0, 0, DSBPLAY_LOOPING);
+    if (startupResult != DS_OK) {
         ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 161);
-        ix_log_printf("Failed to Play, %s", ix_dsp_result_to_text(result));
+        ix_log_printf("Failed to Play, %s", ix_dsp_result_to_text(startupResult));
         return -1;
     }
 
     dwMixerWriteOffset = 0x2df0;
-    result = DS_OK;
     while ((dwDspFlags & 4) != 0) {
+        HRESULT result;
+        void *firstBuffer;
+        DWORD firstBytes;
+        void *secondBuffer;
+        DWORD secondBytes;
+        DWORD playCursor;
+        DWORD hardwareWriteCursor;
+        int bufferedBytes;
+        DWORD requestedBytes;
+
         Sleep(delay);
         dwDspTick++;
         result = pMixerBuffer->GetCurrentPosition(
@@ -232,8 +236,9 @@ int ix_mixer_service(void)
         bufferedBytes = dwMixerWriteOffset - playCursor;
         delay = (unsigned int)(bufferedBytes * 0x42) / 0x16f8;
 
+        requestedBytes = 0x16f8;
         result = pMixerBuffer->Lock(
-            dwMixerWriteOffset, 0x16f8,
+            dwMixerWriteOffset, requestedBytes,
             &firstBuffer, &firstBytes, &secondBuffer, &secondBytes, 0);
         if (result != DS_OK) {
             ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 186);
@@ -259,7 +264,6 @@ int ix_mixer_service(void)
             if (dwMixerWriteOffset >= dwMixerBufferSize)
                 dwMixerWriteOffset = 0;
         }
-        result = DS_OK;
     }
     return 0;
 #endif

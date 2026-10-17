@@ -373,6 +373,24 @@ for similarity decisions.
 - An `/Od` format check can retain a jump through an empty default branch.
   `ix_dsps_alloc` has two such branches for its default eight-bit and mono
   formats. Omitting the `else` bodies removes ten original code bytes.
+- Local names affect CL 4.20's `/Od` stack allocation. In
+  `ix_mixer_thread_proc`, declaration reordering alone did not recover the
+  frame. The descriptive names `primaryCaps`, `resultCode`, `bufferDescriptor`,
+  `outputFormat`, and `soundCaps` place the real locals at EBP offsets -20,
+  -24, -44, -60, and -156 respectively, matching the original. These names
+  reproduce the allocation; they are not recovered original spellings.
+  The former layout needed longer displacement encodings, adding 27 bytes.
+  Binary-comp now reports the complete 1,180-byte function as exact, without
+  changes to types, fields, flags, or instructions written by hand.
+- `ix_mixer_service` has separate initial-fill and refill-loop locals. Keep
+  the initial buffer, byte count, result, and delay outside the loop, with
+  the two refill buffers, counts, cursor positions, buffered-byte count,
+  result, and requested-byte count inside it. The request is assigned `0x16f8`
+  before the lock call. The two success-result writes before and after the
+  loop are absent from the original. This restores its 52-byte frame and
+  932-byte span at 99.62% similarity. The initial-fill slots now match; refill
+  slots and the final unsigned wrap comparison still differ. Reversing or
+  negating that comparison did not change its encoding and is not retained.
 - Preserve the observed order of calls inside comparisons. The audio-service
   loops call `ix_thread_get_audio_chunk_size` before `ix_dsps_get_buffer_free`;
   putting the chunk-size call on the left of `<` reproduces the original
