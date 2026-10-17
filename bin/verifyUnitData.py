@@ -32,6 +32,8 @@ class UnitData:
     external_globals: tuple[tuple[str, int, int], ...] = ()
     storage: str = '.data'
     owner: str | None = None
+    # Set only for a verified span within an incompletely recovered section.
+    section_size: int | None = None
 
 
 UNITS = {
@@ -198,6 +200,75 @@ UNITS = {
         ('szTMDriverName', 0x08),
         ('szSuperTMDriverName', 0x10),
     ), frozenset()),
+    'game-state': UnitData(0x0046C000, 112, (
+        ('cViewObject', 0x0000),
+        ('nEyePitchRate', 0x0004),
+        ('nEyeYawRate', 0x0008),
+        ('nEyeRollRate', 0x000C),
+        ('DAT_0046c010', 0x0010),
+        ('bCurrentKey', 0x0014),
+        ('cPreviousKey', 0x0018),
+        ('nCurrentWave', 0x001C),
+        ('cCurrentObjective', 0x0020),
+        ('bIntroSecondaryScene', 0x0024),
+        ('abHazardObjects', 0x0028),
+        ('nCameraViewMode', 0x003C),
+        ('nExternalViewShip', 0x0040),
+        ('nEjectedPilotObject', 0x0044),
+        ('nClosestVisibleObject', 0x0048),
+        ('nYourWingman', 0x004C),
+        ('nPlayerCollisionObject', 0x0050),
+        ('eSelectedGunType', 0x0054),
+        ('nSelectedReleaseWeaponIndex', 0x0058),
+        ('DAT_0046c05c', 0x005C),
+        ('bTargetLockReadoutDirty', 0x0060),
+        ('nTargetLockCountdown', 0x0064),
+        ('nTargetLockMarkerAngle', 0x0068),
+        ('cTargetDisplayObject', 0x006C),
+    ), frozenset(), owner='game.obj', section_size=6788),
+    'game-lock-state': UnitData(0x0046C074, 21, (
+        ('bTargetLockAcquired', 0x0000),
+        ('nTargetLockMode', 0x0004),
+        ('bMissileCameraEnabled', 0x0008),
+        ('bEngageAllowed', 0x000C),
+        ('nAutoEngageTimer', 0x0010),
+        ('cViableTargetCount', 0x0014),
+    ), frozenset(), owner='game.obj', section_size=6788),
+    'game-tables': UnitData(0x0046C090, 6652, (
+        ('asIntroCameraSequence', 0x0000),
+        ('asCannedSequence32', 0x0028),
+        ('asCannedSequence33', 0x0048),
+        ('asCannedSequence34', 0x0060),
+        ('asCannedSequence35', 0x0078),
+        ('asCampaignVictoryViewScript', 0x00D0),
+        ('asCannedSequence37', 0x0100),
+        ('asCannedSequence38', 0x0120),
+        ('asCannedSequence39', 0x0140),
+        ('asCannedSequence40', 0x0150),
+        ('asCannedSequence41', 0x01A0),
+        ('asTigerClawEscapeViewScript', 0x01A8),
+        ('asCannedSequence42', 0x01C0),
+        ('asCannedSequence43', 0x01E0),
+        ('asCannedSequence44', 0x0210),
+        ('asCannedSequence45', 0x0258),
+        ('aMissionNavPoints', 0x0260),
+        ('aMissionShips', 0x08B8),
+        ('aiIntelligenceEvent', 0x12D8),
+        ('aDefenseManeuversNovice', 0x1300),
+        ('aDefenseManeuversVeteran', 0x1308),
+        ('aDefenseManeuversElite', 0x1310),
+        ('aDefenseManeuversAce', 0x1320),
+        ('aDefenseManeuversBoss', 0x1330),
+        ('apDefenseManeuvers', 0x1340),
+        ('aRatedManeuverChoices', 0x1358),
+        ('aKilrathiManeuverChoices', 0x1778),
+        ('acPilotAggression', 0x1910),
+        ('acPilotRecovery', 0x1928),
+    ), frozenset((
+        0x0FA0, 0x0FD6, 0x100C, 0x1042, 0x10AE, 0x10E4,
+        0x111A, 0x1150, 0x1186, 0x11BC, 0x11F2, 0x1228,
+        0x125E, 0x1340, 0x1344, 0x1348, 0x134C, 0x1350,
+    )), owner='game.obj', section_size=6788),
     'damage-bss': UnitData(0x00476554, 4, (
         ('nDisplayedComponentDamage', 0x00),
     ), frozenset(), storage='.bss', owner='damage.obj'),
@@ -269,8 +340,11 @@ def main() -> int:
         owner = block.owner or unit + '.obj'
         start = address(owner, block.globals[0][0])
         starts[unit] = start
-        require(data_section_size(str(args.objects_root / owner), block.storage) == block.size,
-                f'{owner}: {block.storage} must contain exactly {block.size} bytes')
+        section_size = block.size if block.section_size is None else block.section_size
+        require(section_size >= block.size,
+                f'{unit}: verified span exceeds its containing section')
+        require(data_section_size(str(args.objects_root / owner), block.storage) == section_size,
+                f'{owner}: {block.storage} must contain exactly {section_size} bytes')
         for name, offset in block.globals:
             require(address(owner, name) == start + offset,
                     f'{name}: incorrect offset within {unit} data')
@@ -308,7 +382,8 @@ def main() -> int:
             require(relocated_pointer_match(original_bytes[offset:offset + 4],
                                             rebuilt_bytes[offset:offset + 4], {}, ranges),
                     f'{unit} pointer at +0x{offset:02X} has an incorrect target')
-        print(f'{owner}: {block.size} {block.storage} bytes match with one address shift; '
+        scope = ' (partial section)' if block.section_size is not None else ''
+        print(f'{owner}{scope}: {block.size} {block.storage} bytes match with one address shift; '
               f'{len(block.globals)} globals and {len(block.pointers)} '
               'pointer relocations verified')
     for group in ADJACENT_UNITS:

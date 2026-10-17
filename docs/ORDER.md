@@ -161,7 +161,7 @@ sits at one constant offset from the original.
 | `src/video.c` | `0x4318F0`–`0x431A0F` |
 | `src/joycal.c` | `0x431A10`–`0x431EFF` |
 | `src/dib.c` | `0x431F00`–`0x43390F` |
-| `src/text.c` | `0x433910`–`0x433ABF` |
+| `src/game.c` | `0x433910`–`0x433ABF` |
 | `src/smart.c` | `0x433AC0`–`0x434CCF` |
 | `src/mathfp.c` | `0x434CD0`–`0x4353FF` |
 | `src/strdos.c` | `0x435400`–`0x4355EF` |
@@ -517,6 +517,32 @@ This pool is checked through `abDIBDiagnosticLiterals` comparison metadata.
 The current `dib.obj` `.data` section is 3,664 bytes, eight short of the
 observed 3,672-byte span. Its full layout is therefore not included among the
 complete-unit gates; its uninitialized storage also remains in `globals.c`.
+
+The shared game state begins at `0x0046C000`, after the DirectDraw literal
+pool. Its camera scripts, mission records, and maneuver tables precede
+`show_info_disp`'s literal pool at `0x0046D9CC`. This definitions-before-literals
+order supports their placement together in `game.c`, renamed from the former
+information-display-only `text.c`. This is a descriptive filename; the
+original spelling is not recovered. All 59 declarations retain their
+original address order. Thirteen canned scripts and five defense-maneuver
+lists are private because only the pointer tables in this unit reference
+them; shared state and tables keep their public declarations.
+
+The 112-byte state run at `0x0046C000` and the 21-byte run at `0x0046C074`
+match independently. The four zero bytes at `0x0046C070` have no known
+references or declaration form and remain unrecovered. Their absence also
+changes the alignment before the first script, leaving the rebuilt section
+eight bytes short: 6,788 bytes versus the observed 6,796-byte span.
+`verify-unit-data` explicitly labels these as partial-section checks.
+
+The full 6,652-byte run from `asIntroCameraSequence` at `0x0046C090` through
+the final display-string terminator at `0x0046DA8B` matches with one address
+shift. It includes 20 navigation records, 48 ship records, both weighted
+maneuver tables, all intervening alignment, and the 192-byte display literal
+pool. The gate checks all 18 pointer relocations against their positions
+within this run, with no string fallback. Array annotations precede their
+declarations, and the canned-script lengths are explicit so the ordinary
+global-data audit also checks their complete contents.
 
 Private C definitions require separate evidence: a trial moving the two
 MONODEBG variables to `static` storage in `mono.c` emitted the device handle

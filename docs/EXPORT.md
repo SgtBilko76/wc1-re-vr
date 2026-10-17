@@ -62,6 +62,14 @@ zero-filled bytes. These checks establish local storage and layout;
 they do not claim that the surrounding uninitialized region matches.
 `make verify-barracks-data` retains the barracks-only check.
 
+Three explicitly marked partial-section checks cover `game.c`: two scalar
+state runs of 112 and 21 bytes, and the 6,652-byte run of scripts, mission
+records, maneuver tables, and display literals. Each permits only one address
+shift and checks its declarations and relocation set. They also require the
+current containing COFF section size of 6,788 bytes. The unresolved four bytes
+between the two state runs prevents a complete-unit layout claim; these
+checks do not silently treat that gap as matched.
+
 `config/data-literals.h` contains comparison metadata for anonymous literal
 spans. It is never compiled or included by game code. The data-check targets
 append it to `out/globals-data-audit.c`; source-level global audits continue
@@ -88,7 +96,8 @@ LINK 4.20 omits private C data symbols from its public map. The build preserves
 that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
 `WC1.map` with the four private damage symbols, seven private view symbols,
 five private music symbols, eight private ending symbols, two private
-comm symbols, two private joycal symbols, and ten private dib symbols added.
+comm symbols, two private joycal symbols, ten private dib symbols, and
+eighteen private game symbols added.
 Their addresses come from the object's COFF symbols, public section anchors,
 and linked `DIR32`
 references with PE `HIGHLOW` relocations. Conflicting anchors or unresolved

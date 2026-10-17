@@ -331,21 +331,8 @@ extern MissionNavPoint aMissionNavPoints[MISSION_NAV_POINT_COUNT]; /* 0x0046c2f0
 extern MissionShipRecord
     aMissionShips[MISSION_SHIP_STORAGE_COUNT]; /* 0x0046c948 */
 extern short asIntroCameraSequence[]; /* 0x0046c090 */
-extern short asCannedSequence32[]; /* 0x0046c0b8 */
-extern short asCannedSequence33[]; /* 0x0046c0d8 */
-extern short asCannedSequence34[]; /* 0x0046c0f0 */
-extern short asCannedSequence35[]; /* 0x0046c108 */
 extern short asCampaignVictoryViewScript[24]; /* 0x0046c160 */
-extern short asCannedSequence37[]; /* 0x0046c190 */
-extern short asCannedSequence38[]; /* 0x0046c1b0 */
-extern short asCannedSequence39[]; /* 0x0046c1d0 */
-extern short asCannedSequence40[]; /* 0x0046c1e0 */
-extern short asCannedSequence41[]; /* 0x0046c230 */
 extern short asTigerClawEscapeViewScript[12]; /* 0x0046c238 */
-extern short asCannedSequence42[]; /* 0x0046c250 */
-extern short asCannedSequence43[]; /* 0x0046c270 */
-extern short asCannedSequence44[]; /* 0x0046c2a0 */
-extern short asCannedSequence45[]; /* 0x0046c2e8 */
 extern signed char acDirectionShapeFrame[ /* 0x0046db28 */
     DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT];
 extern signed char acDirectionShapeFlip[ /* 0x0046dbe8 */
@@ -357,11 +344,6 @@ extern short nScreenWidth; /* 0x0046daa4 */
 extern short nScreenHeight; /* 0x0046daa8 */
 extern ScreenViewportGeometry aScreenViewportGeometry[6]; /* 0x0046dab8 */
 extern int aiIntelligenceEvent[10]; /* 0x0046d368 */
-extern signed char aDefenseManeuversNovice[8]; /* 0x0046d390 */
-extern signed char aDefenseManeuversVeteran[8]; /* 0x0046d398 */
-extern signed char aDefenseManeuversElite[16]; /* 0x0046d3a0 */
-extern signed char aDefenseManeuversAce[16]; /* 0x0046d3b0 */
-extern signed char aDefenseManeuversBoss[16]; /* 0x0046d3c0 */
 extern signed char *apDefenseManeuvers[5]; /* 0x0046d3d0 */
 extern ManeuverChoice aRatedManeuverChoices[13][9][3]; /* 0x0046d3e8 */
 extern ManeuverChoice aKilrathiManeuverChoices[5][9][3]; /* 0x0046d808 */
