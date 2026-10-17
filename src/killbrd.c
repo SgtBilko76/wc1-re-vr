@@ -616,46 +616,41 @@ void ShowChalkBoard(void)
     TextContext context;
     TextContext *previousContext;
     unsigned char *background;
+    unsigned char done;
     unsigned char savedInputMode;
     char pilotName[20];
-    short done;
     short index;
     short other;
     short pilot;
-    short rank;
     short rowY;
     short swap;
-    int score;
-    int otherScore;
 
+    done = 0;
     for (index = 0; index < 9; index++) {
         for (other = index; other < 9; other++) {
-            pilot = asChalkBoardPilotOrder[index];
             swap = asChalkBoardPilotOrder[other];
-            score = aPilotRecords[pilot].kills * 1000 -
-                    aPilotRecords[pilot].missions + 1;
-            otherScore = aPilotRecords[swap].kills * 1000 -
-                         aPilotRecords[swap].missions + 1;
-            if (score < otherScore) {
+            if (aPilotRecords[asChalkBoardPilotOrder[index]].kills * 1000 -
+                    aPilotRecords[asChalkBoardPilotOrder[index]].missions + 1 <
+                aPilotRecords[swap].kills * 1000 -
+                    aPilotRecords[swap].missions + 1) {
+                asChalkBoardPilotOrder[other] =
+                    asChalkBoardPilotOrder[index];
                 asChalkBoardPilotOrder[index] = swap;
-                asChalkBoardPilotOrder[other] = pilot;
             }
         }
     }
 
-    memset(&context, 0, sizeof(context));
+    context.colour = 0;
+    context.backgroundColour = 0;
+    context.viewport = &stModalSourceViewport;
     stChalkBoardDate = *pCurrentCampaignDate;
     background = FetchDiskPacketRetrying(5, 2, 0);
     previousContext = pCurrentTextContext;
-    stModalSourceViewport = stScreen;
-    context.viewport = &stModalSourceViewport;
-    context.text = szDefaultTextBuffer;
-    context.textCursor = szDefaultTextBuffer;
     InitializeTextContextFromFont(&context, 3,
                                   cViewportClearColour, -1);
+    context.text = szDefaultTextBuffer;
     savedInputMode = bInputMode;
     bInputMode = 1;
-    done = 0;
     do {
         PumpWindowMessages();
         if (PeekInputEvent(&event, 10) != 0 ||
@@ -679,14 +674,9 @@ void ShowChalkBoard(void)
             pilot = asChalkBoardPilotOrder[index];
             DosStrcpy(pilotName, aPilotRecords[pilot].name);
             strupr(pilotName);
-            rank = aPilotRecords[pilot].rank;
-            if (rank < 0)
-                rank = 0;
-            if (rank > 4)
-                rank = 4;
             DrawFormattedText(szChalkBoardPilotFormat,
                               10, rowY,
-                              apszPilotRankNames[rank],
+                              apszPilotRankNames[aPilotRecords[pilot].rank],
                               pilotName);
             if (pilot == 8 ||
                 stCampaignState

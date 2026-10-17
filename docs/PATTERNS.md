@@ -192,6 +192,17 @@ for similarity decisions.
   Saving the frame first changes register scheduling. These source forms
   reproduce the complete 2,976-byte function span, including both switch
   tables, under the relocated function comparison.
+- `ShowChalkBoard` initializes only the text context's two colour bytes,
+  assigns its existing modal viewport, and installs the text buffer after
+  loading the font. It neither clears the whole context nor copies the screen
+  viewport, and its rank lookup has no clamp. Its exit flag is a byte set to
+  zero before sorting. During sorting, retain the candidate pilot's short
+  index but reload the current slot when swapping; retaining both indices
+  extends register lifetimes and adds a spill. These changes recover the
+  original function size and 98.51% mnemonic similarity. The sorting address
+  calculations and context-initialization scheduling still differ; cached
+  score expressions, reversed comparisons, and extra cached indices did not
+  resolve them.
 - `ReadTextInput` dispatches both the input byte and the input mode with
   switches. This retains the zero-extended key for character classification
   and places Enter/Escape and uppercase/numeric branches after their defaults.
