@@ -1,11 +1,53 @@
 /*
  *  DirectDraw back end.
  *
- *  Address range 0x432000-0x43390f (see docs/ORDER.md).
+ *  Address range 0x431f00-0x43390f (see docs/ORDER.md).
  *  Boundary evidence: PROVEN: the named DirectDraw routines are followed by
  *  DirectDrawResultToText and its compiler-generated switch tables.
+ *  ThrottleFrameAndDrawFps belongs here: it uses this unit's statics
+ *  szFrameRateText and fMeasuredFrameRate, and its 1000.0 constant follows
+ *  the unit's DirectDraw GUIDs in .rdata.
  */
 #include "wc1.h"
+
+/* Function start: 0x431F00 */
+void ThrottleFrameAndDrawFps(HDC dc)
+{
+    DWORD now;
+
+    if (bShowFrameRate != 0) {
+        sprintf((char *)szFrameRateText, "%f",
+                fMeasuredFrameRate);
+        TextOutA(dc, 0, 0, (char *)szFrameRateText,
+                 strlen((char *)szFrameRateText));
+    }
+
+    if (stMouseCursorState.viewport->pixels ==
+            pDIBPixelBuffer) {
+        while (timeGetTime() < (DWORD)nFrameDeadlineMs) {
+            Sleep(0);
+            RefreshMouseCursorDisplay();
+        }
+    } else {
+        while (timeGetTime() < (DWORD)nFrameDeadlineMs)
+            Sleep(0);
+    }
+
+    if (bShowFrameRate != 0) {
+        if (nPreviousFrameTimeMs != 0) {
+            now = timeGetTime();
+            fMeasuredFrameRate =
+                1000.0f / ((float)now - nPreviousFrameTimeMs);
+        }
+        nPreviousFrameTimeMs = timeGetTime();
+        sprintf((char *)szFrameRateText, "%f",
+                fMeasuredFrameRate);
+        TextOutA(dc, 0, 0, (char *)szFrameRateText,
+                 strlen((char *)szFrameRateText));
+    }
+
+    nFrameDeadlineMs = timeGetTime() + nFrameIntervalMs;
+}
 
 /* Function start: 0x432050 */
 void ReportSpaceFlightMaxFps(float adjustment)

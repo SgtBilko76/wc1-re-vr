@@ -313,8 +313,7 @@ DREAMM_MOUNTS = -mount rw:C=hd \
 # its range and the evidence for it in its header comment.
 SRCS_ORDERED_CORE = \
 	src/winmain.c \
-	src/sysinput.c \
-	src/cdrom.c \
+	src/winsys.c \
 	src/mono.c \
 	src/auto.c \
 	src/cmpgn.c \
@@ -408,7 +407,7 @@ MODERN_GAMEPLAY_SRCS = \
 	src/auto.c \
 	src/barracks.c \
 	src/brains.c \
-	src/cdrom.c \
+	src/winsys.c \
 	src/cmpgn.c \
 	src/cockpt.c \
 	src/dib.c \
@@ -433,7 +432,6 @@ MODERN_GAMEPLAY_SRCS = \
 	src/smart.c \
 	src/spc.c \
 	src/strdos.c \
-	src/sysinput.c \
 	src/system.c \
 	src/text.c \
 	src/winmain.c

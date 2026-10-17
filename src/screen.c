@@ -1,7 +1,7 @@
 /*
  *  Screen scopes, prompts and the comm menu.
  *
- *  Address range 0x42efc0-0x431fff (provisional -- see docs/ORDER.md).
+ *  Address range 0x42efc0-0x431eff (provisional -- see docs/ORDER.md).
  *  Boundary evidence: PushMemoryStackFrame/ShowChoosePrompt/ShowEnemyTargetSelectMenu.
  */
 #include "wc1.h"
@@ -2103,43 +2103,4 @@ void __stdcall UnionRectBounds(ShortRect *destination,
         first->right : second->right;
     destination->bottom = first->bottom > second->bottom ?
         first->bottom : second->bottom;
-}
-
-/* Function start: 0x431F00 */
-void ThrottleFrameAndDrawFps(HDC dc)
-{
-    DWORD now;
-
-    if (bShowFrameRate != 0) {
-        sprintf((char *)szFrameRateText, "%f",
-                fMeasuredFrameRate);
-        TextOutA(dc, 0, 0, (char *)szFrameRateText,
-                 strlen((char *)szFrameRateText));
-    }
-
-    if (stMouseCursorState.viewport->pixels ==
-            pDIBPixelBuffer) {
-        while (timeGetTime() < (DWORD)nFrameDeadlineMs) {
-            Sleep(0);
-            RefreshMouseCursorDisplay();
-        }
-    } else {
-        while (timeGetTime() < (DWORD)nFrameDeadlineMs)
-            Sleep(0);
-    }
-
-    if (bShowFrameRate != 0) {
-        if (nPreviousFrameTimeMs != 0) {
-            now = timeGetTime();
-            fMeasuredFrameRate =
-                1000.0f / ((float)now - nPreviousFrameTimeMs);
-        }
-        nPreviousFrameTimeMs = timeGetTime();
-        sprintf((char *)szFrameRateText, "%f",
-                fMeasuredFrameRate);
-        TextOutA(dc, 0, 0, (char *)szFrameRateText,
-                 strlen((char *)szFrameRateText));
-    }
-
-    nFrameDeadlineMs = timeGetTime() + nFrameIntervalMs;
 }

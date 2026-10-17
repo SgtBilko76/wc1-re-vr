@@ -63,8 +63,7 @@ sits at one constant offset from the original.
 | Source | Range |
 | --- | --- |
 | `src/winmain.c` | `0x401000`–`0x402DFF` |
-| `src/sysinput.c` | `0x402E00`–`0x4030FF` |
-| `src/cdrom.c` | `0x403100`–`0x4034FF` |
+| `src/winsys.c` | `0x402E00`–`0x4034FF` |
 | `src/mono.c` | `0x403500`–`0x403E4F` |
 | `src/auto.c` | `0x403E50`–`0x40460F` |
 | `src/cmpgn.c` | `0x404610`–`0x40609F` |
@@ -86,8 +85,8 @@ sits at one constant offset from the original.
 | `src/pload.c` | `0x42B000`–`0x42B3FF` |
 | `src/sound.c` | `0x42B400`–`0x42CFFF` |
 | `src/music.c` | `0x42D000`–`0x42EFFF` |
-| `src/screen.c` | `0x42F000`–`0x431FFF` |
-| `src/dib.c` | `0x432000`–`0x43390F` |
+| `src/screen.c` | `0x42EFC0`–`0x431EFF` |
+| `src/dib.c` | `0x431F00`–`0x43390F` |
 | `src/text.c` | `0x433910`–`0x433ABF` |
 | `src/smart.c` | `0x433AC0`–`0x434CCF` |
 | `src/mathfp.c` | `0x434CD0`–`0x4353FF` |
