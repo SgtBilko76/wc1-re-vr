@@ -1,11 +1,154 @@
 /*
  *  Full-screen presentation screens.
  *
- *  Address range 0x437000-0x439c3f (provisional -- see docs/ORDER.md).
- *  Boundary evidence: unbroken run of Blit* screens plus ShowGetReady/Victory/GameOver;
+ *  The original function window is recorded in docs/ORDER.md.
+ *  Briefing and medal state precedes this unit's text-format literals;
  *  the hand-written raster library in src/raster.asm follows.
  */
 #include "wc1.h"
+
+/* 0x0046e188 */
+CampaignDate stSavedCampaignDate = {20, 340};
+/* 0x0046e190 */
+TalkingHeadOrigin aTalkingHeadOrigins[11] = {
+    {161, 60, 161, 90},
+    {161, 60, 161, 87},
+    {160, 60, 159, 90},
+    {161, 60, 161, 90},
+    {161, 60, 161, 90},
+    {161, 60, 161, 90},
+    {161, 60, 161, 90},
+    {161, 60, 161, 90},
+    {161, 60, 161, 90},
+    {161, 60, 161, 90},
+    {160, 53, 160, 88},
+};
+/* 0x0046e1e8 */
+static signed char abBriefingSmallCharacterAnimation[24] = {
+    1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0
+};
+/* 0x0046e200 */
+static signed char abBriefingLargeCharacterAnimation[24] = {
+    0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0
+};
+/* 0x0046e218 */
+BriefingCharacterLayout aBriefingCharacters[8] = {
+    { 60, 123,  10, 95, 176, 1, 0, 2,
+      abBriefingSmallCharacterAnimation, 0},
+    {316, 123, 264, 94, 176, 1, 2, 1,
+      abBriefingSmallCharacterAnimation, 0},
+    {193, 123, 141, 95, 176, 1, 3, 1,
+      abBriefingSmallCharacterAnimation, 0},
+    {250, 124, 199, 93, 176, 1, 4, 1,
+      abBriefingSmallCharacterAnimation, 0},
+    {124, 123,  71, 94, 176, 1, 5, 1,
+      abBriefingSmallCharacterAnimation, 0},
+    {103, 122,  29, 76, 256, 1, 6, 2,
+      abBriefingLargeCharacterAnimation, 0},
+    {191, 122, 118, 76, 256, 1, 8, 1,
+      abBriefingLargeCharacterAnimation, 0},
+    {287, 122, 212, 76, 256, 1, 9, 1,
+      abBriefingLargeCharacterAnimation, 0}
+};
+/* 0x0046e2d0 */
+static short asMedalDisplayX[5] = {191, 199, 207, 216, 228};
+/* 0x0046e2e0 */
+const char *apszMedalNames[5] = {
+    "Bronze Star",
+    "Silver Star",
+    "Gold Star",
+    "Golden Sun",
+    "Terran Medal of Valor"
+};
+/* 0x0046e2f4 */
+static unsigned char *pMedalSceneShape = 0;
+/* 0x0046e2f8 */
+static const char *pszMedalsPilotSummary =
+    "$R $N, aka $C.\n$S system, dateline $D.";
+/* 0x0046e300 */
+static signed char aBriefingPortraitOffsetX[8][12] = {
+    {  0,  0, -2, -2, -1, -2, -4, -3, -5, -7, -7, -4},
+    { -1,  0, -2, -3, -3, -4, -3, -4, -6, -8, -7, -6},
+    {  0,  1,  0,  0,  0,  0,  0, -1, -2, -4, -5, -3},
+    {  0, -1, -2, -3, -1, -3, -2, -3, -4, -4, -5, -4},
+    {  2,  0,  0,  0,  0,  0,  0,  0, -2, -3, -4, -2},
+    {  1,  1,  1,  0,  1,  0, -6, -4, -4, -9, -8, -6},
+    { -2, -1, -4, -4, -4, -7, -8, -7, -5, -8, -9, -7},
+    {  0,  0,  0,  0,  0, -3, -3, -7, -5, -7, -8, -7}
+};
+/* 0x0046e360 */
+static signed char aBriefingPortraitOffsetY[8][12] = {
+    { -6, -2, -3, -1, -4,-10,-12,-20,-32,-38,-42,-43},
+    { -5,  0, -4, -4, -7,-12,-16,-23,-32,-37,-42,-42},
+    { -5, -3,  0,  1,  0, -7,-13,-23,-33,-38,-42,-42},
+    { -3, -2, -1,  0, -5,-10,-16,-25,-33,-38,-41,-41},
+    { -6,  0,  2,  0, -6,-11,-18,-25,-33,-39,-42,-42},
+    { -8, -2,  1, -3, -6,-16,-23,-35,-46,-55,-61,-61},
+    { -6, -4, -3, -5, -9,-14,-23,-34,-49,-57,-61,-62},
+    {-10, -5,  0,  0, -3, -7,-24,-32,-47,-55,-59,-60}
+};
+/* 0x0046e3c0 */
+static short aBriefingPortraitScale[8][12] = {
+    {357, 357, 357, 359, 355,   0, 352, 355, 353, 353, 355,   1},
+    {355,   0, 354, 354, 352, 354, 355, 355, 352, 352, 353, 350},
+    {354, 354, 359,   0, 358, 357, 357, 356, 357,   0,   0,   2},
+    {354, 354, 353, 356, 358, 356, 356, 355, 356,   0, 357, 357},
+    {  0,   0,   0,   0, 358,   0, 358,   0,   0,   4,   0, 359},
+    {  0, 358, 358,   0, 357,   0, 350, 354, 357, 354,   0, 358},
+    {356, 356, 352, 354, 352, 349, 350, 352,   0,   0,   0,   0},
+    {  0,   0,   0, 359,   0, 350, 354, 350, 356, 357, 357, 357}
+};
+/* 0x0046e480 */
+static int aiBriefingLeftPanelVelocity[12] = {
+    1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4
+};
+/* 0x0046e4b0 */
+static int aiBriefingPodiumVelocity[12] = {
+    1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6
+};
+/* 0x0046e4e0 */
+static int aiBriefingRightPanelVelocity[12] = {
+    2, 2, 3, 4, 4, 4, 5, 5, 5, 6, 7, 8
+};
+/* 0x0046e510 */
+static signed char abBriefingPodiumFrames[40] = {
+     0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+    10, 11, 12, 13, 14, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 14, 13, 12, 11, 10,  9,
+     8,  7,  6,  5,  4,  0,  0,  0,  0,  0
+};
+/* The shot uses 48 samples; the original table retains two more -2 samples. */
+/* 0x0046e538 */
+static signed char abDebriefingEstablishDeltas[50] = {
+    -2, -2, -1, -1,  0,  0,  1,  0,
+     1,  0,  1,  0,  1,  0,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  0,  1,  0,  1,
+     0,  1,  0,  1,  0,  0, -1, -1, -2, -2
+};
+/* 0x0046e56c */
+static short nDebriefingLeftX = 0;
+/* 0x0046e570 */
+static short nDebriefingPilotX = 80;
+/* 0x0046e574 */
+static short nDebriefingRightX = 278;
+/* 0x0046e578 */
+static short nDebriefingOfficerX = 200;
+/* 0x0046e57c */
+short nDebriefingPodiumX = 344;
+/* 0x0046e580 */
+short nConversationCharacter = -1;
+/* 0x0046e584 */
+short nTalkingHeadFace = -1;
+/* 0x0046e588 */
+short nConversationBackdropFrame = -1;
+/* 0x0046e58c */
+int bConversationConstellation = 0;
+/* 0x0046e590 */
+int bConversationOverlay = 0;
 
 /* Function start: 0x436D00 */
 unsigned int LoadBriefingRoom(void)
@@ -72,7 +215,7 @@ unsigned int ViewMedals(void)
         ClearViewport(&stConversationTextViewport,
                       cBlackColour);
         FormatTextBufferFromStart(
-            szViewMedalsTextFormat, 0, 160,
+            "%X%Y%F%s%P", 0, 160,
             cViewportClearColour,
             szTextScratchBuffer);
         DIBslam();
@@ -156,7 +299,7 @@ unsigned int DrawMedalChest(char *text, short duration)
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szMedalChestTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
@@ -213,7 +356,7 @@ unsigned int DrawMedalLongShot(short *animation, char *text,
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szMedalLongShotTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
@@ -277,7 +420,7 @@ unsigned int MedalEstablish(char *text, short duration)
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szMedalEstablishTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
@@ -315,7 +458,7 @@ unsigned int PinMedal(char *text, short duration)
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szPinMedalTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
@@ -351,6 +494,7 @@ unsigned int DrawMedals(void)
     short badge;
     short medal;
     short rowY;
+    short medalRowY;
     short stack;
     short x;
 
@@ -371,7 +515,7 @@ unsigned int DrawMedals(void)
                      0, 255, 16);
     for (badge = 0; badge < 12; badge++) {
         if (stCampaignState.badges[badge] != 0) {
-            if (x > 231) {
+            if (x >= 232) {
                 rowY = (short)(rowY + 3);
                 x = 188;
             }
@@ -381,11 +525,11 @@ unsigned int DrawMedals(void)
             x = (short)(x + 11);
         }
     }
-    rowY = (short)(rowY + 5);
+    medalRowY = (short)(rowY + 5);
     for (medal = 0; medal < 5; medal++) {
         if (stCampaignState.medals[medal] != 0) {
             x = asMedalDisplayX[medal];
-            stack = rowY;
+            stack = medalRowY;
             if (medal < 3) {
                 badge = 0;
                 while (badge < (signed char)
@@ -423,7 +567,7 @@ unsigned int EstablishingShot(char *text, short duration)
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szEstablishingShotTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
@@ -485,8 +629,8 @@ unsigned int DrawBriefingLongShot(void)
 /* Function start: 0x437980 */
 unsigned int ReturnToBriefingLongShot(char *text, short duration)
 {
-    char active[10] = "";
-    BriefingCharacterLayout *layout;
+    char active[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    signed char *phase;
     short character;
     short escaped;
     short frame;
@@ -501,7 +645,7 @@ unsigned int ReturnToBriefingLongShot(char *text, short duration)
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szBriefingReturnTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
@@ -517,18 +661,18 @@ unsigned int ReturnToBriefingLongShot(char *text, short duration)
         DrawSpriteDefault(&stSceneBuffer, 241, 64,
                           pBriefingAnimationShape, 22);
         for (character = 0; character < 8; character++) {
-            layout = &aBriefingCharacters[character];
             if (active[character] == 0 &&
                 RandomBelowOrEqual(5) == 0)
                 active[character] = 1;
+            phase = &aBriefingCharacters[character].animationPhase;
             DrawBriefingCharacter(
-                character, layout->animationPhase, 0,
+                character, *phase, 0,
                 (const signed char *)aBriefingPortraitOffsetX +
-                    layout->animationPhase * 12,
+                    *phase * 12,
                 (const signed char *)aBriefingPortraitOffsetY +
-                    layout->animationPhase * 12);
-            if (active[character] == 1 && layout->animationPhase < 11)
-                layout->animationPhase++;
+                    *phase * 12);
+            if (active[character] == 1 && *phase < 11)
+                (*phase)++;
         }
         RefreshMemoryStatusOverlay();
         escaped = CheckEscaped();
@@ -540,7 +684,7 @@ unsigned int ReturnToBriefingLongShot(char *text, short duration)
         frame++;
         DIBslam();
         DIBslamReal();
-        if (frame > 39)
+        if (frame >= 40)
             break;
     }
     WaitForSceneAdvance(duration, 0);
@@ -574,7 +718,7 @@ unsigned int Dismissed(char *text, short duration)
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szDismissedTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
@@ -675,6 +819,7 @@ unsigned int DebriefingEstablishingShot(char *text, short duration)
     const signed char *delta;
     short escaped;
     short frame;
+    short skip;
 
     nDebriefingPilotX = 80;
     nDebriefingRightX = 278;
@@ -685,7 +830,7 @@ unsigned int DebriefingEstablishingShot(char *text, short duration)
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szDebriefEstablishTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
@@ -707,10 +852,12 @@ unsigned int DebriefingEstablishingShot(char *text, short duration)
         nDebriefingRightX =
             (short)(nDebriefingRightX -
                     MaxShort((short)(delta[0] + 3), 0));
+        skip = nFrameSkipCounter;
         if (frame == 47)
-            nFrameSkipCounter = 1;
-        nFrameSkipCounter--;
-        if (nFrameSkipCounter < 1) {
+            skip = 1;
+        skip--;
+        nFrameSkipCounter = skip;
+        if (skip < 1) {
             nFrameSkipCounter = nFrameSkip;
             DrawDebriefingLongShot();
             RefreshMemoryStatusOverlay();
@@ -1316,7 +1463,7 @@ unsigned int DrawFuneralLongShot(short shot, char *text, short duration)
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
-    FormatTextBufferFromStart(szFuneralLongShotTextFormat,
+    FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);

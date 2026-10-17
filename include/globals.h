@@ -354,47 +354,14 @@ extern int nMouseCursorShowCount; /* 0x0046daa0 */
 extern short asPilotHandOrigins[10]; /* 0x0046e120 */
 extern CampaignDate stSavedCampaignDate; /* 0x0046e188 */
 extern TalkingHeadOrigin aTalkingHeadOrigins[11]; /* 0x0046e190 */
-extern signed char abBriefingSmallCharacterAnimation[24]; /* 0x0046e1e8 */
-extern signed char abBriefingLargeCharacterAnimation[24]; /* 0x0046e200 */
 extern BriefingCharacterLayout aBriefingCharacters[8]; /* 0x0046e218 */
-extern short asMedalDisplayX[5]; /* 0x0046e2d0 */
 extern const char *apszMedalNames[5]; /* 0x0046e2e0 */
-extern unsigned char *pMedalSceneShape; /* 0x0046e2f4 */
-extern const char *pszMedalsPilotSummary; /* 0x0046e2f8 */
-extern signed char aBriefingPortraitOffsetX[8][12]; /* 0x0046e300 */
-extern signed char aBriefingPortraitOffsetY[8][12]; /* 0x0046e360 */
-extern short aBriefingPortraitScale[8][12]; /* 0x0046e3c0 */
-extern int aiBriefingLeftPanelVelocity[12]; /* 0x0046e480 */
-extern int aiBriefingPodiumVelocity[12]; /* 0x0046e4b0 */
-extern int aiBriefingRightPanelVelocity[12]; /* 0x0046e4e0 */
-extern signed char abBriefingPodiumFrames[40]; /* 0x0046e510 */
-extern signed char abDebriefingEstablishDeltas[48]; /* 0x0046e538 */
-extern short nDebriefingLeftX; /* 0x0046e56c */
-extern short nDebriefingPilotX; /* 0x0046e570 */
-extern short nDebriefingRightX; /* 0x0046e574 */
-extern short nDebriefingOfficerX; /* 0x0046e578 */
 extern short nDebriefingPodiumX; /* 0x0046e57c */
 extern short nConversationCharacter; /* 0x0046e580 */
 extern short nTalkingHeadFace; /* 0x0046e584 */
 extern short nConversationBackdropFrame; /* 0x0046e588 */
 extern int bConversationConstellation; /* 0x0046e58c */
 extern int bConversationOverlay; /* 0x0046e590 */
-extern char szBronzeStar[12]; /* 0x0046e594 */
-extern char szSilverStar[12]; /* 0x0046e5a0 */
-extern char szGoldStar[12]; /* 0x0046e5ac */
-extern char szGoldenSun[12]; /* 0x0046e5b8 */
-extern char szTerranMedalOfValor[24]; /* 0x0046e5c4 */
-extern char szMedalsPilotSummary[40]; /* 0x0046e5dc */
-extern char szViewMedalsTextFormat[12]; /* 0x0046e604 */
-extern char szMedalChestTextFormat[12]; /* 0x0046e610 */
-extern char szMedalLongShotTextFormat[12]; /* 0x0046e61c */
-extern char szMedalEstablishTextFormat[12]; /* 0x0046e628 */
-extern char szPinMedalTextFormat[12]; /* 0x0046e634 */
-extern char szEstablishingShotTextFormat[12]; /* 0x0046e640 */
-extern char szBriefingReturnTextFormat[12]; /* 0x0046e64c */
-extern char szDismissedTextFormat[12]; /* 0x0046e658 */
-extern char szDebriefEstablishTextFormat[12]; /* 0x0046e664 */
-extern char szFuneralLongShotTextFormat[12]; /* 0x0046e670 */
 extern void *apRasterDriverCallbacks[13]; /* 0x0046e69c */
 extern char szRasterDriverName[13]; /* 0x0046e6d0 */
 extern unsigned char *pRLEEncodeBuffer; /* 0x0046e6dd */

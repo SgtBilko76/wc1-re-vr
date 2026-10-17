@@ -47,6 +47,23 @@ for similarity decisions.
   include newlines, and `StopMusic` prints a trailing space before its stream
   stop and a separate newline afterwards. Normalized function comparisons
   alone did not expose these different strings; linked literal-span checks do.
+- `ReturnToBriefingLongShot` clears ten local flag bytes with ten explicit
+  zero initializers. An empty-string initializer instead emits a separate
+  literal and clears the trailing bytes through a different sequence. Its
+  retained character pointer addresses the animation-phase field, after the
+  random activation test, rather than the whole character record. Test the
+  frame limit against 40 to retain the original `CMP`/`JL` pair. These forms
+  restore the function's size and mnemonic sequence; some registers differ.
+- `DebriefingEstablishingShot` reads the frame-skip counter into a short local,
+  optionally replaces it with one on the last frame, then decrements and
+  stores that local before testing it. Separate operations on the global
+  keep an unnecessary constant in a saved register and add sixteen bytes to
+  the aligned span. The retained short value reproduces the original sequence.
+- `DrawMedals` keeps the medal row's base coordinate separately from the
+  badge row coordinate, and wraps badges at `x >= 232`. Keeping that base
+  in a short local restores the aligned function size. Its addition/load
+  order and register allocation still differ; a separate increment followed
+  by a copy lets CL coalesce the locals and loses the recovered size again.
 - `ProcessMusicScriptCommand` returns zero when the track is disabled or
   commands are suppressed, and one after dispatch. Its stop-command and
   repeated-track exits leave EAX unspecified, so retain their bare `return`

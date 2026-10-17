@@ -70,6 +70,14 @@ current containing COFF section size of 6,788 bytes. The unresolved four bytes
 between the two state runs prevents a complete-unit layout claim; these
 checks do not silently treat that gap as matched.
 
+Two more partial-section checks cover `screens.c`: its 288-byte character-data
+run and its 970-byte medal, animation, and literal run. They verify all 27
+declarations and 14 pointer relocations and require a 1,258-byte containing
+COFF section. The intervening 40 zero bytes remain unrecovered, so these
+checks do not establish a complete-unit match. The second run includes the
+full 50-byte debriefing movement table and all 262 bytes of literal storage,
+with each repeated format at its original relative position.
+
 `config/data-literals.h` contains comparison metadata for anonymous literal
 spans. It is never compiled or included by game code. The data-check targets
 append it to `out/globals-data-audit.c`; source-level global audits continue
@@ -96,8 +104,8 @@ LINK 4.20 omits private C data symbols from its public map. The build preserves
 that map as `out/WC1.link.map`, then `bin/appendStaticSymbols.py` copies it to
 `WC1.map` with the four private damage symbols, seven private view symbols,
 five private music symbols, eight private ending symbols, two private
-comm symbols, two private joycal symbols, ten private dib symbols, and
-eighteen private game symbols added.
+comm symbols, two private joycal symbols, ten private dib symbols,
+eighteen private game symbols, and seventeen private screens symbols added.
 Their addresses come from the object's COFF symbols, public section anchors,
 and linked `DIR32`
 references with PE `HIGHLOW` relocations. Conflicting anchors or unresolved

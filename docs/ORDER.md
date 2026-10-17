@@ -165,8 +165,8 @@ sits at one constant offset from the original.
 | `src/smart.c` | `0x433AC0`–`0x434CCF` |
 | `src/mathfp.c` | `0x434CD0`–`0x4353FF` |
 | `src/strdos.c` | `0x435400`–`0x4355EF` |
-| `src/eventmgr.c` | `0x4355F0`–`0x436FFF` |
-| `src/screens.c` | `0x437000`–`0x439C3F` |
+| `src/eventmgr.c` | `0x4355F0`–`0x436CFF` |
+| `src/screens.c` | `0x436D00`–`0x439C3F` |
 | `src/raster.asm` | `0x439C40`–`0x43F635` |
 | `src/killbrd.c` | `0x43F640`–`0x440BFF` |
 | `src/gr.c` | `0x440C00`–`0x44269F` |
@@ -543,6 +543,32 @@ pool. The gate checks all 18 pointer relocations against their positions
 within this run, with no string fallback. Array annotations precede their
 declarations, and the canned-script lengths are explicit so the ordinary
 global-data audit also checks their complete contents.
+
+The briefing and medal unit begins with `LoadBriefingRoom` at `0x00436D00`,
+so the `eventmgr.c` placement window ends at `0x00436CFF`. Its initialized
+state begins at `0x0046E188`, after the keyboard diagnostic. The character,
+portrait, medal, and scene-animation tables precede the medal-name literals
+at `0x0046E594`; ten separate text-format literals follow in function order.
+The last `"Game Over"` terminator at `0x0046E699` precedes the raster object.
+These 27 declarations now reside in `screens.c`, in original address order;
+17 are private, while the ten used by other units retain shared declarations.
+
+Two partial-section checks cover the 288-byte character-data run at
+`0x0046E188` and the 970-byte medal/animation/literal run at `0x0046E2D0`.
+They verify all 14 pointer relocations, including the animation sequences
+and the medal names, with one address shift per run. The 40 zero bytes
+between the eight known character records and the medal-position array
+remain unexplained. No extra records or padding declarations are supplied:
+the current `screens.obj` section is 1,258 bytes versus the original
+1,298-byte span.
+
+The debriefing movement table contains 50 signed samples. The original
+nonzero bytes at `0x0046E568` and `0x0046E569` are its final two `-2` samples,
+followed by two alignment bytes before the first position word. The draw
+loop still uses only 48 samples. Keeping ten explicit zero initializers for
+`ReturnToBriefingLongShot`'s local flags also removes the extra empty-string
+literal produced by `char active[10] = ""`; the complete 262-byte literal
+pool now has the original contents, duplicate formats, and alignment.
 
 Private C definitions require separate evidence: a trial moving the two
 MONODEBG variables to `static` storage in `mono.c` emitted the device handle

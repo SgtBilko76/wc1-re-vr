@@ -1,7 +1,7 @@
 /*
  *  Event manager, mouse pointer, and frame timer.
  *
- *  Address range 0x4355f0-0x436fff (provisional -- see docs/ORDER.md).
+ *  Address range 0x4355f0-0x436cff (provisional -- see docs/ORDER.md).
  *  The FM Towns executable preserves the original source name
  *  "source\\eventmgr.c" for this unit.
  */
