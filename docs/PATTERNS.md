@@ -84,6 +84,26 @@ for similarity decisions.
   mnemonic sequence. Seven instructions still differ in comparison operand
   order or weapon-loop registers. Reusing the frame index, moving the weapon
   local declaration, and reversing the source comparison did not resolve them.
+- `draw_3d_scanner` retains one grid value across all four pixel calls but
+  reloads the current cockpit's scanner coordinates at each call. Its grid
+  counter is 32-bit, unlike the short object index. Initialize the counter
+  before testing the first grid entry, and initialize the grid pointer only
+  inside that guard. The target blink uses a short signed remainder by two
+  and selects its colour in the draw-call argument; assigning a replacement
+  colour first omits the original sign extension and branch sequence. This
+  restores the function's size and mnemonics, with register and comparison
+  operand differences still remaining.
+- `vdu_polygon` indexes the cockpit-bar table by view and bar directly.
+  Initialize its retained length word within the extent expression; loading
+  it beforehand or caching the view index changes allocation and shortens
+  the routine. The frame swap saves the empty frame first. Direct indexing
+  recovers sixteen missing bytes, but the viewport bound reads and register
+  allocation remain unresolved. Chained field assignments and reusing the
+  percentage argument did not improve the match; copying the frame bytes
+  with `memcpy` also enlarged the local frame and is not retained. Removing
+  the length local leaves this function's instructions unchanged but alters
+  register allocation in later mission functions. Check the entire unit
+  when changing locals, not just the edited function.
 - `object_collision` reloads ownership, object classes, and its own mass
   after calls; caching their values across those calls removes original reads.
   Five vector workspaces suffice: one holds the projectile force, separation,

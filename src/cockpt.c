@@ -349,11 +349,6 @@ void EraseCockpitReadoutRegion(Viewport *viewport, short left,
 /* Function start: 0x413DA0 */
 void vdu_polygon(signed char bar, short percent)
 {
-#ifdef SDL_PORT
-    const CockpitBarDefinition *definition;
-#else
-    int index;
-#endif
     short direction;
     short left;
     short top;
@@ -365,52 +360,29 @@ void vdu_polygon(signed char bar, short percent)
     signed char emptyFrame;
     signed char swapFrame;
 
-#ifdef SDL_PORT
-    definition = &aaCockpitBars[
-        (int)cCockpitView][(int)bar];
-    length = definition->length;
-#else
-    index = (int)bar + (int)cCockpitView * 8;
-    length = aaCockpitBars[0][index].length;
-#endif
-    extent = (short)(((int)percent * (int)length) / 100);
-#ifdef SDL_PORT
-    left = definition->left;
-#else
-    left = aaCockpitBars[0][index].left;
-#endif
+    extent = (short)((percent * (length =
+        aaCockpitBars[(int)cCockpitView][(int)bar].length)) / 100);
+    left = aaCockpitBars[(int)cCockpitView][(int)bar].left;
     stCockpitBar.left = left;
     if (left != -99) {
-#ifdef SDL_PORT
-        right = definition->right;
-        top = definition->top;
-        bottom = definition->bottom;
-#else
-        right = aaCockpitBars[0][index].right;
-        top = aaCockpitBars[0][index].top;
-        bottom = aaCockpitBars[0][index].bottom;
-#endif
+        right = aaCockpitBars[(int)cCockpitView][(int)bar].right;
+        top = aaCockpitBars[(int)cCockpitView][(int)bar].top;
+        bottom = aaCockpitBars[(int)cCockpitView][(int)bar].bottom;
         stCockpitBar.right = right;
         stCockpitBar.top = top;
         stCockpitBar.bottom = bottom;
-#ifdef SDL_PORT
-        emptyFrame = (signed char)definition->emptyFrame;
-        filledFrame = (signed char)definition->filledFrame;
-        direction = definition->direction;
-#else
         emptyFrame = (signed char)
-            aaCockpitBars[0][index].emptyFrame;
+            aaCockpitBars[(int)cCockpitView][(int)bar].emptyFrame;
         filledFrame = (signed char)
-            aaCockpitBars[0][index].filledFrame;
-        direction = aaCockpitBars[0][index].direction;
-#endif
+            aaCockpitBars[(int)cCockpitView][(int)bar].filledFrame;
+        direction = aaCockpitBars[(int)cCockpitView][(int)bar].direction;
 
         if (direction < 2) {
             if (direction == 1) {
                 extent = (short)(length - extent);
-                swapFrame = filledFrame;
-                filledFrame = emptyFrame;
-                emptyFrame = swapFrame;
+                swapFrame = emptyFrame;
+                emptyFrame = filledFrame;
+                filledFrame = swapFrame;
             }
             stCockpitBar.bottom -= extent;
             if (stCockpitBar.top <= stCockpitBar.bottom)
@@ -426,9 +398,9 @@ void vdu_polygon(signed char bar, short percent)
         } else {
             if (direction == 3) {
                 extent = (short)(length - extent);
-                swapFrame = filledFrame;
-                filledFrame = emptyFrame;
-                emptyFrame = swapFrame;
+                swapFrame = emptyFrame;
+                emptyFrame = filledFrame;
+                filledFrame = swapFrame;
             }
             stCockpitBar.right -= extent;
             if (stCockpitBar.left <= stCockpitBar.right)
@@ -1709,41 +1681,49 @@ short get_color(short object, unsigned short *colour)
 unsigned int draw_3d_scanner(void)
 {
     const int *grid;
-    const CockpitScannerGeometry *scanner;
     SphericalVector spherical;
     unsigned short colour;
     short object;
-    short row;
+    int row;
+    int gridValue;
 
-    if (bCockpitlessView != 0 && aiScannerGridRows[0] != -2) {
-        scanner = &stCockpitLayout.scanner[
-            (int)cCockpitView];
+    if (bCockpitlessView != 0) {
         row = 0;
-        grid = aiScannerGridRows;
-        do {
-            if (*grid == -1) {
-                row++;
-            } else {
-                DrawViewportPixel(&stScreen,
-                                  (short)(scanner->centerX + row),
-                                  (short)(scanner->centerY + *grid), 0xaa);
-                if (*grid != 0)
+        if (aiScannerGridRows[0] != -2) {
+            grid = aiScannerGridRows;
+            do {
+                gridValue = *grid;
+                if (gridValue == -1) {
+                    row++;
+                } else {
                     DrawViewportPixel(&stScreen,
-                                      (short)(scanner->centerX + row),
-                                      (short)(scanner->centerY - *grid), 0xaa);
-                if (row != 0) {
-                    DrawViewportPixel(&stScreen,
-                                      (short)(scanner->centerX - row),
-                                      (short)(scanner->centerY + *grid), 0xaa);
-                    if (*grid != 0)
+                        (short)(stCockpitLayout.scanner[
+                            (int)cCockpitView].centerX + row),
+                        (short)(stCockpitLayout.scanner[
+                            (int)cCockpitView].centerY + gridValue), 0xaa);
+                    if (gridValue != 0)
                         DrawViewportPixel(&stScreen,
-                                          (short)(scanner->centerX - row),
-                                          (short)(scanner->centerY - *grid),
-                                          0xaa);
+                            (short)(stCockpitLayout.scanner[
+                                (int)cCockpitView].centerX + row),
+                            (short)(stCockpitLayout.scanner[
+                                (int)cCockpitView].centerY - gridValue), 0xaa);
+                    if (row != 0) {
+                        DrawViewportPixel(&stScreen,
+                            (short)(stCockpitLayout.scanner[
+                                (int)cCockpitView].centerX - row),
+                            (short)(stCockpitLayout.scanner[
+                                (int)cCockpitView].centerY + gridValue), 0xaa);
+                        if (gridValue != 0)
+                            DrawViewportPixel(&stScreen,
+                                (short)(stCockpitLayout.scanner[
+                                    (int)cCockpitView].centerX - row),
+                                (short)(stCockpitLayout.scanner[
+                                    (int)cCockpitView].centerY - gridValue), 0xaa);
+                    }
                 }
-            }
-            grid++;
-        } while (*grid != -2);
+                grid++;
+            } while (*grid != -2);
+        }
     }
 
     clear_head_up_display();
@@ -1753,7 +1733,7 @@ unsigned int draw_3d_scanner(void)
             OBJECT_CLASS_SHIP)
         nScannerTargetObject = -1;
 
-    for (object = 1; object < 10; object++) {
+    for (object = 1; object <= 9; object++) {
         if (get_color(object, &colour) != 0) {
             rectangular_to_spherical(&aObjectViewPosition[object],
                                      &spherical);
@@ -1786,14 +1766,12 @@ unsigned int draw_3d_scanner(void)
                           pTargetLockShape, 2);
     }
 
-    if (nScannerTargetObject != -1 &&
-        get_color(nScannerTargetObject, &colour) != 0) {
-        if ((abs((int)nSpaceFrame) & 1) == 0)
-            colour = cBlackColour;
-        object = nScannerTargetObject;
+    object = nScannerTargetObject;
+    if (object != -1 && get_color(object, &colour) != 0) {
         DrawViewportPixel(&stScreen,
-                          asScannerObjectX[object],
-                          asScannerObjectY[object], colour);
+            asScannerObjectX[nScannerTargetObject],
+            asScannerObjectY[nScannerTargetObject],
+            (short)(nSpaceFrame % 2) != 0 ? (short)colour : cBlackColour);
     }
     return 0;
 }
