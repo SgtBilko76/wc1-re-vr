@@ -1307,9 +1307,11 @@ int LoadShapeSet(PacketResourceDescriptor *resources,
         if (*resources->resource == 0) {
             logicalFile = resources->logicalFile;
             if (logicalFile == -1)
-                logicalFile = defaultLogicalFile;
-            *resources->resource = FetchDiskPacketRetrying(
-                logicalFile, resources->section, flags);
+                *resources->resource = FetchDiskPacketRetrying(
+                    defaultLogicalFile, resources->section, flags);
+            else
+                *resources->resource = FetchDiskPacketRetrying(
+                    logicalFile, resources->section, flags);
             if (*resources->resource == 0)
                 return 0;
         }

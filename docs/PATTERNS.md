@@ -128,6 +128,44 @@ for similarity decisions.
   the result. Declaring the function `void` omitted the two explicit result
   instructions and shortened its aligned span by 16 bytes. The restored
   return type and paths produce an exact function comparison.
+- `MapMusicTrackToStreamerCommand` retains separate return blocks for cases
+  27/28 and 29/30 even though each pair returns the same value. Its default
+  label enters the return after case 19's diagnostic. Grouping those cases
+  or moving default to the end changes both the branch encoding and the
+  switch table. Restoring these blocks recovers sixteen bytes and gives an
+  exact comparison. In `gametrack`, place the damage-at-least-two branch
+  before the conditional choice between tracks five and zero; its complete
+  function then matches too.
+- `IsPointWithinEyeViewCone` returns zero for a projection below `0x94`, then
+  returns one. Separate returns produce the original `MOV CX,0`; a result
+  variable initialized to zero instead produces `XOR CX,CX`. That one-byte
+  difference crosses an alignment boundary. The return form recovers the
+  original 160-byte span and gives an exact comparison. A direct Boolean
+  return and an explicit result-variable `if`/`else` do not match.
+- `set_background_objects_rotation` clears the projected vector's Z field
+  before calculating X and Y. Its short angle takes a remainder by 360
+  immediately after `ArcCos`, before the X-sign test. The original `CWD` and
+  `IDIV CX` establish this operation even though the usual angle range makes
+  it redundant. Both changes recover the missing sixteen bytes and produce
+  an exact comparison.
+- `LoadShapeSet` calls `FetchDiskPacketRetrying` separately in its default-file
+  and descriptor-file branches. CL shares their call tail but preserves the
+  distinct argument pushes, including the branch's section-word reload.
+  Replacing the descriptor file in a local before one common call loses
+  those instructions. Separate source calls restore the original 112-byte
+  span and match exactly.
+- `sort_viable_target_list` still lacks the original saved next-outer index
+  on its stack. Natural nested `for` loops, an explicit candidate-distance
+  local, and reordered local declarations did not restore that spill and
+  reduced similarity. Those trials are reverted; extra stack storage must
+  follow from the real variables rather than padding or dummy locals.
+- Check neighboring functions after these small source changes too. The five
+  exact recoveries above preserve every previously exact function, but
+  `transform_objects_to_your_view` and `servicetrack` each gain one differing
+  instruction at unchanged sizes and mnemonic scores;
+  `new_space_music_changes` loses one. Restoring the view-cone result local
+  recovers its neighbor's old allocation but loses the view-cone match, so
+  that trial is not retained.
 - Single-use console strings are literals: the constructor's font and spinner,
   and the formatted logger's newline. Their offsets alone also fit named arrays,
   but arrays impose eight-byte object alignment. Literal storage reproduces the

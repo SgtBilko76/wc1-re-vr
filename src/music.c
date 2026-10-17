@@ -268,6 +268,7 @@ int MapMusicTrackToStreamerCommand(int track)
         return 2;
     case 19:
         SoundDebugPrintf("ofx music");
+    default:
         return -1;
     case 20:
         return 1;
@@ -284,9 +285,11 @@ int MapMusicTrackToStreamerCommand(int track)
     case 26:
         return 7;
     case 27:
+        return -1;
     case 28:
         return -1;
     case 29:
+        return 0;
     case 30:
         return 0;
     case 31:
@@ -309,8 +312,6 @@ int MapMusicTrackToStreamerCommand(int track)
         return 7;
     case 40:
         return 6;
-    default:
-        return -1;
     }
 }
 
@@ -539,10 +540,10 @@ void gametrack(void)
                     track = 2;
                 } else {
                     damage = (short)calculate_damage_level();
-                    if (damage < 2)
-                        track = damage == 1 ? 5 : 0;
-                    else
+                    if (damage >= 2)
                         track = 4;
+                    else
+                        track = damage == 1 ? 5 : 0;
                 }
                 if (report_kilrathi_rout(1) == 0)
                     nCombatMusicActive = 0;

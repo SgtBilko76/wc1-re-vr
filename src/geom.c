@@ -1206,7 +1206,6 @@ unsigned short IsPointWithinEyeViewCone(const FixedVector *point)
     FixedVector viewPosition;
     int distance;
     long projection;
-    unsigned short visible;
 
     ComputeVectorDelta(&aShipPosition[EYE_OBJECT],
                        (FixedVector *)point, &direction);
@@ -1220,10 +1219,9 @@ unsigned short IsPointWithinEyeViewCone(const FixedVector *point)
         viewPosition.z)
         return 0;
     projection = DivideFixed(viewPosition.z, distance);
-    visible = 0;
-    if (projection >= 0x94)
-        visible = 1;
-    return visible;
+    if (projection < 0x94)
+        return 0;
+    return 1;
 }
 
 /* Function start: 0x41A1D0 */
@@ -1363,13 +1361,14 @@ void set_background_objects_rotation(short obj, FixedVector *direction)
     init_ijk(63);
     alter_yaw((short)-spherical.yaw, 63);
     alter_pitch((short)-spherical.pitch, 63);
+    projectedUp.z = 0;
     projectedUp.x = dot_product(&aShipUpVector[EYE_OBJECT],
                                 &aShipRightVector[63]);
     projectedUp.y = dot_product(&aShipUpVector[EYE_OBJECT],
                                 &aShipUpVector[63]);
-    projectedUp.z = 0;
     NormalizeFixedVector(&projectedUp);
     angle = (short)ArcCos(projectedUp.y);
+    angle %= 360;
     if (projectedUp.x >= 0)
         angle = 360 - angle;
     asObjectScreenAngle[obj] = angle;
