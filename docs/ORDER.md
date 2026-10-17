@@ -595,6 +595,21 @@ The six helpers through `SignExtendClipCoord` now open `gr.c`, ahead of
 `0x00440840` retains its provisional placement at the end of `killbrd.c`;
 the exact boundary around that one routine remains unproven.
 
+The graphics unit's complete initialized-data section runs from `0x00470678`
+through `0x00470E65`. Its 256-byte palette translation table and two 720-byte
+absolute trigonometric tables are private to `gr.c`. The following 334 bytes
+contain the shape, raster, streamer, and registry literals in function order.
+All 2,030 bytes match with one address shift, and the adjacent room/graphics
+gate checks the whole 3,542-byte run, including the four alignment bytes
+between the two objects.
+
+The two literal references at `0x00441351` and `0x00441361` establish separate
+diagnostic functions at `0x00441350` and `0x00441360`. Each pushes its own
+name (`__copyline` or `__wipeline`), calls the existing empty raster hook,
+cleans the argument, and returns. Both 16-byte spans now match, including
+compiler alignment. These unreferenced routines were missing from the seeded
+function inventory; their bytes must not be included in `DrawFontGlyph`'s span.
+
 Private C definitions require separate evidence: a trial moving the two
 MONODEBG variables to `static` storage in `mono.c` emitted the device handle
 before the installed flag, opposite to the original. Reversing their source
@@ -602,8 +617,10 @@ declarations did not change that order. Those definitions remain in
 `globals.c`; the C++ result does not justify applying the same layout claim
 to all private C variables.
 
-The registry arrays occupy read-only data, whereas the same routine's
-`"reg cheating\n"` and `"reg not cheating\n"` diagnostic literals occupy
+The registry arrays occupy gr's complete 56-byte read-only section, checked
+at `0x004631C8` with one address shift and the value-name array at offset
+`0x30`. The same routine's `"reg cheating\n"` and `"reg not cheating\n"`
+diagnostic literals occupy
 writable data. Changing the whole unit's string-storage policy would therefore
 be incorrect. The read-only layout still has three unresolved float constants
 at `0x004630DC`–`0x004630E7`. Their ownership or declaration form must be

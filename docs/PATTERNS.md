@@ -54,6 +54,11 @@ for similarity decisions.
   CL 4.20. The chalk-board KIA argument is emitted before its format string,
   as the original data order requires. The complete room-data gate checks
   these short literals and every repeated format without string fallback.
+- `PrepareShapeRLEData` loads the first four bytes of the `"1.00"` literal
+  into the shape buffer as a dword. Preserve that memory load and the literal's
+  own terminator; an immediate version value would omit its storage and
+  relocation. The graphics unit gate checks its position between the viewport
+  and overflow diagnostics.
 - `ReturnToBriefingLongShot` clears ten local flag bytes with ten explicit
   zero initializers. An empty-string initializer instead emits a separate
   literal and clears the trailing bytes through a different sequence. Its
@@ -310,10 +315,14 @@ for similarity decisions.
   and add its unsigned value only when that bit is clear. A direct memory-bit
   test followed by another offset read produces a different branch sequence.
   Keep the row and background initialization before the font-colour reads.
-  These changes retain the original size at 91.62% mnemonic similarity;
-  register allocation and scheduling remain different. Folding the font's
-  split-byte offset directly into the source-pointer expression removes an
-  unnecessary local and preserves the exact later `DrawFilledViewportRect`.
+  Load the viewport pointer before those font-colour bytes as well. With the
+  two following diagnostic functions now delimited separately, the original
+  span is 512 bytes; the current 544-byte body reaches 92.22% similarity.
+  Explicit row-offset pointer locals did not recover the size and changed
+  the previously exact palette-marker function, so they are not retained.
+  Register allocation and scheduling remain different. Keep the font's
+  split-byte offset in the source-pointer expression; a separate offset
+  local also perturbs later functions.
 - `GetTransformedShapeBounds` returns a short through an integer intersection
   flag. Its null-shape branch assigns the point-in-viewport comparison to that
   integer before returning; this emits full-width constant results, whereas

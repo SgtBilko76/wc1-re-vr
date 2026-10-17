@@ -386,22 +386,7 @@ extern RLETransformVertex aRLETransformVertices[4]; /* 0x0047002c */
 extern int anRLESourceSteps[4]; /* 0x0047007c */
 extern const char *apszPilotRankNames[5]; /* 0x00470098 */
 extern CampaignState stInitialCampaignState; /* 0x004700b0 */
-extern unsigned char abPaletteTranslation[256]; /* 0x00470678 */
-extern unsigned short awAbsoluteCosine[360]; /* 0x00470778 */
-extern unsigned short awAbsoluteSine[360]; /* 0x00470a48 */
 extern int bPanRoomTransition; /* 0x00470510 */
-extern char szInvalidShapeAllocation[12]; /* 0x00470d18 */
-extern char szBadViewport[12]; /* 0x00470d24 */
-extern char szShapeRLEVersion[8]; /* 0x00470d30 */
-extern char szShapeRLEOverflow[20]; /* 0x00470d38 */
-extern char szBadShapeFlip[12]; /* 0x00470d4c */
-extern char szCopyLine[12]; /* 0x00470d58 */
-extern char szWipeLine[12]; /* 0x00470d64 */
-extern char szTriangle[12]; /* 0x00470d70 */
-extern char szShadedTriangle[16]; /* 0x00470d7c */
-extern char szShadowDraw[12]; /* 0x00470d8c */
-extern char szFizzleFade[12]; /* 0x00470d98 */
-extern char szSnowViewport[16]; /* 0x00470da4 */
 extern int nInsertKeyState; /* 0x00475b68 */
 extern int nClearedKeyboardState; /* 0x00475b6c */
 extern int nOemPeriodKeyState; /* 0x00475bf0 */

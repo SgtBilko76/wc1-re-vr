@@ -46,3 +46,8 @@ unsigned char abDIBDiagnosticLiterals[3620]; /* 0x0046b1d8 */
  * The complete pool resolves the one-space label and distinct empty strings;
  * verify-unit-data also checks every offset and pointer in the whole unit. */
 unsigned char abRoomStringLiterals[328]; /* 0x0047052c */
+
+/* gr.c: shape, raster, streamer, and registry diagnostics, including the
+ * four-character shape version and the streamer's separate empty string.
+ * The graphics unit gate checks their complete layout after the tables. */
+unsigned char abGraphicsDiagnosticLiterals[334]; /* 0x00470d18 */

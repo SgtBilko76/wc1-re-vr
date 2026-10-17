@@ -1345,6 +1345,8 @@
 0x00440FE0 DrawSpriteTransformed
 0x00441140 RasterLineHook
 0x00441150 DrawFontGlyph
+0x00441350 __copyline
+0x00441360 __wipeline
 0x00441370 MarkActivePaletteEntries
 0x004413C0 DoLocalFn13C0
 0x004413E0 PaletteLocalFn13E0

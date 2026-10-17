@@ -1659,6 +1659,8 @@ void DrawSpriteTransformed(Viewport *viewport, int x, int y,
 void RasterLineHook(const void *marker);                              /* 0x00441140 */
 void DrawFontGlyph(char character, TextContext *context, int height,
                    int width, int y);                                 /* 0x00441150 */
+void __copyline(void);                                                 /* 0x00441350 */
+void __wipeline(void);                                                 /* 0x00441360 */
 void __stdcall MarkActivePaletteEntries(Viewport *viewport,
                                          unsigned char *active);       /* 0x00441370 */
 void __stdcall GetPaletteEntry(short index, unsigned short *rgb);         /* 0x004413C0 */

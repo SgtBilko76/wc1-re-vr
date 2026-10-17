@@ -5,6 +5,7 @@ Only one address shift is allowed per block. Identical literals must retain
 their separate locations, and empty-string pointers must remain correct.
 Pointers outside a block must target the declared globals at their original
 field offsets, using the rebuilt linker symbols.
+Read-only blocks must retain their COFF .rdata storage and declared size.
 Uninitialized blocks must retain their COFF .bss storage and declared size.
 """
 from __future__ import annotations
@@ -331,6 +332,15 @@ UNITS = {
     ), frozenset((0x000, *range(0x008, 0x01C, 4),
                   *range(0x3C8, 0x3E8, 4), *range(0x3EC, 0x3FC, 4),
                   0x458, 0x45C, 0x460, 0x474, 0x478, 0x47C))),
+    'gr': UnitData(0x00470678, 2030, (
+        ('abPaletteTranslation', 0x000),
+        ('awAbsoluteCosine', 0x100),
+        ('awAbsoluteSine', 0x3D0),
+    ), frozenset()),
+    'gr-rdata': UnitData(0x004631C8, 56, (
+        ('szGameRegistryKey', 0x00),
+        ('szCheaterRegistryValue', 0x30),
+    ), frozenset(), storage='.rdata', owner='gr.obj'),
     'damage-bss': UnitData(0x00476554, 4, (
         ('nDisplayedComponentDamage', 0x00),
     ), frozenset(), storage='.bss', owner='damage.obj'),
@@ -341,6 +351,7 @@ ADJACENT_UNITS = (
     ('barracks', 'fade', 'debug', 'disk', 'ship', 'init', 'logic'),
     ('damage', 'view'),
     ('ending', 'input', 'comm', 'video', 'joycal'),
+    ('killbrd', 'gr'),
 )
 
 
@@ -369,7 +380,10 @@ def data_section_size(path: str, storage: str) -> int:
                         f'{path}: .bss must contain uninitialized storage only')
             else:
                 require(flags & 0xC0 == 0x40,
-                        f'{path}: .data must contain initialized storage')
+                        f'{path}: {storage} must contain initialized storage')
+                if storage == '.rdata':
+                    require(flags & 0xC0000000 == 0x40000000,
+                            f'{path}: .rdata must be readable and not writable')
             sizes.append(size)
     require(len(sizes) == 1, f'{path}: expected one {storage} section')
     return sizes[0]
@@ -413,12 +427,13 @@ def main() -> int:
 
         for image, base in ((original, block.original_start), (rebuilt, start)):
             section = image.section_for_va(base)
-            require(section is not None and section.name == '.data' and
+            pe_storage = '.data' if block.storage == '.bss' else block.storage
+            require(section is not None and section.name == pe_storage and
                     base + block.size <= section.start + section.virtual_size,
-                    f'{image.path}: {unit} block must occupy the .data section')
-            if block.storage == '.data':
+                    f'{image.path}: {unit} block must occupy the {pe_storage} section')
+            if block.storage != '.bss':
                 require(base + block.size <= section.start + section.rawsize,
-                        f'{image.path}: {unit} block must occupy initialized .data')
+                        f'{image.path}: {unit} block must occupy initialized {pe_storage}')
             offsets = {va - base for va in image.relocations()
                        if base <= va < base + block.size}
             require(offsets == block.pointers,
