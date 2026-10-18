@@ -60,7 +60,10 @@ void SetFleetOverviewView(int initializeCockpit)
         } while (object < 10);
 
         maximumRange = 0x4b000;
-        playerRange = 0xff;
+#ifdef SDL_PORT
+        /* The native compiler overlays this range slot with orientation.x. */
+        playerRange = orientation.x;
+#endif
         object = 9;
         do {
             if (aeObjectClass[object] >= OBJECT_CLASS_SHIP) {
@@ -78,8 +81,8 @@ void SetFleetOverviewView(int initializeCockpit)
         if (maximumRange <= 0x1f4000)
             playerRange = maximumRange;
     } else {
-        maximumRange = 0x4b000;
         playerRange = 0x4b000;
+        maximumRange = playerRange;
         position_relative_ijk(&centre, 0, 400, 400, 400);
     }
 
@@ -227,14 +230,14 @@ unsigned int set_eye_direction_and_position(void)
             nEyeRollGoal = match_roll_orientation(
                 EYE_OBJECT, (short)cViewObject);
             if (nEyeRollGoal != 0) {
-                if (abs((int)nEyeRollGoal) < 5) {
-                    aShipUpVector[EYE_OBJECT] =
-                        aShipUpVector[0];
-                    nEyeRollGoal = 0;
-                } else {
+                if (abs((int)nEyeRollGoal) > 4) {
                     nEyeRollRate = 4;
                     rotate_eye_to_goal();
                     rotate_object(EYE_OBJECT);
+                } else {
+                    aShipUpVector[EYE_OBJECT] =
+                        aShipUpVector[0];
+                    nEyeRollGoal = 0;
                 }
             }
         }
@@ -248,41 +251,41 @@ unsigned int set_eye_direction_and_position(void)
             &aShipPosition[EYE_OBJECT],
             &aShipPosition[cViewObject], &vector);
         magnitude = Vector_magnitude(&vector);
-        if (magnitude < 0x7d001) {
+        if (magnitude > 0x7d000) {
+            vector = aShipVelocity[cViewObject];
+            NormalizeFixedVector(&vector);
+            aShipUpVector[EYE_OBJECT] =
+                aShipUpVector[cViewObject];
+            if (vector.x == aShipUpVector[EYE_OBJECT].x &&
+                vector.y == aShipUpVector[EYE_OBJECT].y &&
+                vector.z == aShipUpVector[EYE_OBJECT].z) {
+                aShipUpVector[EYE_OBJECT] =
+                    aShipRightVector[cViewObject];
+            }
+            ScaleFixedVector(&vector, -0x12430, &vector);
+            AddFixedVectors(
+                &aShipPosition[cViewObject], &vector,
+                &aShipPosition[EYE_OBJECT]);
             aShipForwardVector[EYE_OBJECT] = vector;
             fix_objects_ijk(EYE_OBJECT);
+            ScaleFixedVector(&aShipRightVector[EYE_OBJECT],
+                             0x19000, &vector);
+            AddFixedVectors(&aShipPosition[EYE_OBJECT], &vector,
+                            &aShipPosition[EYE_OBJECT]);
+            ScaleFixedVector(&aShipUpVector[EYE_OBJECT],
+                             0x6400, &vector);
+            AddFixedVectors(&aShipPosition[EYE_OBJECT], &vector,
+                            &aShipPosition[EYE_OBJECT]);
+            ComputeVectorDelta(
+                &aShipPosition[EYE_OBJECT],
+                &aShipPosition[cViewObject], &vector);
+            aShipForwardVector[EYE_OBJECT] = vector;
+            fix_objects_ijk(EYE_OBJECT);
+            generate_stars();
             return 0;
         }
-        vector = aShipVelocity[cViewObject];
-        NormalizeFixedVector(&vector);
-        aShipUpVector[EYE_OBJECT] =
-            aShipUpVector[cViewObject];
-        if (vector.x == aShipUpVector[EYE_OBJECT].x &&
-            vector.y == aShipUpVector[EYE_OBJECT].y &&
-            vector.z == aShipUpVector[EYE_OBJECT].z) {
-            aShipUpVector[EYE_OBJECT] =
-                aShipRightVector[cViewObject];
-        }
-        ScaleFixedVector(&vector, -0x12430, &vector);
-        AddFixedVectors(
-            &aShipPosition[cViewObject], &vector,
-            &aShipPosition[EYE_OBJECT]);
         aShipForwardVector[EYE_OBJECT] = vector;
         fix_objects_ijk(EYE_OBJECT);
-        ScaleFixedVector(&aShipRightVector[EYE_OBJECT],
-                         0x19000, &vector);
-        AddFixedVectors(&aShipPosition[EYE_OBJECT], &vector,
-                        &aShipPosition[EYE_OBJECT]);
-        ScaleFixedVector(&aShipUpVector[EYE_OBJECT],
-                         0x6400, &vector);
-        AddFixedVectors(&aShipPosition[EYE_OBJECT], &vector,
-                        &aShipPosition[EYE_OBJECT]);
-        ComputeVectorDelta(
-            &aShipPosition[EYE_OBJECT],
-            &aShipPosition[cViewObject], &vector);
-        aShipForwardVector[EYE_OBJECT] = vector;
-        fix_objects_ijk(EYE_OBJECT);
-        generate_stars();
         return 0;
     case 6:
         if (nExternalViewShip == -1) {
@@ -311,14 +314,7 @@ unsigned int set_eye_direction_and_position(void)
             if (aeShipTactic[nExternalViewShip] !=
                 TACTIC_CRUISE) {
                 magnitude = Vector_magnitude(&vector);
-                if (magnitude < 0xfa01) {
-                    adjustment = vector;
-                    NormalizeFixedVector(&adjustment);
-                    ScaleFixedVector(&adjustment, -64000, &adjustment);
-                    AddFixedVectors(
-                        &vector, &adjustment,
-                        &aShipVelocity[EYE_OBJECT]);
-                } else {
+                if (magnitude > 0xfa00) {
                     divide_vector(
                         &vector,
                         (int)(short)(nExternalViewDistance &
@@ -326,6 +322,13 @@ unsigned int set_eye_direction_and_position(void)
                         &aShipVelocity[EYE_OBJECT]);
                     nExternalViewDistance = MaxShort(
                         (short)(nExternalViewDistance - 1), 8);
+                } else {
+                    adjustment = vector;
+                    NormalizeFixedVector(&adjustment);
+                    ScaleFixedVector(&adjustment, -64000, &adjustment);
+                    AddFixedVectors(
+                        &vector, &adjustment,
+                        &aShipVelocity[EYE_OBJECT]);
                 }
             }
             aShipForwardVector[EYE_OBJECT] = vector;
@@ -355,22 +358,22 @@ unsigned int set_eye_direction_and_position(void)
             fix_objects_ijk(EYE_OBJECT);
             return 0;
         }
-        if (bCockpitlessView != 0) {
-            GetScreenUpdateFlag();
-            SetViewportRect(
-                &stSpaceBuffer, 0, 0,
-                (unsigned short)(nScreenWidth - 1),
-                (unsigned short)(nScreenHeight - 1));
-            initialize_view_buffer();
-            bCockpitlessView = 0;
+        if (bCockpitlessView == 0) {
             new_view(0, 0);
-            bCockpitlessView = 1;
-            GetScreenUpdateFlag();
-            SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
-            initialize_view_buffer();
             return 0;
         }
+        GetScreenUpdateFlag();
+        SetViewportRect(
+            &stSpaceBuffer, 0, 0,
+            (unsigned short)(nScreenWidth - 1),
+            (unsigned short)(nScreenHeight - 1));
+        initialize_view_buffer();
+        bCockpitlessView = 0;
         new_view(0, 0);
+        bCockpitlessView = 1;
+        GetScreenUpdateFlag();
+        SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
+        initialize_view_buffer();
         return 0;
     case 8:
         ScaleFixedVector(&aShipForwardVector[EYE_OBJECT],

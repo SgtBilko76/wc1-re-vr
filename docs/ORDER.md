@@ -381,6 +381,15 @@ symbol run identifies `rotate_eye_to_goal` through `object_intelligence`;
 the next recovered function, `EmitTextString` at `0x00413A10`, begins the
 cockpit window. These windows no longer overlap the surviving space functions.
 
+The main camera routine, `set_eye_direction_and_position`, now reproduces its
+3,264-byte span and 60-byte local frame exactly. The fleet overview retains
+its 752-byte span and 36-byte frame, with only the maximum-range comparison
+and branch differing. Its native compiler overlays an uninitialized range
+local with an initialized vector component; explicit initialization had
+changed both that read and the vector placement. The SDL build preserves the
+observed fallback value explicitly. See `docs/PATTERNS.md` for the stack
+evidence and the camera branch ordering.
+
 Within this window, `start_dust`, `update_star_field`, and
 `house_keep_objects` reproduce their complete 288-, 784-, and 1,008-byte
 aligned spans. The housekeeping dispatch changes register allocation in

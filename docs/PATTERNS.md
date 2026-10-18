@@ -81,6 +81,33 @@ for similarity decisions.
   source spelling is unknown. Scoping only the canopy pointer still leaves
   fourteen differing instructions; a separate counter reduces that to eight,
   and its later initialization removes the remaining eight.
+- `SetFleetOverviewView` leaves its player-range local uninitialized on entry
+  to the descending ship loop. CL 4.20 overlays that local with the X field of
+  the initialized orientation vector, at `[ESP+0x1C]` after the four register
+  saves. The generated listing assigns both symbols the same stack offset,
+  and the original initializes and reads that exact slot. The former explicit
+  `0xFF` initialization replaced the read with an immediate and exchanged the
+  orientation and offset vectors' stack slots. Keep the native uninitialized
+  local; SDL explicitly reads `orientation.x` to preserve the observed fallback
+  without depending on compiler slot reuse. Initialize the single-object
+  player range before copying it into the maximum range. These choices retain
+  the original 36-byte frame and 752-byte span, reducing differing instruction
+  encodings from 174 to two: the maximum-range comparison and branch have
+  reversed operands and sense. Reversing the source comparison or assigning
+  the measured range inside it does not fix them; a ternary introduces extra
+  moves. Explicit qualified or volatile vector reads recover the memory read
+  but leave the wrong slots. Declaration order, a narrower offset-vector
+  scope, and a descriptive vector rename do not repair those slots either.
+- `set_eye_direction_and_position` puts the large roll correction first,
+  testing the absolute error against four with `>`. Camera modes five and six
+  likewise put their distant-object paths first, testing against `0x7D000`
+  and `0xFA00`. Early returns for the near paths instead exchange the blocks
+  and change branch lengths. When mode seven has no target, handle the normal
+  cockpit with an early return before the cockpitless viewport restoration.
+  Restoring these four branch layouts recovers the complete 3,264-byte span,
+  including its sixteen-entry switch table, with the original 60-byte frame.
+  The function is exact, up from 89.68% and 584 differing instruction
+  encodings, without changing any other space routine's result.
 - `start_dust` adds the forward offset with the origin first, but its right
   and up additions pass the offset first. Preserve the observed argument
   order even though vector addition is commutative. Shift the short streak
