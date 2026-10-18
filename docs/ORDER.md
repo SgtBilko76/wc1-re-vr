@@ -1123,3 +1123,18 @@ where the original reloads it. Sequencing those calls through a real result
 temporary, volatile X-array accesses, and volatile selection loads did not
 recover the original accesses; the latter enlarged the frame to 152 bytes.
 These probes are not retained, and the rectangle remains unimplemented.
+
+The compiler slot reuse proven in `SetFleetOverviewView` makes overlapping
+uninitialized locals a possible explanation, but does not establish this
+rectangle routine's declarations. A three-scalar index probe coalesces all
+three reads into the same X-coordinate slot and shortens the frame to 140
+bytes. Volatile scalars read separate slots but enlarge it to 152 bytes.
+A four-element selection array with an uninitialized count gives 148 bytes
+when loading bottom coordinates before right coordinates, but puts both
+the count and the selection at the wrong end of the frame. Initializing
+its first element from the left coordinate enlarges the frame to 152 bytes
+again. Separating the coordinate temporaries and selection array into
+scopes gives the original 148-byte frame and 432-byte span, but still reads
+the wrong slots and differs in all 116 compared instruction encodings.
+These additional probes are also discarded; matching the span alone does
+not reconstruct the observed behavior.

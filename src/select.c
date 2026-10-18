@@ -25,7 +25,7 @@ short find_next_gun(short obj, enum ObjectType currentGun)
                     if (currentGun == type)
                         foundCurrent = 1;
                 } else if (currentGun != type) {
-                    return (short)type;
+                    return (short)weaponSlot->type;
                 }
             }
             weapon++;

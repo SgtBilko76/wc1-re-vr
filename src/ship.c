@@ -2044,27 +2044,24 @@ int fire_missile(short ship)
     ShipWeaponSlot *slot;
     signed char weaponCount;
 
-    weapon = 0;
     slot = (ShipWeaponSlot *)&aShipWeapons[ship][1];
     weaponCount = (signed char)aShipWeapons[ship][0];
-    if (weaponCount > 0) {
-        for (; weapon < weaponCount; weapon++, slot++) {
-            if (aObjectTypeData[slot->type].objectClass ==
-                    OBJECT_CLASS_MISSILE) {
-                if (ship != 0)
-                    return fire_weapon(ship, weapon);
-                if (slot->disabled == 0) {
-                    if ((slot->type == OBJECT_TYPE_HEAT_SEEKING_MISSILE ||
-                         slot->type == OBJECT_TYPE_IMAGE_RECOGNITION_MISSILE) &&
-                        nTargetLockCountdown != 0) {
-                        if (get_mode(0) == 1)
-                            ShowComponentHitHudMessage(
-                                "Need Lock",
-                                cYellowColour, 3);
-                        return -1;
-                    }
-                    return fire_weapon(0, weapon);
+    for (weapon = 0; weapon < weaponCount; weapon++, slot++) {
+        if (aObjectTypeData[slot->type].objectClass ==
+                OBJECT_CLASS_MISSILE) {
+            if (ship != 0)
+                return fire_weapon(ship, weapon);
+            if (slot->disabled == 0) {
+                if ((slot->type == OBJECT_TYPE_HEAT_SEEKING_MISSILE ||
+                     slot->type == OBJECT_TYPE_IMAGE_RECOGNITION_MISSILE) &&
+                    nTargetLockCountdown != 0) {
+                    if (get_mode(0) == 1)
+                        ShowComponentHitHudMessage(
+                            "Need Lock",
+                            cYellowColour, 3);
+                    return -1;
                 }
+                return fire_weapon(ship, weapon);
             }
         }
     }

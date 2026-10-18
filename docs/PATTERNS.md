@@ -67,6 +67,21 @@ for similarity decisions.
   also disturb later functions in the unit. With the 32-bit lifetime field,
   these choices recover an exact 1,248-byte span from 94.07% and a
   sixteen-byte excess, including both switch tables.
+- `fire_missile` initializes its short weapon index in the `for` statement
+  after loading the slot pointer and signed-byte count. The loop supplies
+  its initial count test without a separate positive-count guard. Both firing
+  paths pass the ship argument; replacing the player path's argument with a
+  literal zero changes the original register argument. Together these forms
+  reduce differing encodings from 71 to 24 of 79 instructions at the original
+  208-byte span. The unit-wide allocation also reverses a comparison/branch
+  pair in each of `replenish_shields` and `your_afterburner`: their differing
+  counts become eleven and two, respectively, from nine and zero. The other
+  ship-unit results are unchanged. Moving the counter initialization before
+  the slot lookup, restoring an outer count guard with a `do` loop, or changing
+  only the ship argument leaves 79 differing instructions. Reordering the
+  count and pointer declarations does not improve the retained loop. A
+  conditional expression for the afterburner deadline emits the same reversed
+  comparison and is not retained.
 - `landing` keeps the damage-level table byte offset in its four-byte frame,
   reloading it for the sound hooks, canopy table, and final comment. A volatile
   offset local restores that storage and frees EBP for the actor shape. The
@@ -108,6 +123,15 @@ for similarity decisions.
   including its sixteen-entry switch table, with the original 60-byte frame.
   The function is exact, up from 89.68% and 584 differing instruction
   encodings, without changing any other space routine's result.
+- `HandleFleetOverviewInput` saves the signed key byte in a short before
+  dispatching. The original sign-extends the byte into CX, then CX into EAX
+  for the switch. Keep that switch inside the `nCameraViewMode == 8` block
+  and the final zero return outside it. An early return for other camera
+  modes places a short branch and return before the switch instead of the
+  original near branch to the final return. The word local and enclosing
+  condition recover the entire 352-byte span, including both dispatch
+  tables, from 94.03% similarity and 65 differing instructions. Every other
+  main-unit result is unchanged.
 - `start_dust` adds the forward offset with the origin first, but its right
   and up additions pass the offset first. Preserve the observed argument
   order even though vector addition is commutative. Shift the short streak
@@ -851,6 +875,18 @@ for similarity decisions.
   scheduling and temporary allocation did not improve with separate scaling
   statements, in-place span sums, accumulated products, or reuse of the Y
   argument for the top edge.
+- `GetShapeFrameCorners` keeps its translated extents as ints until the
+  short output stores. Four short locals instead replace the original
+  sign extensions and 32-bit additions with word arithmetic, reducing
+  similarity to 73.81%. Advance the shape pointer to its frame, then load
+  each extent and add its corresponding origin in separate statements.
+  This restores the first extent load to EAX and reduces differing encodings
+  from 27 to 26 of 42 instructions, despite a mnemonic score decrease from
+  93.02% to 90.70%. The 144-byte span and every other graphics-unit result
+  remain unchanged. A shared origin local emits the former code. Moving the
+  font source, destination, and translated-byte locals into narrower scopes
+  does not recover `DrawFontGlyph`'s excess sixteen bytes and worsens its
+  comparison; that separate probe is not retained.
 - `CaptureSpriteBackground` and `RestoreSpriteBackground` also read both
   coordinate words into short locals before promotion. Keep separate command
   pointer advances for the two words. Restoration calculates the run end
@@ -1347,6 +1383,13 @@ for similarity decisions.
   `char` for the count did not help; reading the count through a signed-byte
   pointer or moving the current-weapon capture into its test made it worse.
   Those trials are not retained.
+- `find_next_gun` returns the selected slot's type directly, narrowed to a
+  short, rather than returning the cached enum. This restores the original
+  word reload from the slot and reduces differing encodings from 22 to 21
+  of 60 at the unchanged 160-byte span. A register hint on the found-current
+  flag emits the same code. Replacing the guarded `do` loop with a `for`
+  loop worsens the byte comparison to 55 differences despite raising its
+  mnemonic score; neither extra change is retained.
 - `DrawScrambleActor` retains the script-control mask as an unsigned byte
   and adds the base frame to its signed-byte frame before sign-extending the
   draw argument. A 16-bit frame sum omits the original byte wrapping.
@@ -1464,3 +1507,11 @@ Windows 95 DirectDraw and DirectSound behavior.
   but hoists the debris index before `set_objects_data`, leaving 54
   differences. An inlined `memcpy` emits the same copy as struct assignment.
   These further probes are also reverted.
+- `control_speed` still saves an extra EBP where the original reuses its
+  speed-address register for the braking margin. A separate speed-difference
+  local leaves the target function unchanged and disturbs `chase_speed`.
+  Combining the multiply and subtraction into one expression changes
+  scheduling without reducing its 63 differing encodings. Calculating the
+  speed difference before multiplying restores part of the register reuse,
+  but still saves EBP, leaves 53 differences, and also disturbs `chase_speed`.
+  These probes are not retained.

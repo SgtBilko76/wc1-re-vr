@@ -1161,58 +1161,57 @@ unsigned int SelectPreviousExternalViewObject(void)
 /* Function start: 0x428D10 */
 unsigned int HandleFleetOverviewInput(void)
 {
-    signed char key;
+    short key;
 
     key = (signed char)bCurrentKey;
-    if (nCameraViewMode != 8)
-        return 0;
-
-    bCurrentKey = 0;
-    switch (key) {
-    case 0x1c:
-        cViewObject--;
-        bCurrentKey = 0x29;
-        break;
-    case 0x47:
-        nCapitalShipViewDistance -= 0x3200;
-        break;
-    case 0x48:
-        rotate_about_i(-7,
-                       &aShipUpVector[EYE_OBJECT],
-                       &aShipForwardVector[EYE_OBJECT]);
-        break;
-    case 0x4b:
-        rotate_about_j(7,
-                       &aShipRightVector[EYE_OBJECT],
-                       &aShipForwardVector[EYE_OBJECT]);
-        break;
-    case 0x4d:
-        rotate_about_j(-7,
-                       &aShipRightVector[EYE_OBJECT],
-                       &aShipForwardVector[EYE_OBJECT]);
-        break;
-    case 0x4f:
-        nCapitalShipViewDistance += 0x3200;
-        break;
-    case 0x50:
-        rotate_about_i(7,
-                       &aShipUpVector[EYE_OBJECT],
-                       &aShipForwardVector[EYE_OBJECT]);
-        break;
-    case 0x52:
-        aShipUpVector[EYE_OBJECT].z = -0x100;
-        aShipForwardVector[EYE_OBJECT].y = 0x100;
-        aShipRightVector[EYE_OBJECT].x = 0x100;
-        aShipForwardVector[EYE_OBJECT].z = 0;
-        aShipForwardVector[EYE_OBJECT].x = 0;
-        aShipUpVector[EYE_OBJECT].y = 0;
-        aShipUpVector[EYE_OBJECT].x = 0;
-        aShipRightVector[EYE_OBJECT].z = 0;
-        aShipRightVector[EYE_OBJECT].y = 0;
-        break;
-    default:
-        bCurrentKey = (unsigned char)key;
-        break;
+    if (nCameraViewMode == 8) {
+        bCurrentKey = 0;
+        switch (key) {
+        case 0x1c:
+            cViewObject--;
+            bCurrentKey = 0x29;
+            break;
+        case 0x47:
+            nCapitalShipViewDistance -= 0x3200;
+            break;
+        case 0x48:
+            rotate_about_i(-7,
+                           &aShipUpVector[EYE_OBJECT],
+                           &aShipForwardVector[EYE_OBJECT]);
+            break;
+        case 0x4b:
+            rotate_about_j(7,
+                           &aShipRightVector[EYE_OBJECT],
+                           &aShipForwardVector[EYE_OBJECT]);
+            break;
+        case 0x4d:
+            rotate_about_j(-7,
+                           &aShipRightVector[EYE_OBJECT],
+                           &aShipForwardVector[EYE_OBJECT]);
+            break;
+        case 0x4f:
+            nCapitalShipViewDistance += 0x3200;
+            break;
+        case 0x50:
+            rotate_about_i(7,
+                           &aShipUpVector[EYE_OBJECT],
+                           &aShipForwardVector[EYE_OBJECT]);
+            break;
+        case 0x52:
+            aShipUpVector[EYE_OBJECT].z = -0x100;
+            aShipForwardVector[EYE_OBJECT].y = 0x100;
+            aShipRightVector[EYE_OBJECT].x = 0x100;
+            aShipForwardVector[EYE_OBJECT].z = 0;
+            aShipForwardVector[EYE_OBJECT].x = 0;
+            aShipUpVector[EYE_OBJECT].y = 0;
+            aShipUpVector[EYE_OBJECT].x = 0;
+            aShipRightVector[EYE_OBJECT].z = 0;
+            aShipRightVector[EYE_OBJECT].y = 0;
+            break;
+        default:
+            bCurrentKey = (unsigned char)key;
+            break;
+        }
     }
     return 0;
 }
