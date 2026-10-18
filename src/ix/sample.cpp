@@ -330,33 +330,40 @@ int IxSample::ix_sample_load_raw(void *data, int bytes, int newFrequency,
 /* Function start: 0x0044914C */
 long IxSample::ix_sample_convert_from_ieee_extended(unsigned char *bytes)
 {
+    /* Separate component scopes preserve the original /Od stack slots. */
     unsigned long lowMantissa;
-    int exponent;
-    double value;
-    unsigned long highMantissa;
-    unsigned char *source;
+    {
+        int exponent;
+        {
+            double value;
+            unsigned long highMantissa;
+            unsigned char *source;
 
-    source = bytes;
-    exponent = ((source[0] & 0x7f) << 8) | (source[1] & 0xff);
-    highMantissa = ((unsigned long)source[2] << 24) |
-                   ((unsigned long)source[3] << 16) |
-                   ((unsigned long)source[4] << 8) |
-                   (unsigned long)source[5];
-    lowMantissa = ((unsigned long)source[6] << 24) |
-                  ((unsigned long)source[7] << 16) |
-                  ((unsigned long)source[8] << 8) |
-                  (unsigned long)source[9];
-    if (exponent == 0 && highMantissa == 0 && lowMantissa == 0) {
-        value = 0;
-    } else if (exponent == 0x7fff) {
-        value = HUGE_VAL;
-    } else {
-        exponent -= 16383;
-        value = ldexp(IX_UNSIGNED_TO_DOUBLE(highMantissa), exponent -= 31);
-        value += ldexp(IX_UNSIGNED_TO_DOUBLE(lowMantissa), exponent -= 32);
+            source = bytes;
+            exponent = ((source[0] & 0x7f) << 8) | (source[1] & 0xff);
+            highMantissa = ((unsigned long)source[2] << 24) |
+                           ((unsigned long)source[3] << 16) |
+                           ((unsigned long)source[4] << 8) |
+                           (unsigned long)source[5];
+            lowMantissa = ((unsigned long)source[6] << 24) |
+                          ((unsigned long)source[7] << 16) |
+                          ((unsigned long)source[8] << 8) |
+                          (unsigned long)source[9];
+            if (exponent == 0 && highMantissa == 0 && lowMantissa == 0) {
+                value = 0;
+            } else if (exponent == 0x7fff) {
+                value = HUGE_VAL;
+            } else {
+                exponent -= 16383;
+                value = ldexp(IX_UNSIGNED_TO_DOUBLE(highMantissa),
+                              exponent -= 31);
+                value += ldexp(IX_UNSIGNED_TO_DOUBLE(lowMantissa),
+                               exponent -= 32);
+            }
+            if ((source[0] & 0x80) != 0)
+                return (long)-value;
+            else
+                return (long)value;
+        }
     }
-    if ((source[0] & 0x80) != 0)
-        return (long)-value;
-    else
-        return (long)value;
 }

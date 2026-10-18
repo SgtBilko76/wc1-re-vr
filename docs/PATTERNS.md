@@ -1016,11 +1016,22 @@ for similarity decisions.
 - The extended-number converter masks the exponent's second input byte
   with `0xFF`, producing the original `MOV CH,CL` and direct low-byte load.
   Its signed-result dispatch has an explicit `else`, preserving the
-  unreachable jump after the negative return. The 378-byte body and all
-  mnemonics match, but 45 instructions still differ in local stack slots
-  and mantissa evaluation order. Adding masks to every mantissa byte did
-  not resolve them. Its reported size also includes following import stubs
-  and alignment; `docs/EXPORT.md` records the separate body comparison.
+  unreachable jump after the negative return. Keep the low mantissa in the
+  outer scope, the exponent in the next scope, and the value, high mantissa,
+  and byte pointer in the innermost scope. Their EBP offsets are then -4,
+  -8, -16, -20, and -24, matching every original local slot without adding
+  storage. These scopes reproduce allocation; they do not prove the original
+  source's block structure. Binary-comp's explicit 378-byte body comparison
+  improves from 45 differing instructions to 10 of 116, with unchanged
+  length and 100% mnemonic similarity. The remaining differences are the
+  mantissa byte-load and shift order: the original high word reads offsets
+  2, 3, 4, 5 and its low word reads 8, 7, 6, 9.
+  Regrouping OR expressions, volatile input reads, unsigned-int casts, and
+  reordered low-word terms did not improve those accesses. Additive assembly
+  of the words increased the count to 16; signed input bytes with explicit
+  masks added 36 body bytes. These trials are not retained. Its reported
+  size also includes following import stubs and alignment;
+  `docs/EXPORT.md` records the separate body comparison.
 - `close_behind` keeps its range parameter in memory by qualifying that
   parameter as volatile. This recovers the original global load into AX and
   the complete 32-byte span; the shared prototype and calling convention
@@ -1167,3 +1178,15 @@ make verify
 Stop at 90% similarity unless a clear evidence-backed improvement remains.
 Run the Win32 build through DREAMM rather than Wine; the original depends on
 Windows 95 DirectDraw and DirectSound behavior.
+- The one-byte comparison differences in `ix_dsp_set_master_volume` and
+  `ix_thread_handle_file_chunk` survive volatile global reads, volatile local
+  indices, and long indices in place of int indices. None of those probes
+  changed their comparison order or size, so they are not retained.
+  `ix_sound_is_playing` also has a matching instruction body; its reported
+  four-byte shortage comes from object-end alignment, like the thread and
+  DSP final functions discussed above.
+- `ReadRequiredPilotField` still loads and pushes its Y argument through EDX
+  where the original uses EAX. An unsigned cursor-X local produces the same
+  output; moving the X expression directly into `SetTextCursor` worsens the
+  comparison from two to eight differing instructions. Both probes are
+  reverted, preserving the original load scheduling recovered so far.

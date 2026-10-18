@@ -284,8 +284,9 @@ at `0x004492C6`. With the sample loaders' sizes corrected, the report's
 `SIZE +26` comprises three six-byte import stubs and eight alignment bytes;
 the converter's actual body is 378 bytes in both images. Binary-comp's
 `compare_function_bytes` API with explicit ends at the two corresponding
-`DirectSoundCreate` entries still finds 45 differing instructions in that
-body. Do not shorten the function to compensate for the report boundary.
+`DirectSoundCreate` entries now finds 10 differing instructions out of 116
+in that body, after recovering the original local stack slots. Do not shorten
+the function to compensate for the report boundary.
 Whole-file `byte-compare` is unaffected by this limitation.
 
 For literal identity of the complete files, including headers and relocations:
