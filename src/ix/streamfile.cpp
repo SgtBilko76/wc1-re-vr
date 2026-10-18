@@ -11,7 +11,7 @@ unsigned int IxStreamFile::ix_stream_file_read(void *newDestination,
                                                 unsigned int bytes)
 {
     ix_stream_file_wait();
-    EnterCriticalSection(&csStreamerFileQueue);
+    EnterCriticalSection(&csStreamerFileList);
     if (position + bytes > size)
         bytes = size - position;
     if (bytes > 0) {
@@ -21,17 +21,17 @@ unsigned int IxStreamFile::ix_stream_file_read(void *newDestination,
         if (previous != 0)
             previous->next = next;
         if (next == 0)
-            pStreamerIdleFiles = previous;
+            pStreamIdleFiles = previous;
         else
             next->previous = previous;
-        previous = pStreamerReadQueue;
+        previous = pStreamReadRequests;
         next = 0;
-        if (pStreamerReadQueue != 0)
-            pStreamerReadQueue->next = this;
-        pStreamerReadQueue = this;
+        if (pStreamReadRequests != 0)
+            pStreamReadRequests->next = this;
+        pStreamReadRequests = this;
     }
-    LeaveCriticalSection(&csStreamerFileQueue);
-    SetEvent(hStreamerWakeEvent);
+    LeaveCriticalSection(&csStreamerFileList);
+    SetEvent(hStreamerWakeupEvent);
     return bytes;
 }
 

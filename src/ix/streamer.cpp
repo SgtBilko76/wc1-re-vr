@@ -13,41 +13,45 @@
 
 #define IX_STREAMER_FILE "D:\\Rnd\\Prj\\ix\\Src\\Streamer\\streamer.cpp"
 
-unsigned int *pStreamerPacketOffsets;
-unsigned int dwStreamerThreadTick;
-FILE *pStreamerPackageFile;
-IxStreamFile *pStreamerIdleFiles;
-unsigned int adwStreamerBranchStack[32];
-unsigned char *pStreamerCompressedBuffer;
-IxStreamFile *pStreamerReadQueue;
-unsigned int nStreamerAudioBufferSize;
-unsigned char *pStreamerFileBuffer;
-unsigned char bStreamerIntensity;
-HANDLE hStreamerThread;
-IxStreamerFileEntry *pStreamerFileEntries;
-IxStreamerHeader *pStreamerHeader;
-IxStreamerAudioChunk *pStreamerAudioChunks;
-IxStreamerBranch *pStreamerBranches;
-IxStreamerFileChunk *pStreamerFileChunks;
-CRITICAL_SECTION csStreamerFileQueue;
-CRITICAL_SECTION csStreamerThread;
-unsigned int nStreamerAudioChunk;
-DWORD dwStreamerThreadId;
-unsigned int dwStreamerState;
-HANDLE hStreamerWakeEvent;
-unsigned int nStreamerFileChunk;
-unsigned int nStreamerBytesPerSecond;
-CRITICAL_SECTION csStreamer;
-IxStreamerTrigger *pStreamerTriggers;
+/* Package and worker state. CL places uninitialized globals by identifier
+ * hash, so these spellings reproduce the original order. */
+unsigned int *pStreamerPacketOffsetTable;        /* 0x00597BD0 */
+unsigned int dwStreamThreadTick;                 /* 0x00597BD4 */
+/* Nothing in the shipped executable references this word. */
+unsigned int dwUnusedStreamerWord;               /* 0x00597BD8 */
+FILE *pStreamerPackFile;                         /* 0x00597BDC */
+IxStreamFile *pStreamIdleFiles;                  /* 0x00597BE0 */
+unsigned int adwStreamCallStack[32];             /* 0x00597BE8 */
+unsigned char *pStreamerLzoBuffer;               /* 0x00597C68 */
+IxStreamFile *pStreamReadRequests;               /* 0x00597C6C */
+unsigned int dwIxStreamerAudioBufferSize;        /* 0x00597C70 */
+unsigned char *pIxStreamerInputBuffer;           /* 0x00597C74 */
+unsigned char bStreamerIntensityLevel;           /* 0x00597C78 */
+HANDLE hStreamThread;                            /* 0x00597C7C */
+IxStreamerFileEntry *pStreamFileEntries;         /* 0x00597C80 */
+IxStreamerHeader *pStreamerPackageInfo;          /* 0x00597C84 */
+IxStreamerAudioChunk *pStreamedMusicAudioChunks; /* 0x00597C88 */
+IxStreamerBranch *pMusicStreamBranchList;        /* 0x00597C8C */
+IxStreamerFileChunk *pStreamFileBlocks;          /* 0x00597C90 */
+CRITICAL_SECTION csStreamerFileList;             /* 0x00597C98 */
+CRITICAL_SECTION csIxStreamerThread;             /* 0x00597CB0 */
+unsigned int nStreamerAudioBlock;                /* 0x00597CC8 */
+DWORD dwIxStreamerThreadId;                      /* 0x00597CCC */
+unsigned int dwIxStreamerStatus;                 /* 0x00597CD0 */
+HANDLE hStreamerWakeupEvent;                     /* 0x00597CD4 */
+unsigned int nIxStreamerCurrentFileChunk;        /* 0x00597CD8 */
+unsigned int dwStreamBytesPerSecond;             /* 0x00597CDC */
+CRITICAL_SECTION csStreamer;                     /* 0x00597CE0 */
+IxStreamerTrigger *pStreamTriggerList;           /* 0x00597CF8 */
 
-unsigned short nStreamerVolume = 0xffff;
-char cStreamerBranchTag = -1;
-unsigned int nStreamerBranchStackIndex = 0;
+unsigned short nStreamerVolume = 0xffff;         /* 0x00470E84 */
+char cStreamerBranchTag = -1;                    /* 0x00470E88 */
+unsigned int nStreamCallStackIndex = 0;          /* 0x00470E8C */
 
 /* Function start: 0x00442750 */   /* source line(s) 60;63;75: Streamer already inited! | Failed to init DSP | Failed to start streamer_thread! */
 extern "C" int ix_streamer_init(void)
 {
-    if ((dwStreamerState & IX_STREAMER_INITIALIZED) != 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_INITIALIZED) != 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 60);
         ix_log_printf("Streamer already inited!");
         return -1;
@@ -57,50 +61,50 @@ extern "C" int ix_streamer_init(void)
         ix_log_printf("Failed to init DSP");
         return -1;
     }
-    InitializeCriticalSection(&csStreamerFileQueue);
+    InitializeCriticalSection(&csStreamerFileList);
     InitializeCriticalSection(&csStreamer);
-    InitializeCriticalSection(&csStreamerThread);
-    hStreamerWakeEvent = CreateEventA(0, TRUE, FALSE, 0);
-    hStreamerThread =
+    InitializeCriticalSection(&csIxStreamerThread);
+    hStreamerWakeupEvent = CreateEventA(0, TRUE, FALSE, 0);
+    hStreamThread =
         CreateThread(0, 0x1000, ix_streamer_thread_proc, 0, 0,
-                     &dwStreamerThreadId);
-    if (hStreamerThread == 0) {
+                     &dwIxStreamerThreadId);
+    if (hStreamThread == 0) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 75);
         ix_log_printf("Failed to start streamer_thread!");
         exit(-1);
     }
-    dwStreamerState |= IX_STREAMER_INITIALIZED;
-    dwStreamerState |= IX_STREAMER_DEVELOPER_MODE;
+    dwIxStreamerStatus |= IX_STREAMER_INITIALIZED;
+    dwIxStreamerStatus |= IX_STREAMER_DEVELOPER_MODE;
     return 0;
 }
 
 /* Function start: 0x0044286F */   /* source line(s) 87: Streamer not ready for destroy */
 extern "C" void ix_streamer_destroy(void)
 {
-    if ((dwStreamerState & IX_STREAMER_INITIALIZED) == 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_INITIALIZED) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 87);
         ix_log_printf("Streamer not ready for destroy");
         return;
     }
-    if ((dwStreamerState & IX_STREAMER_FILE_OPEN) != 0)
+    if ((dwIxStreamerStatus & IX_STREAMER_FILE_OPEN) != 0)
         ix_streamer_close_stream_file();
-    dwStreamerState |= IX_STREAMER_SHUTDOWN;
-    SetEvent(hStreamerWakeEvent);
+    dwIxStreamerStatus |= IX_STREAMER_SHUTDOWN;
+    SetEvent(hStreamerWakeupEvent);
 #ifdef SDL_PORT
-    WaitForSingleObject(hStreamerThread, INFINITE);
-    CloseHandle(hStreamerThread);
-    hStreamerThread = 0;
+    WaitForSingleObject(hStreamThread, INFINITE);
+    CloseHandle(hStreamThread);
+    hStreamThread = 0;
 #else
-    EnterCriticalSection(&csStreamerThread);
+    EnterCriticalSection(&csIxStreamerThread);
 #endif
-    CloseHandle(hStreamerWakeEvent);
-    DeleteCriticalSection(&csStreamerFileQueue);
+    CloseHandle(hStreamerWakeupEvent);
+    DeleteCriticalSection(&csStreamerFileList);
     DeleteCriticalSection(&csStreamer);
-    DeleteCriticalSection(&csStreamerThread);
+    DeleteCriticalSection(&csIxStreamerThread);
     ix_dsp_shutdown();
-    dwStreamerState &= ~IX_STREAMER_INITIALIZED;
+    dwIxStreamerStatus &= ~IX_STREAMER_INITIALIZED;
 #ifdef SDL_PORT
-    dwStreamerState &=
+    dwIxStreamerStatus &=
         ~(IX_STREAMER_SHUTDOWN | IX_STREAMER_THREAD_RUNNING);
 #endif
 }
@@ -114,189 +118,189 @@ extern "C" void ix_streamer_configure(int option, void *value)
 /* Function start: 0x0044293E */   /* source line(s) 117: Can't change dev_mode while stream files are open! */
 void ix_streamer_set_dev_mode(int mode)
 {
-    if (pStreamerIdleFiles != 0 ||
-        pStreamerReadQueue != 0) {
+    if (pStreamIdleFiles != 0 ||
+        pStreamReadRequests != 0) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 117);
         ix_log_printf("Can't change dev_mode while stream files are open!");
         exit(-1);
     }
     if (mode != 0)
-        dwStreamerState |= IX_STREAMER_DEVELOPER_MODE;
+        dwIxStreamerStatus |= IX_STREAMER_DEVELOPER_MODE;
     else
-        dwStreamerState &= ~IX_STREAMER_DEVELOPER_MODE;
+        dwIxStreamerStatus &= ~IX_STREAMER_DEVELOPER_MODE;
 }
 
 /* Function start: 0x004429B6 */   /* source line(s) 129;142;146;150;151;157;168;177;186;195;204;238;240: Streamer not ready to open stream file! | Failed to open stream file. | Streamer failed to */
 extern "C" int ix_streamer_open_stream_file(char *path)
 {
-    if ((dwStreamerState & IX_STREAMER_INITIALIZED) == 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_INITIALIZED) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 129);
         ix_log_printf("Streamer not ready to open stream file!");
         return -1;
     }
-    if ((dwStreamerState & IX_STREAMER_FILE_OPEN) != 0)
+    if ((dwIxStreamerStatus & IX_STREAMER_FILE_OPEN) != 0)
         ix_streamer_close_stream_file();
-    pStreamerIdleFiles = 0;
-    nStreamerAudioChunk = 0;
-    nStreamerFileChunk = (unsigned int)-1;
-    nStreamerBranchStackIndex = 0;
-    pStreamerPackageFile = ix_file_open(path, 1);
-    if (pStreamerPackageFile == 0) {
+    pStreamIdleFiles = 0;
+    nStreamerAudioBlock = 0;
+    nIxStreamerCurrentFileChunk = (unsigned int)-1;
+    nStreamCallStackIndex = 0;
+    pStreamerPackFile = ix_file_open(path, 1);
+    if (pStreamerPackFile == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 142);
         ix_log_printf("Failed to open stream file.");
         return -1;
     }
-    pStreamerHeader = (IxStreamerHeader *)
+    pStreamerPackageInfo = (IxStreamerHeader *)
         pIxMalloc(sizeof(IxStreamerHeader));
-    if (pStreamerHeader == 0) {
+    if (pStreamerPackageInfo == 0) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 146);
         ix_log_printf("Streamer failed to allocate.");
         exit(-1);
     }
-    ix_file_read(pStreamerPackageFile,
-                 pStreamerHeader, sizeof(IxStreamerHeader));
-    if (pStreamerHeader->id != *(unsigned int *)"STRM") {
+    ix_file_read(pStreamerPackFile,
+                 pStreamerPackageInfo, sizeof(IxStreamerHeader));
+    if (pStreamerPackageInfo->id != *(unsigned int *)"STRM") {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 150);
         ix_log_printf("Invalid stream ID");
         return -1;
     }
-    if (pStreamerHeader->version != 1) {
+    if (pStreamerPackageInfo->version != 1) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 151);
         ix_log_printf("Invalid stream version");
         return -1;
     }
-    if (pStreamerHeader->audioChunkCount != 0) {
-        pStreamerAudioChunks = (IxStreamerAudioChunk *)
+    if (pStreamerPackageInfo->audioChunkCount != 0) {
+        pStreamedMusicAudioChunks = (IxStreamerAudioChunk *)
             pIxMalloc(
-                pStreamerHeader->audioChunkCount *
+                pStreamerPackageInfo->audioChunkCount *
                 sizeof(IxStreamerAudioChunk));
-        if (pStreamerAudioChunks == 0) {
+        if (pStreamedMusicAudioChunks == 0) {
             ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 157);
             ix_log_printf("Streamer failed to allocate.");
             exit(-1);
         }
-        ix_file_seek(pStreamerPackageFile,
-                     pStreamerHeader->audioChunkTableOffset);
-        ix_file_read(pStreamerPackageFile,
-                     pStreamerAudioChunks,
-                     pStreamerHeader->audioChunkCount *
+        ix_file_seek(pStreamerPackFile,
+                     pStreamerPackageInfo->audioChunkTableOffset);
+        ix_file_read(pStreamerPackFile,
+                     pStreamedMusicAudioChunks,
+                     pStreamerPackageInfo->audioChunkCount *
                      sizeof(IxStreamerAudioChunk));
-        dwStreamerState |= IX_STREAMER_HAS_AUDIO;
+        dwIxStreamerStatus |= IX_STREAMER_HAS_AUDIO;
     }
-    if (pStreamerHeader->branchCount != 0) {
-        pStreamerBranches = (IxStreamerBranch *)
-            pIxMalloc(pStreamerHeader->branchCount *
+    if (pStreamerPackageInfo->branchCount != 0) {
+        pMusicStreamBranchList = (IxStreamerBranch *)
+            pIxMalloc(pStreamerPackageInfo->branchCount *
                                  sizeof(IxStreamerBranch));
-        if (pStreamerBranches == 0) {
+        if (pMusicStreamBranchList == 0) {
             ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 168);
             ix_log_printf("Streamer failed to allocate.");
             exit(-1);
         }
-        ix_file_seek(pStreamerPackageFile,
-                     pStreamerHeader->branchTableOffset);
-        ix_file_read(pStreamerPackageFile,
-                     pStreamerBranches,
-                     pStreamerHeader->branchCount *
+        ix_file_seek(pStreamerPackFile,
+                     pStreamerPackageInfo->branchTableOffset);
+        ix_file_read(pStreamerPackFile,
+                     pMusicStreamBranchList,
+                     pStreamerPackageInfo->branchCount *
                      sizeof(IxStreamerBranch));
     }
-    if (pStreamerHeader->triggerCount != 0) {
-        pStreamerTriggers = (IxStreamerTrigger *)
-            pIxMalloc(pStreamerHeader->triggerCount *
+    if (pStreamerPackageInfo->triggerCount != 0) {
+        pStreamTriggerList = (IxStreamerTrigger *)
+            pIxMalloc(pStreamerPackageInfo->triggerCount *
                                  sizeof(IxStreamerTrigger));
-        if (pStreamerTriggers == 0) {
+        if (pStreamTriggerList == 0) {
             ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 177);
             ix_log_printf("Streamer failed to allocate.");
             exit(-1);
         }
-        ix_file_seek(pStreamerPackageFile,
-                     pStreamerHeader->triggerTableOffset);
-        ix_file_read(pStreamerPackageFile,
-                     pStreamerTriggers,
-                     pStreamerHeader->triggerCount *
+        ix_file_seek(pStreamerPackFile,
+                     pStreamerPackageInfo->triggerTableOffset);
+        ix_file_read(pStreamerPackFile,
+                     pStreamTriggerList,
+                     pStreamerPackageInfo->triggerCount *
                      sizeof(IxStreamerTrigger));
     }
-    if (pStreamerHeader->fileEntryCount != 0) {
-        pStreamerFileEntries = (IxStreamerFileEntry *)
+    if (pStreamerPackageInfo->fileEntryCount != 0) {
+        pStreamFileEntries = (IxStreamerFileEntry *)
             pIxMalloc(
-                pStreamerHeader->fileEntryCount *
+                pStreamerPackageInfo->fileEntryCount *
                 sizeof(IxStreamerFileEntry));
-        if (pStreamerFileEntries == 0) {
+        if (pStreamFileEntries == 0) {
             ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 186);
             ix_log_printf("Streamer failed to allocate.");
             exit(-1);
         }
-        ix_file_seek(pStreamerPackageFile,
-                     pStreamerHeader->fileEntryTableOffset);
-        ix_file_read(pStreamerPackageFile,
-                     pStreamerFileEntries,
-                     pStreamerHeader->fileEntryCount *
+        ix_file_seek(pStreamerPackFile,
+                     pStreamerPackageInfo->fileEntryTableOffset);
+        ix_file_read(pStreamerPackFile,
+                     pStreamFileEntries,
+                     pStreamerPackageInfo->fileEntryCount *
                      sizeof(IxStreamerFileEntry));
     }
-    if (pStreamerHeader->fileChunkCount != 0) {
-        pStreamerFileChunks = (IxStreamerFileChunk *)
+    if (pStreamerPackageInfo->fileChunkCount != 0) {
+        pStreamFileBlocks = (IxStreamerFileChunk *)
             pIxMalloc(
-                pStreamerHeader->fileChunkCount *
+                pStreamerPackageInfo->fileChunkCount *
                 sizeof(IxStreamerFileChunk));
-        if (pStreamerFileChunks == 0) {
+        if (pStreamFileBlocks == 0) {
             ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 195);
             ix_log_printf("Streamer failed to allocate.");
             exit(-1);
         }
-        ix_file_seek(pStreamerPackageFile,
-                     pStreamerHeader->fileChunkTableOffset);
-        ix_file_read(pStreamerPackageFile,
-                     pStreamerFileChunks,
-                     pStreamerHeader->fileChunkCount *
+        ix_file_seek(pStreamerPackFile,
+                     pStreamerPackageInfo->fileChunkTableOffset);
+        ix_file_read(pStreamerPackFile,
+                     pStreamFileBlocks,
+                     pStreamerPackageInfo->fileChunkCount *
                      sizeof(IxStreamerFileChunk));
     }
-    if (pStreamerHeader->packetCount != 0) {
-        pStreamerPacketOffsets = (unsigned int *)
+    if (pStreamerPackageInfo->packetCount != 0) {
+        pStreamerPacketOffsetTable = (unsigned int *)
             pIxMalloc(
-                pStreamerHeader->packetCount *
+                pStreamerPackageInfo->packetCount *
                 sizeof(unsigned int));
-        if (pStreamerPacketOffsets == 0) {
+        if (pStreamerPacketOffsetTable == 0) {
             ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 204);
             ix_log_printf("Streamer failed to allocate.");
             exit(-1);
         }
-        ix_file_seek(pStreamerPackageFile,
-                     pStreamerHeader->packetTableOffset);
-        ix_file_read(pStreamerPackageFile,
-                     pStreamerPacketOffsets,
-                     pStreamerHeader->packetCount *
+        ix_file_seek(pStreamerPackFile,
+                     pStreamerPackageInfo->packetTableOffset);
+        ix_file_read(pStreamerPackFile,
+                     pStreamerPacketOffsetTable,
+                     pStreamerPackageInfo->packetCount *
                      sizeof(unsigned int));
     }
-    if ((dwStreamerState & IX_STREAMER_HAS_AUDIO) != 0) {
-        nStreamerAudioBufferSize =
-            pStreamerHeader->audioBufferSize;
+    if ((dwIxStreamerStatus & IX_STREAMER_HAS_AUDIO) != 0) {
+        dwIxStreamerAudioBufferSize =
+            pStreamerPackageInfo->audioBufferSize;
         ix_dsp_configure(0x100,
-            (void *)pStreamerHeader->dspConfigValue);
-        ix_dsps_alloc(0, nStreamerAudioBufferSize,
-                      pStreamerHeader->frequency,
-                      pStreamerHeader->bitsPerSample,
-                      pStreamerHeader->channels);
+            (void *)pStreamerPackageInfo->dspConfigValue);
+        ix_dsps_alloc(0, dwIxStreamerAudioBufferSize,
+                      pStreamerPackageInfo->frequency,
+                      pStreamerPackageInfo->bitsPerSample,
+                      pStreamerPackageInfo->channels);
         ix_dsps_set_volume(0, nStreamerVolume);
-        nStreamerBytesPerSecond =
-            (pStreamerHeader->bitsPerSample >> 3) *
-            pStreamerHeader->channels *
-            pStreamerHeader->frequency;
+        dwStreamBytesPerSecond =
+            (pStreamerPackageInfo->bitsPerSample >> 3) *
+            pStreamerPackageInfo->channels *
+            pStreamerPackageInfo->frequency;
     }
-    pStreamerCompressedBuffer = (unsigned char *)
-        pIxMalloc(pStreamerHeader->fileBufferSize);
-    if (pStreamerCompressedBuffer == 0) {
+    pStreamerLzoBuffer = (unsigned char *)
+        pIxMalloc(pStreamerPackageInfo->fileBufferSize);
+    if (pStreamerLzoBuffer == 0) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 238);
         ix_log_printf("Failed to allocate file_buffer!");
         exit(-1);
     }
-    pStreamerFileBuffer = (unsigned char *)
-        pIxMalloc(pStreamerHeader->fileBufferSize);
-    if (pStreamerFileBuffer == 0) {
+    pIxStreamerInputBuffer = (unsigned char *)
+        pIxMalloc(pStreamerPackageInfo->fileBufferSize);
+    if (pIxStreamerInputBuffer == 0) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_STREAMER_FILE, 240);
         ix_log_printf("Failed to allocate file_buffer!");
         exit(-1);
     }
-    dwStreamerState |= IX_STREAMER_FILE_OPEN;
-    SetEvent(hStreamerWakeEvent);
+    dwIxStreamerStatus |= IX_STREAMER_FILE_OPEN;
+    SetEvent(hStreamerWakeupEvent);
     return 0;
 }
 
@@ -306,103 +310,103 @@ extern "C" void ix_streamer_close_stream_file(void)
     IxStreamFile *streamFile;
     IxStreamFile *previousFile;
 
-    if ((dwStreamerState & IX_STREAMER_INITIALIZED) == 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_INITIALIZED) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 250);
         ix_log_printf("Streamer not ready to open stream file!");
         return;
     }
-    if ((dwStreamerState & IX_STREAMER_FILE_OPEN) == 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_FILE_OPEN) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 251);
         ix_log_printf("Stream file not open!");
         return;
     }
-    streamFile = pStreamerIdleFiles;
+    streamFile = pStreamIdleFiles;
     while (streamFile != 0) {
         previousFile = streamFile->previous;
         ix_streamer_close_file(streamFile);
         streamFile = previousFile;
     }
     EnterCriticalSection(&csStreamer);
-    dwStreamerState &= 0xffffff91;
-    pIxFree(pStreamerHeader);
-    pIxFree(pStreamerAudioChunks);
-    pIxFree(pStreamerBranches);
-    pIxFree(pStreamerTriggers);
-    pIxFree(pStreamerFileEntries);
-    pIxFree(pStreamerFileChunks);
-    pIxFree(pStreamerPacketOffsets);
-    pIxFree(pStreamerCompressedBuffer);
-    pIxFree(pStreamerFileBuffer);
+    dwIxStreamerStatus &= 0xffffff91;
+    pIxFree(pStreamerPackageInfo);
+    pIxFree(pStreamedMusicAudioChunks);
+    pIxFree(pMusicStreamBranchList);
+    pIxFree(pStreamTriggerList);
+    pIxFree(pStreamFileEntries);
+    pIxFree(pStreamFileBlocks);
+    pIxFree(pStreamerPacketOffsetTable);
+    pIxFree(pStreamerLzoBuffer);
+    pIxFree(pIxStreamerInputBuffer);
     ix_dsps_free(0);
-    ix_file_close(pStreamerPackageFile);
+    ix_file_close(pStreamerPackFile);
     LeaveCriticalSection(&csStreamer);
-    SetEvent(hStreamerWakeEvent);
+    SetEvent(hStreamerWakeupEvent);
 }
 
 /* Function start: 0x004431F3 */   /* source line(s) 286: Stream has no audio */
 extern "C" void ix_streamer_audio_play(void)
 {
-    if ((dwStreamerState & IX_STREAMER_HAS_AUDIO) == 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_HAS_AUDIO) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 286);
         ix_log_printf("Stream has no audio");
         return;
     }
-    dwStreamerState |= IX_STREAMER_AUDIO_PLAYING;
-    dwStreamerState &= ~IX_STREAMER_AUDIO_PAUSED;
-    SetEvent(hStreamerWakeEvent);
+    dwIxStreamerStatus |= IX_STREAMER_AUDIO_PLAYING;
+    dwIxStreamerStatus &= ~IX_STREAMER_AUDIO_PAUSED;
+    SetEvent(hStreamerWakeupEvent);
 }
 
 /* Function start: 0x00443253 */   /* source line(s) 295: Stream has no audio */
 extern "C" void ix_streamer_audio_stop(void)
 {
-    if ((dwStreamerState & IX_STREAMER_HAS_AUDIO) == 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_HAS_AUDIO) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 295);
         ix_log_printf("Stream has no audio");
         return;
     }
-    dwStreamerState &= ~IX_STREAMER_AUDIO_PLAYING;
+    dwIxStreamerStatus &= ~IX_STREAMER_AUDIO_PLAYING;
     ix_streamer_seek_chunk(0);
-    SetEvent(hStreamerWakeEvent);
+    SetEvent(hStreamerWakeupEvent);
 }
 
 /* Function start: 0x004432B6 */   /* source line(s) 304: Stream has no audio */
 void ix_streamer_audio_pause(void)
 {
-    if ((dwStreamerState & IX_STREAMER_HAS_AUDIO) == 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_HAS_AUDIO) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 304);
         ix_log_printf("Stream has no audio");
         return;
     }
-    dwStreamerState |= IX_STREAMER_AUDIO_PAUSED;
-    SetEvent(hStreamerWakeEvent);
+    dwIxStreamerStatus |= IX_STREAMER_AUDIO_PAUSED;
+    SetEvent(hStreamerWakeupEvent);
 }
 
 /* Function start: 0x0044330F */   /* source line(s) 312: Stream has no audio */
 void ix_streamer_audio_reprepare(void)
 {
-    if ((dwStreamerState & IX_STREAMER_HAS_AUDIO) == 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_HAS_AUDIO) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 312);
         ix_log_printf("Stream has no audio");
         return;
     }
-    dwStreamerState |= IX_STREAMER_REPREPARE_AUDIO;
-    SetEvent(hStreamerWakeEvent);
+    dwIxStreamerStatus |= IX_STREAMER_REPREPARE_AUDIO;
+    SetEvent(hStreamerWakeupEvent);
 }
 
 /* Function start: 0x0044336B */
 extern "C" void ix_streamer_set_intensity(unsigned char intensity)
 {
     if (intensity >= 0) {
-        bStreamerIntensity = intensity < 100 ? intensity : 100;
+        bStreamerIntensityLevel = intensity < 100 ? intensity : 100;
     } else {
-        bStreamerIntensity = 0;
+        bStreamerIntensityLevel = 0;
     }
 }
 
 /* Function start: 0x004433AC */
 unsigned char ix_streamer_get_intensity(void)
 {
-    return bStreamerIntensity;
+    return bStreamerIntensityLevel;
 }
 
 /* Function start: 0x004433C1 */
@@ -432,33 +436,33 @@ extern "C" void ix_streamer_force_trigger(char trigger)
     unsigned int chunk;
     unsigned int chunkCount;
 
-    if ((dwStreamerState & IX_STREAMER_HAS_AUDIO) == 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_HAS_AUDIO) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 342);
         ix_log_printf("Stream has no audio");
         return;
     }
-    chunk = nStreamerAudioChunk;
-    chunkCount = pStreamerHeader->audioChunkCount;
+    chunk = nStreamerAudioBlock;
+    chunkCount = pStreamerPackageInfo->audioChunkCount;
     EnterCriticalSection(&csStreamer);
     while (-1 < trigger && chunkCount--) {
-        if (pStreamerAudioChunks[chunk].triggerCount > 0) {
+        if (pStreamedMusicAudioChunks[chunk].triggerCount > 0) {
             unsigned int triggerCount;
             unsigned int triggerIndex;
 
             triggerCount =
-                pStreamerAudioChunks[chunk].triggerCount;
+                pStreamedMusicAudioChunks[chunk].triggerCount;
             triggerIndex =
-                pStreamerAudioChunks[chunk].firstTrigger;
+                pStreamedMusicAudioChunks[chunk].firstTrigger;
             while (triggerCount--) {
-                if (pStreamerTriggers[triggerIndex].tag ==
+                if (pStreamTriggerList[triggerIndex].tag ==
                     trigger) {
-                    adwStreamerBranchStack[
-                        nStreamerBranchStackIndex] =
-                            nStreamerAudioChunk;
-                    nStreamerBranchStackIndex =
-                        (nStreamerBranchStackIndex + 1) & 0x1f;
-                    nStreamerAudioChunk =
-                        pStreamerTriggers[
+                    adwStreamCallStack[
+                        nStreamCallStackIndex] =
+                            nStreamerAudioBlock;
+                    nStreamCallStackIndex =
+                        (nStreamCallStackIndex + 1) & 0x1f;
+                    nStreamerAudioBlock =
+                        pStreamTriggerList[
                             triggerIndex].audioChunk;
                     trigger = -1;
                     break;
@@ -467,15 +471,15 @@ extern "C" void ix_streamer_force_trigger(char trigger)
             }
         }
         chunk++;
-        if (pStreamerHeader->audioChunkCount - 1 <= chunk)
+        if (pStreamerPackageInfo->audioChunkCount - 1 <= chunk)
             chunk = 0;
     }
-    if ((dwStreamerState & IX_STREAMER_DSP_PLAYING) != 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_DSP_PLAYING) != 0) {
         ix_dsps_stop(0);
-        dwStreamerState &= ~IX_STREAMER_DSP_PLAYING;
+        dwIxStreamerStatus &= ~IX_STREAMER_DSP_PLAYING;
     }
     LeaveCriticalSection(&csStreamer);
-    SetEvent(hStreamerWakeEvent);
+    SetEvent(hStreamerWakeupEvent);
 }
 
 /* Function start: 0x004435BE */
@@ -487,7 +491,7 @@ extern "C" void ix_streamer_set_volume(unsigned short volume)
     } else {
         nStreamerVolume = 0;
     }
-    if ((dwStreamerState & 2) != 0) {
+    if ((dwIxStreamerStatus & 2) != 0) {
         EnterCriticalSection(&csStreamer);
         ix_dsps_set_volume(0, nStreamerVolume);
         LeaveCriticalSection(&csStreamer);
@@ -503,7 +507,7 @@ extern "C" unsigned short ix_streamer_get_volume(void)
 /* Function start: 0x00443651 */
 unsigned int ix_streamer_get_audio_chunk(void)
 {
-    return nStreamerAudioChunk;
+    return nStreamerAudioBlock;
 }
 
 /* Function start: 0x00443666 */
@@ -511,12 +515,12 @@ void ix_streamer_seek_chunk(unsigned int chunk)
 {
     EnterCriticalSection(&csStreamer);
     if (chunk >= 0) {
-        nStreamerAudioChunk =
-            pStreamerHeader->audioChunkCount - 1 < chunk
-                ? pStreamerHeader->audioChunkCount - 1
+        nStreamerAudioBlock =
+            pStreamerPackageInfo->audioChunkCount - 1 < chunk
+                ? pStreamerPackageInfo->audioChunkCount - 1
                 : chunk;
     } else {
-        nStreamerAudioChunk = 0;
+        nStreamerAudioBlock = 0;
     }
     LeaveCriticalSection(&csStreamer);
 }
@@ -552,10 +556,10 @@ IxStreamerFileEntry *ix_streamer_find_entry(unsigned int hash)
     IxStreamerFileEntry *entry;
 
     lo = 0;
-    hi = pStreamerHeader->fileEntryCount;
+    hi = pStreamerPackageInfo->fileEntryCount;
     while (hi > lo) {
         mid = (hi + lo) >> 1;
-        entry = &pStreamerFileEntries[mid];
+        entry = &pStreamFileEntries[mid];
         if (entry->nameHash < hash) {
             lo = mid + 1;
         } else if (entry->nameHash > hash) {
@@ -576,7 +580,7 @@ IxStreamFile *ix_streamer_open_file(unsigned char *name,
     FILE *file;
 
     streamFile = 0;
-    if ((dwStreamerState & IX_STREAMER_DEVELOPER_MODE) == 0) {
+    if ((dwIxStreamerStatus & IX_STREAMER_DEVELOPER_MODE) == 0) {
         entry = ix_streamer_find_entry(ix_streamer_hash_name(name));
         if (entry != 0) {
             streamFile = (IxStreamFile *)
@@ -592,13 +596,13 @@ IxStreamFile *ix_streamer_open_file(unsigned char *name,
             streamFile->position = 0;
             streamFile->completionEvent = CreateEventA(0, TRUE, FALSE, 0);
             streamFile->size = entry->size;
-            EnterCriticalSection(&csStreamerFileQueue);
-            streamFile->previous = pStreamerIdleFiles;
+            EnterCriticalSection(&csStreamerFileList);
+            streamFile->previous = pStreamIdleFiles;
             streamFile->next = 0;
-            if (pStreamerIdleFiles != 0)
-                pStreamerIdleFiles->next = streamFile;
-            pStreamerIdleFiles = streamFile;
-            LeaveCriticalSection(&csStreamerFileQueue);
+            if (pStreamIdleFiles != 0)
+                pStreamIdleFiles->next = streamFile;
+            pStreamIdleFiles = streamFile;
+            LeaveCriticalSection(&csStreamerFileList);
         } else {
             ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 526);
             ix_log_printf("Failed to find_file in stream, %s!", name);
@@ -619,13 +623,13 @@ IxStreamFile *ix_streamer_open_file(unsigned char *name,
             streamFile->priority = priority;
             streamFile->position = 0;
             streamFile->completionEvent = CreateEventA(0, TRUE, FALSE, 0);
-            EnterCriticalSection(&csStreamerFileQueue);
-            streamFile->previous = pStreamerIdleFiles;
+            EnterCriticalSection(&csStreamerFileList);
+            streamFile->previous = pStreamIdleFiles;
             streamFile->next = 0;
-            if (pStreamerIdleFiles != 0)
-                pStreamerIdleFiles->next = streamFile;
-            pStreamerIdleFiles = streamFile;
-            LeaveCriticalSection(&csStreamerFileQueue);
+            if (pStreamIdleFiles != 0)
+                pStreamIdleFiles->next = streamFile;
+            pStreamIdleFiles = streamFile;
+            LeaveCriticalSection(&csStreamerFileList);
         } else {
             ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 549);
             ix_log_printf("Failed to find_file in stream, %s!", name);
@@ -638,15 +642,15 @@ IxStreamFile *ix_streamer_open_file(unsigned char *name,
 void ix_streamer_close_file(IxStreamFile *streamFile)
 {
     streamFile->ix_stream_file_wait();
-    EnterCriticalSection(&csStreamerFileQueue);
+    EnterCriticalSection(&csStreamerFileList);
     if (streamFile->previous != 0)
         streamFile->previous->next = streamFile->next;
     if (streamFile->next == 0)
-        pStreamerIdleFiles = streamFile->previous;
+        pStreamIdleFiles = streamFile->previous;
     else
         streamFile->next->previous = streamFile->previous;
-    LeaveCriticalSection(&csStreamerFileQueue);
-    if ((dwStreamerState & IX_STREAMER_DEVELOPER_MODE) != 0)
+    LeaveCriticalSection(&csStreamerFileList);
+    if ((dwIxStreamerStatus & IX_STREAMER_DEVELOPER_MODE) != 0)
         ix_file_close(streamFile->file);
     CloseHandle(streamFile->completionEvent);
     pIxFree(streamFile);

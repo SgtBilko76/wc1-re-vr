@@ -734,7 +734,7 @@ extern unsigned char abCockpitLightGoal[7]; /* 0x005a7eb8 */
 extern unsigned int anCockpitDamageState[4]; /* 0x005a7ef0 */
 extern MouseCursorState stHostMouseState; /* 0x0059af70 */
 extern int nFrameIntervalMs; /* 0x0046b1b8 */
-extern unsigned int dwStreamerState; /* 0x00597cd0 */
+extern unsigned int dwIxStreamerStatus; /* 0x00597cd0 */
 extern short bExpandedMemoryAvailable; /* 0x0059a856 */
 extern int bCampaignStartupMode; /* 0x004688e0 */
 extern short nScriptedViewObject; /* 0x0046a8d0 */

@@ -654,7 +654,7 @@ void ShutdownGameWindow(void)
         SDL_Window *window;
 
         bMainWindowAlive = 0;
-        if ((dwStreamerState & 1) != 0)
+        if ((dwIxStreamerStatus & 1) != 0)
             ix_streamer_destroy();
         ServiceAudioStream();
         DestroyGlobalDebugOverlayConsole();

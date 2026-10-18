@@ -523,35 +523,35 @@ extern "C" long ix_file_size(FILE *file);        /* 0x00461764 */
 /* Sound-system voice allocation does not use streamer state. */
 #if !defined(WC1_IX_DSPS_SOURCE) && !defined(WC1_IX_SOUND_SOURCE) && \
     !defined(WC1_IX_SYSTEM_SOURCE)
-extern unsigned int *pStreamerPacketOffsets;
-extern unsigned int dwStreamerThreadTick;
-extern FILE *pStreamerPackageFile;
-extern IxStreamFile *pStreamerIdleFiles;
-extern unsigned int adwStreamerBranchStack[32];
-extern unsigned char *pStreamerCompressedBuffer;
-extern IxStreamFile *pStreamerReadQueue;
-extern unsigned int nStreamerAudioBufferSize;
-extern unsigned char *pStreamerFileBuffer;
-extern unsigned char bStreamerIntensity;
-extern HANDLE hStreamerThread;
-extern IxStreamerFileEntry *pStreamerFileEntries;
-extern IxStreamerHeader *pStreamerHeader;
-extern IxStreamerAudioChunk *pStreamerAudioChunks;
-extern IxStreamerBranch *pStreamerBranches;
-extern IxStreamerFileChunk *pStreamerFileChunks;
-extern CRITICAL_SECTION csStreamerFileQueue;
-extern CRITICAL_SECTION csStreamerThread;
-extern unsigned int nStreamerAudioChunk;
-extern DWORD dwStreamerThreadId;
-extern "C" unsigned int dwStreamerState;
-extern HANDLE hStreamerWakeEvent;
-extern unsigned int nStreamerFileChunk;
-extern unsigned int nStreamerBytesPerSecond;
+extern unsigned int *pStreamerPacketOffsetTable;
+extern unsigned int dwStreamThreadTick;
+extern FILE *pStreamerPackFile;
+extern IxStreamFile *pStreamIdleFiles;
+extern unsigned int adwStreamCallStack[32];
+extern unsigned char *pStreamerLzoBuffer;
+extern IxStreamFile *pStreamReadRequests;
+extern unsigned int dwIxStreamerAudioBufferSize;
+extern unsigned char *pIxStreamerInputBuffer;
+extern unsigned char bStreamerIntensityLevel;
+extern HANDLE hStreamThread;
+extern IxStreamerFileEntry *pStreamFileEntries;
+extern IxStreamerHeader *pStreamerPackageInfo;
+extern IxStreamerAudioChunk *pStreamedMusicAudioChunks;
+extern IxStreamerBranch *pMusicStreamBranchList;
+extern IxStreamerFileChunk *pStreamFileBlocks;
+extern CRITICAL_SECTION csStreamerFileList;
+extern CRITICAL_SECTION csIxStreamerThread;
+extern unsigned int nStreamerAudioBlock;
+extern DWORD dwIxStreamerThreadId;
+extern "C" unsigned int dwIxStreamerStatus;
+extern HANDLE hStreamerWakeupEvent;
+extern unsigned int nIxStreamerCurrentFileChunk;
+extern unsigned int dwStreamBytesPerSecond;
 extern unsigned short nStreamerVolume;
 extern char cStreamerBranchTag;
-extern unsigned int nStreamerBranchStackIndex;
+extern unsigned int nStreamCallStackIndex;
 extern CRITICAL_SECTION csStreamer;
-extern IxStreamerTrigger *pStreamerTriggers;
+extern IxStreamerTrigger *pStreamTriggerList;
 #endif
 
 #endif /* IX_H */

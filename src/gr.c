@@ -1376,7 +1376,7 @@ void UpdateStreamerStoppedFlag(void)
 {
     if (bIxAudioEnabled != 0)
     nMusicTrackComplete =
-        (dwStreamerState & 4) == 0;
+        (dwIxStreamerStatus & 4) == 0;
 }
 
 /* Function start: 0x442350 */

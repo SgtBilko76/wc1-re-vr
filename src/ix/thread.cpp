@@ -19,71 +19,71 @@ DWORD WINAPI ix_streamer_thread_proc(void *parameter)
     DWORD timeout;
 
     timeout = 0;
-    EnterCriticalSection(&csStreamerThread);
-    dwStreamerState |= IX_STREAMER_THREAD_RUNNING;
-    while ((dwStreamerState & IX_STREAMER_SHUTDOWN) == 0) {
-        dwStreamerThreadTick++;
+    EnterCriticalSection(&csIxStreamerThread);
+    dwIxStreamerStatus |= IX_STREAMER_THREAD_RUNNING;
+    while ((dwIxStreamerStatus & IX_STREAMER_SHUTDOWN) == 0) {
+        dwStreamThreadTick++;
         EnterCriticalSection(&csStreamer);
-        if ((dwStreamerState & IX_STREAMER_FILE_OPEN) != 0) {
-            if ((dwStreamerState &
+        if ((dwIxStreamerStatus & IX_STREAMER_FILE_OPEN) != 0) {
+            if ((dwIxStreamerStatus &
                  IX_STREAMER_REPREPARE_AUDIO) != 0) {
-                if ((dwStreamerState &
+                if ((dwIxStreamerStatus &
                      IX_STREAMER_DSP_PLAYING) != 0) {
                     ix_dsps_stop(0);
-                    dwStreamerState &=
+                    dwIxStreamerStatus &=
                         ~IX_STREAMER_DSP_PLAYING;
                 }
                 ix_dsps_prepare(0);
-                dwStreamerState &=
+                dwIxStreamerStatus &=
                     ~(IX_STREAMER_REPREPARE_AUDIO |
                       IX_STREAMER_END_TRIGGERED);
             }
-            if ((dwStreamerState &
+            if ((dwIxStreamerStatus &
                  (IX_STREAMER_HAS_AUDIO | IX_STREAMER_AUDIO_PLAYING)) ==
                 (IX_STREAMER_HAS_AUDIO | IX_STREAMER_AUDIO_PLAYING)) {
                 timeout = ix_streamer_service_audio();
-                if ((dwStreamerState &
+                if ((dwIxStreamerStatus &
                      IX_STREAMER_AUDIO_PAUSED) != 0) {
-                    if ((dwStreamerState &
+                    if ((dwIxStreamerStatus &
                          IX_STREAMER_DSP_PAUSED) == 0) {
                         ix_dsps_stop(0);
-                        dwStreamerState |=
+                        dwIxStreamerStatus |=
                             IX_STREAMER_DSP_PAUSED;
                     }
                 } else {
-                    if ((dwStreamerState &
+                    if ((dwIxStreamerStatus &
                          IX_STREAMER_DSP_PAUSED) != 0) {
                         ix_dsps_play(0);
-                        dwStreamerState &=
+                        dwIxStreamerStatus &=
                             ~IX_STREAMER_DSP_PAUSED;
                     }
                 }
             } else {
                 timeout = ix_thread_service_streams();
-                if ((dwStreamerState &
+                if ((dwIxStreamerStatus &
                      IX_STREAMER_DSP_PLAYING) != 0) {
                     ix_dsps_stop(0);
-                    dwStreamerState &=
+                    dwIxStreamerStatus &=
                         ~(IX_STREAMER_DSP_PLAYING |
                           IX_STREAMER_DSP_PAUSED);
                 }
             }
             LeaveCriticalSection(&csStreamer);
-            WaitForSingleObject(hStreamerWakeEvent, timeout);
-            ResetEvent(hStreamerWakeEvent);
+            WaitForSingleObject(hStreamerWakeupEvent, timeout);
+            ResetEvent(hStreamerWakeupEvent);
         } else {
-            if ((dwStreamerState & IX_STREAMER_DSP_PLAYING) != 0) {
+            if ((dwIxStreamerStatus & IX_STREAMER_DSP_PLAYING) != 0) {
                 ix_dsps_stop(0);
-                dwStreamerState &=
+                dwIxStreamerStatus &=
                     ~(IX_STREAMER_DSP_PLAYING | IX_STREAMER_DSP_PAUSED);
             }
             LeaveCriticalSection(&csStreamer);
-            WaitForSingleObject(hStreamerWakeEvent, INFINITE);
-            ResetEvent(hStreamerWakeEvent);
+            WaitForSingleObject(hStreamerWakeupEvent, INFINITE);
+            ResetEvent(hStreamerWakeupEvent);
         }
     }
-    dwStreamerState &= ~IX_STREAMER_THREAD_RUNNING;
-    LeaveCriticalSection(&csStreamerThread);
+    dwIxStreamerStatus &= ~IX_STREAMER_THREAD_RUNNING;
+    LeaveCriticalSection(&csIxStreamerThread);
     (void)parameter;
     return 0;
 }
@@ -93,16 +93,16 @@ unsigned int ix_streamer_service_audio(void)
 {
     unsigned int bytesUntilStop;
 
-    if ((dwStreamerState & IX_STREAMER_END_TRIGGERED) != 0) {
-        bytesUntilStop = pStreamerHeader->audioBufferSize -
+    if ((dwIxStreamerStatus & IX_STREAMER_END_TRIGGERED) != 0) {
+        bytesUntilStop = pStreamerPackageInfo->audioBufferSize -
                          ix_dsps_get_buffer_free(0);
         Sleep((bytesUntilStop * 1000U) /
-              nStreamerBytesPerSecond);
-        dwStreamerState &= 0xfffff7db;
+              dwStreamBytesPerSecond);
+        dwIxStreamerStatus &= 0xfffff7db;
         ix_dsps_stop(0);
-    } else if ((dwStreamerState &
+    } else if ((dwIxStreamerStatus &
                 IX_STREAMER_DSP_PLAYING) == 0) {
-        dwStreamerState |= IX_STREAMER_DSP_PLAYING;
+        dwIxStreamerStatus |= IX_STREAMER_DSP_PLAYING;
         ix_dsps_prepare(0);
         while (ix_thread_get_audio_chunk_size() <
                (unsigned int)ix_dsps_get_buffer_free(0))
@@ -134,46 +134,46 @@ void ix_thread_handle_file_chunk(IxStreamFile *streamFile)
     unsigned int *packet;
 
     packageRecord = streamFile->entry;
-    streamFile->serviceTick = dwStreamerThreadTick;
-    if ((dwStreamerState & 0x100) != 0) {
+    streamFile->serviceTick = dwStreamThreadTick;
+    if ((dwIxStreamerStatus & 0x100) != 0) {
         ix_file_seek(streamFile->file, streamFile->position);
         ix_file_read(streamFile->file, streamFile->destination,
                      streamFile->remaining);
-        EnterCriticalSection(&csStreamerFileQueue);
+        EnterCriticalSection(&csStreamerFileList);
         streamFile->flags &= ~IX_STREAM_FILE_READING;
         if (streamFile->previous != 0)
             streamFile->previous->next = streamFile->next;
         if (streamFile->next == 0)
-            pStreamerReadQueue = streamFile->previous;
+            pStreamReadRequests = streamFile->previous;
         else
             streamFile->next->previous = streamFile->previous;
-        streamFile->previous = pStreamerIdleFiles;
+        streamFile->previous = pStreamIdleFiles;
         streamFile->next = 0;
-        if (pStreamerIdleFiles != 0)
-            pStreamerIdleFiles->next = streamFile;
-        pStreamerIdleFiles = streamFile;
-        LeaveCriticalSection(&csStreamerFileQueue);
+        if (pStreamIdleFiles != 0)
+            pStreamIdleFiles->next = streamFile;
+        pStreamIdleFiles = streamFile;
+        LeaveCriticalSection(&csStreamerFileList);
         SetEvent(streamFile->completionEvent);
         return;
     }
 
     chunkIndex = packageRecord->firstChunk;
     chunksToScan = packageRecord->chunkCount;
-    fileChunk = &pStreamerFileChunks[chunkIndex];
+    fileChunk = &pStreamFileBlocks[chunkIndex];
     packagePosition = (unsigned int)ix_file_tell(
-        pStreamerPackageFile);
+        pStreamerPackFile);
     while (chunksToScan--) {
         if (fileChunk->fileOffset <= streamFile->position &&
             fileChunk->fileEnd > streamFile->position) {
             chunkBytes = fileChunk->fileEnd - fileChunk->fileOffset;
-            if (chunkIndex != nStreamerFileChunk) {
+            if (chunkIndex != nIxStreamerCurrentFileChunk) {
                 firstPacket = fileChunk->firstPacket;
                 endPacket = fileChunk->packetCount + firstPacket;
                 packet = 0;
-                nStreamerFileChunk = chunkIndex;
+                nIxStreamerCurrentFileChunk = chunkIndex;
                 while (endPacket > firstPacket) {
                     pivot = (endPacket + firstPacket) >> 1;
-                    packet = &pStreamerPacketOffsets[pivot];
+                    packet = &pStreamerPacketOffsetTable[pivot];
                     if (*packet < packagePosition)
                         firstPacket = pivot + 1;
                     else if (*packet > packagePosition)
@@ -187,28 +187,28 @@ void ix_thread_handle_file_chunk(IxStreamFile *streamFile)
                     exit(-1);
                 }
                 if (fileChunk->packedSize < 0) {
-                    ix_file_seek(pStreamerPackageFile, *packet);
-                    ix_file_read(pStreamerPackageFile,
-                                 pStreamerCompressedBuffer,
+                    ix_file_seek(pStreamerPackFile, *packet);
+                    ix_file_read(pStreamerPackFile,
+                                 pStreamerLzoBuffer,
                                  -fileChunk->packedSize);
 #ifdef SDL_PORT
                     ix_lzo1x_decompress(
-                        pStreamerCompressedBuffer,
-                        pStreamerFileBuffer, chunkBytes,
+                        pStreamerLzoBuffer,
+                        pIxStreamerInputBuffer, chunkBytes,
                         (unsigned int)-fileChunk->packedSize);
 #else
-                    ix_lzo1x_decompress(pStreamerCompressedBuffer,
-                                        pStreamerFileBuffer,
+                    ix_lzo1x_decompress(pStreamerLzoBuffer,
+                                        pIxStreamerInputBuffer,
                                         chunkBytes);
 #endif
                 } else {
-                    ix_file_seek(pStreamerPackageFile, *packet);
-                    ix_file_read(pStreamerPackageFile,
-                                 pStreamerFileBuffer,
+                    ix_file_seek(pStreamerPackFile, *packet);
+                    ix_file_read(pStreamerPackFile,
+                                 pIxStreamerInputBuffer,
                                  fileChunk->packedSize);
                 }
             }
-            readPointer = pStreamerFileBuffer;
+            readPointer = pIxStreamerInputBuffer;
             copyBytes = streamFile->remaining;
             innerOffset = streamFile->position - fileChunk->fileOffset;
             chunkBytes = chunkBytes - innerOffset;
@@ -220,20 +220,20 @@ void ix_thread_handle_file_chunk(IxStreamFile *streamFile)
             streamFile->position += copyBytes;
             streamFile->remaining = streamFile->remaining - copyBytes;
             if (streamFile->remaining == 0) {
-                EnterCriticalSection(&csStreamerFileQueue);
+                EnterCriticalSection(&csStreamerFileList);
                 if (streamFile->previous != 0)
                     streamFile->previous->next = streamFile->next;
                 if (streamFile->next == 0)
-                    pStreamerReadQueue = streamFile->previous;
+                    pStreamReadRequests = streamFile->previous;
                 else
                     streamFile->next->previous = streamFile->previous;
-                streamFile->previous = pStreamerIdleFiles;
+                streamFile->previous = pStreamIdleFiles;
                 streamFile->next = 0;
-                if (pStreamerIdleFiles != 0)
-                    pStreamerIdleFiles->next = streamFile;
-                pStreamerIdleFiles = streamFile;
+                if (pStreamIdleFiles != 0)
+                    pStreamIdleFiles->next = streamFile;
+                pStreamIdleFiles = streamFile;
                 streamFile->flags &= ~IX_STREAM_FILE_READING;
-                LeaveCriticalSection(&csStreamerFileQueue);
+                LeaveCriticalSection(&csStreamerFileList);
                 SetEvent(streamFile->completionEvent);
             }
             return;
@@ -250,9 +250,9 @@ unsigned int ix_thread_service_streams(void)
     IxStreamFile *streamFile;
     IxStreamFile *bestFile;
 
-    EnterCriticalSection(&csStreamerFileQueue);
-    if (pStreamerReadQueue != 0) {
-        streamFile = pStreamerReadQueue;
+    EnterCriticalSection(&csStreamerFileList);
+    if (pStreamReadRequests != 0) {
+        streamFile = pStreamReadRequests;
         bestFile = 0;
         while (streamFile != 0) {
             if (bestFile != 0) {
@@ -265,24 +265,24 @@ unsigned int ix_thread_service_streams(void)
             }
             streamFile = streamFile->previous;
         }
-        LeaveCriticalSection(&csStreamerFileQueue);
+        LeaveCriticalSection(&csStreamerFileList);
         if (bestFile != 0)
             ix_thread_handle_file_chunk(bestFile);
     } else {
-        LeaveCriticalSection(&csStreamerFileQueue);
+        LeaveCriticalSection(&csStreamerFileList);
     }
 
-    if (pStreamerReadQueue != 0)
+    if (pStreamReadRequests != 0)
         return 0;
-    if ((dwStreamerState & 4) == 0 ||
-        (dwStreamerState & 8) != 0)
+    if ((dwIxStreamerStatus & 4) == 0 ||
+        (dwIxStreamerStatus & 8) != 0)
         return 1000;
     bytesUntilRefill = ix_thread_get_audio_chunk_size() -
                        ix_dsps_get_buffer_free(0);
     if (bytesUntilRefill > 0) {
         bytesUntilRefill += 0x16f8;
         return (bytesUntilRefill * 1000U) /
-               nStreamerBytesPerSecond;
+               dwStreamBytesPerSecond;
     }
     return 0;
 }
@@ -290,34 +290,34 @@ unsigned int ix_thread_service_streams(void)
 /* Function start: 0x00444316 */
 void ix_thread_advance_audio_chunk(void)
 {
-    if (pStreamerAudioChunks[
-            nStreamerAudioChunk].triggerCount > 0) {
+    if (pStreamedMusicAudioChunks[
+            nStreamerAudioBlock].triggerCount > 0) {
         unsigned int triggerIndex;
         unsigned int triggerCount;
 
-        triggerCount = pStreamerAudioChunks[
-            nStreamerAudioChunk].triggerCount;
-        triggerIndex = pStreamerAudioChunks[
-            nStreamerAudioChunk].firstTrigger;
+        triggerCount = pStreamedMusicAudioChunks[
+            nStreamerAudioBlock].triggerCount;
+        triggerIndex = pStreamedMusicAudioChunks[
+            nStreamerAudioBlock].firstTrigger;
         while (triggerCount--) {
-            if (pStreamerTriggers[triggerIndex].tag == 'A') {
-                nStreamerBranchStackIndex =
-                    (nStreamerBranchStackIndex - 1) & 0x1f;
-                nStreamerAudioChunk =
-                    adwStreamerBranchStack[
-                        nStreamerBranchStackIndex];
+            if (pStreamTriggerList[triggerIndex].tag == 'A') {
+                nStreamCallStackIndex =
+                    (nStreamCallStackIndex - 1) & 0x1f;
+                nStreamerAudioBlock =
+                    adwStreamCallStack[
+                        nStreamCallStackIndex];
                 return;
-            } else if (pStreamerTriggers[triggerIndex].tag == '@') {
-                dwStreamerState |= 0x800;
-            } else if (pStreamerTriggers[triggerIndex].tag ==
+            } else if (pStreamTriggerList[triggerIndex].tag == '@') {
+                dwIxStreamerStatus |= 0x800;
+            } else if (pStreamTriggerList[triggerIndex].tag ==
                        cStreamerBranchTag) {
-                adwStreamerBranchStack[
-                    nStreamerBranchStackIndex] =
-                        nStreamerAudioChunk;
-                nStreamerBranchStackIndex =
-                    (nStreamerBranchStackIndex + 1) & 0x1f;
-                nStreamerAudioChunk =
-                    pStreamerTriggers[triggerIndex].audioChunk;
+                adwStreamCallStack[
+                    nStreamCallStackIndex] =
+                        nStreamerAudioBlock;
+                nStreamCallStackIndex =
+                    (nStreamCallStackIndex + 1) & 0x1f;
+                nStreamerAudioBlock =
+                    pStreamTriggerList[triggerIndex].audioChunk;
                 cStreamerBranchTag = -1;
                 return;
             }
@@ -325,49 +325,49 @@ void ix_thread_advance_audio_chunk(void)
         }
     }
 
-    if (pStreamerAudioChunks[
-            nStreamerAudioChunk].branchCount > 0) {
+    if (pStreamedMusicAudioChunks[
+            nStreamerAudioBlock].branchCount > 0) {
         unsigned int branchesToCheck;
         unsigned int candidateBranch;
         unsigned int bestBranch;
         unsigned int bestDistance;
         unsigned int candidateDistance;
 
-        branchesToCheck = pStreamerAudioChunks[
-            nStreamerAudioChunk].branchCount - 1;
-        candidateBranch = pStreamerAudioChunks[
-            nStreamerAudioChunk].firstBranch;
+        branchesToCheck = pStreamedMusicAudioChunks[
+            nStreamerAudioBlock].branchCount - 1;
+        candidateBranch = pStreamedMusicAudioChunks[
+            nStreamerAudioBlock].firstBranch;
         bestDistance =
-            ((pStreamerBranches[candidateBranch].intensity -
-              bStreamerIntensity) >> 31 ^
-             (pStreamerBranches[candidateBranch].intensity -
-              bStreamerIntensity)) -
-            ((pStreamerBranches[candidateBranch].intensity -
-              bStreamerIntensity) >> 31);
+            ((pMusicStreamBranchList[candidateBranch].intensity -
+              bStreamerIntensityLevel) >> 31 ^
+             (pMusicStreamBranchList[candidateBranch].intensity -
+              bStreamerIntensityLevel)) -
+            ((pMusicStreamBranchList[candidateBranch].intensity -
+              bStreamerIntensityLevel) >> 31);
         bestBranch = candidateBranch;
         candidateBranch++;
         while (branchesToCheck--) {
             candidateDistance =
-                ((pStreamerBranches[candidateBranch].intensity -
-                  bStreamerIntensity) >> 31 ^
-                 (pStreamerBranches[candidateBranch].intensity -
-                  bStreamerIntensity)) -
-                ((pStreamerBranches[candidateBranch].intensity -
-                  bStreamerIntensity) >> 31);
+                ((pMusicStreamBranchList[candidateBranch].intensity -
+                  bStreamerIntensityLevel) >> 31 ^
+                 (pMusicStreamBranchList[candidateBranch].intensity -
+                  bStreamerIntensityLevel)) -
+                ((pMusicStreamBranchList[candidateBranch].intensity -
+                  bStreamerIntensityLevel) >> 31);
             if (candidateDistance < bestDistance) {
                 bestDistance = candidateDistance;
                 bestBranch = candidateBranch;
             }
             candidateBranch++;
         }
-        nStreamerAudioChunk =
-            pStreamerBranches[bestBranch].audioChunk;
+        nStreamerAudioBlock =
+            pMusicStreamBranchList[bestBranch].audioChunk;
         return;
     }
-    nStreamerAudioChunk++;
-    if (pStreamerHeader->audioChunkCount - 1 <=
-        nStreamerAudioChunk)
-        nStreamerAudioChunk = 0;
+    nStreamerAudioBlock++;
+    if (pStreamerPackageInfo->audioChunkCount - 1 <=
+        nStreamerAudioBlock)
+        nStreamerAudioBlock = 0;
 }
 
 /* Function start: 0x004445C9 */   /* source line(s) 394: failed to lock stream buffer */
@@ -380,8 +380,8 @@ void ix_thread_lock_stream_buffer(void)
 
     unreadBytes = ix_thread_get_audio_chunk_size();
     if (unreadBytes > 0) {
-        packageOffset = pStreamerAudioChunks[
-            nStreamerAudioChunk].fileOffset;
+        packageOffset = pStreamedMusicAudioChunks[
+            nStreamerAudioBlock].fileOffset;
         while (unreadBytes > 0) {
             ix_dsps_lock(0, unreadBytes, &buffer, &lockedBytes);
             if (buffer == 0) {
@@ -389,8 +389,8 @@ void ix_thread_lock_stream_buffer(void)
                 ix_log_printf("failed to lock stream buffer");
                 exit(-1);
             }
-            ix_file_seek(pStreamerPackageFile, packageOffset);
-            ix_file_read(pStreamerPackageFile, buffer,
+            ix_file_seek(pStreamerPackFile, packageOffset);
+            ix_file_read(pStreamerPackFile, buffer,
                          lockedBytes);
             unreadBytes = unreadBytes - lockedBytes;
             packageOffset += lockedBytes;
@@ -405,11 +405,11 @@ unsigned int ix_thread_get_audio_chunk_size(void)
 {
     unsigned int fileOffset;
 
-    if (nStreamerAudioChunk != (unsigned int)-1) {
-        fileOffset = pStreamerAudioChunks[
-            nStreamerAudioChunk].fileOffset;
-        return pStreamerAudioChunks[
-            nStreamerAudioChunk].fileEnd - fileOffset;
+    if (nStreamerAudioBlock != (unsigned int)-1) {
+        fileOffset = pStreamedMusicAudioChunks[
+            nStreamerAudioBlock].fileOffset;
+        return pStreamedMusicAudioChunks[
+            nStreamerAudioBlock].fileEnd - fileOffset;
     }
     return 0;
 }

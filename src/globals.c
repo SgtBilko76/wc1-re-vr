@@ -166,7 +166,6 @@ unsigned char abRasterPaletteTranslation[256]; /* 0x0046ff2c */
 RLETransformVertex aRLETransformVertices[4]; /* 0x0047002c */
 int anRLESourceSteps[4]; /* 0x0047007c */
 #endif
-extern unsigned int dwStreamerState; /* 0x00597cd0 */
 int DAT_00598888;
 int DAT_0059888c;
 int DAT_00598890;

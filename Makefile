@@ -232,7 +232,8 @@ GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/eject.c sr
 	src/sound.c src/launch.c src/damage.c src/view.c src/music.c src/ending.c src/input.c \
 	src/comm.c src/video.c src/joycal.c src/dib.c src/game.c src/data.c src/eventmgr.c src/screens.c \
 	src/killbrd.c src/gr.c \
-	src/ix/dsp.cpp src/ix/dsps.cpp src/ix/dspv.cpp src/ix/system.cpp
+	src/ix/ixlog.cpp src/ix/streamer.cpp src/ix/dsp.cpp src/ix/dsps.cpp src/ix/dspv.cpp \
+	src/ix/system.cpp
 GLOBALS_DEFINITION_SOURCES = src/globals.c $(GLOBALS_DISTRIBUTED_SOURCES)
 GLOBALS_AUDIT_SOURCE = $(OUT_DIR)/globals-audit.c
 GLOBALS_DATA_AUDIT_SOURCE = $(OUT_DIR)/globals-data-audit.c

@@ -770,6 +770,40 @@ UNITS = {
     'cockpt-bss': UnitData(0x00475FF0, 1024, (
         ('abMouseCursorBackground', 0x00),
     ), frozenset(), storage='.bss', owner='cockpt.obj'),
+    'ix-log-bss': UnitData(0x005977D0, 1024, (
+        ('szLogBuf', 0x000),
+    ), frozenset(), storage='.bss', owner='ix/ixlog.obj'),
+    # Uninitialized C++ globals follow the same identifier-hash order as C
+    # statics; the word at +0x008 is unreferenced.
+    'ix-streamer-bss': UnitData(0x00597BD0, 300, (
+        ('pStreamerPacketOffsetTable', 0x000),
+        ('dwStreamThreadTick', 0x004),
+        ('dwUnusedStreamerWord', 0x008),
+        ('pStreamerPackFile', 0x00C),
+        ('pStreamIdleFiles', 0x010),
+        ('adwStreamCallStack', 0x018),
+        ('pStreamerLzoBuffer', 0x098),
+        ('pStreamReadRequests', 0x09C),
+        ('dwIxStreamerAudioBufferSize', 0x0A0),
+        ('pIxStreamerInputBuffer', 0x0A4),
+        ('bStreamerIntensityLevel', 0x0A8),
+        ('hStreamThread', 0x0AC),
+        ('pStreamFileEntries', 0x0B0),
+        ('pStreamerPackageInfo', 0x0B4),
+        ('pStreamedMusicAudioChunks', 0x0B8),
+        ('pMusicStreamBranchList', 0x0BC),
+        ('pStreamFileBlocks', 0x0C0),
+        ('csStreamerFileList', 0x0C8),
+        ('csIxStreamerThread', 0x0E0),
+        ('nStreamerAudioBlock', 0x0F8),
+        ('dwIxStreamerThreadId', 0x0FC),
+        ('dwIxStreamerStatus', 0x100),
+        ('hStreamerWakeupEvent', 0x104),
+        ('nIxStreamerCurrentFileChunk', 0x108),
+        ('dwStreamBytesPerSecond', 0x10C),
+        ('csStreamer', 0x110),
+        ('pStreamTriggerList', 0x128),
+    ), frozenset(), storage='.bss', owner='ix/streamer.obj'),
     'ix-dsp-bss': UnitData(0x00597D00, 1072, (
         ('hIxPlaybackThread', 0x000),
         ('hPlaybackWindow', 0x004),
@@ -823,8 +857,8 @@ ADJACENT_UNITS = (
     ('screens', 'raster', 'killbrd', 'gr'),
     ('winsys-bss', 'mono-bss', 'fl-bss', 'nav-bss', 'cockpt-bss', 'pilot',
      'main-bss', 'sound', 'damage-bss', 'music-bss', 'dib-bss',
-     'eventmgr-bss', 'gr-bss'),
-    ('ix-dsp-bss', 'ix-dsps-bss', 'ix-dspv-bss', 'ix-system-bss'),
+     'eventmgr-bss', 'gr-bss', 'ix-log-bss', 'ix-streamer-bss',
+     'ix-dsp-bss', 'ix-dsps-bss', 'ix-dspv-bss', 'ix-system-bss'),
 )
 
 

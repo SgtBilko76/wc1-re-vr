@@ -815,6 +815,15 @@ slots through the complete section sizes and the offsets of the referenced
 statics around them, and checks all thirteen contributions as one
 1,186,920-byte run.
 
+The `ix` objects continue the run: the logger's 1,024-byte buffer at
+`0x005977D0`, then `streamer.cpp`'s 27 uninitialized C++ globals and one
+unreferenced word at `0x00597BD8`, ending at `0x00597CFB`. Relocations in the
+matching streamer and worker-thread functions give every global's original
+address. Uninitialized C++ globals follow the same identifier-hash order as C
+statics, so the streamer names were chosen to reproduce that order.
+`verify-unit-data` checks both objects and the whole run from `winsys.c` to
+`system.cpp`.
+
 The static definitions replace these variables' shared declarations in
 `globals.h`, so other units now see 36–53 fewer declarations. That shifts
 CL's register tie-breaks: exact report matches fell from 1,324 to 1,271.

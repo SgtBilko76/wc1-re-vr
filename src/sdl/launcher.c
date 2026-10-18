@@ -306,7 +306,7 @@ int main(int argumentCount, char **arguments)
     SdlSetMouseGrab(0);
     SDL_ShowCursor(SDL_ENABLE);
     DestroyGlobalDebugOverlayConsole();
-    if ((dwStreamerState & 1) != 0)
+    if ((dwIxStreamerStatus & 1) != 0)
         ix_streamer_destroy();
     ServiceAudioStream();
     SdlShutdownOriginFxAudio();
