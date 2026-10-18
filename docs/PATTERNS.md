@@ -45,6 +45,39 @@ for similarity decisions.
   improves only the two shift users and preserves every other result.
 - Preserve visible local-variable order, branch direction, fall-through, and
   epilogue placement. Equivalent C often emits different instructions.
+- `SortSignedByteValuesAscending` keeps the saved next index for the outer
+  loop's closing test, but tests the narrowed live inner index at the inner
+  loop's entry. Declare and initialize the swap value inside the inner
+  `do` body. Together these choices recover all 112 bytes literally, with
+  the original eight-byte frame, saved word at `[ESP+0x10]`, `CMP BP,AX` /
+  `JLE`, and BL-held swap value. Scoping the value alone leaves four differing
+  encodings: the saved word uses `[ESP+0x12]`, and the entry comparison and
+  branch are reversed. Ordinary nested `for` loops recover the stack slot
+  and branches but leave seven register differences; a promoted index or
+  explicit element pointer does not improve the complete result. Volatile
+  or int saved-index locals also fail and are not retained.
+- `DebugOverlayConsole::DrawPendingLines` declares its device-context handle
+  before its row counter. This keeps the handle in the original EBX and
+  reduces differing encodings from twelve to nine over the unchanged
+  128-byte span. The remaining differences exchange the row and cached
+  `TextOutA` registers. Counter scopes, `for` syntax, declaration initializers,
+  long counters, and register hints leave those nine differences. Constructor
+  multiplication-order and count-capture probes do not fix its four existing
+  differences; some also disturb the exact `Clear` routine. Inlining the
+  process handle in `WaitForKey` increases its differences from nineteen to
+  23. None of those additional changes is retained.
+- `WaitForInputKey` dispatches the signed key through a `switch` for the
+  ignored `0x1D` code. Its integer promotion reproduces the original
+  `MOVSX EAX,BL` and 32-bit comparison, reducing differing encodings from
+  31 to fifteen at the original 256-byte span. Mnemonic similarity falls
+  from 98.48% to 92.42% because the remaining default and clear blocks have
+  the opposite order; the byte comparison improves. Keep the existing
+  guarded polling loop: replacing it with a plain `while` loses sixteen
+  bytes. Explicit int/long promotions and plain-char keys leave the old
+  byte comparison unchanged; switch case reordering and early exits do not
+  improve the retained fifteen differences. `DrawTextAt`'s declaration-order,
+  saved-pointer constness, and alignment signedness probes likewise leave
+  its ten differences unchanged and are not retained.
 - `fire` initializes its mine-present flag at declaration and dispatches
   weapon classes with a switch. Keep the weapon's byte offset as an integer
   while accessing the typed slot fields; retaining an absolute slot pointer

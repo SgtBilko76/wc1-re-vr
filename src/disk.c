@@ -241,7 +241,6 @@ unsigned int DrawTextAt(TextContext *context, short x, short y,
 unsigned int SortSignedByteValuesAscending(signed char *values,
                                            short count)
 {
-    signed char value;
     short next;
     signed char outer;
     signed char inner;
@@ -251,9 +250,10 @@ unsigned int SortSignedByteValuesAscending(signed char *values,
         do {
             inner = (signed char)(outer + 1);
             next = (short)inner;
-            if (next < count) {
+            if ((short)inner < count) {
                 do {
-                    value = values[outer];
+                    signed char value = values[outer];
+
                     if (values[inner] < value) {
                         values[outer] = values[inner];
                         values[inner] = value;
@@ -461,13 +461,16 @@ short WaitForInputKey(void)
         case 3:
         case 5:
             key = (signed char)event.value;
-            if (key == 0x1d) {
+            switch (key) {
+            case 0x1d:
                 key = 0;
-            } else {
+                break;
+            default:
                 if (PollInputEvent(&event, 0xff) != 0) {
                     do {
                     } while (PollInputEvent(&event, 0xff) != 0);
                 }
+                break;
             }
             break;
         }

@@ -1185,6 +1185,21 @@ The code, data virtual-size, and file-size deficits remain 880, 1,856, and
 still fails. Both builds and the required verification gates pass, with
 the same eleven call-analysis and 37 global-access diagnostics.
 
+The console/disk checkpoint has 1,244 normalized exact matches, 255 same-size
+differences, and the same 24 size differences across 1,523 functions.
+`SortSignedByteValuesAscending` also passes a separate literal comparison of
+all 112 bytes, including padding. The console's `DrawPendingLines` drops from
+twelve differing encodings to nine, and `WaitForInputKey` drops from 31 to
+fifteen. All other 1,520 report rows, including every previous exact result,
+are unchanged. Average mnemonic similarity remains 99.55%; it is not a
+whole-executable completion percentage. The code, data virtual-size, and
+file-size deficits remain 880, 1,856, and 1,024 bytes respectively. Literal
+whole-file matches rise by four to 54,044 of 518,656 bytes (10.4200%); strict
+equality still fails. Both builds and the required gates pass, with the same
+eleven call-analysis and 37 global-access diagnostics. The executable hash
+is unchanged through verification, so the final report describes the checked
+binary. No compilation-unit boundary or link-order change is involved.
+
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates
 start at offsets `0x24` and `0x64`. The branch at `0x00436B97` compares the

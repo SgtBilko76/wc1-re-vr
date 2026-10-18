@@ -254,8 +254,8 @@ void DebugOverlayConsole::Scroll(void)
 void DebugOverlayConsole::DrawPendingLines(void)
 {
 #ifndef SDL_PORT
-    int row;
     HDC deviceContext;
+    int row;
 
     deviceContext = GetDC(window);
     row = 0;
