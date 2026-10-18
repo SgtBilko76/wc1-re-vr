@@ -62,6 +62,22 @@ static
 #endif
 short nMousePitchInput = 0; /* 0x0046a05c */
 
+/* Flight-loop performance-counter readings and their low-part deltas. CL
+ * places these statics by identifier hash, so their spellings reproduce the
+ * original order. */
+static int nFlightFrameTicks; /* 0x004764f8 */
+static int nHudDelta; /* 0x004764fc */
+static LARGE_INTEGER liFlightAfterInputCounter; /* 0x00476500 */
+static LARGE_INTEGER liFlightFrameEndCounter; /* 0x00476508 */
+static int nFlightPresentDelta; /* 0x00476510 */
+static LARGE_INTEGER liFrameStart; /* 0x00476518 */
+static LARGE_INTEGER liSimulationDone; /* 0x00476520 */
+static int nSimulationDelta; /* 0x00476528 */
+static LARGE_INTEGER liFlightAfterCockpitCounter; /* 0x00476530 */
+static int nInputTicks; /* 0x00476538 */
+static LARGE_INTEGER liRenderDoneCounter; /* 0x00476540 */
+static int nDrawDelta; /* 0x00476548 */
+
 /* Function start: 0x4272F0 */
 short LogMemoryUsage(void)
 {
@@ -2072,48 +2088,48 @@ int RunSpaceFlight(short entryNavPoint)
     frameReady = 1;
 
     while (nArcadeState == 0) {
-        ReadPerformanceCounter(&liFlightFrameStart);
+        ReadPerformanceCounter(&liFrameStart);
         if (HandleSpaceFlightControls() == -1) {
             nArcadeState = 5;
             break;
         }
-        ReadPerformanceCounter(&liFlightAfterInput);
+        ReadPerformanceCounter(&liFlightAfterInputCounter);
         if (nArcadeState == 0) {
             Update_3Space();
-            ReadPerformanceCounter(&liFlightAfterSimulation);
+            ReadPerformanceCounter(&liSimulationDone);
             frameReady = RenderSpaceViewFrame();
-            ReadPerformanceCounter(&liFlightAfterRender);
+            ReadPerformanceCounter(&liRenderDoneCounter);
             update_cockpit();
         } else {
-            liFlightAfterSimulation =
-                liFlightAfterRender =
-                    liFlightAfterInput;
+            liSimulationDone =
+                liRenderDoneCounter =
+                    liFlightAfterInputCounter;
         }
-        ReadPerformanceCounter(&liFlightAfterCockpit);
+        ReadPerformanceCounter(&liFlightAfterCockpitCounter);
         if (frameReady != 0) {
             frameReady = 0;
             DIBslam();
             DIBslamReal();
         }
-        ReadPerformanceCounter(&liFlightFrameEnd);
-        nFlightPresentTicks =
-            (int)(liFlightFrameEnd.LowPart -
-                  liFlightAfterCockpit.LowPart);
-        nFlightCockpitTicks =
-            (int)(liFlightAfterCockpit.LowPart -
-                  liFlightAfterRender.LowPart);
-        nFlightRenderTicks =
-            (int)(liFlightAfterRender.LowPart -
-                  liFlightAfterSimulation.LowPart);
-        nFlightSimulationTicks =
-            (int)(liFlightAfterSimulation.LowPart -
-                  liFlightAfterInput.LowPart);
-        nFlightInputTicks =
-            (int)(liFlightAfterInput.LowPart -
-                  liFlightFrameStart.LowPart);
-        nFlightFrameTotalTicks =
-            (int)(liFlightFrameEnd.LowPart -
-                  liFlightFrameStart.LowPart);
+        ReadPerformanceCounter(&liFlightFrameEndCounter);
+        nFlightPresentDelta =
+            (int)(liFlightFrameEndCounter.LowPart -
+                  liFlightAfterCockpitCounter.LowPart);
+        nHudDelta =
+            (int)(liFlightAfterCockpitCounter.LowPart -
+                  liRenderDoneCounter.LowPart);
+        nDrawDelta =
+            (int)(liRenderDoneCounter.LowPart -
+                  liSimulationDone.LowPart);
+        nSimulationDelta =
+            (int)(liSimulationDone.LowPart -
+                  liFlightAfterInputCounter.LowPart);
+        nInputTicks =
+            (int)(liFlightAfterInputCounter.LowPart -
+                  liFrameStart.LowPart);
+        nFlightFrameTicks =
+            (int)(liFlightFrameEndCounter.LowPart -
+                  liFrameStart.LowPart);
         DAT_00598888 = 0;
         DAT_0059888c = 0;
         DAT_00598890 = 0;

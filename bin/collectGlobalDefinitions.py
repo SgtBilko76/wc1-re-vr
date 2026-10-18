@@ -164,6 +164,28 @@ def expand_array_dimensions(text: str, constants: dict[str, int]) -> str:
     return "".join(expanded)
 
 
+UNREFERENCED_STATIC_RE = re.compile(
+    r"^static[ \t]+[^;=()\r\n]*?\b([A-Za-z_]\w*)[ \t]*(?:\[[^\]\r\n]*\][ \t]*)*;"
+    r"[ \t]*/\*[ \t]*0x[0-9A-Fa-f]{8}[ \t]*\*/[ \t]*\n",
+    re.MULTILINE,
+)
+
+
+def without_unreferenced_statics(block: str, text: str) -> str:
+    """Drop uninitialized statics that nothing in their unit references.
+
+    CL still reserves their .bss slots but emits no COFF symbol for them, so
+    no map can place them; verifyUnitData.py checks those slots through the
+    section sizes and the offsets of the referenced statics around them.
+    """
+    def keep(match: re.Match[str]) -> str:
+        name = match.group(1)
+        uses = len(re.findall(rf"(?<![A-Za-z0-9_]){re.escape(name)}(?![A-Za-z0-9_])", text))
+        return "" if uses == 1 else match.group(0)
+
+    return UNREFERENCED_STATIC_RE.sub(keep, block)
+
+
 def definition_block(path: Path) -> str:
     text = path.read_text(encoding="utf-8")
     if path.name == "globals.c":
@@ -178,7 +200,8 @@ def definition_block(path: Path) -> str:
     if include_at < 0 or function_at <= include_at:
         raise ValueError(f"cannot locate global-definition block in {path}")
     declarations_at = text.find("\n", include_at) + 1
-    return text[declarations_at:function_at].strip() + "\n"
+    block = text[declarations_at:function_at].strip() + "\n"
+    return without_unreferenced_statics(block, text)
 
 
 def main() -> int:

@@ -112,11 +112,17 @@ static unsigned short awAbsoluteSine[360] = {
      53,  49,  45,  40,  36,  31,  27,  22,  18,  13,   9,   4
 };
 
-/* 0x004875a8 */
-static RasterSurface stRasterSurface;
-
-/* 0x004875c0 */
-static unsigned char abShapeTransformScratch[0xfa00];
+/* Raster targets and shape work buffers. CL places these statics by
+ * identifier hash, so their spellings reproduce the original order. */
+static RasterSurface stRasterTarget; /* 0x004875a8 */
+static unsigned char abShapeTransformPixels[0xfa00]; /* 0x004875c0 */
+static RasterClip stRasterClip; /* 0x00496fc0 */
+/* Nothing in the shipped executable references this table. */
+static unsigned char abUnusedGrTable[0x670]; /* 0x00496fd8 */
+static unsigned char abSolidColourLookup[256]; /* 0x00497648 */
+static unsigned char abShapeRLEBuffer[0x100000]; /* 0x00497748 */
+static int bStreamerAudioRunning; /* 0x00597748 */
+static char szStreamerPathBuffer[128]; /* 0x00597750 */
 
 /* Function start: 0x4408A0 */
 void CheckHeapBlockSignature(unsigned char *shape)
@@ -374,16 +380,16 @@ void ValidateViewportBounds(Viewport *viewport, RasterSurface *surface,
 /* Function start: 0x440CF0 */
 void ClipViewportToScreen(Viewport *viewport)
 {
-    ValidateViewportBounds(viewport, &stRasterSurface,
+    ValidateViewportBounds(viewport, &stRasterTarget,
                            &stRasterClip);
 }
 
 /* Function start: 0x440D10 */
 void SetSolidColourTranslation(unsigned char colour)
 {
-    memset(abSolidColourTranslation, colour, 255);
-    abSolidColourTranslation[255] = 0xff;
-    SetPaletteTranslationTable(abSolidColourTranslation);
+    memset(abSolidColourLookup, colour, 255);
+    abSolidColourLookup[255] = 0xff;
+    SetPaletteTranslationTable(abSolidColourLookup);
 }
 
 /* Function start: 0x440D50 */
@@ -413,16 +419,16 @@ void PrepareShapeRLEData(unsigned char *shape)
     if (GetPreparedShapeData(shape) != 0)
         return;
 
-    *(int *)abShapeRLEScratch =
+    *(int *)abShapeRLEBuffer =
         *(const int *)"1.00";
     frameCount = GetShapeFrameCount(shape);
-    memcpy(abShapeRLEScratch + 4, &frameCount, sizeof(frameCount));
-    frameOffset = (int *)(abShapeRLEScratch + 8);
+    memcpy(abShapeRLEBuffer + 4, &frameCount, sizeof(frameCount));
+    frameOffset = (int *)(abShapeRLEBuffer + 8);
     memset(frameOffset, 0, frameCount * 8);
-    output = abShapeRLEScratch + 8 + (frameCount << 3);
+    output = abShapeRLEBuffer + 8 + (frameCount << 3);
 
     for (frame = 0; frame < frameCount; frame++) {
-        *frameOffset = (int)(output - abShapeRLEScratch);
+        *frameOffset = (int)(output - abShapeRLEBuffer);
         frameOffset += 2;
         GetShapeFrameExtents(shape, (short)frame, &width, &height,
                              &leftExtent, &topExtent);
@@ -487,11 +493,11 @@ void PrepareShapeRLEData(unsigned char *shape)
         ReleasePacketHandle(bitmap);
     }
 
-    preparedSize = (int)(output - abShapeRLEScratch);
-    if (preparedSize > (int)sizeof(abShapeRLEScratch))
+    preparedSize = (int)(output - abShapeRLEBuffer);
+    if (preparedSize > (int)sizeof(abShapeRLEBuffer))
         exit_squadron("qq copy overflow");
     preparedShape = AllocateTaggedMemory(preparedSize, 0);
-    memcpy(preparedShape, abShapeRLEScratch, preparedSize);
+    memcpy(preparedShape, abShapeRLEBuffer, preparedSize);
 #ifdef SDL_PORT
     memcpy(shape - 8 - sizeof(unsigned char *), &preparedShape,
            sizeof(preparedShape));
@@ -527,13 +533,13 @@ void DrawSpriteTransformed(Viewport *viewport, int x, int y,
             RotateRLEImage(&stRasterClip,
                            GetPreparedShapeData(shape), frame,
                            x - viewport->left, y - viewport->top,
-                           abShapeTransformScratch,
+                           abShapeTransformPixels,
                            angle * 10, scaleX * 256, scaleY * 256, 1);
         } else {
             RotateRLEImage(&stRasterClip,
                            GetPreparedShapeData(shape), frame,
                            x - viewport->left, y - viewport->top,
-                           abShapeTransformScratch,
+                           abShapeTransformPixels,
                            angle * 10, scaleX * 256, scaleY * 256, 0);
         }
     }
@@ -1402,11 +1408,11 @@ void Streamer_open(const char *streamName)
             ShowNoticeMessageBox("Unable to locate streamed music.\n");
             exit_squadron("");
         }
-        sprintf(szStreamerPath, "%s%s",
+        sprintf(szStreamerPathBuffer, "%s%s",
                 streamsDirectory, streamName);
-        SoundDebugPrintf("Streamer_open %s", szStreamerPath);
-        ix_streamer_open_stream_file(szStreamerPath);
-        bStreamerAudioPlaying = 0;
+        SoundDebugPrintf("Streamer_open %s", szStreamerPathBuffer);
+        ix_streamer_open_stream_file(szStreamerPathBuffer);
+        bStreamerAudioRunning = 0;
     }
 }
 
@@ -1414,8 +1420,8 @@ void Streamer_open(const char *streamName)
 void Streamer_play(void)
 {
     if (bIxAudioEnabled != 0 &&
-        bStreamerAudioPlaying == 0) {
-        bStreamerAudioPlaying = 1;
+        bStreamerAudioRunning == 0) {
+        bStreamerAudioRunning = 1;
         SoundDebugPrintf("Streamer_play");
         ix_streamer_audio_play();
     }
@@ -1425,10 +1431,10 @@ void Streamer_play(void)
 void Streamer_stop(void)
 {
     if (bIxAudioEnabled != 0 &&
-        bStreamerAudioPlaying != 0) {
+        bStreamerAudioRunning != 0) {
         SoundDebugPrintf("Streamer_stop");
         ix_streamer_audio_stop();
-        bStreamerAudioPlaying = 0;
+        bStreamerAudioRunning = 0;
     }
 }
 
@@ -1451,14 +1457,14 @@ void ClearStreamerTrigger(void)
 void Streamer_trigger(int trigger)
 {
     if (bIxAudioEnabled != 0) {
-        if (bStreamerAudioPlaying == 0) {
+        if (bStreamerAudioRunning == 0) {
             ForceStreamerTrigger(trigger);
             return;
         }
         SoundDebugPrintf("Streamer_trigger %d", trigger);
         if (trigger >= 0)
             ix_streamer_set_trigger((char)trigger);
-        if (bStreamerAudioPlaying == 0)
+        if (bStreamerAudioRunning == 0)
             Streamer_play();
     }
 }
@@ -1468,7 +1474,7 @@ void SetStreamerIntensity(unsigned char intensity)
 {
     if (bIxAudioEnabled != 0) {
         ix_streamer_set_intensity(intensity);
-        if (bStreamerAudioPlaying == 0)
+        if (bStreamerAudioRunning == 0)
             Streamer_play();
     }
 }
@@ -1480,7 +1486,7 @@ void ForceStreamerTrigger(int trigger)
         SoundDebugPrintf("FORCE");
         if (trigger >= 0)
             ix_streamer_force_trigger((char)trigger);
-        if (bStreamerAudioPlaying == 0)
+        if (bStreamerAudioRunning == 0)
             Streamer_play();
     }
 }

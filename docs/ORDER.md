@@ -777,50 +777,51 @@ occupies `cockpt.c`'s `.bss`. Together with the preceding maneuver state and
 following console pointer, these form a verified 1,404-byte run with three
 inter-object alignment bytes.
 
-Three more uninitialized-data blocks reside in their owners:
-`pDebugOverlay` at `0x004763F0` belongs to the console wrappers in `pilot.cpp`,
-`pSnowStaticWave` and `pSnowStaticSound` occupy `0x0047654C`–`0x00476553`
-in `sound.c`, and `nDisplayedComponentDamage` at `0x00476554` belongs to
-`damage.c`. Every reference to these four variables comes from its respective
-owner. VC++ 4.20 emits four and eight bytes of `.bss` in the C++ owners,
-with the two private sound globals at offsets 0 and 4. The private damage variable
-uses C `static` storage to produce its four-byte `.bss` section.
-Their former tentative definitions in `globals.c` became independently
-ordered linker common symbols. The unit-data gate now verifies their owner,
-relative symbol offsets, complete object `.bss` sizes, and zero-filled bytes.
-Their absolute addresses and the intervening uninitialized storage remain
-unrecovered.
+### Static `.bss`: `winsys.c` through `gr.c`
 
-Declaration order alone does not recover the remaining private C storage.
-A trial moving the twelve flight-timing variables into `main.c` produced
-an 88-byte `.bss`, with the simulation timestamp first, instead of the
-observed 84-byte run beginning with the total-tick count at `0x004764F8`.
-Reversing all twelve declarations left their emitted order unchanged.
-Making the two MONODEBG variables private to `mono.c` likewise emitted the
-device handle before the installed flag, opposite to their original order
-at `0x00475E70` and `0x00475E74`; renaming the handle to describe the debug
-channel did not change that result. Removing their shared declarations also
-disturbed code generation elsewhere: the timing trial changed 200 function
-comparisons, and the MONODEBG trial lost fourteen exact comparisons overall.
-These trials are reverted. Ownership evidence is not sufficient to claim a
-matching storage block without checking its emitted offsets and the full
-function report.
-Moving only the timing definitions into `main.c`, retaining their external
-common storage and shared declarations, also fails to recover the cached
-profiling reads. It merely relocates the common symbols; it does not establish
-the original private 84-byte run. That narrower ownership trial is reverted.
+Every unit's uninitialized statics now occupy their original addresses, from
+`winsys.c`'s key states at `0x00475B68` to the end of `gr.c`'s stream path at
+`0x005977D0`. CL 4.20 places a unit's uninitialized statics in its own `.bss`
+in ascending order of the key `(h ^ (h >> 16)) & 0x3FF`, where `h` is C1's
+identifier hash (`h = (h >> 4) + 4 * h + c` over the characters). Equal keys
+go in reverse declaration order. Arrays of eight bytes or more are 8-aligned,
+smaller objects 4-aligned. Declaration order cannot recover these layouts.
+The identifier spellings do. Each static in this range is named so that its
+key follows the original addresses. `szDIBFailureString` and
+`hDIBParentWindow` share key 867, so the failure string is declared first.
 
-A later name-sensitive probe does recover all twelve original offsets and
-the 84-byte section with eleven descriptive static-variable renames. This
-works both in an isolated declaration experiment and in the complete main
-source. The same original identifiers as function-local statics instead
-produce 72 bytes in a different order. Integrating the matching file-static
-block and removing its twelve shared declarations changes 202 function
-report rows: 77 exact matches are lost and 47 gained, with ten additional
-size differences. `RunSpaceFlight` itself retains its 77 differing
-encodings. The complete storage move is reverted. Its declaration-scope
-effects in selected other units are retained separately in the later
-checkpoint; the profiler's actual storage remains provisional.
+| Range | Owner | Contents |
+| --- | --- | --- |
+| `0x00475B68`–`0x00475D1F` | `winsys.c` | 14 polled key states, an unreferenced 128-byte area, the CD streams directory |
+| `0x00475D20`–`0x00475E77` | `mono.c` | four data-file error texts, an unreferenced 80-byte area, the MONODEBG flag and handle |
+| `0x00475E78`–`0x004763EF` | `fl.c`, `nav.c`, `cockpt.c` | maneuver state, navigation labels, cursor background (below) |
+| `0x004763F0`–`0x004764F7` | `pilot.cpp` | console pointer and an unreferenced 256-byte C++ global |
+| `0x004764F8`–`0x0047654B` | `main.c` | the twelve flight-profiler counters and timestamps |
+| `0x0047654C`–`0x0047661F` | `sound.c`, `damage.c`, `music.c` | snow-static wave, displayed damage, SFX path (below) |
+| `0x00476620`–`0x004865A7` | `dib.c` | frame-rate text, frame buffer, DIB window, palette, failure and FPS texts, four unreferenced slots |
+| `0x004865A8`–`0x004875A7` | `eventmgr.c` | cursor save area (below) |
+| `0x004875A8`–`0x005977CF` | `gr.c` | raster target and clip, transform, colour and RLE buffers, an unreferenced 1,648-byte table, streaming flag and path |
+
+No original HIGHLOW relocation targets the unreferenced ranges: `0x00475B70`
+(128 bytes), `0x00475E20` (80), `0x004763F8` (256), `0x0048605C` and
+`0x00486064` (ints), `0x00486068` (12), `0x00486514` (int), `0x00486520` (8)
+and `0x00496FD8` (1,648). The sources declare them as `…Unused…` statics
+sized to their gaps. CL keeps an unreferenced uninitialized static only when
+its unit also has a referenced one. `trainsim.c` has no other static, so the
+256-byte buffer stays a C++ global at the end of `pilot.cpp`. CL emits no
+COFF symbol for an unreferenced static, so `bin/collectGlobalDefinitions.py`
+leaves these out of the map-based data audit. `verify-unit-data` checks their
+slots through the complete section sizes and the offsets of the referenced
+statics around them, and checks all thirteen contributions as one
+1,186,920-byte run.
+
+The static definitions replace these variables' shared declarations in
+`globals.h`, so other units now see 36–53 fewer declarations. That shifts
+CL's register tie-breaks: exact report matches fell from 1,324 to 1,271.
+Restoring each unit's former count with probe declarations after its includes
+recovers 37 of the 42 exact functions lost at object level. The loss is
+therefore a symbol-count effect. It will be resolved in a dedicated
+declaration-count pass, not by keeping declarations of other units' statics.
 
 The 200-byte `szSfxWavePath` buffer at `0x00476558` now resides in `music.c`.
 Its two original references both occur in `PlaySfxWaveFileByNumber`: `sprintf`
@@ -835,59 +836,9 @@ Its three original references occur in the mouse-background capture and
 restore routines in that unit. The 4,096-byte buffer ends immediately before
 the graphics workspace at `0x004875A8`; it is distinct from the cockpit's
 1,024-byte mouse-background buffer at `0x00475FF0`. Its private definition
-produces the original `.bss` storage and size. The gate verifies it together
-with the recovered graphics prefix as a 68,120-byte run, with no inter-object
-padding. These buffers remain shared only in the SDL build, whose audio and
-renderer adapters use them through declarations in `wc1sdl.h`.
-
-The graphics workspace begins at `0x004875A8` with a 20-byte `RasterSurface`,
-four alignment bytes, and the 64,000-byte transformation buffer at
-`0x004875C0`. Their identified direct references are confined to `gr.c`.
-Private static definitions there reproduce this 64,024-byte prefix as genuine
-COFF `.bss`, with the buffer at offset `0x18`. The partial-section gate checks
-both owner symbols, their offsets, uninitialized storage flags, and all
-loader-visible bytes. Their absolute placement and the rest of the graphics
-workspace remain unrecovered.
-
-A trial moving the other five private graphics/streaming variables together
-put the stream path before the RLE buffer and the raster clip before the
-raster surface, contrary to the original. Those definitions remain in
-temporary storage; the matching prefix does not establish the later layout.
-
-A later isolated CL 4.20 probe establishes that descriptive identifier
-changes can recover the order of all seven identified graphics objects.
-The minimal retained-symbol probe and complete `gr.c` compilation agree on
-their actual COFF positions; the assembly listing alone does not show this
-order. The successful probe uses the following spellings, which are not
-recovered original names and are not retained in production:
-
-| Original address | Current name | Probe name | Probe `.bss` offset |
-| --- | --- | --- | --- |
-| `0x004875A8` | `stRasterSurface` | `stScreenRasterSurface` | `0x000000` |
-| `0x004875C0` | `abShapeTransformScratch` | `abTransformScratch` | `0x000018` |
-| `0x00496FC0` | `stRasterClip` | `stRasterViewport` | `0x00FA18` |
-| `0x00497648` | `abSolidColourTranslation` | `abSolidColorTranslation` | `0x00FA30` |
-| `0x00497748` | `abShapeRLEScratch` | unchanged | `0x00FB30` |
-| `0x00597748` | `bStreamerAudioPlaying` | `bStreamingAudioPlaying` | `0x10FB30` |
-| `0x00597750` | `szStreamerPath` | `szStreamPath` | `0x10FB38` |
-
-The section contains 1,113,016 bytes. The original span through the end of
-the stream path is 1,114,664 bytes. After the 20-byte raster clip, the
-original has 1,652 unexplained bytes before the colour table; the compiler
-inserts only four alignment bytes there. No original HIGHLOW relocation
-targets that unexplained interval. Its ownership and source-level purpose remain
-unidentified, so no speculative object or padding is added.
-
-Moving all five definitions out of `globals.c` and deleting their shared
-declarations changes 150 function-report rows: normalized exact matches
-fall from 1,256 to 1,241 and size differences rise from twenty to twenty-four.
-The code section grows by 32 bytes and strict positional matching rises to
-17.5795%, but this also reflects shifted code, not proof of correct final
-layout. The complete move is reverted. A narrower RLE-only move, using
-`abShapePixelScratch` and `abShapeRLEBuffer`, preserves the existing prefix
-but changes 58 rows, loses twelve exact matches overall, and introduces
-one size difference. That move is also reverted. The useful declaration
-scopes in six other units are retained separately below.
+produces the original `.bss` storage and size. These buffers remain shared
+only in the SDL build, whose audio and renderer adapters use them through
+declarations in `wc1sdl.h`.
 
 The damage-display unit starts with `show_damage_disp` at `0x0042C800`.
 Its initialized tables start at `0x0046A748`, after the installation
@@ -1172,7 +1123,8 @@ MONODEBG variables to `static` storage in `mono.c` emitted the device handle
 before the installed flag, opposite to the original. Reversing their source
 declarations did not change that order. Those definitions remain in
 `globals.c`; the C++ result does not justify applying the same layout claim
-to all private C variables.
+to all private C variables. Superseded: identifier spellings, not declaration
+order, decide this order; see "Static `.bss`: `winsys.c` through `gr.c`".
 
 The registry arrays occupy gr's complete 56-byte read-only section, checked
 at `0x004631C8` with one address shift and the value-name array at offset
@@ -1628,6 +1580,9 @@ verification. No gameplay validation is claimed.
 
 ## Core declaration-scope checkpoint
 
+Superseded: the profiler variables are now `main.c` statics (see
+"Static `.bss`: `winsys.c` through `gr.c`"), so no other unit declares them.
+
 The profiler storage probe identifies a useful scope correction without
 moving its definitions: the event-manager, startup, training, and video
 units do not reference the twelve flight-profiler globals. Their owner
@@ -1678,6 +1633,9 @@ through final verification. Strict positional matches increase by two to
 57,523 of 518,656 bytes (11.0908%). Literal executable equality still fails.
 
 ## Graphics declaration-scope checkpoint
+
+Superseded: the five graphics/streaming variables are now `gr.c` statics (see
+"Static `.bss`: `winsys.c` through `gr.c`").
 
 The five provisional graphics/streaming globals remain in `globals.c` while
 storage recovery continues. Their declarations are now omitted from the
@@ -1827,6 +1785,9 @@ unchanged between the full report and final verification:
 `ab859f71414cc6c4d78064f162b292a101bdd4f298e9e5fa73871178879b46fb`.
 
 ## Win32 declaration-scope checkpoint
+
+Superseded: the profiler and raster declarations no longer exist (see
+"Static `.bss`: `winsys.c` through `gr.c`").
 
 The Win32 shell now omits twelve unused flight-profiler declarations and
 three unused raster declarations. Storage, types, calling conventions,
@@ -2005,6 +1966,9 @@ verification:
 
 ## Additional core declaration scopes
 
+Superseded: the profiler, raster and streaming variables are now statics in
+`main.c` and `gr.c` (see "Static `.bss`: `winsys.c` through `gr.c`").
+
 The existing compilation-unit boundaries remain unchanged. A bounded check
 of all seven combinations of the twelve flight-profiler declarations, three
 raster declarations, and two streaming declarations identifies the following
@@ -2082,6 +2046,9 @@ is unchanged between the clean-build report and final verification:
 `c8f44dc32489d1681721fadefa3d9ca8a4083048b38334879964bc52df847ebe`.
 
 ## DIB and MONODEBG declaration scope checkpoint
+
+Superseded: these variables are now statics in `dib.c` and `mono.c` (see
+"Static `.bss`: `winsys.c` through `gr.c`").
 
 Two more declaration groups have evidence-backed single-unit use. All
 original direct references to the nine DIB buffer globals from
@@ -2284,6 +2251,9 @@ clean-build and post-verification SHA-256 hashes agree:
 
 ## Input-state declaration checkpoint
 
+The keyboard polling variables are now `winsys.c` statics (see
+"Static `.bss`: `winsys.c` through `gr.c`"). The event-list and calibration exclusions below still apply.
+
 Three groups have only one observed native user unit each: the three
 input-event list globals are referenced within eventmgr, the four joystick
 calibration bounds within joycal, and fourteen keyboard polling variables
@@ -2397,7 +2367,8 @@ A read-only relocation scan also found no HIGHLOW targets inside the
 unexplained keyboard gap `0x00475B70`–`0x00475BEF`, mono gap
 `0x00475E60`–`0x00475E6F`, or console-to-profiler gap
 `0x004763F4`–`0x004764F7`. This supplies no evidence for new storage objects,
-so their ownership and content remain unresolved.
+so their ownership and content remain unresolved. Resolved later: these gaps
+hold unreferenced statics (see "Static `.bss`: `winsys.c` through `gr.c`").
 
 The clean rebuild regenerates all 78 native objects, archives, and executable
 outputs. Native and modern builds, source-order and address audits, the order

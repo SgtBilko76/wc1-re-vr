@@ -166,60 +166,7 @@ unsigned char abRasterPaletteTranslation[256]; /* 0x0046ff2c */
 RLETransformVertex aRLETransformVertices[4]; /* 0x0047002c */
 int anRLESourceSteps[4]; /* 0x0047007c */
 #endif
-int nInsertKeyState; /* 0x00475b68 */
-int nClearedKeyboardState; /* 0x00475b6c */
-int nOemPeriodKeyState; /* 0x00475bf0 */
-int nHomeKeyState; /* 0x00475bf4 */
-int nPageDownKeyState; /* 0x00475bf8 */
-int nOemCommaKeyState; /* 0x00475bfc */
-int nRightArrowKeyState; /* 0x00475c00 */
-int nEndKeyState; /* 0x00475c04 */
-int nClearKeyState; /* 0x00475c08 */
-int nDeleteKeyState; /* 0x00475c0c */
-int nUpArrowKeyState; /* 0x00475c10 */
-int nDownArrowKeyState; /* 0x00475c14 */
-char szStreamsPath[0x100]; /* 0x00475c18 */
-int nPageUpKeyState; /* 0x00475d18 */
-int nLeftArrowKeyState; /* 0x00475d1c */
-char szReadDataFileError[0x40]; /* 0x00475d20 */
-char szCreateDataFileError[0x40]; /* 0x00475d60 */
-char szWriteDataFileError[0x40]; /* 0x00475da0 */
-char szSeekDataFileError[0x80]; /* 0x00475de0 */
-int bMonoDebugInstalled; /* 0x00475e70 */
-HANDLE hMonoDebugDevice; /* 0x00475e74 */
-int nFlightFrameTotalTicks; /* 0x004764f8 */
-int nFlightCockpitTicks; /* 0x004764fc */
-LARGE_INTEGER liFlightAfterInput; /* 0x00476500 */
-LARGE_INTEGER liFlightFrameEnd; /* 0x00476508 */
-int nFlightPresentTicks; /* 0x00476510 */
-LARGE_INTEGER liFlightFrameStart; /* 0x00476518 */
-LARGE_INTEGER liFlightAfterSimulation; /* 0x00476520 */
-int nFlightSimulationTicks; /* 0x00476528 */
-LARGE_INTEGER liFlightAfterCockpit; /* 0x00476530 */
-int nFlightInputTicks; /* 0x00476538 */
-LARGE_INTEGER liFlightAfterRender; /* 0x00476540 */
-int nFlightRenderTicks; /* 0x00476548 */
-unsigned char szFrameRateText[32]; /* 0x00476620 */
-unsigned int DAT_00476640;
-unsigned int DAT_00476644;
-unsigned char *pDIBPixelBuffer; /* 0x00476648 */
-unsigned int nDIBWidth; /* 0x0047664c */
-unsigned int nDIBHeight; /* 0x00476650 */
-unsigned char abDIBPixelBackup[0xfa00]; /* 0x00476658 */
-int DAT_00486058;
-int nDIBSlamCount; /* 0x00486060 */
-HWND hDIBWindow; /* 0x00486074 */
-char szDIBErrorMessage[0x98]; /* 0x00486078 */
-unsigned char abDIBPaletteCache[1024]; /* 0x00486110 */
-float fMeasuredFrameRate; /* 0x00486510 */
-int bDIBSlamPending; /* 0x00486518 */
-char szSpaceFlightMaxFpsMessage[0x80]; /* 0x00486528 */
-RasterClip stRasterClip; /* 0x00496fc0 */
-unsigned char abSolidColourTranslation[256]; /* 0x00497648 */
-unsigned char abShapeRLEScratch[0x100000]; /* 0x00497748 */
 extern unsigned int dwStreamerState; /* 0x00597cd0 */
-int bStreamerAudioPlaying; /* 0x00597748 */
-char szStreamerPath[128]; /* 0x00597750 */
 int DAT_00598888;
 int DAT_0059888c;
 int DAT_00598890;

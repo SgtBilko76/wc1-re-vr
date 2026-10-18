@@ -37,6 +37,20 @@ do not reject a recovered size solely because its positional count is larger.
   complete function report and named reference targets after renaming;
   normalized instruction equality alone can hide wrong global operands.
   The four adjacent audio `.bss` blocks are covered by the unit-data gate.
+- C file statics follow a measured rule. CL 4.20 orders a unit's
+  uninitialized statics in its `.bss` by ascending key
+  `(h ^ (h >> 16)) & 0x3FF`, where C1 hashes the identifier as
+  `h = (h >> 4) + 4 * h + c`. Equal keys go in reverse declaration order.
+  Arrays of eight or more bytes are 8-aligned, smaller objects 4-aligned.
+  An unreferenced uninitialized static keeps its slot only when its unit
+  also has a referenced static, and it gets no COFF symbol. Choose
+  descriptive spellings whose keys follow the original addresses; see
+  "Static `.bss`" in `docs/ORDER.md`.
+- Superseded by the static `.bss` checkpoint: the profiler, raster and
+  streaming variables in the next four items, and the DIB, MONODEBG and
+  keyboard groups described later, are now statics in their owners. Their
+  shared declarations and owner exclusions no longer exist. The matches those
+  scopes recovered are to be restored in a dedicated declaration-count pass.
 - Unused flight-profiler declarations also affect core instruction selection.
   Keep them out of `eventmgr.c`, `init.c`, `trainsim.c`, and `video.c` through
   the corresponding owner markers. This recovers normalized-exact output for
@@ -2185,7 +2199,8 @@ Windows 95 DirectDraw and DirectSound behavior.
   assignment recovers every mnemonic, but swaps the workspace and index
   registers, leaving fourteen differences. Reordering those declarations
   does not resolve the swap. These font probes are not retained.
-- Two further unused-declaration groups affect core code selection: the nine
+- Superseded (static `.bss` checkpoint; these are now statics in `dib.c` and
+  `mono.c`). Two further unused-declaration groups affect core code selection: the nine
   DIB buffer declarations from `DAT_00476640` through `nDIBSlamCount`, and
   mono's four file-error buffers plus its two MONODEBG variables. Original
   references place the first group only in `dib.c` and the second only in
@@ -2288,7 +2303,8 @@ Windows 95 DirectDraw and DirectSound behavior.
   and two-byte body shortage unchanged.
 - Three more private declaration groups affect native code selection:
   eventmgr's three event-list globals, joycal's four calibration bounds,
-  and winsys's fourteen keyboard polling variables. Every original direct
+  and winsys's fourteen keyboard polling variables (the keyboard group is now
+  `winsys.c` statics, so its exclusions no longer exist). Every original direct
   reference to these groups stays within its corresponding unit. All seven
   combinations were checked in owners that do not reference the variables.
   Retain all three exclusions in `fl.c`, event-list plus keyboard exclusions

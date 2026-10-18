@@ -9,6 +9,10 @@
 #include "wc1.h"
 
 DebugOverlayConsole *pDebugOverlay; /* 0x004763f0 */
+/* Nothing in the shipped executable references this buffer. A C++ global
+ * stays in this object's .bss in declaration order; an unreferenced C static
+ * in the following unit would not be emitted at all. */
+unsigned char abUnusedOverlayBuffer[0x100]; /* 0x004763f8 */
 
 /* Function start: 0x425730 */
 unsigned int WaitForKeyExceptXOrF12(void)

@@ -2,13 +2,70 @@
  *  Win32 system services: mouse, keyboard and clock wrappers, font
  *  workspaces, CD-ROM location and disc-swap prompting.
  *
- *  Address range 0x402e80-0x4034ff (provisional -- see docs/ORDER.md).
+ *  Address range 402e80-4034ff (provisional -- see docs/ORDER.md).
  *  Boundary evidence: one unit, not two. PollKeyboardState's statics and
- *  LocateStreamsDirOnDisc's szStreamsPath interleave in the original's
- *  .bss (0x475B68-0x475D1F), and statics are private to one object;
- *  string band 0x46535C-0x4653FC.
+ *  LocateStreamsDirOnDisc's szStreamsDir interleave in the original's
+ *  .bss (475B68-475D1F), and statics are private to one object; string
+ *  band 46535C-4653FC.
  */
 #include "wc1.h"
+
+/* Polled key states and the CD streams directory. CL places these statics
+ * by identifier hash, so their spellings reproduce the original order; the
+ * SDL flight adapter also reads the key states. */
+#ifndef SDL_PORT
+static
+#endif
+int nInsertKeyDown; /* 0x00475b68 */
+static int nClearedKeyboard; /* 0x00475b6c */
+/* Nothing in the shipped executable references this buffer. */
+static unsigned char abUnusedPollArea[0x80]; /* 0x00475b70 */
+#ifndef SDL_PORT
+static
+#endif
+int nOemPeriodKeyStatus; /* 0x00475bf0 */
+#ifndef SDL_PORT
+static
+#endif
+int nHomeState; /* 0x00475bf4 */
+#ifndef SDL_PORT
+static
+#endif
+int nPageDownKeyHeld; /* 0x00475bf8 */
+#ifndef SDL_PORT
+static
+#endif
+int nOemCommaKeyPressed; /* 0x00475bfc */
+#ifndef SDL_PORT
+static
+#endif
+int nRightArrowKeyHeld; /* 0x00475c00 */
+#ifndef SDL_PORT
+static
+#endif
+int nEndKeyDown; /* 0x00475c04 */
+static int nClearKeyState; /* 0x00475c08 */
+#ifndef SDL_PORT
+static
+#endif
+int nDeleteKeyDown; /* 0x00475c0c */
+#ifndef SDL_PORT
+static
+#endif
+int nUpArrowKeyState; /* 0x00475c10 */
+#ifndef SDL_PORT
+static
+#endif
+int nDownArrowKeyState; /* 0x00475c14 */
+static char szStreamsDir[0x100]; /* 0x00475c18 */
+#ifndef SDL_PORT
+static
+#endif
+int nPageUpKeyState; /* 0x00475d18 */
+#ifndef SDL_PORT
+static
+#endif
+int nLeftArrowKeyState; /* 0x00475d1c */
 
 /* Function start: 0x402E80 */
 void SetMousePosition(int x, int y)
@@ -19,50 +76,50 @@ void SetMousePosition(int x, int y)
 /* Function start: 0x402EA0 */
 unsigned int PollKeyboardState(void)
 {
-    nClearedKeyboardState = 0;
-    nHomeKeyState = GetAsyncKeyState(VK_HOME);
+    nClearedKeyboard = 0;
+    nHomeState = GetAsyncKeyState(VK_HOME);
     nUpArrowKeyState = GetAsyncKeyState(VK_UP);
     nPageUpKeyState = GetAsyncKeyState(VK_PRIOR);
     nLeftArrowKeyState = GetAsyncKeyState(VK_LEFT);
-    nRightArrowKeyState = GetAsyncKeyState(VK_RIGHT);
-    nEndKeyState = GetAsyncKeyState(VK_END);
+    nRightArrowKeyHeld = GetAsyncKeyState(VK_RIGHT);
+    nEndKeyDown = GetAsyncKeyState(VK_END);
     nDownArrowKeyState = GetAsyncKeyState(VK_DOWN);
-    nPageDownKeyState = GetAsyncKeyState(VK_NEXT);
+    nPageDownKeyHeld = GetAsyncKeyState(VK_NEXT);
     nClearKeyState = GetAsyncKeyState(VK_CLEAR);
-    nOemPeriodKeyState = GetAsyncKeyState(0xbe);
-    nOemCommaKeyState = GetAsyncKeyState(0xbc);
-    nInsertKeyState = GetAsyncKeyState(VK_INSERT);
-    nDeleteKeyState = GetAsyncKeyState(VK_DELETE);
+    nOemPeriodKeyStatus = GetAsyncKeyState(0xbe);
+    nOemCommaKeyPressed = GetAsyncKeyState(0xbc);
+    nInsertKeyDown = GetAsyncKeyState(VK_INSERT);
+    nDeleteKeyDown = GetAsyncKeyState(VK_DELETE);
 
-    if (nHomeKeyState != 0)
+    if (nHomeState != 0)
         return 0x47;
     if (nPageUpKeyState != 0)
         return 0x49;
-    if (nEndKeyState != 0)
+    if (nEndKeyDown != 0)
         return 0x4f;
-    if (nPageDownKeyState != 0)
+    if (nPageDownKeyHeld != 0)
         return 0x51;
-    if (nInsertKeyState != 0 ||
-        nOemCommaKeyState != 0)
+    if (nInsertKeyDown != 0 ||
+        nOemCommaKeyPressed != 0)
         return 0x52;
-    if (nDeleteKeyState != 0 ||
-        nOemPeriodKeyState != 0)
+    if (nDeleteKeyDown != 0 ||
+        nOemPeriodKeyStatus != 0)
         return 0x53;
     if (nClearKeyState != 0)
         return 0x4c;
     if (nUpArrowKeyState != 0) {
         if (nLeftArrowKeyState != 0)
             return 0x47;
-        return nRightArrowKeyState != 0 ? 0x49 : 0x48;
+        return nRightArrowKeyHeld != 0 ? 0x49 : 0x48;
     }
     if (nDownArrowKeyState != 0) {
         if (nLeftArrowKeyState != 0)
             return 0x4f;
-        return nRightArrowKeyState != 0 ? 0x51 : 0x50;
+        return nRightArrowKeyHeld != 0 ? 0x51 : 0x50;
     }
     if (nLeftArrowKeyState != 0)
         return 0x4b;
-    return nRightArrowKeyState != 0 ? 0x4d : 0;
+    return nRightArrowKeyHeld != 0 ? 0x4d : 0;
 }
 
 /* Function start: 0x403060 */
@@ -159,7 +216,7 @@ char *LocateStreamsDirOnDisc(void)
     char *result;
     char drive;
 
-    result = szStreamsPath;
+    result = szStreamsDir;
     GetCurrentDirectoryA(0xff, current);
     drive = FindCdRomDriveByVolumeLabel("<anydisc>", "\\wc1\\streams\\");
     if (drive != 0) {

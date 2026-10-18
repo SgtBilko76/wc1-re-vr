@@ -187,6 +187,19 @@ void SdlStopAudio(void);
 void SdlOutputDebugString(const char *text);
 void SdlPumpEvents(void);
 /* Buffers private to the original units, shared with SDL adapters here. */
+extern int nInsertKeyDown; /* 0x00475b68 */
+extern int nOemPeriodKeyStatus; /* 0x00475bf0 */
+extern int nHomeState; /* 0x00475bf4 */
+extern int nPageDownKeyHeld; /* 0x00475bf8 */
+extern int nOemCommaKeyPressed; /* 0x00475bfc */
+extern int nRightArrowKeyHeld; /* 0x00475c00 */
+extern int nEndKeyDown; /* 0x00475c04 */
+extern int nDeleteKeyDown; /* 0x00475c0c */
+extern int nUpArrowKeyState; /* 0x00475c10 */
+extern int nDownArrowKeyState; /* 0x00475c14 */
+extern int nPageUpKeyState; /* 0x00475d18 */
+extern int nLeftArrowKeyState; /* 0x00475d1c */
+extern HWND hDIBParentWindow; /* 0x00486074 */
 extern char szSfxWavePath[0xc8]; /* 0x00476558 */
 extern unsigned char abCursorSaveArea[0x1000]; /* 0x004865a8 */
 extern char *apszShipMissionTypeNames[11]; /* 0x00468728 */

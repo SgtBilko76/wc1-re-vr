@@ -10,6 +10,16 @@
 #include "wc1.h"
 
 short nPacketError = 0; /* 0x00465460 */
+/* File-error buffers and MONODEBG state. CL places these statics by
+ * identifier hash, so their spellings reproduce the original order. */
+static char szDataFileReadError[0x40]; /* 0x00475d20 */
+static char szDataCreateError[0x40]; /* 0x00475d60 */
+static char szWriteDataError[0x40]; /* 0x00475da0 */
+static char szSeekDataError[0x40]; /* 0x00475de0 */
+/* Nothing in the shipped executable references this buffer. */
+static unsigned char abUnusedMonoBuffer[0x50]; /* 0x00475e20 */
+static int bMonoDebugAvailable; /* 0x00475e70 */
+static HANDLE hMonoDebugDriver; /* 0x00475e74 */
 
 /* Function start: 0x403500 */
 void __stdcall CloseDataFile(unsigned short fd)
@@ -23,12 +33,12 @@ short __stdcall WriteDataFileAtOffset(unsigned short fd, int offset,
 {
     nPacketError = 0;
     if (_lseek(fd, offset, SEEK_SET) == -1) {
-        sprintf(szWriteDataFileError, "!lseek %d\n", offset);
+        sprintf(szWriteDataError, "!lseek %d\n", offset);
         nPacketError = (short)errno;
         return 0;
     }
     if (_write(fd, data, length) == -1) {
-        sprintf(szWriteDataFileError, "!write %d\n", offset);
+        sprintf(szWriteDataError, "!write %d\n", offset);
         nPacketError = (short)errno;
         return 0;
     }
@@ -42,7 +52,7 @@ short __stdcall CreateDataFile(const char *path)
 
     fd = (unsigned short)_open(path, 0x8101, 0x180);
     if ((unsigned int)fd == (unsigned int)-1) {
-        sprintf(szCreateDataFileError, "!_open '%s'\n", path);
+        sprintf(szDataCreateError, "!_open '%s'\n", path);
         nPacketError = (short)errno;
         return 0;
     }
@@ -55,12 +65,12 @@ int __stdcall ReadDataFileAtOffset(unsigned short fd, int offset,
 {
     nPacketError = 0;
     if (_lseek(fd, offset, SEEK_SET) == -1) {
-        sprintf(szReadDataFileError, "!lseek %d\n", offset);
+        sprintf(szDataFileReadError, "!lseek %d\n", offset);
         nPacketError = (short)errno;
         return 0;
     }
     if (_read(fd, data, length) == -1) {
-        sprintf(szReadDataFileError, "!lseek %d\n", offset);
+        sprintf(szDataFileReadError, "!lseek %d\n", offset);
         nPacketError = (short)errno;
         return 0;
     }
@@ -75,7 +85,7 @@ int __stdcall SeekDataFile(unsigned short fd, int offset,
 
     position = _lseek(fd, offset, origin & 0xffff);
     if (position == -1) {
-        sprintf(szSeekDataFileError, "!lseek %d\n", offset);
+        sprintf(szSeekDataError, "!lseek %d\n", offset);
         nPacketError = (short)errno;
     }
     return position;
@@ -308,37 +318,37 @@ void MonoDebug_install(void)
 {
     unsigned int version;
 
-    hMonoDebugDevice =
+    hMonoDebugDriver =
         CreateFileA("\\\\.\\MONODEBG.VXD", 0, 0, 0, CREATE_ALWAYS,
                     FILE_FLAG_DELETE_ON_CLOSE, 0);
-    if (hMonoDebugDevice == INVALID_HANDLE_VALUE)
+    if (hMonoDebugDriver == INVALID_HANDLE_VALUE)
         return;
 
-    if (!DeviceIoControl(hMonoDebugDevice, 1, 0, 0,
+    if (!DeviceIoControl(hMonoDebugDriver, 1, 0, 0,
                          &version, sizeof(version), 0, 0)) {
-        CloseHandle(hMonoDebugDevice);
+        CloseHandle(hMonoDebugDriver);
         return;
     }
     if (version != 0x20004) {
-        CloseHandle(hMonoDebugDevice);
+        CloseHandle(hMonoDebugDriver);
         exit_squadron("MonoDebug__install expecting version");
         return;
     }
-    if (!DeviceIoControl(hMonoDebugDevice, 2, 0, 0,
+    if (!DeviceIoControl(hMonoDebugDriver, 2, 0, 0,
                          0, 0, 0, 0)) {
-        CloseHandle(hMonoDebugDevice);
+        CloseHandle(hMonoDebugDriver);
         exit_squadron("MonoDebug__install init failed");
         return;
     }
-    bMonoDebugInstalled = 1;
+    bMonoDebugAvailable = 1;
 }
 
 /* Function start: 0x403D60 */
 void MonoDebug_remove(void)
 {
-    if (bMonoDebugInstalled != 0) {
-        CloseHandle(hMonoDebugDevice);
-        bMonoDebugInstalled = 0;
+    if (bMonoDebugAvailable != 0) {
+        CloseHandle(hMonoDebugDriver);
+        bMonoDebugAvailable = 0;
     }
 }
 
@@ -348,8 +358,8 @@ void MonoDebug_remove(void)
    driver to do is unknown. */
 void SendMonoDebugCommand3(void)
 {
-    if (bMonoDebugInstalled != 0) {
-        if (!DeviceIoControl(hMonoDebugDevice, 3, 0, 0, 0, 0, 0, 0))
+    if (bMonoDebugAvailable != 0) {
+        if (!DeviceIoControl(hMonoDebugDriver, 3, 0, 0, 0, 0, 0, 0))
             MonoDebug_remove();
     }
 }
@@ -372,8 +382,8 @@ void SoundDebugPrintf(const char *fmt, ...)
 /* Function start: 0x403DE0 */
 void MonoDebug_print(const char *text)
 {
-    if (bMonoDebugInstalled != 0) {
-        if (!DeviceIoControl(hMonoDebugDevice, 9,
+    if (bMonoDebugAvailable != 0) {
+        if (!DeviceIoControl(hMonoDebugDriver, 9,
                              (void *)text, 0xfa0, 0, 0, 0, 0)) {
             exit_squadron("MonoDebug::print failed (buffer possibly on stack?!)");
             MonoDebug_remove();

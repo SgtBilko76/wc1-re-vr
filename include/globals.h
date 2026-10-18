@@ -247,89 +247,6 @@ extern int anRLESourceSteps[4]; /* 0x0047007c */
 extern const char *apszPilotRankNames[5]; /* 0x00470098 */
 extern CampaignState stInitialCampaignState; /* 0x004700b0 */
 extern int bPanRoomTransition; /* 0x00470510 */
-/* Keyboard polling state is used only by winsys.c. */
-#if !defined(WC1_FL_SOURCE) && !defined(WC1_MONO_SOURCE)
-extern int nInsertKeyState; /* 0x00475b68 */
-extern int nClearedKeyboardState; /* 0x00475b6c */
-extern int nOemPeriodKeyState; /* 0x00475bf0 */
-extern int nHomeKeyState; /* 0x00475bf4 */
-extern int nPageDownKeyState; /* 0x00475bf8 */
-extern int nOemCommaKeyState; /* 0x00475bfc */
-extern int nRightArrowKeyState; /* 0x00475c00 */
-extern int nEndKeyState; /* 0x00475c04 */
-extern int nClearKeyState; /* 0x00475c08 */
-extern int nDeleteKeyState; /* 0x00475c0c */
-extern int nUpArrowKeyState; /* 0x00475c10 */
-extern int nDownArrowKeyState; /* 0x00475c14 */
-#endif
-extern char szStreamsPath[0x100]; /* 0x00475c18 */
-#if !defined(WC1_FL_SOURCE) && !defined(WC1_MONO_SOURCE)
-extern int nPageUpKeyState; /* 0x00475d18 */
-extern int nLeftArrowKeyState; /* 0x00475d1c */
-#endif
-/* File-error and MONODEBG state are private to mono.c. These owners do
- * not need the declarations; their absence also preserves code selection. */
-#if !defined(WC1_DIB_SOURCE) && !defined(WC1_EJECT_SOURCE)
-extern char szReadDataFileError[0x40]; /* 0x00475d20 */
-extern char szCreateDataFileError[0x40]; /* 0x00475d60 */
-extern char szWriteDataFileError[0x40]; /* 0x00475da0 */
-extern char szSeekDataFileError[0x80]; /* 0x00475de0 */
-extern int bMonoDebugInstalled; /* 0x00475e70 */
-extern HANDLE hMonoDebugDevice; /* 0x00475e74 */
-#endif
-/* These units do not use main.c's flight profiler. Its unused declarations
- * affect VC++ 4.20 code selection, so preserve their compilation-unit scope. */
-#if !defined(WC1_EVENTMGR_SOURCE) && !defined(WC1_INIT_SOURCE) && \
-    !defined(WC1_TRAINSIM_SOURCE) && !defined(WC1_VIDEO_SOURCE) && \
-    !defined(WC1_WINMAIN_SOURCE) && !defined(WC1_BARRACKS_SOURCE) && \
-    !defined(WC1_CUTSCENE_SOURCE) && !defined(WC1_DAMAGE_SOURCE) && \
-    !defined(WC1_FADE_SOURCE) && !defined(WC1_GAMEFLOW_SOURCE) && \
-    !defined(WC1_KILLBRD_SOURCE) && !defined(WC1_LOGIC_SOURCE)
-extern int nFlightFrameTotalTicks; /* 0x004764f8 */
-extern int nFlightCockpitTicks; /* 0x004764fc */
-extern LARGE_INTEGER liFlightAfterInput; /* 0x00476500 */
-extern LARGE_INTEGER liFlightFrameEnd; /* 0x00476508 */
-extern int nFlightPresentTicks; /* 0x00476510 */
-extern LARGE_INTEGER liFlightFrameStart; /* 0x00476518 */
-extern LARGE_INTEGER liFlightAfterSimulation; /* 0x00476520 */
-extern int nFlightSimulationTicks; /* 0x00476528 */
-extern LARGE_INTEGER liFlightAfterCockpit; /* 0x00476530 */
-extern int nFlightInputTicks; /* 0x00476538 */
-extern LARGE_INTEGER liFlightAfterRender; /* 0x00476540 */
-extern int nFlightRenderTicks; /* 0x00476548 */
-#endif
-/* DIB buffer state is unused by these units. Preserve the declaration
- * scope that reproduces their original VC++ 4.20 code selection. */
-#if !defined(WC1_CMPGN_SOURCE) && !defined(WC1_EJECT_SOURCE) && \
-    !defined(WC1_SCREENS_SOURCE)
-extern unsigned int DAT_00476640;
-extern unsigned int DAT_00476644;
-extern unsigned char *pDIBPixelBuffer; /* 0x00476648 */
-extern unsigned int nDIBWidth; /* 0x0047664c */
-extern unsigned int nDIBHeight; /* 0x00476650 */
-extern unsigned char abDIBPixelBackup[0xfa00]; /* 0x00476658 */
-extern unsigned char szFrameRateText[32]; /* 0x00476620 */
-extern int DAT_00486058;
-extern int nDIBSlamCount; /* 0x00486060 */
-#endif
-extern HWND hDIBWindow; /* 0x00486074 */
-extern unsigned char abDIBPaletteCache[1024]; /* 0x00486110 */
-extern float fMeasuredFrameRate; /* 0x00486510 */
-extern int bDIBSlamPending; /* 0x00486518 */
-extern char szSpaceFlightMaxFpsMessage[0x80]; /* 0x00486528 */
-/* Unused graphics declarations affect register allocation in these owners. */
-#if !defined(WC1_DIB_SOURCE) && !defined(WC1_EJECT_SOURCE) && \
-    !defined(WC1_JOYSTICK_SOURCE) && !defined(WC1_MONO_SOURCE) && \
-    !defined(WC1_NAV_SOURCE) && !defined(WC1_SCREENS_SOURCE) && \
-    !defined(WC1_WINMAIN_SOURCE) && !defined(WC1_BARRACKS_SOURCE) && \
-    !defined(WC1_DAMAGE_SOURCE) && !defined(WC1_FADE_SOURCE) && \
-    !defined(WC1_GAMEFLOW_SOURCE) && !defined(WC1_LOGIC_SOURCE) && \
-    !defined(WC1_MAIN_SOURCE) && !defined(WC1_MUSIC_SOURCE) && \
-    !defined(WC1_TRAINSIM_SOURCE)
-extern RasterClip stRasterClip; /* 0x00496fc0 */
-extern unsigned char abSolidColourTranslation[256]; /* 0x00497648 */
-extern unsigned char abShapeRLEScratch[0x100000]; /* 0x00497748 */
-#endif
 extern int DAT_00598888;
 extern int DAT_0059888c;
 extern int DAT_00598890;
@@ -380,16 +297,6 @@ extern unsigned char *pBriefingCloseupShape; /* 0x00598c2c */
 extern unsigned char *pConversationOverlayShape; /* 0x00598c30 */
 extern unsigned char bFilteredKeyWaitStarted; /* 0x00598c34 */
 extern InputEvent aInputEventPool[0x100]; /* 0x00598c40 */
-#if !defined(WC1_DIB_SOURCE) && !defined(WC1_EJECT_SOURCE) && \
-    !defined(WC1_JOYSTICK_SOURCE) && !defined(WC1_MONO_SOURCE) && \
-    !defined(WC1_NAV_SOURCE) && !defined(WC1_SCREENS_SOURCE) && \
-    !defined(WC1_BRAINS_SOURCE) && !defined(WC1_DAMAGE_SOURCE) && \
-    !defined(WC1_GAMEFLOW_SOURCE) && !defined(WC1_LAUNCH_SOURCE) && \
-    !defined(WC1_MUSIC_SOURCE) && !defined(WC1_NEARHEAP_SOURCE) && \
-    !defined(WC1_SELECT_SOURCE)
-extern int bStreamerAudioPlaying; /* 0x00597748 */
-extern char szStreamerPath[128]; /* 0x00597750 */
-#endif
 extern int nMouseCursorSavedY; /* 0x0059a840 */
 extern int nMouseCursorSavedX; /* 0x0059a844 */
 extern unsigned char bInputMode; /* 0x0059a848 */
@@ -887,7 +794,6 @@ extern const ShortVector aSwcChildOffsets[63];
 #endif
 extern ShortPoint aWeaponDisplayPositions[32]; /* 0x00468440 */
 extern ShortPoint aWeaponDisplayOrigins[5]; /* 0x004684c0 */
-extern char  szDIBErrorMessage[0x98]; /* 0x00486078 */
 
 extern unsigned char bMessageSpeed; /* 0x0046af68 */
 

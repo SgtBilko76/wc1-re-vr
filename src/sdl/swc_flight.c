@@ -746,14 +746,14 @@ static void SwcFlightTick(const Uint8 *keys, Uint32 mouseButtons)
     } else {
         /* Keyboard steering takes over until the next mouse movement.
            Release each keyboard axis independently, even if another is held. */
-        if (!(nUpArrowKeyState || nDownArrowKeyState || nHomeKeyState ||
-              nPageUpKeyState || nEndKeyState || nPageDownKeyState))
+        if (!(nUpArrowKeyState || nDownArrowKeyState || nHomeState ||
+              nPageUpKeyState || nEndKeyDown || nPageDownKeyHeld))
             nPitchInput = 0;
-        if (!(nLeftArrowKeyState || nRightArrowKeyState || nHomeKeyState ||
-              nPageUpKeyState || nEndKeyState || nPageDownKeyState))
+        if (!(nLeftArrowKeyState || nRightArrowKeyHeld || nHomeState ||
+              nPageUpKeyState || nEndKeyDown || nPageDownKeyHeld))
             nYawInput = 0;
-        if (!(nInsertKeyState || nDeleteKeyState ||
-              nOemCommaKeyState || nOemPeriodKeyState))
+        if (!(nInsertKeyDown || nDeleteKeyDown ||
+              nOemCommaKeyPressed || nOemPeriodKeyStatus))
             nRollInput = 0;
         if (bCurrentKey == 0x4c) {
             SwcCentreFlightMouse();
