@@ -389,12 +389,12 @@ int Title_Sequence(void)
     bKeyEventQueueEnabled = 0;
     while (state == 0) {
         selectedIndex = -1;
-        activate = 0;
         UpdateTitleMenuCursor();
         eventType = PollInputEvent(&event, 0xff);
-        if (eventType == 2) {
-            activate = 1;
-        } else if (eventType == 3 || eventType == 5) {
+        switch (eventType) {
+        case 3:
+        case 5:
+            activate = 0;
             ClearInputKeyStatePreservingModifiers();
             switch ((short)event.value) {
             case 0x1c:
@@ -418,15 +418,25 @@ int Title_Sequence(void)
                 MoveMenuPointerFromKeyboard(&event);
                 break;
             }
-        }
-        if (activate != 0) {
+            if (activate == 0)
+                break;
+            /* Fall through to the shared mouse/keyboard activation. */
+        case 2:
+        {
+            int selection;
+
             if (selectedIndex == -1)
                 selectedIndex = FindMenuRegionAtPoint(
                     event.x, event.y, aTitleMenuRegions);
-            if (selectedIndex < 0 || selectedIndex > 3)
+            selection = selectedIndex;
+            if (selection < 0 || selection > 3)
                 state = 0;
             else
-                state = (signed char)(menuOptions[selectedIndex] + 1);
+                state = (signed char)(menuOptions[selection] + 1);
+            break;
+        }
+        default:
+            break;
         }
         DIBslam();
         DIBslamReal();

@@ -42,6 +42,30 @@ for similarity decisions.
   Together these choices produce an exact function comparison, including
   both dispatch tables and the original 64-byte stack frame. SDL continues
   to use its platform's `va_list` with default argument promotions.
+- `Title_Sequence` dispatches input events with a switch. Mouse activation
+  enters the shared selection path directly; the keyboard cases initialize
+  their activation flag, handle the key, and fall through only when requested.
+  An if-chain instead extends the flag's lifetime and spills the alternate
+  menu shape. The switch restores the original 28-byte frame and 1,856-byte
+  aligned span. A real integer local for the selected menu index also restores
+  its signed-byte promotion before the bounds tests and the keyboard-switch
+  registers. Together these changes raise similarity from 92.39% to 97.25%,
+  leaving 74 differing instructions out of 472. Selection branch placement
+  and mouse-coordinate argument loads still differ. The original title call
+  sign-extends both coordinates, whereas the original barracks, training-menu,
+  and recreation-room calls pass dwords whose low words hold the coordinates;
+  do not widen the shared short-argument prototype from the title call alone.
+  Reversing the bounds condition and spelling its invalid path with a shared
+  label leave the same output, so those probes are not retained.
+- `DrawConstellationField` retains a byte offset into its parallel velocity
+  and frame word tables across the random-position calls. The original
+  sign-extends the random short and saves twice that value with `LEA`; retaining
+  an element index instead omits both scaled-offset instructions. Expressing
+  the shared byte offset recovers the original 560-byte span and raises
+  similarity from 96.38% to 99.28%, with only the star loop's closing comparison
+  and conditional branch differing. Reversing that source comparison,
+  spelling the loop as a guarded do/while, and using a volatile count read
+  all leave those two instructions unchanged; these probes are not retained.
 - `CalibrateJoystickInteractive` sets text alignment before testing the loaded
   font. Each sampled axis supplies both its 32-bit global and its 16-bit saved
   calibration word; chained assignments preserve the original load/store order.
@@ -1149,7 +1173,7 @@ for similarity decisions.
   the local frame; widening height, removing the temporary allocation pointer,
   and removing unsigned promotion casts did not improve the retained result.
   These broader trials are not retained.
-- The constellation routines still need their original register lifetimes.
+- The constellation initializer still needs its original register lifetimes.
   Removing the initializer's promoted particle-index local, using separate
   short counters, or initializing height before width did not recover its
   saved height and register-held particle counter. Narrowing the draw routine's

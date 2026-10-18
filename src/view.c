@@ -301,7 +301,7 @@ unsigned int DrawConstellationField(void)
 {
     short height;
     short index;
-    int randomIndex;
+    int tableOffset;
     short speed;
 
     height = (short)(pConstellationViewport->bottom -
@@ -334,8 +334,9 @@ unsigned int DrawConstellationField(void)
             if (aConstellationParticles[index].x >=
                 pConstellationViewport->left)
                 continue;
-            randomIndex = RandomInRange(0, 15);
-            speed = asConstellationVelocity[randomIndex];
+            tableOffset = (int)RandomInRange(0, 15) * sizeof(short);
+            speed = *(short *)((unsigned char *)asConstellationVelocity +
+                              tableOffset);
             aConstellationParticles[index].x = (short)(
                 pConstellationViewport->right -
                 RandomInRange(0, speed));
@@ -347,8 +348,9 @@ unsigned int DrawConstellationField(void)
             if (aConstellationParticles[index].x <=
                 pConstellationViewport->right)
                 continue;
-            randomIndex = RandomInRange(0, 15);
-            speed = asConstellationVelocity[randomIndex];
+            tableOffset = (int)RandomInRange(0, 15) * sizeof(short);
+            speed = *(short *)((unsigned char *)asConstellationVelocity +
+                              tableOffset);
             aConstellationParticles[index].velocity = speed;
             aConstellationParticles[index].x = (short)(
                 pConstellationViewport->left +
@@ -358,7 +360,8 @@ unsigned int DrawConstellationField(void)
                 RandomInRange(0, height));
         }
         aConstellationParticles[index].frame = (short)(
-            asConstellationFrame[randomIndex] +
+            *(short *)((unsigned char *)asConstellationFrame +
+                       tableOffset) +
             RandomInRange(0, 3));
     }
     return 0;
