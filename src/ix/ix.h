@@ -520,7 +520,9 @@ extern "C" unsigned int ix_file_write(FILE *file, const void *source,
                                        unsigned int bytes); /* 0x0046173E */
 extern "C" long ix_file_size(FILE *file);        /* 0x00461764 */
 
-#if !defined(WC1_IX_DSPS_SOURCE) && !defined(WC1_IX_SOUND_SOURCE)
+/* Sound-system voice allocation does not use streamer state. */
+#if !defined(WC1_IX_DSPS_SOURCE) && !defined(WC1_IX_SOUND_SOURCE) && \
+    !defined(WC1_IX_SYSTEM_SOURCE)
 extern unsigned int *pStreamerPacketOffsets;
 extern unsigned int dwStreamerThreadTick;
 extern FILE *pStreamerPackageFile;

@@ -132,31 +132,37 @@ void ix_dspv_set_volume(int voice, short vol)
 /* Function start: 0x446B8C */   /* source line 93 */
 void ix_dspv_set_pan(int voice, unsigned short angle)
 {
-    IxVoice *state;
-    short step;
-    short delta;
     short pos;
+    {
+        IxVoice *state;
+        {
+            short delta;
+            {
+                short step;
 
-    if (voice < 0 || nVoiceCount <= voice) {
-        ix_log_printf("Fatal [%s - %d]:\n", IX_DSPV_FILE, 93);
-        ix_log_printf("%d Invalid voice index!", voice);
-        exit(-1);
+                if (voice < 0 || nVoiceCount <= voice) {
+                    ix_log_printf("Fatal [%s - %d]:\n", IX_DSPV_FILE, 93);
+                    ix_log_printf("%d Invalid voice index!", voice);
+                    exit(-1);
+                }
+                state = &aVoices[voice];
+                step = (short)((unsigned short)angle >> 9);
+                delta = step - state->panAngle;
+                if (delta > 0x40)
+                    delta = delta - 0x80;
+                if (delta < -0x40)
+                    delta = delta + 0x80;
+                pos = state->panPos + delta;
+                if (pos < 0)
+                    pos = pos + 0x100;
+                if (pos >= 0x100)
+                    pos = pos - 0x100;
+                state->panAngle = step;
+                state->panPos = pos;
+                ix_dspv_recalc_mix(voice);
+            }
+        }
     }
-    state = &aVoices[voice];
-    step = (short)((unsigned short)angle >> 9);
-    delta = step - state->panAngle;
-    if (delta > 0x40)
-        delta = delta - 0x80;
-    if (delta < -0x40)
-        delta = delta + 0x80;
-    pos = state->panPos + delta;
-    if (pos < 0)
-        pos = pos + 0x100;
-    if (pos >= 0x100)
-        pos = pos - 0x100;
-    state->panAngle = step;
-    state->panPos = pos;
-    ix_dspv_recalc_mix(voice);
 }
 
 /* Function start: 0x446CB1 */   /* source line 131 */
@@ -212,21 +218,21 @@ void ix_dspv_set_channels(int voice, int channels)
 /* Function start: 0x446EBF */
 void ix_dspv_recalc_mix(int voice)
 {
-    IxVoice *state;
-    short pos;
-    int gain;
+    IxVoice *voiceState;
+    short panPosition;
+    int scaledVolume;
 
-    state = &aVoices[voice];
-    pos = state->panPos;
-    gain = ((unsigned int)state->volume
-            * (unsigned int)nMasterVolume) / 0xffff;
+    voiceState = &aVoices[voice];
+    panPosition = voiceState->panPos;
+    scaledVolume = ((unsigned int)voiceState->volume
+                    * (unsigned int)nMasterVolume) / 0xffff;
     EnterCriticalSection(&csMixer);
-    state->leftGain =
-        (short)((int)asPanGains[pos * 2] * gain >> 0x10);
-    state->rightGain =
-        (short)((int)asPanGains[pos * 2 + 1] * gain >> 0x10);
-    state->leftGainHi = (unsigned char)(state->leftGain >> 8);
-    state->rightGainHi = (unsigned char)(state->rightGain >> 8);
+    voiceState->leftGain =
+        (short)((int)asPanGains[panPosition * 2] * scaledVolume >> 0x10);
+    voiceState->rightGain =
+        (short)((int)asPanGains[panPosition * 2 + 1] * scaledVolume >> 0x10);
+    voiceState->leftGainHi = (unsigned char)(voiceState->leftGain >> 8);
+    voiceState->rightGainHi = (unsigned char)(voiceState->rightGain >> 8);
     LeaveCriticalSection(&csMixer);
 }
 

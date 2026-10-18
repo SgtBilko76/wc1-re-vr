@@ -8,6 +8,7 @@
  *  Implement in ADDRESS ORDER -- MSVC emits functions in source order, so the
  *  list below is the original source order of this file.
  */
+#define WC1_IX_SYSTEM_SOURCE
 #include "ix.h"
 
 unsigned int dwSoundStateFlags;       /* 0x00598608 */
@@ -196,25 +197,22 @@ extern "C" void ix_system_delete_sound(IxSound *sound)
 extern "C" void ix_system_delete_all_sounds(void)
 {
     IxSound *sound;
-    IxSound *nextActive;
-    IxSound *nextWaiting;
-    IxSound *nextFree;
 
     sound = pPlayingSoundList;
     while (sound != 0) {
-        nextActive = sound->next;
+        IxSound *nextActive = sound->next;
         ix_system_delete_sound(sound);
         sound = nextActive;
     }
     sound = pQueuedSoundList;
     while (sound != 0) {
-        nextWaiting = sound->next;
+        IxSound *nextWaiting = sound->next;
         ix_system_delete_sound(sound);
         sound = nextWaiting;
     }
     sound = pIdleSoundList;
     while (sound != 0) {
-        nextFree = sound->next;
+        IxSound *nextFree = sound->next;
         ix_system_delete_sound(sound);
         sound = nextFree;
     }
@@ -236,37 +234,37 @@ int ix_system_release_voice(IxSound *sound)
 void ix_system_assign_voice(IxSound *sound, int voice)
 {
     IxSample *sample = sound->sample;
-    unsigned int elapsed;
-    unsigned int position;
-    unsigned int loopLength;
 
-    elapsed = ix_dsp_get_tick() - sound->startTime;
-    position = ((sound->pitchOffset + sample->frequency) * elapsed) / 15;
-    if ((sound->flags & IX_SOUND_LOOPING) != 0) {
-        loopLength = sample->loopEnd - sample->loopStart;
-        if (sample->loopEnd < position)
-            position = sample->loopStart +
-                       (position - sample->loopStart) % loopLength;
-        if (sample->rateNumerator == sample->rateDenominator)
-            position = sample->bytesPerFrame * position;
-        else
-            position = (sample->bytesPerFrame * sample->rateNumerator *
-                        position) / sample->rateDenominator;
-        ix_dspv_set_buffer(
-            voice, sample->buffer + sample->loopStart * sample->bytesPerFrame,
-            sample->bytesPerFrame * loopLength);
-        ix_dspv_set_position(voice, position);
-        ix_dspv_set_flag4(voice, 1);
-    } else {
-        if (sample->rateNumerator == sample->rateDenominator)
-            position = sample->bytesPerFrame * position;
-        else
-            position = (sample->bytesPerFrame * sample->rateNumerator *
-                        position) / sample->rateDenominator;
-        ix_dspv_set_buffer(voice, sample->buffer,
-                           sample->bytesPerFrame * sample->sampleCount);
-        ix_dspv_set_position(voice, position);
-        ix_dspv_set_flag4(voice, 0);
+    {
+        unsigned int elapsed = ix_dsp_get_tick() - sound->startTime;
+        unsigned int position =
+            ((sound->pitchOffset + sample->frequency) * elapsed) / 15;
+        if ((sound->flags & IX_SOUND_LOOPING) != 0) {
+            unsigned int loopLength = sample->loopEnd - sample->loopStart;
+            if (sample->loopEnd < position)
+                position = sample->loopStart +
+                           (position - sample->loopStart) % loopLength;
+            if (sample->rateNumerator == sample->rateDenominator)
+                position = sample->bytesPerFrame * position;
+            else
+                position = (sample->bytesPerFrame * sample->rateNumerator *
+                            position) / sample->rateDenominator;
+            ix_dspv_set_buffer(
+                voice, sample->buffer + sample->loopStart * sample->bytesPerFrame,
+                sample->bytesPerFrame * loopLength);
+            ix_dspv_set_position(voice, position);
+            ix_dspv_set_flag4(voice, 1);
+        } else {
+            if (sample->rateNumerator == sample->rateDenominator)
+                position = sample->bytesPerFrame * position;
+            else
+                position = (sample->bytesPerFrame * sample->rateNumerator *
+                            position) / sample->rateDenominator;
+            ix_dspv_set_buffer(voice, sample->buffer,
+                               sample->bytesPerFrame * sample->sampleCount);
+            ix_dspv_set_position(voice, position);
+            ix_dspv_set_flag4(voice, 0);
+        }
     }
     ix_dspv_set_channels(voice, sample->channels);
     ix_dspv_set_bits_per_sample(voice, sample->bitsPerSample);

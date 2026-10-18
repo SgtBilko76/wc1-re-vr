@@ -121,6 +121,39 @@ do not reject a recovered size solely because its positional count is larger.
   reads also leave it unchanged. None of these further probes is retained.
   A const-qualified free-function pointer parameter changes CL 4.20's C++
   mangling and fails to link; do not use it to tune operand selection.
+- `ix_system_delete_all_sounds` declares each saved successor inside its
+  own traversal loop. This restores sound at EBP-4 and the three successors
+  at -8, -12, and -16, making the complete 169-byte function exact.
+  `ix_system_assign_voice` keeps its sample in the outer scope, elapsed time
+  and position in the positioning block, and loop length inside the looping
+  branch. These restore the corresponding -4, -8, -12, and -16 slots.
+  Moving only loop length into its branch leaves the other slots wrong.
+  The system owner also excludes the 29 unused streamer globals through
+  `WC1_IX_SYSTEM_SOURCE`. This recovers the original free-voice comparison
+  and the complete 89-byte final span. Assignment retains four differing
+  encodings in its two sample-rate equalities, down from 33 before the local
+  correction. Without this declaration scope it retains two differences in
+  a multiplication instead, but the free-voice routine loses its match.
+  Omitting the six DSP globals, the three mixer globals, or all 38 unused
+  globals makes assignment exact but leaves the free-voice comparison wrong.
+  The remaining group combinations do not recover both. Reversing the
+  loop-buffer multiplication operands does not improve the original-header
+  result. None of those alternatives is retained.
+- `ix_dspv_set_pan` uses nested local scopes to retain pan position at
+  EBP-4, the voice pointer at -8, delta at -12, and step at -16. Its frame
+  stays sixteen bytes; only its bounds-comparison operand order and related
+  branch displacements remain different, leaving 292 bytes against 293.
+  In `ix_dspv_recalc_mix`, the descriptive names `voiceState`, `panPosition`,
+  and `scaledVolume` recover the original -12, -8, and -4 slots without
+  additional scopes. All 178 body bytes then match. Its reported two-byte
+  shortage is trailing object alignment, caused by the preceding voice
+  comparison differences. These scopes and names reproduce allocation;
+  they are not recovered original source spellings. Flat pan-local renames
+  and grouped scopes do not recover all four slots. Nested mix scopes also
+  work, but the descriptive flat declarations are sufficient.
+  Excluding unrelated streamer, stream, and system globals from the voice
+  owner, individually and in combinations, trades existing exact guards
+  for other matches. Those declaration probes are discarded.
 - Biased array operands can precede the actual array. The carrier-launch
   fighter loop loads from `0x0046A5AE + frame * 2` for frames 9 through 22.
   Its real 14-word table starts at `0x0046A5C0`; `frame - 9` reproduces the

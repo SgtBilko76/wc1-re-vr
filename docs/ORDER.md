@@ -1911,3 +1911,69 @@ There are 461,060 differing positions in 22,972 runs; literal executable
 equality still fails. The executable SHA-256 remains unchanged between
 the full report and final verification:
 `49fc6c3748d6f08ab47ea043f7bce1fbcedef927108c67a6a11c874d8f67ca4c`.
+
+## Voice and sound-system local-layout checkpoint
+
+The existing `ix/dspv.cpp` and `ix/system.cpp` boundaries remain unchanged.
+Five routines improve through evidence-backed local allocation and declaration
+scope changes. Their types, calling conventions, storage definitions, compiler
+flags, and link order are unchanged. Binary-comp's detailed comparisons cover
+all 33 functions in the two owners and find only these five changes:
+
+| Function | Original / rebuilt span | Differing encodings before / after |
+| --- | --- | --- |
+| `ix_dspv_set_pan` | 293 / 292 | 33 / 9 |
+| `ix_dspv_recalc_mix` | 181 / 179 | 15 / 0 |
+| `ix_system_delete_all_sounds` | 169 / 169 | 19 / 0 |
+| `ix_system_assign_voice` | 551 / 551 | 33 / 4 |
+| `ix_system_find_free_voice` | 89 / 89 | 20 / 0 |
+
+The pan routine's nested scopes place position, voice pointer, delta, and step
+at EBP-4, -8, -12, and -16. Its one-byte bounds-comparison difference remains.
+The mix routine's descriptive local names place scaled volume, pan position,
+and voice pointer at -4, -8, and -12. Its complete 178-byte body now matches;
+the reported two-byte deficit is final object alignment. The original has
+three trailing INT3 bytes, and the rebuild has one. These are matching source
+choices, not recovered original identifiers or block structure.
+
+Each sound-list successor is now declared inside its traversal loop. The
+deletion function retains its sixteen-byte frame and restores all four original
+slots. Voice assignment retains the sample in the outer scope, elapsed time
+and position in the positioning block, and loop length in the looping branch.
+Its original four slots are likewise restored. The system owner omits the 29
+unused streamer globals, recovering the original free-voice comparison and
+82-byte body with seven alignment bytes. Assignment still exchanges the
+sample-rate numerator and denominator comparison operands in both branches.
+Rejected local-name and declaration-scope alternatives are in `docs/PATTERNS.md`.
+
+The changes remove 107 differing instruction encodings. Their span sizes are
+unchanged, so the before/after counts use the same comparison basis. The full
+report changes three rows; the two voice improvements remain hidden behind
+their unchanged size classifications. It now has 1,269 normalized exact
+functions, 239 same-size differences, and sixteen reported span differences
+(74 absolute bytes, net -6). There are 1,376 mnemonic-perfect functions,
+1,516 at or above 90%, eight below, and 99.58% average mnemonic similarity.
+These normalized comparisons do not establish literal executable equality.
+
+A clean rebuild regenerates all 78 native objects, archives, and executable
+outputs. Both builds, source-order and address audits, the order report, and
+all required verification gates pass. Both value checks cover 1,524 functions
+with zero mismatches or skips. All 1,104 global-data definitions, 39 code
+pointers, 79 mixer operands, and recovered unit-data blocks pass. A separate
+binary-comp reference check covers 384 operands referring to 27 named audio
+globals across 59 functions, including master volume. It verifies target
+identity, order, and multiplicity, plus function-relative positions in exact
+routines and the now-exact mix body. Call and global-access analyses retain
+eleven and 35 diagnostics across 1,138 and 1,059 functions respectively.
+No gameplay validation is claimed.
+
+Section sizes and placements remain unchanged: code is 400,663 bytes versus
+401,111, data virtual size is 1,329,724 versus 1,331,596, relocation data is
+36,294 versus 36,306, and the file is 518,144 versus 518,656. The entry point
+remains `0x0044E5B0` versus `0x0044E770`; the 26 missing routines still account
+for 416 code bytes. Strict positional matches are 57,595 of 518,656 bytes
+(11.1047%), one fewer than the preceding checkpoint. There are 461,061
+differing positions in 22,971 runs; literal executable equality still fails.
+The executable SHA-256 is unchanged between the clean-build report and final
+verification:
+`0dd72c35d172451ac377ec81e3e3bdfcba48513fc9e2356fb15bb97256b75dbf`.
