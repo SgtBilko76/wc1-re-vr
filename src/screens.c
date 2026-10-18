@@ -153,6 +153,28 @@ int bConversationConstellation = 0;
 /* 0x0046e590 */
 int bConversationOverlay = 0;
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned char *pBriefingTextData; /* 0x00598af0 */
+short *pMouthAnimationCommands; /* 0x00598af4 */
+unsigned char *pMedalTextData; /* 0x00598af8 */
+unsigned char *pDebriefingSceneData; /* 0x00598afc */
+char szTextScratchBuffer[256]; /* 0x00598b00 */
+unsigned char *pBriefingSceneData; /* 0x00598c00 */
+unsigned char *pConversationBackdropShape; /* 0x00598c04 */
+short nConversationMedalIndex; /* 0x00598c08 */
+short nConversationSceneType; /* 0x00598c0a */
+unsigned char *pTalkingHeadShape; /* 0x00598c0c */
+short nConversationTextColour; /* 0x00598c10 */
+unsigned char *pBriefingAnimationShape; /* 0x00598c14 */
+short *pFaceAnimationCommands; /* 0x00598c18 */
+unsigned char *pBriefingBodyShape; /* 0x00598c1c */
+unsigned char *pMedalSceneData; /* 0x00598c20 */
+unsigned char *pBriefingPortraitShape; /* 0x00598c24 */
+unsigned char *pDebriefingTextData; /* 0x00598c28 */
+unsigned char *pBriefingCloseupShape; /* 0x00598c2c */
+unsigned char *pConversationOverlayShape; /* 0x00598c30 */
+unsigned char bFilteredKeyWaitStarted; /* 0x00598c34 */
+
 /* Function start: 0x436D00 */
 unsigned int LoadBriefingRoom(void)
 {

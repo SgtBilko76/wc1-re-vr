@@ -224,12 +224,12 @@ GLOBALS_MISSING_MAX_ADDRESS = 0x004751ff
 # Global definitions are migrating back to their original compilation units.
 # binary-comp currently accepts one definition source, so generate a parser-only
 # manifest from globals.c and the declaration block at the top of each owner.
-GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/eject.c src/cmpgn.c \
+GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/winsys.c src/mono.c src/auto.c src/eject.c src/cmpgn.c \
 	src/fl.c src/cutscene.c src/brains.c src/mission.c \
-	src/objdata.c src/nav.c src/nearheap.c src/gameflow.c src/title.c src/spc.c src/cockpt.c src/version.c \
+	src/objdata.c src/nav.c src/nearheap.c src/gameflow.c src/title.c src/spc.c src/cockpt.c src/geom.c src/version.c \
 	src/barracks.c src/fade.c src/debug.cpp src/mathutil.c \
-	src/disk.c src/ship.c src/init.c src/logic.c src/pilot.cpp src/trainsim.c src/main.c \
-	src/sound.c src/launch.c src/damage.c src/view.c src/music.c src/ending.c src/input.c \
+	src/disk.c src/ship.c src/init.c src/logic.c src/pilot.cpp src/trainsim.c src/main.c src/timer.c \
+	src/sound.c src/launch.c src/damage.c src/view.c src/music.c src/screen.c src/ending.c src/input.c \
 	src/comm.c src/video.c src/joycal.c src/dib.c src/game.c src/data.c src/eventmgr.c src/screens.c \
 	src/killbrd.c src/gr.c \
 	src/ix/ixlog.cpp src/ix/streamer.cpp src/ix/dsp.cpp src/ix/dsps.cpp src/ix/dspv.cpp \
@@ -1079,12 +1079,6 @@ audit-auto-complete-globals: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORI
 # The generated manifest concatenates independent owners, so its order is not
 # an original declaration order. Check source order in each real unit instead.
 audit-rebuilt-global-layout: $(TARGET) $(GLOBALS_AUDIT_SOURCE) | code-full $(ORIGINAL_EXE)
-	@$(BINARY_COMP) globals $(BC) \
-		--globals-source src/globals.c \
-		--globals-h src/globals.c \
-		--check-rebuilt-layout \
-		--no-address-warnings \
-		--fail-on-issues
 	@set -e; for global_source in $(GLOBALS_DISTRIBUTED_SOURCES); do \
 		$(BINARY_COMP) globals $(BC) \
 			--globals-source $$global_source \

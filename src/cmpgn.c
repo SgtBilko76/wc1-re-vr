@@ -61,6 +61,12 @@ typedef char MissionObjectiveDisk_size_must_be_0x40[
 typedef char MissionShipDisk_size_must_be_0x2a[
     sizeof(MissionShipDisk) == 0x2a ? 1 : -1];
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+short nTalkingHeadFaceX; /* 0x005a8754 */
+short nTalkingHeadFaceY; /* 0x005a8756 */
+short nTalkingHeadMouthY; /* 0x005a8758 */
+short nTalkingHeadMouthX; /* 0x005a875a */
+
 /* Function start: 0x404CD0 */
 unsigned int ParseFaceAnimation(char *text, short *commands)
 {

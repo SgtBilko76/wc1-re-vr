@@ -82,6 +82,28 @@ short asSceneAnimationLogicalFiles[8] = {
 }; /* 0x00469d60 */
 short bSceneAnimationWaitCommand = 0; /* 0x00469d70 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned char *pSceneAnimationSceneData; /* 0x005a7c54 */
+unsigned char *pSceneAnimationPrimaryShape; /* 0x005a7c58 */
+unsigned char *pSceneAnimationTextData; /* 0x005a7c5c */
+unsigned char *pSceneAnimationPacket; /* 0x005a7c60 */
+SceneAnimationObject *pSceneAnimationObjects; /* 0x005a7c64 */
+short nSceneAnimationWaitFrames; /* 0x005a7c68 */
+unsigned char *pSceneAnimationDefinitions; /* 0x005a7c6c */
+unsigned char *pSceneAnimationSecondaryShape; /* 0x005a7c70 */
+signed char cCockpitLogicalFile; /* 0x005a7c74 */
+unsigned char *apCockpitShapes[4]; /* 0x005a7c80 */
+unsigned char *pCinematicViewBackdrop; /* 0x005a7c90 */
+unsigned char *pRearViewBackdrop; /* 0x005a7c94 */
+int bPlayerDestroyed; /* 0x005a7c98 */
+short nPlayerKillCount; /* 0x005a7c9c */
+short asCollisionTime[10]; /* 0x005a7ca0 */
+int nWingmanKilledThisMission; /* 0x005a7cb4 */
+short nWingmanKillCount; /* 0x005a7cb8 */
+short nLastFoundShip; /* 0x005a7cba */
+short asCollisionPartner[10]; /* 0x005a7cc0 */
+int nMemoryConfiguration; /* 0x005a7cd4 */
+
 /* Function start: 0x422010 */
 short ace_status(short ace, unsigned char bits)
 {

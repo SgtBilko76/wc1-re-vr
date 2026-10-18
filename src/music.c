@@ -81,6 +81,11 @@ static
 #endif
 char szSfxWavePath[0xc8]; /* 0x00476558 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+int aiSoundEffectSourceActive[0x40]; /* 0x005a66f0 */
+unsigned char abSoundPlaybackSlots[0xf8]; /* 0x005a67f0 */
+int nPassingShipSoundCooldown; /* 0x005a68e8 */
+
 /* Function start: 0x42E320 */
 void FadeMusic(void)
 {

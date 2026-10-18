@@ -8,6 +8,15 @@
 short nInputDoubleClickInterval = 1; /* 0x0046af54 */
 short nMenuPointerSpeed = 2; /* 0x0046af58 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+int anInputButton2PressTime[2]; /* 0x0059e500 */
+short asInputButton1DoubleClick[2]; /* 0x0059e508 */
+short asInputButton1Changed[2]; /* 0x0059e50c */
+short asInputButton2Changed[2]; /* 0x0059e510 */
+short asPreviousInputButtons[2]; /* 0x0059e514 */
+int anInputButton1PressTime[2]; /* 0x0059e518 */
+short asInputButton2DoubleClick[2]; /* 0x0059e520 */
+
 /* Function start: 0x430710 */
 short __stdcall UpdateInputDeviceTransitions(short raw)
 {

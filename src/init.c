@@ -46,6 +46,12 @@ int anExpandedMemoryReservationByVideoMode[3] = {
     258000, 238000, 258000
 }; /* 0x00469ab0 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+volatile unsigned int dwOriginalFreeMemory; /* 0x005a7cd8 */
+unsigned char *pMouseCursorResource; /* 0x005a7cdc */
+int nAvailableGameMemory; /* 0x005a7ce0 */
+int nSceneResourceBudget; /* 0x005a7ce4 */
+
 /* Function start: 0x4219C0 */
 unsigned int LoadGamePaletteFile(void)
 {

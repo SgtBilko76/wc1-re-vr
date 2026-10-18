@@ -645,7 +645,7 @@ extern TextContext stNavLabelTextContext; /* 0x005a8180 */
 extern int DAT_005a7d9c;
 extern DiskFileRecord *pDiskFileRecords; /* 0x005a7cf0 */
 extern Viewport stDiskPromptBackgroundViewport; /* 0x005a7d00 */
-extern unsigned char abDiskPromptDriveState[0x10]; /* 0x005a7d20 */
+extern unsigned char abDiskPromptDriveState[0x20]; /* 0x005a7d20 */
 extern Viewport stDiskPromptViewport; /* 0x005a7d40 */
 extern TextContext stDiskPromptTextContext; /* 0x005a7d60 */
 extern ShortRect stDiskPromptBounds; /* 0x005a7d80 */

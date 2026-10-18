@@ -7,6 +7,10 @@
  */
 #include "wc1.h"
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+signed char cCapitalShipLogicalFile; /* 0x005a7da0 */
+FixedVector vNormalizedToTarget; /* 0x005a7db0 */
+
 /* Function start: 0x418080 */
 short __stdcall MeasureTextPixelWidthClamped(const char *text)
 {

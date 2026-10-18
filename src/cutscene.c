@@ -152,6 +152,44 @@ static short asFuneralSceneBySeries[13] = {
 };
 static int bFuneralShowTheEnd = 0; /* 0x00465b54 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+Viewport *pScrambleViewport; /* 0x005a86b4 */
+short nScrambleCanopyFrame; /* 0x005a86b8 */
+unsigned char *pScrambleDetailShape; /* 0x005a86bc */
+short nScrambleCockpitScale; /* 0x005a86c0 */
+ShortPoint stScrambleCockpitDetail; /* 0x005a86c4 */
+short nFuneralCasketX; /* 0x005a86c8 */
+short nFuneralCasketY; /* 0x005a86ca */
+short nScrambleShipDetailCount; /* 0x005a86cc */
+signed char acScrambleShipDetailIndices[24]; /* 0x005a86d0 */
+signed char cScrambleWalkTicks; /* 0x005a86e8 */
+unsigned char *pConversationSpecialShape; /* 0x005a86ec */
+ShortPoint aFuneralParticles[7]; /* 0x005a86f0 */
+unsigned char *pScrambleBackgroundShape; /* 0x005a870c */
+short nFuneralParticleDistance; /* 0x005a8710 */
+short nScrambleBackgroundY; /* 0x005a8712 */
+short nScrambleBackgroundRightX; /* 0x005a8714 */
+ShortPoint stFuneralForeground; /* 0x005a8718 */
+short nFuneralMainScale; /* 0x005a871c */
+short nFuneralRifleFrame; /* 0x005a871e */
+short nFuneralBaseX; /* 0x005a8720 */
+short nFuneralBaseY; /* 0x005a8722 */
+short nScrambleShipX; /* 0x005a8724 */
+short nScrambleShipY; /* 0x005a8726 */
+short nFuneralParticleScale; /* 0x005a8728 */
+unsigned char *pScrambleHangarShape; /* 0x005a872c */
+unsigned char *pScrambleCockpitShape; /* 0x005a8730 */
+short nScrambleWalkerY; /* 0x005a8734 */
+short nScrambleCanopyOffset; /* 0x005a8736 */
+short nFuneralMainDistance; /* 0x005a8738 */
+signed char bScrambleCanopyClosed; /* 0x005a873a */
+short nFuneralGuardFrame; /* 0x005a873c */
+ShortPoint stScrambleOverlay; /* 0x005a8740 */
+unsigned char *pScrambleOverlayShape; /* 0x005a8744 */
+signed char cScrambleWalkerPair; /* 0x005a8748 */
+unsigned char *pScrambleCanopyShape; /* 0x005a874c */
+unsigned char *pScrambleShipShape; /* 0x005a8750 */
+
 /* Function start: 0x407710 */
 short __stdcall GetShapeFrameExtent(short x, short y,
                                     unsigned char *shape, short frame,

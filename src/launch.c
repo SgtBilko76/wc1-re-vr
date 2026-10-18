@@ -32,6 +32,9 @@ static short asCarrierLaunchViewData[14] = {
     12, 11, 1, 90, 90, 0, 9, -90, 0, 0, 20, 3, 15, -1
 }; /* 0x0046a5e0 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned char *pLaunchDoorShape; /* 0x005a77e8 */
+
 /* Function start: 0x42B9A0 */
 void DrawLaunchDoorFrame(short distance)
 {

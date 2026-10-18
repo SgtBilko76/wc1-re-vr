@@ -41,6 +41,25 @@ int bWindowMessagePumpActive = 0; /* 0x004650A8 */
 unsigned int bF1KeyLatch = 0; /* 0x004650AC */
 GuardedAllocation *pGuardedAllocationHead = 0; /* 0x004650B0 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+JOYINFO aJoystickInfo[2]; /* 0x005a8970 */
+int nHostMouseMessageX; /* 0x005a8990 */
+int nHostMouseMessageY; /* 0x005a8994 */
+int bHostPrimaryMouseButton; /* 0x005a8998 */
+int bHostSecondaryMouseButton; /* 0x005a899c */
+HWND hMainWindow; /* 0x005a89a0 */
+HANDLE hSingleInstanceSemaphore; /* 0x005a89a4 */
+unsigned long dwGameClockBase; /* 0x005a89a8 */
+GuardedAllocation *pGuardedAllocationTail; /* 0x005a89ac */
+char szMemoryUsage[0x80]; /* 0x005a89b0 */
+HDC hMainWindowDC; /* 0x005a8a30 */
+HCURSOR hPreviousCursor; /* 0x005a8a34 */
+unsigned int nSessionEndTime; /* 0x005a8a38 */
+int bMainWindowAlive; /* 0x005a8a3c */
+HINSTANCE hAppInstance; /* 0x005a8a40 */
+unsigned int nSessionStartTime; /* 0x005a8a44 */
+unsigned short awPaletteRgbWords[0x300]; /* 0x005a8a50 */
+
 /* Function start: 0x401000 */
 void SaveGamePalette(void)
 {

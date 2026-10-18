@@ -9,6 +9,12 @@ static volatile short nNearHeapActive = 0; /* 0x004688c0 */
 short nNearHeapMaxDescriptors = 0x80; /* 0x004688c4 */
 static volatile int nNearHeapRelocationBytes = 0; /* 0x004688c8 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+int nNearHeapSize; /* 0x005a811c */
+int nNearHeapBase; /* 0x005a8120 */
+int nNearHeapFirstDescriptor; /* 0x005a8124 */
+void * volatile pNearHeapAllocation; /* 0x005a8128 */
+
 /* Function start: 0x40E890 */
 unsigned short MergeAdjacentNearHeapBlocks(int descriptorAddress)
 {

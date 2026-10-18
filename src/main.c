@@ -78,6 +78,16 @@ static int nInputTicks; /* 0x00476538 */
 static LARGE_INTEGER liRenderDoneCounter; /* 0x00476540 */
 static int nDrawDelta; /* 0x00476548 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned char abPaletteTriplets[256][3]; /* 0x005a77f0 */
+InputDeviceSample stPreviousFlightInput; /* 0x005a7af0 */
+short bMouseButtonEventQueued; /* 0x005a7afc */
+short bKeyboardEventQueued; /* 0x005a7afe */
+short bMouseMoveEventQueued; /* 0x005a7b00 */
+char *pStartupArguments[30]; /* 0x005a7b10 */
+short bJoystickEventQueued; /* 0x005a7b88 */
+short nArcadeStartupParameter; /* 0x005a7b8a */
+
 /* Function start: 0x4272F0 */
 short LogMemoryUsage(void)
 {

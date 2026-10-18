@@ -53,6 +53,39 @@ static NavMapLabel aNavMapLabels[20];
 /* 0x00475f48 */
 static ShortRect aNavMapExclusionRects[21];
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+short nNavMapMaximumX; /* 0x005a812c */
+short nNavMapMinimumX; /* 0x005a812e */
+unsigned short awNavObjectiveLabelIndex[16]; /* 0x005a8130 */
+short nNavMapMaximumY; /* 0x005a8150 */
+short nNavMapCentreX; /* 0x005a8152 */
+short nNavMapMinimumY; /* 0x005a8154 */
+TextContext stNavMapTextContext; /* 0x005a8160 */
+short nNavMapCentreY; /* 0x005a817c */
+TextContext stNavLabelTextContext; /* 0x005a8180 */
+short nActiveInputDevice; /* 0x005a819c */
+int nJoystickVerticalDeadZone; /* 0x005a81a0 */
+int nJoystickHorizontalDeadZone; /* 0x005a81a4 */
+int nJoystickUpScale; /* 0x005a81a8 */
+int nJoystickLeftScale; /* 0x005a81ac */
+int nJoystickMaximumX; /* 0x005a81b0 */
+int nJoystickMaximumY; /* 0x005a81b4 */
+int nJoystickMinimumX; /* 0x005a81b8 */
+int nJoystickMinimumY; /* 0x005a81bc */
+int nJoystickRawX; /* 0x005a81c0 */
+int nJoystickRawY; /* 0x005a81c4 */
+int nJoystickVerticalRange; /* 0x005a81c8 */
+int nJoystickHorizontalRange; /* 0x005a81cc */
+int nJoystickRightScale; /* 0x005a81d0 */
+int nJoystickDownScale; /* 0x005a81d4 */
+int nJoystickCentreY; /* 0x005a81d8 */
+int nJoystickCentreX; /* 0x005a81dc */
+int nJoystickFailureValue; /* 0x005a81e0 */
+InputDeviceSample aInputDeviceSamples[2]; /* 0x005a81f0 */
+short nMenuInputRepeatDelay; /* 0x005a8208 */
+unsigned char abMissionAuxData[0x28]; /* 0x005a8210 */
+unsigned char abSeriesAuxData[0x28]; /* 0x005a8240 */
+
 /* Function start: 0x40D090 */
 short NavMapPointInsideReservedArea(short area, short x, short y)
 {

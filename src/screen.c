@@ -5,6 +5,16 @@
  */
 #include "wc1.h"
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+void *apPacketHandles[0x1000]; /* 0x0059e530 */
+int aiPacketHandleOffsets[0x1000]; /* 0x005a2530 */
+int nPacketHandleCount; /* 0x005a6530 */
+Viewport *pAllocatedScreenViewport; /* 0x005a6534 */
+int *DAT_005a6538;
+unsigned short awScreenRowOffsets[202]; /* 0x005a6540 */
+ScreenAllocation stScreenAllocation; /* 0x005a66e0 */
+ScreenAllocation *pScreenAllocation; /* 0x005a66ec */
+
 /* Function start: 0x42EFC0 */
 void cleanup_objectives(void)
 {

@@ -60,6 +60,9 @@ static PacketResourceDescriptor aIntroResourceDescriptors[3] = {
 
 static int bTitleMenuSceneInitialized = 0; /* 0x00468ad8 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned char *pTitleShape; /* 0x005a7f08 */
+
 /* Function start: 0x40FA30 */
 unsigned short GetPaletteReadyUnused(void)
 {

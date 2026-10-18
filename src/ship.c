@@ -52,6 +52,10 @@ enum ObjectType aeShipHitDebrisTypes[3] = {
 
 signed char acGunRefireDelay[4] = {6, 10, 4, 0}; /* 0x0046995c */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+int nAfterburnerSoundDeadline; /* 0x005a7ce8 */
+int bAfterburnerSfxActive; /* 0x005a7cec */
+
 /* Function start: 0x41DEE0 */
 short initialize_object(short obj, enum ObjectType type, short owner)
 {

@@ -834,8 +834,8 @@ Unit-private blocks are clear in the original (joycal, video, comm, input,
 screen, music, view, damage, launch, timer, main, trainsim, logic, init,
 ship, disk, fade, geom, cockpt, spc, title, gameflow, nearheap, mission,
 cutscene, cmpgn, mono, winsys, winmain). The shared ship and object arrays sit
-between `eventmgr.c` and `joycal.c`, where `game.c` links. LINK aligns a 2-, 4-
-or 8-byte common to its size and any other common to 16 bytes, and keeps no
+between `eventmgr.c` and `joycal.c`, where `game.c` links. LINK aligns a common to
+its size rounded up to a power of two, at most 16 bytes, and keeps no
 unreferenced common. Every gap in the original must therefore be alignment or
 part of a larger object.
 
@@ -847,7 +847,7 @@ Six reconstruction types broke that rule and are corrected:
 | `0x005A66E0`–`0x005A66EF` | a twelve-byte `ScreenAllocation` record, then the pointer `InitializeDIBScreenViewport` stores to it at `0x005A66EC`; the sound-source flags start at `0x005A66F0` (64 entries, indexed directly) |
 | `0x005A8690`–`0x005A86A7` | the current mission header is one `MissionHeaderDisk` copy; its eight initial ships are scanned as one array |
 | `0x0059D870` | `aHazardFields` holds eight 22-byte entries; the 22-byte gap before `0x0059D920` is the eighth |
-| `0x005A7D20` | the disk prompt's drive buffer is 9–32 bytes (16 used) |
+| `0x005A7D20` | the disk prompt's drive buffer is 17–32 bytes (32 used) |
 | `0x005A86C4`, `0x005A8718`, `0x005A8740` | three coordinate pairs are `ShortPoint`s; their 4-byte alignment explains the 2-byte gaps before them |
 
 The static definitions replace these variables' shared declarations in

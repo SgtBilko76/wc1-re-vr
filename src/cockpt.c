@@ -90,6 +90,34 @@ static int bForceDamageDisplayRedraw = 0; /* 0x00469288 */
 /* 0x00475ff0 */
 static unsigned char abMouseCursorBackground[0x400];
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+short nReleaseWeaponDisplayX; /* 0x005a7dbc */
+short nReleaseWeaponDisplayY; /* 0x005a7dbe */
+enum ObjectType eReleaseWeaponDisplayType; /* 0x005a7dc0 */
+unsigned char *pScannerMarkerBackground; /* 0x005a7dc4 */
+unsigned char bStickIndicatorFrame; /* 0x005a7dc8 */
+short nMessageTimer; /* 0x005a7dca */
+short nPendingCockpitDamage; /* 0x005a7dcc */
+HudMessageSlot aHudMessageSlots[2]; /* 0x005a7dd0 */
+signed char cPreviousTargetObject; /* 0x005a7df2 */
+int nSavedMouseCursorY; /* 0x005a7df4 */
+int nSavedMouseCursorX; /* 0x005a7df8 */
+char szComponentHitMessage[40]; /* 0x005a7e00 */
+short nTargetLockMarkerY; /* 0x005a7e28 */
+short nCarrierMissionShipIndex; /* 0x005a7e2a */
+CockpitReadout aCockpitReadouts[6]; /* 0x005a7e30 */
+short nScannerCursorX; /* 0x005a7e6c */
+short nScannerCursorY; /* 0x005a7e6e */
+unsigned char abCockpitLightState[7]; /* 0x005a7e70 */
+short asScannerObjectY[11]; /* 0x005a7e80 */
+volatile ShortPoint stCockpitExplosionPosition; /* 0x005a7e98 */
+short asScannerObjectX[11]; /* 0x005a7ea0 */
+unsigned char abCockpitLightGoal[7]; /* 0x005a7eb8 */
+int nDamageAlarmSfxHandle; /* 0x005a7ec0 */
+short asScannerBackgroundColour[10]; /* 0x005a7ed0 */
+unsigned int anCockpitDamageState[4]; /* 0x005a7ef0 */
+unsigned short DAT_005a7f00;
+
 /* Function start: 0x413A10 */
 void EmitTextString(void (__stdcall *writer)(int), const char *text)
 {

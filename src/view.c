@@ -26,6 +26,53 @@ static ShortRect aTargetArmorClipRects[4] = { /* 0x0046a928 */
     { -29, -20, -12, 20 }
 };
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+int nAllocateViewportCalls; /* 0x005a68ec */
+void *pLastPacketAllocation; /* 0x005a68f0 */
+FireworkState aFireworks[30]; /* 0x005a6900 */
+unsigned char *pFireworkShape; /* 0x005a6a68 */
+ConstellationStar aConstellationStars[10]; /* 0x005a6a70 */
+Viewport *pConstellationViewport; /* 0x005a6aac */
+short nConstellationStarCount; /* 0x005a6ab0 */
+ConstellationParticle aConstellationParticles[16]; /* 0x005a6ac0 */
+Viewport stConstellationViewport; /* 0x005a6b40 */
+short nConstellationParticleCount; /* 0x005a6b54 */
+const short *pViewScript; /* 0x005a6b58 */
+short nExternalViewDistance; /* 0x005a6b5c */
+Viewport stPilotHand; /* 0x005a6b60 */
+Viewport stLeftVdu; /* 0x005a6b80 */
+ScreenViewportPacket *pScreenViewportPacket; /* 0x005a6b94 */
+Viewport stScreen; /* 0x005a6ba0 */
+TextContext stHudMessageTextContext; /* 0x005a6bc0 */
+Viewport stCockpitBar; /* 0x005a6be0 */
+unsigned char *pTargetLockShape; /* 0x005a6bf4 */
+unsigned char *apTextFonts[4]; /* 0x005a6c00 */
+FontWorkspace **apFontWorkspaces[4]; /* 0x005a6c10 */
+FixedVector aDirectionViewRightVector[DIRECTION_VIEW_COUNT]; /* 0x005a6c20 */
+FixedVector aDirectionViewUpVector[DIRECTION_VIEW_COUNT]; /* 0x005a6f10 */
+FixedVector aDirectionViewForwardVector[DIRECTION_VIEW_COUNT]; /* 0x005a7200 */
+TextContext stLeftVduTextContext; /* 0x005a74f0 */
+Viewport stSpaceBuffer; /* 0x005a7510 */
+Viewport stRightVdu; /* 0x005a7530 */
+Viewport stPilotHandBackdrop; /* 0x005a7550 */
+unsigned char *pCockpitWeaponShape; /* 0x005a7564 */
+Viewport stConversationTextViewport; /* 0x005a7570 */
+char szDefaultTextBuffer[0xc8]; /* 0x005a7590 */
+unsigned char *pCockpitIndicatorShape; /* 0x005a7658 */
+unsigned char *pConstellationShape; /* 0x005a765c */
+unsigned char *pCommMenuCursorShape; /* 0x005a7660 */
+Viewport stModalSourceViewport; /* 0x005a7670 */
+unsigned char *pPilotHandShape; /* 0x005a7684 */
+Viewport stPilotHandComposite; /* 0x005a7690 */
+Viewport stSceneBuffer; /* 0x005a76b0 */
+short aPaletteFadeEntries[6][3]; /* 0x005a76d0 */
+unsigned char *pCockpitDamageShape; /* 0x005a76f4 */
+TextContext stRightVduTextContext; /* 0x005a7700 */
+TextContext stCockpitReadoutTextContext; /* 0x005a7720 */
+TextContext stDefaultTextContext; /* 0x005a7740 */
+TextContext stConversationTextContext; /* 0x005a7760 */
+short asDamageFlashColour[3]; /* 0x005a7780 */
+
 /* Function start: 0x42CDB0 */
 unsigned int parse_view_script(void)
 {

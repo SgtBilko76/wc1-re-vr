@@ -124,6 +124,11 @@ static unsigned char abShapeRLEBuffer[0x100000]; /* 0x00497748 */
 static int bStreamerAudioRunning; /* 0x00597748 */
 static char szStreamerPathBuffer[128]; /* 0x00597750 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+int DAT_00598888;
+int DAT_0059888c;
+int DAT_00598890;
+
 /* Function start: 0x4408A0 */
 void CheckHeapBlockSignature(unsigned char *shape)
 {

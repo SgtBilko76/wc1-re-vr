@@ -16,6 +16,12 @@ static char szTMDriverName[] = "TM.DRV";
 /* 0x0046b188 */
 static char szSuperTMDriverName[] = "SUPERTM.DRV";
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+int nJoystickCalibrationMinimumY; /* 0x0059df64 */
+int nJoystickCalibrationMinimumX; /* 0x0059df68 */
+int nJoystickCalibrationMaximumX; /* 0x0059df6c */
+int nJoystickCalibrationMaximumY; /* 0x0059df70 */
+
 /* Function start: 0x431A10 */
 void LoadJoystickCalibrationFile(short horizontalRange,
                                  short verticalRange,

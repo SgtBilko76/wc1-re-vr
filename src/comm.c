@@ -41,6 +41,15 @@ short nCommSpeakerObject = 0; /* 0x0046afc8 */
 short nCommSpeakerRating = 0; /* 0x0046afcc */
 short nCommPortraitIndex = -1; /* 0x0046afd0 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned char *apCommPortraitShapes[16]; /* 0x0059e180 */
+char szHudMessageBuffer[0x60]; /* 0x0059e1c0 */
+char *aapszPilotSpeech[14][11]; /* 0x0059e220 */
+signed char abCommMenuChoiceCommand[7]; /* 0x0059e488 */
+const char *pszCommMenuHeading; /* 0x0059e490 */
+char szCommMenuHeadingBuffer[0x40]; /* 0x0059e4a0 */
+const char *apszCommMenuChoiceText[7]; /* 0x0059e4e0 */
+
 /* Function start: 0x430BC0 */
 short get_face(short rating, unsigned int side)
 {

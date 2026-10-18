@@ -23,6 +23,14 @@ short nPostSeriesSequence = -1; /* 0x004688e8 */
 static unsigned short bSeriesFailed = 1; /* 0x004688ec */
 int bCampaignActive = 0; /* 0x004688f0 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+int nViewportAllocationCount; /* 0x005a7f0c */
+unsigned char *apViewportAllocations[128]; /* 0x005a7f10 */
+int nFreeViewportCalls; /* 0x005a8110 */
+short nPendingCampaignIndex; /* 0x005a8114 */
+short nMissionMedalScore; /* 0x005a8116 */
+short nCampaignDataSet; /* 0x005a8118 */
+
 /* Function start: 0x40EFE0 */
 void add_statistics(short pilot, short missions, short kills)
 {

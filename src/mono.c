@@ -21,6 +21,10 @@ static unsigned char abUnusedMonoBuffer[0x50]; /* 0x00475e20 */
 static int bMonoDebugAvailable; /* 0x00475e70 */
 static HANDLE hMonoDebugDriver; /* 0x00475e74 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+char szSoundDebugMessage[512]; /* 0x005a8760 */
+unsigned char *pIntroFont; /* 0x005a8960 */
+
 /* Function start: 0x403500 */
 void __stdcall CloseDataFile(unsigned short fd)
 {

@@ -14,6 +14,51 @@ static
 #endif
 unsigned char abCursorSaveArea[0x1000]; /* 0x004865a8 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+InputEvent aInputEventPool[0x100]; /* 0x00598c40 */
+int nMouseCursorSavedY; /* 0x0059a840 */
+int nMouseCursorSavedX; /* 0x0059a844 */
+unsigned char bInputMode; /* 0x0059a848 */
+unsigned char bFilteredKeyWaitActive; /* 0x0059a849 */
+int bMouseCursorDrawn; /* 0x0059a84c */
+short nEventManagerActive; /* 0x0059a850 */
+short nViewCenterX; /* 0x0059a852 */
+short nViewCenterY; /* 0x0059a854 */
+short bExpandedMemoryAvailable; /* 0x0059a856 */
+short nPacketDecompressSourceFile; /* 0x0059a858 */
+unsigned char abInputKeyState[0x80]; /* 0x0059a860 */
+int nMouseCursorDrawnY; /* 0x0059a8e0 */
+int nMouseCursorDrawnX; /* 0x0059a8e4 */
+int anObjectDepthPlaced[SPACE_OBJECT_COUNT]; /* 0x0059a8f0 */
+short DAT_0059a9f0;
+signed char cScreenViewportMode; /* 0x0059a9f2 */
+const ScreenViewportGeometry *
+    pScreenViewportGeometry; /* 0x0059a9f4 */
+int anSortedObject[SPACE_OBJECT_COUNT]; /* 0x0059aa00 */
+short nPacketDecompressInputPosition; /* 0x0059ab00 */
+void *pPacketDecompressInput; /* 0x0059ab04 */
+unsigned short wCurrentInputModifiers; /* 0x0059ab08 */
+MouseCursorState stMouseCursorState; /* 0x0059ab10 */
+void (*pEventManagerPump)(void); /* 0x0059ab2c */
+int nPacketDecompressResult; /* 0x0059ab30 */
+short DAT_0059ab34;
+short nPacketDecompressPending; /* 0x0059ab36 */
+unsigned short wPacketDecompressInputSize; /* 0x0059ab38 */
+short nPacketDecompressWorkspaceSegment; /* 0x0059ab3a */
+volatile int bFrameTickPending; /* 0x0059ab3c */
+int bMouseCursorDamagePending; /* 0x0059ab40 */
+int nMouseCursorDamageRight; /* 0x0059ab44 */
+int nMouseCursorDamageBottom; /* 0x0059ab48 */
+int DAT_0059ab4c;
+short nViewportOriginY; /* 0x0059ab50 */
+short nViewportOriginX; /* 0x0059ab52 */
+unsigned int nTickCount60Hz; /* 0x0059ab54 */
+unsigned char bEscapePressed; /* 0x0059ab58 */
+int nMouseCursorDamageLeft; /* 0x0059ab5c */
+int nMouseCursorDamageTop; /* 0x0059ab60 */
+short DAT_0059ab64;
+int aiInputEventSlotUsed[0x100]; /* 0x0059ab70 */
+
 /* Function start: 0x4355F0 */
 void TranslatePolledInputEvent(unsigned short type, unsigned int value)
 {

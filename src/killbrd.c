@@ -175,6 +175,23 @@ static short asChalkBoardPilotOrder[9] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8
 };
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+Viewport stRoomScreenViewport; /* 0x005988a0 */
+short nSavedRoomControllerX; /* 0x005988b4 */
+unsigned char *pRecRoomRoster; /* 0x005988b8 */
+unsigned char *pMissionCampaignData; /* 0x005988bc */
+unsigned char *apRecRoomCharacterShapes[3]; /* 0x005988c0 */
+PilotRecord aPilotRecords[9]; /* 0x005988d0 */
+ConstellationObjectDefinition *pConstellationDefinitions; /* 0x00598a28 */
+PilotRecord *apWingmanPilots[8]; /* 0x00598a30 */
+unsigned char *pRecRoomBackgroundShape; /* 0x00598a50 */
+Viewport stRoomDisplayViewport; /* 0x00598a60 */
+Viewport stRoomMouseViewport; /* 0x00598a80 */
+unsigned char *apRecRoomTextData[3]; /* 0x00598aa0 */
+RoomMenu stRoomMenu; /* 0x00598ab0 */
+unsigned char *apRecRoomSceneData[3]; /* 0x00598ae0 */
+unsigned char *pBriefingPacket; /* 0x00598aec */
+
 /* Function start: 0x43F640 */
 void CorrectPointers(void)
 {

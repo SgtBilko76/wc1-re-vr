@@ -3,6 +3,9 @@
  */
 #include "wc1.h"
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned int nFrameTimerId; /* 0x005a77ec */
+
 /* Function start: 0x42AFA0 */
 void WaitForDebugStep(void)
 {

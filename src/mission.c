@@ -50,6 +50,13 @@ int anPilotTurnInterval[18] = {
     5, 5, 4, 4, 3, 3, 3, 2, 2, 1, 3, 3, 3, 3, 2, 2, 2, 1
 };
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+MissionObjectiveSource aMissionObjectiveSources[16]; /* 0x005a8270 */
+MissionHeaderDisk stMissionHeader; /* 0x005a8690 */
+CampaignDate *pCurrentCampaignDate; /* 0x005a86a8 */
+CampaignDate *pElapsedCampaignDate; /* 0x005a86ac */
+signed char cObjectResourceLogicalFile; /* 0x005a86b0 */
+
 /* Function start: 0x40B670 */
 void set_sphere_point(const MissionShipRecord *record,
                       FixedVector *position)

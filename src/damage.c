@@ -40,6 +40,18 @@ static const char *apszDamageSeverityNames[5] = {
 
 static int nDisplayedComponentDamage; /* 0x00476554 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+short nDamageDisplayTicks; /* 0x005a7786 */
+short nWeaponDisplayOriginX; /* 0x005a7788 */
+short nWeaponDisplayOriginY; /* 0x005a778a */
+char szDamageStatusText[0x48]; /* 0x005a7790 */
+ShortPoint stDamageSpritePosition; /* 0x005a77d8 */
+signed char cDamageDisplayComponent; /* 0x005a77dc */
+signed char cDamageDisplayFrame; /* 0x005a77dd */
+signed char cDamagedComponentCount; /* 0x005a77de */
+int nDamageDisplayState; /* 0x005a77e0 */
+int nDamageDisplayPhase; /* 0x005a77e4 */
+
 /* Function start: 0x42C800 */
 void show_damage_disp(void)
 {

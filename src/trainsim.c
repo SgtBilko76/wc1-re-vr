@@ -29,6 +29,17 @@ int nTrainSimActive = 0; /* 0x00469e2c */
 short nTrainSimMission = 0; /* 0x00469e30 */
 short nArcadeWave = 0; /* 0x00469e34 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+Viewport stTrainSimTitleDisplayViewport; /* 0x005a7b90 */
+Viewport stTrainSimHighScoreBufferViewport; /* 0x005a7bb0 */
+int nArcadeScore; /* 0x005a7bc4 */
+TextContext stTrainSimTextContext; /* 0x005a7bd0 */
+Viewport stTrainSimHighScoreDisplayViewport; /* 0x005a7bf0 */
+TextContext stTrainSimHighScoreTextContext; /* 0x005a7c10 */
+short nArcadeTimeRemaining; /* 0x005a7c2c */
+HighScoreEntry aHighScoreEntries[6]; /* 0x005a7c30 */
+int nArcadeWaveBonus; /* 0x005a7c50 */
+
 /* Function start: 0x425C30 */
 unsigned short EraseTextContextBackground(TextContext *context)
 {

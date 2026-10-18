@@ -8,6 +8,9 @@
 
 unsigned short nVideoMode = 0xffff; /* 0x0046b168 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned short awPaletteEntryAllocation[256]; /* 0x0059df80 */
+
 /* Function start: 0x4318F0 */
 void __stdcall ShutdownVideoHook(short mode)
 {

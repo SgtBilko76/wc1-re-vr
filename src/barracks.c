@@ -55,6 +55,9 @@ short asCampaignPilotFiles[3] = {58, 61, 74}; /* 0x00469450 */
 short asCampaignBriefingFiles[3] = {10, 62, 73}; /* 0x00469458 */
 short asMissionDataFiles[3] = {15, 52, 72}; /* 0x00469460 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+int DAT_005a7d9c;
+
 /* Function start: 0x41A9D0 */
 short InitializeModalTextPanel(ModalTextPanel *panel, short fontIndex,
                                ShortRect bounds,

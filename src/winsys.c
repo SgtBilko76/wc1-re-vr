@@ -67,6 +67,9 @@ static
 #endif
 int nLeftArrowKeyState; /* 0x00475d1c */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned int nSystemKeyDown; /* 0x005a8964 */
+
 /* Function start: 0x402E80 */
 void SetMousePosition(int x, int y)
 {

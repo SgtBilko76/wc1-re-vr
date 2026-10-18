@@ -30,6 +30,18 @@ const char *DAT_00469698[3] = {
 }; /* 0x00469698 */
 short nKeyboardPointerStep = 4; /* 0x004696a4 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+DiskFileRecord *pDiskFileRecords; /* 0x005a7cf0 */
+Viewport stDiskPromptBackgroundViewport; /* 0x005a7d00 */
+/* GetShutdownErrorCode's buffer.  The prompt viewport that follows it at
+ * 0x005A7D40 bounds it to 17-32 bytes; the DOS hook that filled it is an
+ * empty stub, so its true length is unknown. */
+unsigned char abDiskPromptDriveState[0x20]; /* 0x005a7d20 */
+Viewport stDiskPromptViewport; /* 0x005a7d40 */
+int bPointerMovedByKeyboard; /* 0x005a7d54 */
+TextContext stDiskPromptTextContext; /* 0x005a7d60 */
+ShortRect stDiskPromptBounds; /* 0x005a7d80 */
+
 /* Function start: 0x41D120 */
 void ReportPacketLoadError(void *packet, short logicalFile,
                            short retry, short section,

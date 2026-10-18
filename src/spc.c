@@ -11,8 +11,11 @@ unsigned char bLandingAuthorized = 0; /* 0x00468ff8 */
 static
 #endif
 int bAlternateChaseView = 0; /* 0x00468ffc */
-extern short nStarFieldJRotation; /* 0x005a7f02 */
-extern short nStarFieldIRotation; /* 0x005a7f04 */
+short nStarFieldJRotation; /* 0x005a7f02 */
+short nStarFieldIRotation; /* 0x005a7f04 */
+
+/* Linker commons defined here; LINK orders them by identifier hash. */
+short nExternalViewAngle; /* 0x005a7f06 */
 
 /* Function start: 0x410740 */
 void SetFleetOverviewView(int initializeCockpit)
