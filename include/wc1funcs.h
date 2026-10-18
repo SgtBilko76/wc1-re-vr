@@ -516,7 +516,7 @@ void DrawPilotHandFrame(void);                                       /* 0x004172
 void CopyTrainSimPilotViewToRightVdu(void);                           /* 0x00417320 */
 void animate_pilot(void);                                             /* 0x004173C0 */
 void ResetPilotHandAnimation(void);                                   /* 0x004173F0 */
-void send_message(short obj, signed char message);                      /* 0x00417420 */
+void send_message(short obj, short message);                      /* 0x00417420 */
 void npc_communication(void);                                        /* 0x004174F0 */
 void clear_cockpit_damage(void);                                      /* 0x00417610 */
 void explosion_draw(void);                                           /* 0x00417630 */
@@ -681,7 +681,7 @@ void CreateEmptySaveGameFile(void);                                    /* 0x0041
 void EnsureSaveGameFile(void);                                         /* 0x0041B020 */
 void InitializeBarracksAnimation(BarracksAnimationState *state);       /* 0x0041B070 */
 void FreeBarracksMenuLabel(char **label);                              /* 0x0041B0E0 */
-void SetAwakenBarracksMenuLabel(char **label, int series, int mission,
+void SetAwakenBarracksMenuLabel(char **label, short series, short mission,
                                 char *description);                    /* 0x0041B110 */
 void FreeBarracksMenuLabels(void);                                     /* 0x0041B180 */
 short SaveGame(short slot, SaveGameRecord *gameRecord);                /* 0x0041B1E0 */
@@ -697,7 +697,7 @@ void LoadGameFromSlot(short slot, CampaignState *campaign,
                       PilotRecord *pilots,
                       MissionObjective *objectives);                   /* 0x0041B980 */
 void SetBunkMenuLabel(short occupied, short side, char **label,
-                      int series, int mission, char *description);     /* 0x0041BAD0 */
+                      short series, short mission, char *description);     /* 0x0041BAD0 */
 void GetBunkInfo(BarracksAnimationState *state);                       /* 0x0041BB20 */
 void DrawBarracksBunks(Viewport *viewport, unsigned char *shape,
                        BarracksAnimationState *state);                 /* 0x0041BBD0 */
@@ -867,7 +867,7 @@ int are_alive(short obj);                                             /* 0x00422
 int trim_goals(short obj, short amount);                              /* 0x004225C0 */
 int report_kilrathi_rout(int mode);                                   /* 0x00422640 */
 short find_ship_index(short missionShip);                              /* 0x00422710 */
-int try2rout(short obj);                                              /* 0x00422780 */
+short try2rout(short obj);                                              /* 0x00422780 */
 signed char no_goal(short ship);                                       /* 0x00422830 */
 int being_tailed(short obj, short other);                             /* 0x00422860 */
 int any_enemy_tail(short obj);                                        /* 0x004228A0 */
@@ -952,7 +952,8 @@ unsigned int free_constellation(void);                            /* 0x00424490 
 void init_vdus(void);                                                  /* 0x004244E0 */
 unsigned int InitializeCockpitResources(signed char mode);             /* 0x004245B0 */
 unsigned int free_cockpit(void);                                       /* 0x004249A0 */
-#ifdef SDL_PORT
+#if defined(SDL_PORT) || defined(WC1_CUTSCENE_SOURCE)
+/* The native demo caller sign-extends its series byte to a word. */
 unsigned int init_3Space_objects(short scene);
 #else
 unsigned int init_3Space_objects();                                    /* 0x00424A80 */
@@ -1376,7 +1377,13 @@ char *__stdcall DosStrcpy(char *dst, const char *src);               /* 0x004354
 char *__stdcall CopyFarString(char *destination,
                               const char *source);                   /* 0x004354A0 */
 short __stdcall DosStrlen(const char *s);                                   /* 0x004354D0 */
+#if defined(WC1_BARRACKS_SOURCE) && !defined(SDL_PORT)
+/* The retail barracks caller retains word-sized copy-count arithmetic.
+ * DosMemcpy itself forwards the complete dword stack slot to memmove. */
+void __stdcall DosMemcpy(void *dst, const void *src, unsigned short n); /* 0x004354F0 */
+#else
 void __stdcall DosMemcpy(void *dst, const void *src, size_t n);               /* 0x004354F0 */
+#endif
 void __stdcall DosMemset(void *destination, unsigned int count,
                          short value);                               /* 0x00435510 */
 unsigned short GetEventManagerStatus(void);                            /* 0x00435550 */

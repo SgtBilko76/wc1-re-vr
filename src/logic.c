@@ -409,7 +409,7 @@ short find_ship_index(short missionShip)
 }
 
 /* Function start: 0x422780 */
-int try2rout(short obj)
+short try2rout(short obj)
 {
     short canContinue;
     short other;

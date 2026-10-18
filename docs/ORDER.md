@@ -2120,3 +2120,75 @@ increase by six to 57,585 of 518,656 bytes (11.1027%); 461,071 positions
 differ in 22,969 runs. Literal executable equality remains incomplete.
 The executable hash stays unchanged through final verification:
 `e71a0b9cf7d337af801a6381d3a1452f7b0680e314aa0ae01b78a90ac0fdba4e`.
+
+## Caller word-width checkpoint
+
+Several routines matched every mnemonic while using wrong argument and
+return widths. The original callers, together with unchanged callee output,
+support four corrections:
+
+- Barracks sees a word copy-count parameter for `DosMemcpy`. Its label
+  routine increments the allocation length in ECX but the copy length in
+  CX. The native shim still forwards a dword stack slot to `memmove`; its
+  definition and other owners' declarations stay unchanged. A caller-only
+  declaration preserves this original inconsistency. Explicit casts under
+  the size_t prototype add extensions absent from the original.
+- The two bunk-label functions take short series and mission arguments.
+  `GetBunkInfo` sign-extends the saved campaign bytes into word registers.
+  Its second label call also passes the description buffer, as does its
+  first. The address calculation precedes a 24-byte argument cleanup;
+  treating it as a post-cleanup address caused the former pilot-name offset.
+- The native cutscene owner uses the existing short-scene prototype for
+  `init_3Space_objects`. Default argument promotion under the previous
+  unspecified-argument declaration widened three demo-call arguments.
+- `try2rout` has a short return type and `send_message` takes a short
+  message number. Their shared declarations and definitions agree. These
+  types restore the communication request's word result test and word
+  subtraction, while both callee comparisons remain unchanged.
+
+All calling conventions and stack argument sizes remain unchanged. The
+barracks memory-copy declaration is native-only; the modern build retains
+the shim's size_t interface. No wrappers, aliases, hand-written glue, flags,
+storage, or compilation-unit boundaries are added or changed.
+
+The wave initializer also uses a direct conditional expression selecting
+two or minus one. This restores its original dword mask and decrement before
+the word store; the former explicit mask expression emitted word arithmetic.
+
+| Routine | Previous differing encodings | Current result | Aligned span |
+| --- | ---: | --- | ---: |
+| `SetAwakenBarracksMenuLabel` | 10 | Exact | 112 |
+| `GetBunkInfo` | 44 | Exact | 176 |
+| `RunAnimationDemoLoop` | 144 | Exact | 640 |
+| `request` | 193 | Exact | 832 |
+| `set_up_action_sphere` | 85 | 73 differing encodings | 352 |
+
+The five changed report rows remove 403 differing encodings. The other
+1,519 rows are unchanged, including `SetBunkMenuLabel`, `send_message`,
+and `try2rout`. No existing exact match regresses and no reported span size
+changes. The report has 1,281 normalized exact functions, 227 same-size
+differences, and sixteen size differences (74 absolute bytes, net -6).
+Mnemonic totals remain 1,380 perfect, 1,518 at or above 90%, six below, and
+99.60% average. There are no missing exports, fallbacks, or errors.
+
+The clean rebuild regenerates all 78 native objects, archives, and executable
+outputs. Native and modern builds, source-order and address audits, the order
+report, and all required verification gates pass. Both value checks cover
+1,524 functions without mismatches or skips. All 1,104 linked globals,
+39 code pointers, 79 mixer operands, and recovered unit-data blocks pass.
+The four new exact routines also pass a separate binary-comp check of the
+identities, ordering, multiplicity, and relative positions of their thirty
+named global operands. Call and global-access analyses retain eleven and
+35 diagnostics across 1,138 and 1,059 checked functions. The modern linker's
+existing unaligned-pointer warnings remain. No gameplay validation is claimed.
+
+All section sizes and placements are unchanged. Code remains 400,663 bytes
+versus 401,111, data virtual size 1,329,724 versus 1,331,596, relocations
+36,294 versus 36,306, and file size 518,144 versus 518,656. The entry point
+is still `0x0044E5B0` versus `0x0044E770`; 26 missing routines account for
+416 of the 448 absent code bytes. Strict positional matches fall by nineteen
+to 57,566 of 518,656 bytes (11.0991%), with 461,090 differing positions in
+22,962 runs. Literal executable equality still fails despite the corrected
+function-relative encodings. The clean-build and post-verification hashes
+agree:
+`c003b4cbffa028dfeee8c78b2e00f0539f7b8a11eeb679cf83a211280289fc19`.

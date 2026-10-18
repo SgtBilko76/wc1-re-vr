@@ -568,8 +568,7 @@ int set_up_action_sphere(short navPoint)
     nCurrentNavPoint = navPoint;
     nav = &aMissionNavPoints[navPoint];
     nCurrentWave =
-        (short)((((aMissionNavPoints[navPoint + 1].type == 2) ?
-                  -1 : 0) & 3) - 1);
+        aMissionNavPoints[navPoint + 1].type == 2 ? 2 : -1;
     nEnemySighting = 0x7fff;
 
     obj = 1;

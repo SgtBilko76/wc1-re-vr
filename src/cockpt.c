@@ -2629,7 +2629,7 @@ void ResetPilotHandAnimation(void)
 }
 
 /* Function start: 0x417420 */
-void send_message(short obj, signed char message)
+void send_message(short obj, short message)
 {
     if (nTrainSimActive == 0 &&
         aeObjectClass[obj] != OBJECT_CLASS_NULL &&

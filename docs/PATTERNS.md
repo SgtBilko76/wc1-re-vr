@@ -2183,3 +2183,44 @@ Windows 95 DirectDraw and DirectSound behavior.
   encodings by six. Saving the post-decrement result in the existing live
   counter local restores the baseline output throughout. None of these
   source probes is retained.
+- Check argument and return widths even when every mnemonic matches.
+  `SetAwakenBarracksMenuLabel` increments its allocation length in ECX,
+  but its later copy length in CX. The native barracks unit therefore keeps
+  a word-count declaration for `DosMemcpy`; the shim itself still forwards
+  the complete dword stack argument to `memmove`. Keep this declaration
+  discrepancy local to that caller. Casting the length or sum to signed or
+  unsigned short under the size_t prototype adds extensions absent from
+  the original. The local prototype recovers the entire 112-byte span.
+- `SetBunkMenuLabel` and `SetAwakenBarracksMenuLabel` accept signed-word
+  series and mission arguments. This restores the four byte-to-word sign
+  extensions in `GetBunkInfo`; the callee's dword forwarding loads do not
+  establish wide formal arguments. Both bunk-menu calls receive the save
+  record's description buffer. In the second call, the original address
+  calculation occurs before the preceding call's 24-byte stack cleanup;
+  account for that cleanup instead of inferring a pointer into pilot data.
+  These corrections recover `GetBunkInfo`'s complete 176-byte span, while
+  both menu-label callees retain their exact results.
+- The native cutscene owner sees `init_3Space_objects(short scene)` rather
+  than an unspecified-argument declaration. Its three signed campaign-byte
+  arguments then extend into AX, matching `RunAnimationDemoLoop`'s 536-byte
+  body and complete 640-byte span. Other native owners retain their existing
+  declarations; this is recovered caller context, not original header text.
+- `try2rout` returns a short and `send_message` takes a short message number.
+  The former restores `request`'s `TEST AX,AX`; the latter restores its
+  `SUB BX,2` rather than `SUB BL,2`. The shared declarations and definitions
+  agree, their calling conventions and callee comparisons are unchanged,
+  and the complete 832-byte request span now matches. A local result cast
+  alone fixes the test but leaves the message subtraction one byte short.
+- `set_up_action_sphere` assigns its initial wave with the ordinary
+  conditional expression selecting two or minus one. CL emits the original
+  dword mask and decrement before the word store. The previous explicit
+  mask expression truncated those operations to AX. The change removes
+  twelve differing encodings at the unchanged 352-byte span; object-class
+  register allocation and a loop branch still differ.
+- Further explosion and screen-row probes are not retained. An explicit
+  debris-velocity destination pointer or a second byte offset worsens
+  `onboard_explosion`'s comparison; keeping both destination pointers, at
+  function or branch scope, also loses sixteen bytes from its aligned span.
+  `InitializeDIBScreenViewport` with a running word offset produces a body
+  three bytes too short and worsens its span comparison from nine to eleven
+  differing encodings, with either a for loop or a postincrement do loop.

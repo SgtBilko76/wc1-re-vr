@@ -368,7 +368,7 @@ void FreeBarracksMenuLabel(char **label)
 }
 
 /* Function start: 0x41B110 */
-void SetAwakenBarracksMenuLabel(char **label, int series, int mission,
+void SetAwakenBarracksMenuLabel(char **label, short series, short mission,
                                 char *description)
 {
     FreeBarracksMenuLabel(label);
@@ -739,7 +739,7 @@ void LoadGameFromSlot(short slot, CampaignState *campaign,
 
 /* Function start: 0x41BAD0 */
 void SetBunkMenuLabel(short occupied, short side, char **label,
-                      int series, int mission, char *description)
+                      short series, short mission, char *description)
 {
     if (occupied == 0) {
         *label = (char *)apszSaveCampaignMenuLabels[0];
@@ -766,15 +766,15 @@ void GetBunkInfo(BarracksAnimationState *state)
         SetBunkMenuLabel(
             state->bunks[bunk].occupied, 0,
             &apszBarracksMenuLabels[bunk * 2],
-            (int)gameRecord.campaign.currentSeries,
-            (int)gameRecord.campaign.currentMission,
+            gameRecord.campaign.currentSeries,
+            gameRecord.campaign.currentMission,
             gameRecord.description);
         SetBunkMenuLabel(
             state->bunks[bunk].occupied, 1,
             &apszBarracksMenuLabels[bunk * 2 + 1],
-            (int)gameRecord.campaign.currentSeries,
-            (int)gameRecord.campaign.currentMission,
-            gameRecord.pilots[0].name + 6);
+            gameRecord.campaign.currentSeries,
+            gameRecord.campaign.currentMission,
+            gameRecord.description);
         bunk++;
     } while (bunk < 8);
 }
