@@ -134,6 +134,37 @@ for similarity decisions.
   including its sixteen-entry switch table, with the original 60-byte frame.
   The function is exact, up from 89.68% and 584 differing instruction
   encodings, without changing any other space routine's result.
+- `auto_pilot_sequence` initializes its formation slot after copying the
+  destination, matching the original copy and flag-store scheduling. Cache
+  each participating ship's short cruise speed before comparing and copying
+  it. The final travel-mode switch already rejects values outside one through
+  three; an extra `travelMode[ship] >= 1` guard adds a byte-width comparison
+  absent from the original. Removing it restores the 1,472-byte span and
+  retains the 44-byte frame. Similarity rises from 96.91% to 98.81%, with
+  fifteen differing instruction encodings out of 419. The other autopilot
+  rows are unchanged. Scoped nearest-range locals, explicit promoted ship
+  indices, reversed wingman comparisons, and an inlined initial memcpy do
+  not recover the remaining BP/BX allocation and scheduling differences.
+- The three changing-mode calls to `initialize_cockpit` pass an incremented
+  signed byte promoted to int and then decremented at 32-bit width. Use an
+  int-facing prototype and narrow to a signed-byte local in the callee after
+  the message-closing calls. Narrowing before those calls hoists its stack
+  read; narrowing after them retains the callee's prior result. This is a
+  reconstruction consistent with both sides, not proof of the original
+  prototype spelling. In `RunSpaceFlight`, write the increment and the
+  minus-one argument separately: a post-increment argument loses the
+  original promotion/subtraction sequence in this context. Copy the idle
+  timestamp to the render timestamp before the simulation timestamp, and
+  store input ticks before total ticks. The flight loop retains its 912-byte
+  span and improves from 95.11% / 83 differing encodings to 96.89% / 77.
+  The shared parameter correction also raises `HandleSpaceFlightControls`
+  to 96.32%; its differing encodings rise from 775 to 781 as later offsets
+  change, while its 3,184-byte span remains correct.
+  Explicit qualified timestamp captures improve the flight loop's mnemonic
+  score but disturb the following cursor routine and leave the profile
+  registers wrong. Declaration permutations, a separate present-tick local,
+  and separate delta calculations do not yield a better complete-unit
+  result. These temporaries are not retained; the cursor routine stays exact.
 - `HandleFleetOverviewInput` saves the signed key byte in a short before
   dispatching. The original sign-extends the byte into CX, then CX into EAX
   for the switch. Keep that switch inside the `nCameraViewMode == 8` block
@@ -1030,10 +1061,25 @@ for similarity decisions.
   promoted `abs` results instead emits different arithmetic and increases
   the frame. Handle the cockpitless branch first, switch on the signed view
   byte, and clamp at >=9/<=-9. These changes recover the 28-byte frame and
-  raise similarity from 82.32% to 94.09%; sixteen excess bytes remain.
-  Global-load scheduling, store merging, and register allocation still
-  differ. The unchanged next-view selector also becomes exact under the
-  unit's resulting allocation; no previously exact function loses its match.
+  restore the original 1,728-byte span at 100% mnemonic similarity.
+  Qualified volatile lvalues retain the two separate key-mask updates and
+  the conditional previous-key clear. Qualified reads keep the afterburner
+  latch, mouse visibility, cockpitless flag, and view centre inside their
+  event branches. These qualifiers express the observed accesses; they do
+  not establish the original source spelling. In the joystick branch,
+  store yaw before pitch. Capture the event X coordinate in an int before
+  loading the left viewport bound for the mouse-edge checks.
+  Two sample-X loads still use AX where the original reads EAX. Each adds
+  an operand-size byte and shifts later instructions, leaving 227 differing
+  encodings out of 397 despite the matching span and mnemonic sequence.
+  Qualified destination-word stores recover the DWORD loads but disturb
+  the initial input reads and shorten the span; they are not retained.
+  Qualified sample reads, a volatile sample definition, LONG sample fields,
+  explicit LONG casts, entry snapshots, and narrower mouse-local scopes do
+  not repair the complete function. The input changes also exchange CX/DX
+  in six `HandleFleetOverviewInput` instructions while making
+  `ReportFramesSkipped` exact. A register hint on the fleet key does not
+  restore its prior exact result and is not retained.
 - `init_intelligence_data` takes its canned-sequence pointer from the
   existing 32-bit pilot-level slot before replacing that slot with 2. Reading
   it again from the mission record adds an index calculation absent from the
@@ -1130,12 +1176,19 @@ for similarity decisions.
   unsigned fallback of `GetJoystickPosition` preserves the low 16 bits.
 - `ReadCalibratedJoystick` reads Y inside the short-circuit failure condition,
   after X passes its check. Chain the three sample-field clears to retain the
-  original shared zero register. Compare the minimum X bound with the sampled
-  field so CL loads the bound before storing the raw coordinates. These changes
-  reach 87.60% and remove sixteen excess bytes; sixteen remain. Explicit cached
-  failure/centre locals, long raw-value locals, reversed failure comparisons,
-  and folding the device assignment into its test did not recover the remaining
-  register-held comparisons and divisors.
+  original shared zero register. Capture the device, failure sentinel, minimum
+  X bound, and axis centres through qualified volatile reads. Compare the
+  cached X sample with the minimum before publishing the clamped sample;
+  the bound load precedes the raw-coordinate stores. Declare raw Y before
+  raw X, then subtract the centre and divide before narrowing each result.
+  These choices recover the original 384-byte span without a local stack
+  frame, reaching 96.69% with 71 differing encodings out of 121. The other
+  calibration-unit rows remain unchanged. The four scale divisions still
+  use memory operands instead of the original register divisors. A separate
+  qualified divisor capture, a register hint, long divisor/raw-value locals,
+  and alternative division expressions do not fix them. Ordinary unqualified
+  sentinel/centre captures are folded back into memory operands. No claim
+  about original volatile declarations follows from these matching choices.
 - Check neighbouring functions after input changes. The unit's allocation
   changes also affect `ReserveContiguousPaletteEntries`. Reusing its count for
   the fill loop restores the original branch direction and all mnemonics, but

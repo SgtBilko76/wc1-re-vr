@@ -137,13 +137,16 @@ short ReadCalibratedJoystick(void)
 {
     InputDeviceSample *sample;
     int sampleResult;
-    int rawX;
+    int failureValue;
     int rawY;
+    int rawX;
+    int minimumX;
+    int centre;
     short normalizedX;
     short normalizedY;
     short device;
 
-    device = nActiveInputDevice;
+    device = *(volatile short *)&nActiveInputDevice;
     if (device == -1)
         return 0;
     sample = &aInputDeviceSamples[device];
@@ -151,8 +154,9 @@ short ReadCalibratedJoystick(void)
         sample, device,
         nJoystickFailureValue);
     rawX = sample->x;
-    if (rawX == nJoystickFailureValue ||
-        (rawY = aInputDeviceSamples[device].y) == nJoystickFailureValue ||
+    failureValue = *(volatile int *)&nJoystickFailureValue;
+    if (rawX == failureValue ||
+        (rawY = aInputDeviceSamples[device].y) == failureValue ||
         sampleResult != 0) {
         nActiveInputDevice = -1;
         sample->x = aInputDeviceSamples[device].y =
@@ -160,10 +164,11 @@ short ReadCalibratedJoystick(void)
         return 0;
     }
 
+    minimumX = *(volatile int *)&nJoystickMinimumX;
     nJoystickRawX = rawX;
     nJoystickRawY = rawY;
-    if (nJoystickMinimumX > sample->x)
-        sample->x = nJoystickMinimumX;
+    if (minimumX > rawX)
+        sample->x = minimumX;
     if (sample->x > nJoystickMaximumX)
         sample->x = nJoystickMaximumX;
     if (aInputDeviceSamples[device].y <
@@ -178,35 +183,41 @@ short ReadCalibratedJoystick(void)
     normalizedY = 0;
     normalizedX = 0;
     rawX = sample->x;
-    if (nJoystickCentreX > rawX) {
-        normalizedX = (short)((nJoystickCentreX - rawX) /
-                              nJoystickLeftScale);
+    centre = *(volatile int *)&nJoystickCentreX;
+    if (centre > rawX) {
+        rawX = centre - rawX;
+        rawX /= nJoystickLeftScale;
+        normalizedX = (short)rawX;
         if (nJoystickHorizontalDeadZone < normalizedX) {
             if (normalizedX != 0)
                 normalizedX = (short)-normalizedX;
         } else {
             normalizedX = 0;
         }
-    } else if (nJoystickCentreX < rawX) {
-        normalizedX = (short)((rawX - nJoystickCentreX) /
-                              nJoystickRightScale);
+    } else if (centre < rawX) {
+        rawX = rawX - centre;
+        rawX /= nJoystickRightScale;
+        normalizedX = (short)rawX;
         if (normalizedX <= nJoystickHorizontalDeadZone)
             normalizedX = 0;
     }
 
     rawY = aInputDeviceSamples[device].y;
-    if (nJoystickCentreY > rawY) {
-        normalizedY = (short)((nJoystickCentreY - rawY) /
-                              nJoystickUpScale);
+    centre = *(volatile int *)&nJoystickCentreY;
+    if (centre > rawY) {
+        rawY = centre - rawY;
+        rawY /= nJoystickUpScale;
+        normalizedY = (short)rawY;
         if (nJoystickVerticalDeadZone < normalizedY) {
             if (normalizedY != 0)
                 normalizedY = (short)-normalizedY;
         } else {
             normalizedY = 0;
         }
-    } else if (nJoystickCentreY < rawY) {
-        normalizedY = (short)((rawY - nJoystickCentreY) /
-                              nJoystickDownScale);
+    } else if (centre < rawY) {
+        rawY = rawY - centre;
+        rawY /= nJoystickDownScale;
+        normalizedY = (short)rawY;
         if (normalizedY <= nJoystickVerticalDeadZone)
             normalizedY = 0;
     }

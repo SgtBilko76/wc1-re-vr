@@ -120,9 +120,9 @@ void auto_pilot_sequence(void)
 #endif
 
     savedCannedSceneMode = (short)nCannedSceneMode;
-    formationSlot = 0;
     destination = aMissionObjectives[
         abFlightPath[cCurrentNavPointIndex]].position;
+    formationSlot = 0;
     leaveCurrentNavPoint = 1;
 
     if (auto_pilot_valid(1) != 0) {
@@ -260,19 +260,21 @@ void auto_pilot_sequence(void)
 #endif
         cruiseSpeed = asShipMaximumSpeed[0];
         for (ship = 0; ship < 10; ship++) {
-            if (travelMode[ship] != 0 &&
-                aObjectTypeData[
-                    aeObjectType[ship]].cruiseVelocity <
-                    cruiseSpeed)
-                cruiseSpeed = aObjectTypeData[
+            if (travelMode[ship] != 0) {
+                short shipCruiseSpeed;
+
+                shipCruiseSpeed = aObjectTypeData[
                     aeObjectType[ship]].cruiseVelocity;
+                if (shipCruiseSpeed < cruiseSpeed)
+                    cruiseSpeed = shipCruiseSpeed;
+            }
         }
 
         formationSlot = 0;
         for (ship = 0; ship < 10; ship++) {
             if (travelMode[ship] != 0) {
                 set_speed(ship, cruiseSpeed);
-                if (ship != 0 && travelMode[ship] >= 1) {
+                if (ship != 0) {
                     switch (travelMode[ship]) {
                     case 1:
                     case 2:

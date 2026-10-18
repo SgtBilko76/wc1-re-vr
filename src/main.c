@@ -868,6 +868,7 @@ unsigned int player_input(void)
     short pitchInput;
     int keyboardRoll;
     int viewportLeft;
+    int mouseX;
     int afterburnerControl;
     unsigned int buttons;
     unsigned int key;
@@ -889,8 +890,8 @@ unsigned int player_input(void)
     bKeyboardEventQueued = queuedKeyEvent;
     bMouseButtonEventQueued = IsInputEventQueued(2);
     if (bMouseMoveEventQueued == 0)
-        bCurrentKey |= 0x80;
-    bCurrentKey |= 0x80;
+        *(volatile unsigned char *)&bCurrentKey |= 0x80;
+    *(volatile unsigned char *)&bCurrentKey |= 0x80;
 
     if (bMouseCursorVisible == 0) {
         key = PollKeyboardState();
@@ -924,7 +925,7 @@ unsigned int player_input(void)
                 fire_players_lasers();
             }
             if ((buttons & 2) == 0)
-                cPreviousKey = 0;
+                *(volatile signed char *)&cPreviousKey = 0;
             if (cPreviousKey == 0x0f && buttons == 2) {
                 bCurrentKey = 0x0f;
                 if (buttons == 1)
@@ -951,7 +952,7 @@ unsigned int player_input(void)
             if ((short)event.value == 3)
                 bCurrentKey = 0x1c;
             if ((short)event.value == 2 &&
-                bAfterburnerButtonLatched == 0) {
+                *(volatile unsigned char *)&bAfterburnerButtonLatched == 0) {
                 if ((int)(nTickCount60Hz -
                         dwLastSecondaryButtonPress) <=
                         nInputTickScale)
@@ -1008,10 +1009,10 @@ unsigned int player_input(void)
                         stLastPolledFlightInput.y ||
                     stLastPolledFlightInput.x != 0 ||
                     stLastPolledFlightInput.y != 0) {
-                    nPitchInput =
-                        (short)-stLastPolledFlightInput.y;
                     nYawInput =
                         (short)stLastPolledFlightInput.x;
+                    nPitchInput =
+                        (short)-stLastPolledFlightInput.y;
                 }
             }
             if (asInputButton2DoubleClick[
@@ -1028,11 +1029,11 @@ unsigned int player_input(void)
                 aeSpecialManeuver[0] ==
                     SPECIAL_MANEUVER_AFTERBURNER)
                 afterburnerControl = 0;
-            if (bMouseCursorVisible == 0) {
+            if (*(volatile int *)&bMouseCursorVisible == 0) {
                 bMouseCursorVisible = 1;
                 stMouseCursorState.frame = 2;
             }
-            if (bCockpitlessView != 0) {
+            if (*(volatile int *)&bCockpitlessView != 0) {
                 switch (cCockpitView) {
                 case 0:
                     event.y = (short)(event.y - 10);
@@ -1044,7 +1045,8 @@ unsigned int player_input(void)
                 horizontal = (short)(event.x +
                     (stSpaceBuffer.left -
                      stSpaceBuffer.right) / 2 + 1);
-                vertical = (short)(event.y - nViewCenterY);
+                vertical = (short)(event.y -
+                    *(volatile short *)&nViewCenterY);
             } else {
                 horizontal = (short)(event.x +
                     (stSpaceBuffer.left -
@@ -1070,10 +1072,11 @@ unsigned int player_input(void)
                 ;
             if (vertical < 0)
                 pitchInput = (short)-pitchInput;
+            mouseX = event.x;
             viewportLeft = (int)stSpaceBuffer.left;
-            if ((int)event.x - 4 <= viewportLeft)
+            if (mouseX - 4 <= viewportLeft)
                 yawInput = -8;
-            if ((int)stSpaceBuffer.right <= (int)event.x + 4)
+            if ((int)stSpaceBuffer.right <= mouseX + 4)
                 yawInput = 8;
             if ((int)event.y - 4 <= (int)stSpaceBuffer.top)
                 pitchInput = -8;
@@ -2007,7 +2010,6 @@ unsigned int ReleaseStaleNavTarget(void)
 int RunSpaceFlight(short entryNavPoint)
 {
     Viewport *savedViewport;
-    signed char savedMode;
     unsigned int frameReady;
 
     bCockpitlessView = 0;
@@ -2038,9 +2040,8 @@ int RunSpaceFlight(short entryNavPoint)
         new_view(0, 0);
         GetScreenUpdateFlag();
         SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
-        savedMode = cScreenViewportMode;
         cScreenViewportMode++;
-        initialize_cockpit(savedMode);
+        initialize_cockpit(cScreenViewportMode - 1);
         SetMousePosition(
             (stSpaceBuffer.right - stSpaceBuffer.left) / 2 + 1,
             nViewCenterY);
@@ -2082,8 +2083,8 @@ int RunSpaceFlight(short entryNavPoint)
             ReadPerformanceCounter(&liFlightAfterRender);
             update_cockpit();
         } else {
-            liFlightAfterRender =
-                liFlightAfterSimulation =
+            liFlightAfterSimulation =
+                liFlightAfterRender =
                     liFlightAfterInput;
         }
         ReadPerformanceCounter(&liFlightAfterCockpit);
@@ -2105,11 +2106,11 @@ int RunSpaceFlight(short entryNavPoint)
         nFlightSimulationTicks =
             (int)(liFlightAfterSimulation.LowPart -
                   liFlightAfterInput.LowPart);
-        nFlightFrameTotalTicks =
-            (int)(liFlightFrameEnd.LowPart -
-                  liFlightFrameStart.LowPart);
         nFlightInputTicks =
             (int)(liFlightAfterInput.LowPart -
+                  liFlightFrameStart.LowPart);
+        nFlightFrameTotalTicks =
+            (int)(liFlightFrameEnd.LowPart -
                   liFlightFrameStart.LowPart);
         DAT_00598888 = 0;
         DAT_0059888c = 0;

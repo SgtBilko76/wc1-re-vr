@@ -1385,14 +1385,17 @@ unsigned int ResetCockpitPaletteEntries(void)
 }
 
 /* Function start: 0x423E90 */
-unsigned int initialize_cockpit(signed char mode)
+unsigned int initialize_cockpit(int requestedMode)
 {
     Viewport savedScreen;
     unsigned char *backdrop;
     unsigned int result;
+    signed char mode;
 
     if (message_showing())
         EndCommMenu();
+
+    mode = (signed char)requestedMode;
 
     if (bCockpitlessView == 0 && mode == cScreenViewportMode) {
         if (stSpaceBuffer.pixels != 0)

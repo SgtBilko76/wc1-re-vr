@@ -743,6 +743,10 @@ comparisons, and the MONODEBG trial lost fourteen exact comparisons overall.
 These trials are reverted. Ownership evidence is not sufficient to claim a
 matching storage block without checking its emitted offsets and the full
 function report.
+Moving only the timing definitions into `main.c`, retaining their external
+common storage and shared declarations, also fails to recover the cached
+profiling reads. It merely relocates the common symbols; it does not establish
+the original private 84-byte run. That narrower ownership trial is reverted.
 
 The 200-byte `szSfxWavePath` buffer at `0x00476558` now resides in `music.c`.
 Its two original references both occur in `PlaySfxWaveFileByNumber`: `sprintf`
@@ -1097,6 +1101,16 @@ or names. In particular, the jump entry targets
 the surrounding empty routines' purposes cannot be established by proximity
 alone. The function report does not score these absent implementations, so
 its average similarity must not be interpreted as whole-program completion.
+
+At the autopilot/input size checkpoint of 2026-10-18, the 1,521-function
+report has 1,235 normalized exact matches, 261 same-size differences, and
+25 size differences totaling 166 absolute bytes (net +10). The rebuilt
+`.text` is 896 bytes shorter than the original; the missing aligned spans
+account for 880 of those bytes. The data virtual-size deficit remains 1,856
+bytes. Recovering the three input/autopilot spans removed 48 excess bytes
+but shifted downstream code: strict positional matches fell from 122,403
+to 53,323 of 518,656 bytes (10.2810%). This is an intermediate function-level
+improvement, not a whole-file match; the strict comparison still fails.
 
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates

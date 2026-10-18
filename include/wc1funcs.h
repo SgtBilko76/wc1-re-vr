@@ -942,7 +942,7 @@ int FreeShapeSet(PacketResourceDescriptor *resources,
 int LoadPacketResourceList(PacketResourceDescriptor *resources,
                            short flags, int availableBytes);           /* 0x00423D80 */
 unsigned int ResetCockpitPaletteEntries(void);                         /* 0x00423E10 */
-unsigned int initialize_cockpit(signed char mode);                     /* 0x00423E90 */
+unsigned int initialize_cockpit(int requestedMode);                     /* 0x00423E90 */
 unsigned int InitializeConstellationObject(
     const ConstellationObjectDefinition *definition,
     short object);                                                /* 0x004242D0 */
