@@ -90,10 +90,10 @@ unsigned short InitializeEventManagerResources(void)
     DAT_0059a9f0 = 20;
     nInputTickScale = 20;
     DAT_0059ab64 = 1;
-    stMouseCursorState.shape = pMouseCursorResource =
+    *(unsigned char *volatile *)&stMouseCursorState.shape = pMouseCursorResource =
         FetchDiskPacketRetrying(14, 0, 0x10);
-    stMouseCursorState.frame = 0;
-    stMouseCursorState.viewport = &stScreen;
+    *(unsigned short volatile *)&stMouseCursorState.frame = 0;
+    *(Viewport *volatile *)&stMouseCursorState.viewport = &stScreen;
     return 0;
 }
 

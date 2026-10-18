@@ -1112,6 +1112,17 @@ but shifted downstream code: strict positional matches fell from 122,403
 to 53,323 of 518,656 bytes (10.2810%). This is an intermediate function-level
 improvement, not a whole-file match; the strict comparison still fails.
 
+The subsequent cursor/frame-rate checkpoint has 1,238 normalized exact
+matches, 258 same-size differences, and the same 25 size differences
+(166 absolute bytes, net +10). Cursor-resource initialization and the
+space-flight frame-rate adjustment now match their complete spans;
+packet seeking drops from four differing instructions to two. The other
+1,518 report rows are unchanged from the palette/answer-loader checkpoint.
+The code and data deficits remain unchanged. Strict positional matches
+are 53,324 of 518,656 bytes (10.2812%), two fewer than that checkpoint at
+this still-incorrect layout. The file remains 1,024 bytes short, and the
+strict whole-file comparison still fails.
+
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates
 start at offsets `0x24` and `0x64`. The branch at `0x00436B97` compares the

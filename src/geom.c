@@ -32,22 +32,23 @@ int __stdcall SeekPacketSection(PacketSectionHandle *handle, int offset,
     int sectionEnd;
     int result;
 
-    sectionEnd = (int)(handle->dataOffset + handle->dataSize);
+    result = (int)handle->dataOffset;
+    sectionEnd = (int)((unsigned int)result + handle->dataSize);
     switch (origin) {
     case 0:
-        position = (int)handle->dataOffset;
+        position = result;
         break;
     case 1:
-        position = (int)(handle->dataOffset + handle->position);
+        position = (int)((unsigned int)result + handle->position);
         break;
     case 2:
         position = sectionEnd;
         break;
     }
     position += offset;
-    if (position < (int)handle->dataOffset)
-        position = (int)handle->dataOffset;
-    if (position > sectionEnd && handle->finalSection == 0)
+    if (result > position)
+        position = result;
+    if (sectionEnd < position && handle->finalSection == 0)
         position = sectionEnd;
     result = SeekDataFile((unsigned short)handle->file, position, 0);
     if (result != -1)

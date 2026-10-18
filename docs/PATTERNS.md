@@ -547,6 +547,41 @@ for similarity decisions.
   The qualification reproduces the observed read; it does not prove the
   original source spelling. An offset local alone, or a volatile index
   captured into an int local, did not recover the sequence and is not retained.
+- `ReportSpaceFlightMaxFps` reads the stored rate before adding its argument:
+  `FLD [fSpaceFlightFrameRate]` precedes `FADD [ESP+4]`. Capture the rate in
+  a real float local through a qualified read, then add the argument through
+  a second qualified read in the next statement. This preserves both reads
+  in order without adding a stack slot and recovers the complete 144-byte
+  span. Reversing the addition expression or qualifying only the global
+  read leaves the two differing instructions unchanged. The retained form
+  leaves every other DirectDraw function unchanged, including `DIBsetPalette`.
+- `InitializeEventManagerResources` stores the fetched shape into the cursor,
+  then clears its frame, then assigns its viewport. Qualified stores to all
+  three fields preserve this observed order and recover the complete 80-byte
+  span. Leaving the frame store unqualified still leaves two differing
+  instructions. These qualifiers reproduce the assembly; they do not
+  establish the original source spelling.
+- `SeekPacketSection` captures the section's starting file offset in the
+  existing result local before calculating its end. Reuse that captured
+  offset in the origin switch and lower clamp, then overwrite the local with
+  the seek result after the call. This restores the lower-bound comparison
+  and branch at the original 112-byte span, reducing differing instructions
+  from four to two and raising similarity to 97.73%. The upper clamp still
+  reverses its comparison operands and branch sense. A separate start local
+  or a conditional-expression upper clamp also disturbs later geometry
+  functions. Materializing the upper comparison in the reused local swaps
+  which clamp matches but still leaves two differences. These alternatives
+  are not retained. Likewise, a `for` loop or a qualified capacity read does
+  not recover `CollectActivePaletteIndices`' final comparison; the loop
+  rewrite also disturbs other geometry functions and is reverted.
+- Capturing `EraseCockpitReadoutRegion`'s bottom parameter through a qualified
+  read restores its load before the top parameter, but leaves the comparison
+  and branch reversed. It also disturbs `target_locking` and
+  `place_damage_on_cockpit`, outweighing the two-instruction improvement.
+  Qualifying the comparison directly, capturing the top instead, or writing
+  the captured value back to the parameter is worse. These probes are
+  reverted, as is a separate cockpit-light frame scope that leaves its
+  target unchanged while disturbing the same neighboring functions.
 - `LoadAnswerPromptAndResponse` saves the fetched packet in its existing
   four-byte stack slot, then reloads it for the response and prompt pointers.
   A volatile pointer declaration retains both reads; qualified lvalue casts
@@ -1049,6 +1084,8 @@ for similarity decisions.
   arguments. Keeping the division inside the argument expression occupies
   AX with the frame number and changes both coordinate indexing and push
   order. A short row local restores CX for the frame and the original size.
+  Widening the row to int adds an unwanted sign extension after the division
+  and increases differing encodings from two to 31; retain the short local.
 - A shared call in the executable can come from calls in both source branches.
   In `intro_drawbackgroundships`, separate sprite calls let CL 4.20 prepare
   the common colour and frame arguments before selecting the shape. Selecting
@@ -1356,6 +1393,9 @@ for similarity decisions.
   not change that choice; a direct conditional-expression switch was worse.
   Volatile zero stores and an explicit leading default case also leave the
   same output; neither probe is retained.
+  Parsing through a character pointer adds different address calculations
+  and lowers similarity to 94.37%. A register-qualified prefix local leaves
+  the target unchanged while disturbing `MainWindowProc`. Both are reverted.
   Similarly, reversing comparison/addition operands or renaming the stream
   parameter did not alter the one-byte differences in the `/Od` DSP stream
   functions. These trials are not retained. Distinguish such body differences
@@ -1550,6 +1590,14 @@ for similarity decisions.
   the local frame; widening height, removing the temporary allocation pointer,
   and removing unsigned promotion casts did not improve the retained result.
   These broader trials are not retained.
+  Subsequent captured-pointer and volatile-parameter forms still allocate
+  the wrong registers, add a stack slot or sixteen code bytes, and do not
+  improve the retained result. Removing the allocation-result local does
+  not recover the height register. The bounds routine's explicit angle-index
+  local and qualified sine-table read likewise leave its output unchanged;
+  moving the first zero-coefficient correction before the sine calculation
+  changes instruction order without improving the match. These trials are
+  also reverted.
 - Earlier constellation probes removed the initializer's promoted
   particle-index local, used separate short counters, or initialized height
   before width. None recovered its saved height and register-held particle
