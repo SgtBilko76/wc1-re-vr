@@ -68,6 +68,38 @@ do not reject a recovered size solely because its positional count is larger.
   overall and introducing four size differences. An RLE-buffer-only move
   also regresses the complete report. Both storage moves are reverted;
   their recovered ordering and unexplained gap are recorded in `docs/ORDER.md`.
+- `winmain.c` omits the twelve flight-profiler declarations and the three
+  raster declarations through `WC1_WINMAIN_SOURCE`. It uses none of them.
+  This makes the complete 272-byte `make_shard` exact and leaves only the
+  F1-latch scheduling different in `MainWindowProc`. Preserve the latch's
+  initial one-write in both branches with a qualified volatile store; the
+  repeated-key branch then clears it. CL merges the shared store after the
+  bit test, reproducing the original order and the complete 1,264-byte span.
+  A cached bit or Boolean, a comma expression, or qualifying the original
+  single store leaves that scheduling unchanged. Unqualified split stores
+  lose the original transient write.
+  The same scope changes initially disturb `CheckAllGuardedAllocations`.
+  Capture the allocation's block before scanning its prefix and use that
+  saved pointer in the first corruption report. Declare it before the scan
+  cursor and counters. This retains the block in EAX and recovers the entire
+  original 112-byte function. Its suffix report must still reload the block.
+  Counter permutations, merging the counters, changing their integer types,
+  and placing the block local after the counters or inside the loop do not
+  recover this result.
+  The two streaming declarations remain visible in this owner: omitting them
+  as well swaps the mouse-warp coordinate registers. Local coordinate copies,
+  parameter names, and register/const parameter qualifiers do not restore that
+  match. Omitting only the profiler declarations instead disturbs window
+  creation. These scopes are measured matching choices, not recovered headers.
+  One regression remains: `FreeGuardedAllocation` reverses the operands of its
+  tail-pointer comparison, with unchanged size, control flow, and other bytes.
+  Reversing the source equality, qualifying the global read, caching the tail
+  or predicate, and negating inequality all leave it unchanged. An early
+  return adds sixteen bytes; separating pointer initializers and permuting
+  their declarations introduces further differences. Omitting parameter names
+  from owner-specific prototypes either has no effect or disturbs other
+  functions. None of these probes is retained. The complete change removes
+  94 differing encodings and gains one exact function overall.
 - Biased array operands can precede the actual array. The carrier-launch
   fighter loop loads from `0x0046A5AE + frame * 2` for frames 9 through 22.
   Its real 14-word table starts at `0x0046A5C0`; `frame - 9` reproduces the

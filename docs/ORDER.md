@@ -190,8 +190,8 @@ sits at one constant offset from the original.
 
 | Source | Range |
 | --- | --- |
-| `src/winmain.c` | `0x401000`–`0x402DFF` |
-| `src/winsys.c` | `0x402E00`–`0x4034FF` |
+| `src/winmain.c` | `0x401000`–`0x402E7F` |
+| `src/winsys.c` | `0x402E80`–`0x4034FF` |
 | `src/mono.c` | `0x403500`–`0x403E4F` |
 | `src/auto.c` | `0x403E50`–`0x40469F` |
 | `src/eject.c` | `0x4046A0`–`0x404CCF` |
@@ -1800,3 +1800,57 @@ Literal file equality still fails; positional percentage is not a measure
 of how much source has been reconstructed. The executable SHA-256 remains
 unchanged between the full report and final verification:
 `ab859f71414cc6c4d78064f162b292a101bdd4f298e9e5fa73871178879b46fb`.
+
+## Win32 declaration-scope checkpoint
+
+The Win32 shell now omits twelve unused flight-profiler declarations and
+three unused raster declarations. Storage, types, calling conventions,
+compiler flags, and link order are unchanged. `make_shard` becomes exact
+over its original 272-byte span without changing its body. Preserving the
+F1 latch's shared initial write in both repeat-state branches then recovers
+the complete 1,264-byte `MainWindowProc`. Saving the first heap-scan block
+address before scanning preserves `CheckAllGuardedAllocations`' existing
+112-byte exact match under the new declaration scope.
+
+Only three full-report rows change: `make_shard` improves from 67 differing
+encodings to exact, `MainWindowProc` from 28 to exact, and
+`FreeGuardedAllocation` changes from exact to one reversed tail-pointer
+comparison. Its size, control flow, and remaining 78 instructions match.
+The other 1,521 rows are unchanged. This removes 94 differing encodings
+overall and leaves 1,264 normalized exact functions, 243 same-size
+differences, and seventeen reported span differences (80 absolute bytes,
+net -6). There are 1,375 mnemonic-perfect routines, 1,516 at or above 90%,
+eight below, and 99.58% average mnemonic similarity.
+
+The documented shell/system boundary is corrected to `0x00402E80`.
+`FreeGuardedAllocation` starts at `0x00402DB0` and occupies 208 bytes;
+`SetMousePosition` begins the system-services unit at its end. The prior
+`0x00402E00` documentation split the heap-release routine. No functions or
+objects move between units.
+
+The launcher remains 272 bytes against the original 288. None of the tested
+profiler/raster/stream declaration scopes changes its EBX constant choice.
+The selected scope and rejected mouse, heap, and prototype experiments are
+recorded in `docs/PATTERNS.md`.
+
+Both builds, source-order and address audits, the order report, and all
+required verification gates pass. Both value checks cover 1,524 functions
+with zero mismatches or skips. The global-data audit retains 1,104 matches;
+all 39 code pointers and 79 mixer operands pass. A separate binary-comp
+reference check verifies 32 named-global operands in the two newly exact
+routines and the restored heap scan, including target identity, multiplicity,
+order, and function-relative relocation offsets. Call analysis retains eleven
+diagnostics across 1,138 checked functions. Global-access diagnostics decrease
+from 36 to 35 across 1,059 checked functions. No gameplay validation is claimed.
+
+All section sizes and placements remain unchanged: code is 400,663 bytes
+versus 401,111, data virtual size is 1,329,724 versus 1,331,596, relocation
+data is 36,294 versus 36,306, and the file is 518,144 versus 518,656.
+The entry point remains `0x0044E5B0` versus `0x0044E770`. The 26 missing
+routines still account for 416 bytes.
+
+Strict positional matches rise by 164 to 57,558 of 518,656 bytes (11.0975%).
+There are 461,098 differing positions in 22,925 runs; literal executable
+equality still fails. The executable SHA-256 remains unchanged between the
+full report and final verification:
+`1f9908d45f246339a7d4491197bceac3ed9492893675154a1ac087672fee67cf`.

@@ -1,9 +1,10 @@
 /*
  *  Win32 shell: window creation, message loop, exit paths.
  *
- *  Address range 401000-402dff (provisional -- see docs/ORDER.md).
+ *  Address range 401000-402e7f (see docs/ORDER.md).
  *  Boundary evidence: CreateMainWindow/MainWindowProc/AbortToDesktop cluster; string band 465048-465354.
  */
+#define WC1_WINMAIN_SOURCE
 #include "wc1.h"
 
 short nHazardReferenceSpeed = 0; /* 0x00465040 */
@@ -904,9 +905,12 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
             QueueInputEvent(3, 0, 0, (int)wParam,
                             0, 0, 0);
         if (wParam == VK_F1) {
-            bF1KeyLatch = 1;
-            if ((lParam & 0x40000000) != 0)
+            if ((lParam & 0x40000000) != 0) {
+                *(volatile unsigned int *)&bF1KeyLatch = 1;
                 bF1KeyLatch = 0;
+            } else {
+                *(volatile unsigned int *)&bF1KeyLatch = 1;
+            }
         }
         scanCode = ((unsigned long)lParam & 0xff0000) >> 16;
         if (scanCode == 1)
@@ -1166,6 +1170,7 @@ void ReportHeapGuardCorruption(void *memory, int count, int overrun)
 void CheckAllGuardedAllocations(void)
 {
     GuardedAllocation *allocation = pGuardedAllocationHead;
+    void *block;
 #ifdef SDL_PORT
     unsigned char *guard;
     unsigned int guardValue;
@@ -1177,10 +1182,11 @@ void CheckAllGuardedAllocations(void)
     int suffixCorrupt;
 
     while (allocation != 0) {
+        block = allocation->block;
 #ifdef SDL_PORT
-        guard = (unsigned char *)allocation->block;
+        guard = (unsigned char *)block;
 #else
-        guard = (unsigned int *)allocation->block;
+        guard = (unsigned int *)block;
 #endif
         prefixCorrupt = 0;
         i = 0x100;
@@ -1198,7 +1204,7 @@ void CheckAllGuardedAllocations(void)
             i = i - 1;
         } while (i != 0);
         if (prefixCorrupt != 0)
-            ReportHeapGuardCorruption(allocation->block, prefixCorrupt, 0);
+            ReportHeapGuardCorruption(block, prefixCorrupt, 0);
 
 #ifdef SDL_PORT
         guard += allocation->size;

@@ -256,7 +256,8 @@ extern HANDLE hMonoDebugDevice; /* 0x00475e74 */
 /* These units do not use main.c's flight profiler. Its unused declarations
  * affect VC++ 4.20 code selection, so preserve their compilation-unit scope. */
 #if !defined(WC1_EVENTMGR_SOURCE) && !defined(WC1_INIT_SOURCE) && \
-    !defined(WC1_TRAINSIM_SOURCE) && !defined(WC1_VIDEO_SOURCE)
+    !defined(WC1_TRAINSIM_SOURCE) && !defined(WC1_VIDEO_SOURCE) && \
+    !defined(WC1_WINMAIN_SOURCE)
 extern int nFlightFrameTotalTicks; /* 0x004764f8 */
 extern int nFlightCockpitTicks; /* 0x004764fc */
 extern LARGE_INTEGER liFlightAfterInput; /* 0x00476500 */
@@ -287,7 +288,8 @@ extern char szSpaceFlightMaxFpsMessage[0x80]; /* 0x00486528 */
 /* Unused graphics declarations affect register allocation in these owners. */
 #if !defined(WC1_DIB_SOURCE) && !defined(WC1_EJECT_SOURCE) && \
     !defined(WC1_JOYSTICK_SOURCE) && !defined(WC1_MONO_SOURCE) && \
-    !defined(WC1_NAV_SOURCE) && !defined(WC1_SCREENS_SOURCE)
+    !defined(WC1_NAV_SOURCE) && !defined(WC1_SCREENS_SOURCE) && \
+    !defined(WC1_WINMAIN_SOURCE)
 extern RasterClip stRasterClip; /* 0x00496fc0 */
 extern unsigned char abSolidColourTranslation[256]; /* 0x00497648 */
 extern unsigned char abShapeRLEScratch[0x100000]; /* 0x00497748 */

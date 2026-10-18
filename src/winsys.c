@@ -2,7 +2,7 @@
  *  Win32 system services: mouse, keyboard and clock wrappers, font
  *  workspaces, CD-ROM location and disc-swap prompting.
  *
- *  Address range 0x402e00-0x4034ff (provisional -- see docs/ORDER.md).
+ *  Address range 0x402e80-0x4034ff (provisional -- see docs/ORDER.md).
  *  Boundary evidence: one unit, not two. PollKeyboardState's statics and
  *  LocateStreamsDirOnDisc's szStreamsPath interleave in the original's
  *  .bss (0x475B68-0x475D1F), and statics are private to one object;
