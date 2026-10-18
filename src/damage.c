@@ -76,12 +76,14 @@ void show_damage_disp(void)
     nWeaponDisplayOriginY =
         (short)(aWeaponDisplayOrigins[component].y +
                 stLeftVdu.top);
-    DrawSpriteDefault(&stLeftVdu, nWeaponDisplayOriginX,
+    /* The original reloads X from memory for the sprite argument. */
+    DrawSpriteDefault(&stLeftVdu,
+                      *(volatile short *)&nWeaponDisplayOriginX,
                       nWeaponDisplayOriginY,
                       pCockpitWeaponShape, 0);
     sprintf(message, "%d Unit%c Damaged",
             (int)cDamagedComponentCount,
-            (int)(cDamagedComponentCount == 1 ? ' ' : 's'));
+            (int)(signed char)(cDamagedComponentCount == 1 ? ' ' : 's'));
     ShowComponentHitHudMessage(message, cPrimaryTextColour, -1);
 }
 

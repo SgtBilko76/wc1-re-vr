@@ -157,6 +157,7 @@ unsigned int ShowCarrierLaunchSequence(signed char sceneObject)
     short actorY;
     short frame;
     short object;
+    short fadeLevel;
 
     bIntroSceneResourcesActive = 0;
     carrierScreenX = 180;
@@ -224,7 +225,7 @@ unsigned int ShowCarrierLaunchSequence(signed char sceneObject)
             }
             aeObjectClass[0] = OBJECT_CLASS_SHIP;
             approachScale = (short)(
-                ((unsigned int)(unsigned short)awObjectScale[0]
+                ((int)awObjectScale[0]
                     << 4) / approachDistance);
             aeObjectClass[object] = OBJECT_CLASS_SHIP;
             asObjectScreenX[0] =
@@ -290,6 +291,7 @@ unsigned int ShowCarrierLaunchSequence(signed char sceneObject)
         frame = 0;
         actorX = 60;
         actorY = 10;
+        fadeLevel = 0;
         nFrameSkipCounter = 1;
         do {
             PumpWindowMessages();
@@ -337,10 +339,11 @@ unsigned int ShowCarrierLaunchSequence(signed char sceneObject)
             approachDistance--;
             if (sceneObject != 0) {
                 ((void (__cdecl *)(int, int, int, int))PaletteFadeHook)(
-                    (int)sceneObject, 10, 0, 0);
+                    (int)sceneObject, 10, (int)fadeLevel, 0);
             }
             if (bEscapePressed == 1)
                 break;
+            fadeLevel = (short)(fadeLevel + 4);
             DIBslam();
             DIBslamReal();
             frame++;
@@ -349,7 +352,7 @@ unsigned int ShowCarrierLaunchSequence(signed char sceneObject)
         if (bEscapePressed != 1) {
             nFrameSkipCounter = 1;
             frame = 0;
-            do {
+            while (frame < 50) {
                 PumpWindowMessages();
                 if (RefreshCockpitStatus() != 0) {
                     DrawSpriteDefault(
@@ -406,7 +409,9 @@ unsigned int ShowCarrierLaunchSequence(signed char sceneObject)
                     actorY--;
                 DIBslam();
                 DIBslamReal();
-            } while (bEscapePressed != 1 && frame < 50);
+                if (bEscapePressed == 1)
+                    break;
+            }
         }
     }
 

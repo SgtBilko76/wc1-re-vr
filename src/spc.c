@@ -778,9 +778,10 @@ unsigned int update_star_field(void)
                 extra_hazard(obj);
             }
             if (aeObjectClass[objectIndex] == OBJECT_CLASS_STAR &&
-                randomChoice == 0 &&
-                (anObjectYawRotation[0] |
-                 anObjectPitchRotation[0]) != 0) {
+                randomChoice == 0) {
+                if ((anObjectYawRotation[0] |
+                     anObjectPitchRotation[0]) == 0)
+                    continue;
                 copy_frame(EYE_OBJECT, 63);
                 if (anObjectPitchRotation[0] != 0) {
                     nStarFieldIRotation =
@@ -818,10 +819,10 @@ unsigned int update_star_field(void)
                 if (viewMotion.z >= 0) {
                     distance =
                         (unsigned short)RandomInRange(
-                            0, (short)(viewMotion.z >> 8)) +
-                        asObjectCollisionRadius[EYE_OBJECT];
-                    distance = distance * 2 +
-                        (unsigned short)RandomInRange(0, 350);
+                            0, (short)(viewMotion.z >> 8));
+                    distance += asObjectCollisionRadius[EYE_OBJECT];
+                    distance *= 2;
+                    distance += (unsigned short)RandomInRange(0, 350);
                 } else {
                     distance = (unsigned short)RandomInRange(0, 40) +
                         asObjectCollisionRadius[EYE_OBJECT];

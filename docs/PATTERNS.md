@@ -33,6 +33,50 @@ for similarity decisions.
   improves only the two shift users and preserves every other result.
 - Preserve visible local-variable order, branch direction, fall-through, and
   epilogue placement. Equivalent C often emits different instructions.
+- `update_star_field` skips directly to the loop increment when a selected
+  star has no yaw or pitch rotation. Put that `continue` inside the star
+  case instead of combining the rotation test with its class and random
+  tests. The combined condition moves the star body behind the loop footer
+  and shortens its branches. In the forward-dust path, assign the first
+  random distance, add the eye's collision radius, double the same local,
+  then add the second random distance. CL folds the last two operations
+  into the original `LEA` while retaining the earlier accumulator in EDI.
+  Together these choices recover the original 784-byte span and an exact
+  comparison, from 91.32% and a sixteen-byte shortage. The unchanged
+  `hit_asteroid` then exchanges its asteroid and fragment-count registers,
+  leaving nine differing instructions in its unchanged 160-byte span.
+  Splitting the fragment-count assignment, using an unsigned counter, and
+  scoping that counter inside the destruction branch do not correct this
+  collateral allocation change; those probes are reverted.
+- `show_damage_disp` narrows the space-or-plural suffix to a signed byte
+  before passing it to `sprintf`. This reproduces the byte `SBB`, `AND`,
+  and `ADD` followed by sign extension. Its sprite arguments also reload
+  the just-stored X origin from memory. A qualified read preserves that
+  access without changing the shared declaration; it does not establish
+  the original declaration's qualifiers. These changes recover the
+  368-byte span and raise similarity from 90.82% to 95.92%, leaving seven
+  differing instructions out of 98 in coordinate-load scheduling and
+  register use. Separate coordinate locals do not improve those seven
+  differences and disturb the otherwise exact `UpdateDamageDisplay`.
+  The retained reload also removes this routine's missing-X-read diagnostic
+  from the global-access report.
+  Qualifying the X store instead gives the same seven differences, while
+  reversing the coordinate additions without a qualified access still
+  omits the reload. These alternatives are not retained.
+- `ShowCarrierLaunchSequence` zero-extends the unsigned scale word but
+  performs a signed division after shifting it. Promote the word to a
+  signed int before the shift. The second animation phase passes an
+  advancing fade level to its empty palette hook: the original increments
+  BP by four each frame, rather than always passing zero. The final phase
+  tests its frame limit at the loop head and leaves on Escape at the tail.
+  Restoring these operations recovers the 2,064-byte span and raises
+  similarity from 93.65% to 95.98%. The local frame is still four bytes
+  short, and 337 of 520 instructions differ in bytes, including stack
+  slots, register assignments, and relative branch displacements. An int
+  fade local moves its sign extension after the update; narrowing before
+  the addition moves the extension back but widens the add. A long
+  intermediate with a short local leaves the retained output unchanged.
+  Those alternatives are reverted; the short local is retained.
 - `FormatTextTokens` uses the VC4.20 `va_list` and `va_arg` macros. Its native
   short and unsigned-short arguments consume four-byte slots while loading
   only the original halfwords. Treating the cursor as an `unsigned long *`
@@ -81,8 +125,9 @@ for similarity decisions.
   instructions out of fourteen. Its source, size, and arithmetic are unchanged.
   Reordering its product or assignments, splitting the arithmetic into
   compound assignments, returning the dimension expressions directly,
-  renaming its parameter, and making width unsigned do not restore the
-  original allocation. Volatile bounds reads preserve height-first ordering
+  renaming its parameter, making width unsigned, and adding one before
+  subtracting the opposite edge do not restore the original allocation.
+  Volatile bounds reads preserve height-first ordering
   but exchange AX and DX, increasing the differences to six. Those area
   probes are not retained; the initializer removes 87 differences while the
   area helper gains four.
