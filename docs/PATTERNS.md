@@ -81,6 +81,20 @@ for similarity decisions.
   source spelling is unknown. Scoping only the canopy pointer still leaves
   fourteen differing instructions; a separate counter reduces that to eight,
   and its later initialization removes the remaining eight.
+- `start_dust` adds the forward offset with the origin first, but its right
+  and up additions pass the offset first. Preserve the observed argument
+  order even though vector addition is commutative. Shift the short streak
+  accumulator before the final random call, add that result to the same
+  local, and then store it. A combined expression instead accumulates in AX
+  and moves the DI restore before the store. These choices recover an exact
+  288-byte span from twelve differing instruction encodings.
+- `house_keep_objects` shares one zero-counter guard between the destruction
+  path and the warp-maneuver dispatch. The destruction path exits the outer
+  object-class switch; the two warp maneuvers use an inner switch. Repeating
+  the counter condition loads it into AX, displacing the original wingman
+  load, while an if-chain changes the maneuver comparisons. The shared guard
+  and switch recover the complete 1,008-byte span exactly. A separate ticks
+  or maneuver local changes allocation and is not retained.
 - `update_star_field` skips directly to the loop increment when a selected
   star has no yaw or pitch rotation. Put that `continue` inside the star
   case instead of combining the rotation test with its class and random
@@ -540,6 +554,18 @@ for similarity decisions.
   the compiler spills the mass pointer.
   An explicit mass pointer, a `register` qualifier, and a shared scale local
   did not recover the original allocation and are not retained.
+  The ship/capital-ship collision sound call pushes four arguments, with
+  two trailing zeros, and cleans sixteen bytes; its former three-argument
+  reconstruction changed subsequent scheduling. Keep promoted int indices
+  for the object and partner array accesses, while the calls retain their
+  short arguments. Write the partner's collision latch first, calculate the
+  first mass ratio before the nested clamp calls, and test missile grace
+  against zero with `<= 0`. Together these recover all 607 instruction
+  mnemonics, the original 92-byte frame, and the 1,968-byte span. Only the
+  initial two index loads remain exchanged, down from 319 differing
+  instruction encodings. Reordering their assignments, embedding the
+  assignments in the vector-call arguments, or scoping the indices inside
+  the collision branch does not correct those two instructions.
 - Check argument widths at callers even when the callee ignores an argument.
   `GetTransformedShapeBounds` takes a short flip value: widening it to `int`
   adds a sign extension in `easy2see` that the original does not contain.
@@ -1311,19 +1337,23 @@ for similarity decisions.
   random index to a short introduced a stack spill and reduced its match.
   These trials are not retained. Negating the combined valid-index condition
   in `ix_dsps_prepare` also left its reversed comparison unchanged.
-- A second switch in `animate_shape` reproduces the original 32-bit scale
-  command tests and raises mnemonic similarity to 99.04%, but is not retained:
-  it changes the following `hit_asteroid` from exact to nine differing
-  instructions and enlarges `object_collision` by sixteen bytes, including
-  its extra four-byte spill. The animation's scale stores still merge where
-  the original keeps two stores, and the object index and type exchange
-  registers. Saving a real scale-change word improves the delay-register
-  allocation but leaves those regressions. Promoted indices, explicit delay
-  assignment, subtraction and product rewrites, default-case order, a
-  descriptive type-local rename, and typed animation-array access do not
-  resolve them. A guarded decrement loop and a register hint in `hit_asteroid`
-  also leave its exchanged registers unchanged. The previous reconstruction is
-  retained with only the independently proven unsigned-scale correction.
+- `animate_shape` uses a second switch for the original 32-bit scale-command
+  tests. Earlier unit contexts made that switch enlarge `object_collision`
+  by sixteen bytes and disturb the then-exact `hit_asteroid`, so those probes
+  were reverted. After recovering the housekeeping dispatch, a short
+  scale-change local and a promoted int object index retain the animation's
+  original 352-byte span and restore the collision routine's 92-byte frame.
+  The second switch is now retained: mnemonic similarity rises from 81.73%
+  to 95.19%, although differing instruction encodings rise from 75 to 103 of
+  104 because of changed scheduling and registers. The animation pointer and
+  parameter still use different registers, and the compiler merges the two
+  scale stores. A saved current-scale word separates the stores but changes
+  instruction order and enlarges the following collision routine again.
+  Scoping the animation pointer and type, a register hint, a qualified scale
+  store, reversed product operands, and a separate masked-factor assignment
+  do not improve the combined result; none is retained. The existing nine
+  register differences in `hit_asteroid` remain unchanged. A guarded decrement
+  loop and a register hint there do not resolve them either.
 
 - Giving `objective_lost` an explicit mission-ship index, as either an int
   or a short, leaves its allocation unchanged. Reversing the command/opcode

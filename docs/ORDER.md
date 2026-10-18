@@ -381,6 +381,17 @@ symbol run identifies `rotate_eye_to_goal` through `object_intelligence`;
 the next recovered function, `EmitTextString` at `0x00413A10`, begins the
 cockpit window. These windows no longer overlap the surviving space functions.
 
+Within this window, `start_dust`, `update_star_field`, and
+`house_keep_objects` reproduce their complete 288-, 784-, and 1,008-byte
+aligned spans. The housekeeping dispatch changes register allocation in
+later routines in the same object. Retaining the animation's promoted index
+and scale-command switch restores the collision routine's original 92-byte
+frame; its corrected sound arguments, collision stores, and mass arithmetic
+leave only two exchanged initial loads in the 1,968-byte span. All nineteen
+space routines retain their original aligned sizes. The animation's remaining
+register and store differences are recorded in `docs/PATTERNS.md`; no unit
+boundary or linker-order change is inferred from these compiler effects.
+
 The unit-data gate checks the complete reconstructed `.data` sections:
 system paths (259 bytes), file/developer diagnostics (225), autopilot (7),
 ejection (156), conversation/campaign (135), maneuvers (236), cutscenes

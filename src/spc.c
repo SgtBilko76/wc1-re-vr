@@ -672,17 +672,18 @@ unsigned int start_dust(short obj, FixedVector origin,
     AddFixedVectors(&origin, &offset, &origin);
     ScaleFixedVector(&aShipRightVector[EYE_OBJECT],
                      rightOffset, &offset);
-    AddFixedVectors(&origin, &offset, &origin);
+    AddFixedVectors(&offset, &origin, &origin);
     ScaleFixedVector(&aShipUpVector[EYE_OBJECT],
                      upOffset, &offset);
-    AddFixedVectors(&origin, &offset, &origin);
+    AddFixedVectors(&offset, &origin, &origin);
     AddFixedVectors(&origin,
                     &aShipPosition[EYE_OBJECT],
                     &aShipPosition[obj]);
     FillFixedVectorWithRandomComponents(2, &aShipVelocity[obj]);
     streak = MaxShort((short)(1 - RandomInRange(0, 3)), 0);
-    asObjectScreenAngle[obj] =
-        (short)(streak * 0x10 + RandomInRange(0, 3));
+    streak <<= 4;
+    streak += RandomInRange(0, 3);
+    asObjectScreenAngle[obj] = streak;
     return 0;
 }
 
@@ -938,20 +939,20 @@ unsigned int house_keep_objects(void)
                             onboard_explosion(obj);
                     }
                 }
-            } else if (asObjectCounter[obj] == 0 &&
-                       aeSpecialManeuver[obj] ==
-                           SPECIAL_MANEUVER_UNKNOWN_9) {
-                if (nYourWingman != -1 &&
-                    acLastAttacker[obj] == 0 &&
-                    aeShipSide[obj] == SIDE_KILRATHI &&
-                    RandomBelowOrEqual(100) < 10) {
-                    send_message(nYourWingman, 6);
-                }
-                Create_explosion_debris(obj);
-                break;
             } else if (asObjectCounter[obj] == 0) {
-                if (aeShipManeuver[obj] ==
-                        MANEUVER_WARPING_IN) {
+                if (aeSpecialManeuver[obj] ==
+                        SPECIAL_MANEUVER_UNKNOWN_9) {
+                    if (nYourWingman != -1 &&
+                        acLastAttacker[obj] == 0 &&
+                        aeShipSide[obj] == SIDE_KILRATHI &&
+                        RandomBelowOrEqual(100) < 10) {
+                        send_message(nYourWingman, 6);
+                    }
+                    Create_explosion_debris(obj);
+                    break;
+                }
+                switch (aeShipManeuver[obj]) {
+                case MANEUVER_WARPING_IN:
                     if (aeShipTactic[obj] != TACTIC_WARP_IN) {
                         if ((short)acObjectOwner[obj] == obj) {
                             set_objects_data(
@@ -964,12 +965,14 @@ unsigned int house_keep_objects(void)
                             remove_object(obj);
                         }
                     }
-                } else if (aeShipManeuver[obj] ==
-                               MANEUVER_WARPING_OUT &&
-                           aeShipSide[obj] != SIDE_NEUTRAL) {
-                    aMissionShips[
-                        nShipMissionIndices[obj]].state = 2;
-                    remove_object(obj);
+                    break;
+                case MANEUVER_WARPING_OUT:
+                    if (aeShipSide[obj] != SIDE_NEUTRAL) {
+                        aMissionShips[
+                            nShipMissionIndices[obj]].state = 2;
+                        remove_object(obj);
+                    }
+                    break;
                 }
             }
             if (aeObjectType[obj] ==
@@ -1182,22 +1185,26 @@ unsigned int animate_shape(short obj)
     unsigned char *animation;
     enum ObjectType type;
     short command;
+    short scaleChange;
+    int objectIndex;
 
-    type = aeObjectType[obj];
+    objectIndex = obj;
+    type = aeObjectType[objectIndex];
     animation = aObjectTypeData[type].animation;
     if (animation == 0)
         return 0;
-    if (--asObjectAnimationDelay[obj] > 0)
+    if (--asObjectAnimationDelay[objectIndex] > 0)
         return 0;
-    asObjectAnimationDelay[obj] =
+    asObjectAnimationDelay[objectIndex] =
         aObjectTypeData[type].yawRate;
     command = *(unsigned short *)(animation +
-              asObjectAnimationIndex[obj] * 4);
+              asObjectAnimationIndex[objectIndex] * 4);
 #ifdef SDL_PORT
     /* SWC CODE_02 animate_shape +0x4832: final visible type-49 frame
        starts the eight-color cockpit glare sequence. */
     if (SdlSwcFlightActive() && type == OBJECT_TYPE_EXPLOSION1 &&
-        asObjectScreenX[obj] != (short)0x8001 && asObjectAnimationIndex[obj] == 19) {
+        asObjectScreenX[objectIndex] != (short)0x8001 &&
+        asObjectAnimationIndex[objectIndex] == 19) {
         bSwcExplosionGlare = 1;
         nSwcSpaceGlareTicks = 8;
     }
@@ -1205,9 +1212,9 @@ unsigned int animate_shape(short obj)
     switch (command & 0xf000) {
     case 0x9000:
         command &= 0x0fff;
-        asObjectAnimationIndex[obj] = command;
+        asObjectAnimationIndex[objectIndex] = command;
         command = *(unsigned short *)(animation + command * 4);
-        if (asObjectScreenX[obj] != (short)0x8001 &&
+        if (asObjectScreenX[objectIndex] != (short)0x8001 &&
             (type == OBJECT_TYPE_DEBRIS_WING ||
              type == OBJECT_TYPE_DEBRIS_METAL_SHEET)) {
             PlaySfxWaveFileByNumber(13, obj, 0);
@@ -1218,18 +1225,24 @@ unsigned int animate_shape(short obj)
         return 0;
     }
 
-    if ((command & 0x0c00) == 0x0400) {
-        awObjectScale[obj] +=
-            (command & 0x3f) * (awObjectScale[obj] >> 6);
-    } else if ((command & 0x0c00) == 0x0800) {
-        awObjectScale[obj] -=
-            (command & 0x3f) * (awObjectScale[obj] >> 6);
-    } else {
+    switch (command & 0x0c00) {
+    case 0x0400:
+        scaleChange =
+            (command & 0x3f) * (awObjectScale[objectIndex] >> 6);
+        awObjectScale[objectIndex] += scaleChange;
+        break;
+    case 0x0800:
+        scaleChange =
+            (command & 0x3f) * (awObjectScale[objectIndex] >> 6);
+        awObjectScale[objectIndex] -= scaleChange;
+        break;
+    default:
         command &= 0x3f;
-        asObjectViewFrame[obj] = command;
+        asObjectViewFrame[objectIndex] = command;
+        break;
     }
-    asObjectFlip[obj] = (command & 0xc0) >> 2;
-    asObjectAnimationIndex[obj]++;
+    asObjectFlip[objectIndex] = (command & 0xc0) >> 2;
+    asObjectAnimationIndex[objectIndex]++;
     return 0;
 }
 
@@ -1321,6 +1334,8 @@ int object_collision(short obj)
     int responseScale;
     int forceMagnitude;
     int totalMass;
+    int objectIndex;
+    int partnerIndex;
     short partner;
     short projectileDamage;
     short damage;
@@ -1332,18 +1347,20 @@ int object_collision(short obj)
             return 0;
 
         NormalizeFixedVector(&vCollisionDelta);
-        ComputeVectorDelta(&aShipVelocity[partner],
-                           &aShipVelocity[obj],
+        partnerIndex = partner;
+        objectIndex = obj;
+        ComputeVectorDelta(&aShipVelocity[partnerIndex],
+                           &aShipVelocity[objectIndex],
                            &relativeVelocity);
         NormalizeFixedVector(&relativeVelocity);
-        switch (aeObjectClass[obj]) {
+        switch (aeObjectClass[objectIndex]) {
         case OBJECT_CLASS_PROJECTILE:
-            if (acObjectOwner[obj] == partner)
+            if (acObjectOwner[objectIndex] == partner)
                 break;
-            if (aeObjectClass[partner] >= OBJECT_CLASS_MISSILE) {
+            if (aeObjectClass[partnerIndex] >= OBJECT_CLASS_MISSILE) {
                 if (partner == 0) {
                     rectangular_to_spherical(
-                        &aObjectViewPosition[obj], &impact);
+                        &aObjectViewPosition[objectIndex], &impact);
                     if (abs(impact.pitch) < 45) {
                         if (abs(impact.yaw) < 45)
                             aPaletteFadeEntries[1][0] = 0x38;
@@ -1360,11 +1377,11 @@ int object_collision(short obj)
                     else
                         aPaletteFadeEntries[4][0] = 0x38;
                 }
-                acLastAttacker[partner] = acObjectOwner[obj];
-                acShipAiCooldown[partner] += 4;
-                projectileDamage = (short)(asShipAccumulatedDamage[obj] -
-                                           asObjectCounter[obj] / 2);
-                response = aShipVelocity[obj];
+                acLastAttacker[partnerIndex] = acObjectOwner[objectIndex];
+                acShipAiCooldown[partnerIndex] += 4;
+                projectileDamage = (short)(asShipAccumulatedDamage[objectIndex] -
+                                           asObjectCounter[objectIndex] / 2);
+                response = aShipVelocity[objectIndex];
                 NormalizeFixedVector(&response);
                 ScaleFixedVector(&response, (int)projectileDamage << 8,
                                  &response);
@@ -1374,22 +1391,22 @@ int object_collision(short obj)
                 inflict_damage(obj, partner, projectileDamage,
                                &relativeVelocity);
             }
-            savedScale = awObjectScale[obj];
+            savedScale = awObjectScale[objectIndex];
             set_objects_data(obj, OBJECT_TYPE_LASER_SPARK,
-                             acObjectOwner[obj]);
-            awObjectScale[obj] = (short)(savedScale * 2);
-            aShipVelocity[obj] =
-                aShipVelocity[partner];
-            if (aeObjectClass[partner] == OBJECT_CLASS_ASTEROID) {
+                             acObjectOwner[objectIndex]);
+            awObjectScale[objectIndex] = (short)(savedScale * 2);
+            aShipVelocity[objectIndex] =
+                aShipVelocity[partnerIndex];
+            if (aeObjectClass[partnerIndex] == OBJECT_CLASS_ASTEROID) {
                 hit_asteroid(partner, 3);
                 return 0;
             }
             break;
 
         case OBJECT_CLASS_ASTEROID:
-            if (aeObjectClass[partner] ==
+            if (aeObjectClass[partnerIndex] ==
                     OBJECT_CLASS_ASTEROID) {
-                if (asObjectScreenX[obj] == (short)0x8001) {
+                if (asObjectScreenX[objectIndex] == (short)0x8001) {
                     remove_object(obj);
                     return 0;
                 }
@@ -1399,8 +1416,8 @@ int object_collision(short obj)
             break;
 
         case OBJECT_CLASS_MINE:
-            if (acObjectOwner[obj] == partner ||
-                acObjectCollisionGraceTicks[obj] > 0)
+            if (acObjectOwner[objectIndex] == partner ||
+                acObjectCollisionGraceTicks[objectIndex] > 0)
                 return 0;
             if (easy2see(obj) == 0 &&
                 (nCameraViewMode == 0 || partner != 0)) {
@@ -1411,55 +1428,56 @@ int object_collision(short obj)
             return 0;
 
         case OBJECT_CLASS_MISSILE:
-            if (acObjectOwner[obj] != partner ||
-                acObjectCollisionGraceTicks[obj] < 1) {
-                ScaleFixedVector(&aShipVelocity[obj], awObjectMass[obj] << 8,
+            if (acObjectOwner[objectIndex] != partner ||
+                acObjectCollisionGraceTicks[objectIndex] <= 0) {
+                ScaleFixedVector(&aShipVelocity[objectIndex],
+                                 awObjectMass[objectIndex] << 8,
                                  &response);
                 negate_vector(&vCollisionDelta);
                 apply_force_to_object(&vCollisionDelta,
                                       &response, partner);
                 explode(obj, obj);
-                zero_vector(&aShipVelocity[obj]);
+                zero_vector(&aShipVelocity[objectIndex]);
                 return 0;
             }
             break;
 
         case OBJECT_CLASS_SHIP:
         case OBJECT_CLASS_CAPITAL_SHIP:
-            if ((aeObjectClass[partner] == OBJECT_CLASS_ASTEROID ||
-                 (aeObjectClass[partner] == OBJECT_CLASS_MINE &&
-                  acObjectOwner[partner] == -1)) &&
+            if ((aeObjectClass[partnerIndex] == OBJECT_CLASS_ASTEROID ||
+                 (aeObjectClass[partnerIndex] == OBJECT_CLASS_MINE &&
+                  acObjectOwner[partnerIndex] == -1)) &&
                 easy2see(partner) == 0 &&
                 (nCameraViewMode == 0 || obj != 0)) {
                 remove_object(partner);
             }
-            if ((aeObjectClass[partner] == OBJECT_CLASS_ASTEROID ||
-                 aeObjectClass[partner] == OBJECT_CLASS_SHIP ||
-                 aeObjectClass[partner] == OBJECT_CLASS_CAPITAL_SHIP) &&
-                acLastCollisionObject[obj] != partner) {
-                PlaySfxWaveFileByNumber(0x1c, obj, 0);
-                acLastCollisionObject[obj] =
-                    (signed char)partner;
-                acLastCollisionObject[partner] =
+            if ((aeObjectClass[partnerIndex] == OBJECT_CLASS_ASTEROID ||
+                 aeObjectClass[partnerIndex] == OBJECT_CLASS_SHIP ||
+                 aeObjectClass[partnerIndex] == OBJECT_CLASS_CAPITAL_SHIP) &&
+                acLastCollisionObject[objectIndex] != partner) {
+                PlaySfxWaveFileByNumber(0x1c, obj, 0, 0);
+                acLastCollisionObject[partnerIndex] =
                     (signed char)obj;
+                acLastCollisionObject[objectIndex] =
+                    (signed char)partner;
 
                 separationScale = DivideFixed(
-                    (asObjectCollisionRadius[obj] +
-                     asObjectCollisionRadius[partner]) << 8,
+                    (asObjectCollisionRadius[objectIndex] +
+                     asObjectCollisionRadius[partnerIndex]) << 8,
                     Vector_magnitude(&vCollisionDelta));
                 separationScale = MinInt(separationScale, 0x7d000);
                 ScaleFixedVector(&vCollisionDelta,
                                  separationScale, &response);
-                AddFixedVectors(&aShipPosition[obj], &response,
-                                &aShipPosition[partner]);
+                AddFixedVectors(&aShipPosition[objectIndex], &response,
+                                &aShipPosition[partnerIndex]);
 
                 vector_component_in_dir(
-                    &aShipVelocity[obj],
+                    &aShipVelocity[objectIndex],
                     &vCollisionDelta, &response);
-                SubtractFixedVectors(&aShipVelocity[obj],
+                SubtractFixedVectors(&aShipVelocity[objectIndex],
                                      &response, &tangent);
                 vector_component_in_dir(
-                    &aShipVelocity[partner],
+                    &aShipVelocity[partnerIndex],
                     &vCollisionDelta, &partnerComponent);
                 ComputeVectorDelta(&partnerComponent, &response,
                                    &componentDelta);
@@ -1470,19 +1488,22 @@ int object_collision(short obj)
 #endif
                 damage = (short)((damage * damage) >> 1);
 
-                totalMass = awObjectMass[obj] + awObjectMass[partner];
-                responseScale = MinInt(MaxInt(0x40,
-                    ((awObjectMass[obj] - awObjectMass[partner]) * 256) /
-                    totalMass), 0x400);
+                totalMass =
+                    awObjectMass[objectIndex] + awObjectMass[partnerIndex];
+                responseScale =
+                    ((awObjectMass[objectIndex] -
+                      awObjectMass[partnerIndex]) * 256) /
+                    totalMass;
+                responseScale = MinInt(MaxInt(0x40, responseScale), 0x400);
                 ScaleFixedVector(&componentDelta, responseScale, &response);
                 AddFixedVectors(&response, &partnerComponent, &response);
                 forceMagnitude = MultiplyFixed(
-                    awObjectMass[obj] * 0x600,
+                    awObjectMass[objectIndex] * 0x600,
                     Vector_magnitude(&response)) + 0xa00;
-                AddFixedVectors(&response, &aShipVelocity[obj],
-                                &aShipVelocity[obj]);
+                AddFixedVectors(&response, &aShipVelocity[objectIndex],
+                                &aShipVelocity[objectIndex]);
 
-                if (aeObjectClass[obj] == OBJECT_CLASS_SHIP) {
+                if (aeObjectClass[objectIndex] == OBJECT_CLASS_SHIP) {
                     NormalizeFixedVector(&tangent);
                     negate_vector(&tangent);
                     ScaleFixedVector(&tangent, forceMagnitude, &tangent);
@@ -1493,17 +1514,17 @@ int object_collision(short obj)
                     negate_vector(&relativeVelocity);
                 }
 
-                SubtractFixedVectors(&aShipVelocity[partner],
+                SubtractFixedVectors(&aShipVelocity[partnerIndex],
                                      &partnerComponent, &tangent);
                 responseScale = MinInt(MaxInt(0x40,
-                    (awObjectMass[obj] << 9) / totalMass),
+                    (awObjectMass[objectIndex] << 9) / totalMass),
                     0x400);
                 ScaleFixedVector(&componentDelta, responseScale, &response);
                 AddFixedVectors(&response, &partnerComponent, &response);
                 AddFixedVectors(&response,
-                                &aShipVelocity[partner],
-                                &aShipVelocity[partner]);
-                if (aeObjectClass[partner] == OBJECT_CLASS_SHIP) {
+                                &aShipVelocity[partnerIndex],
+                                &aShipVelocity[partnerIndex]);
+                if (aeObjectClass[partnerIndex] == OBJECT_CLASS_SHIP) {
                     NormalizeFixedVector(&tangent);
                     negate_vector(&tangent);
                     ScaleFixedVector(&tangent, forceMagnitude, &tangent);
@@ -1512,13 +1533,13 @@ int object_collision(short obj)
                                             &tangent, partner);
                     inflict_damage(obj, partner, damage, &relativeVelocity);
                 }
-                if (aeObjectClass[partner] == OBJECT_CLASS_CAPITAL_SHIP) {
-                    SubtractFixedVectors(&aShipPosition[obj],
-                                         &aShipVelocity[obj],
-                                         &aShipPosition[obj]);
-                    anShipSpeed[obj] = 0;
-                    aShipVelocity[obj] =
-                        aShipVelocity[partner];
+                if (aeObjectClass[partnerIndex] == OBJECT_CLASS_CAPITAL_SHIP) {
+                    SubtractFixedVectors(&aShipPosition[objectIndex],
+                                         &aShipVelocity[objectIndex],
+                                         &aShipPosition[objectIndex]);
+                    anShipSpeed[objectIndex] = 0;
+                    aShipVelocity[objectIndex] =
+                        aShipVelocity[partnerIndex];
                 }
             }
             break;
