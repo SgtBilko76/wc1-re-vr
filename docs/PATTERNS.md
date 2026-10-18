@@ -1253,6 +1253,12 @@ for similarity decisions.
   routines. A volatile release parameter makes the body eighteen bytes
   longer than the original; a subtraction-based range check adds instructions.
   Those probes are reverted.
+  Follow-up probes with a register parameter, address-ordered stream
+  declarations, and bare blocks around the fatal checks leave the comparison
+  gaps unchanged. Wrapping every check in `do/while (0)` recovers the release
+  routine but regresses later stream routines; wrapping only its first check
+  also disturbs later output. An assert-style Boolean expression adds ten
+  bytes per check. None of these guard-form probes is retained.
 - Local names affect CL 4.20's `/Od` stack allocation. In
   `ix_mixer_thread_proc`, declaration reordering alone did not recover the
   frame. The descriptive names `primaryCaps`, `resultCode`, `bufferDescriptor`,
@@ -1277,15 +1283,26 @@ for similarity decisions.
   `playCursor > dwMixerWriteOffset`. Reversing that test introduces an extra
   instruction byte and changes subsequent branch offsets. The scopes recover
   allocation; they do not prove the original block structure.
-  Binary-comp now finds one differing instruction out of 262 instead of 35,
-  preserving the original 52-byte frame and 932-byte span at 99.62%
-  similarity. The remaining final wrap check loads the write offset before
-  comparing the buffer size and uses `JA`; the original loads the size,
-  compares the offset, and uses `JB`. Relocation-aware comparison masks the
-  two global addresses, so it counts only the branch opcode as different.
-  Reversing or negating that final comparison did not change its encoding.
-  Alternative descriptive local names and flattening the refill scopes into
-  one declaration block also failed; those probes are not retained.
+  Declaring `dwMixerBufferSize` and then `dwMixerWriteOffset` first in the
+  local extern block recovers the final wrap check: load the size, compare
+  the offset, and branch with `JB`. Both functions now have normalized exact
+  spans, including all 262 service instructions, its 52-byte frame, and its
+  932-byte span. The declaration arrangement matches the generated output;
+  it does not establish the original header spelling or storage order.
+  Merely reversing the two externs in their former positions fixes that
+  final comparison but disturbs the earlier cursor comparison. Changing
+  the buffer-size type, adding qualified reads, and reversing or negating
+  the source comparison do not recover both. Alternative descriptive local
+  names, a signed cursor, and flattening the refill scopes also fail; those
+  probes are not retained.
+  Removing the unused thread/window externs leaves the thread routine's
+  normalized exact result unchanged while exchanging its primary and mixer
+  buffer operands. This probe is discarded. `verify-mixer-references` now
+  requires the original identities and function-relative positions of all
+  79 operands referring to ten named globals across these two functions.
+  Independent operand-swap probes on temporary executables still score
+  normalized exact but fail that gate. Address normalization alone cannot
+  establish reference identity.
 - Preserve the observed order of calls inside comparisons. The audio-service
   loops call `ix_thread_get_audio_chunk_size` before `ix_dsps_get_buffer_free`;
   putting the chunk-size call on the left of `<` reproduces the original

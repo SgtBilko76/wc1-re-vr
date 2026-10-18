@@ -1005,6 +1005,7 @@ verify:
 	@$(MAKE) audit-compiler-glue
 	@$(MAKE) verify-array-initializers
 	@$(MAKE) verify-code-pointers
+	@$(MAKE) verify-mixer-references
 	@$(MAKE) verify-unit-data
 	@$(MAKE) verify-globals
 	@$(MAKE) verify-globals-data
@@ -1023,6 +1024,9 @@ verify-array-initializers: $(TARGET) | $(ORIGINAL_EXE)
 
 verify-code-pointers: $(TARGET) | code-full $(ORIGINAL_EXE)
 	@python3 bin/verifyCodePointers.py $(BC)
+
+verify-mixer-references: $(TARGET) | code-full $(ORIGINAL_EXE)
+	@python3 bin/verifyMixerReferences.py $(BC)
 
 verify-barracks-data: $(TARGET) out/barracks.obj | $(ORIGINAL_EXE)
 	@python3 bin/verifyUnitData.py --unit barracks \
@@ -1249,6 +1253,7 @@ clean-modern:
 	verify \
 	verify-array-initializers \
 	verify-code-pointers \
+	verify-mixer-references \
 	verify-barracks-data \
 	verify-unit-data \
 	verify-calls \

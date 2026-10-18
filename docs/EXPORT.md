@@ -56,6 +56,19 @@ independently; the gate rejects both and names the affected caller. The
 recovered DOS callback also passes a separate literal binary-comp comparison
 of its complete sixteen-byte span, including compiler padding.
 
+`make verify-mixer-references`, included in `make verify`, checks 79 operands
+referring to ten named globals in `ix_mixer_thread_proc` and
+`ix_mixer_service`. Original global addresses come from the source annotations,
+and rebuilt addresses come from their linker symbols. The gate requires the
+original function-relative relocation offsets and checks each pointer with
+binary-comp's relocated-pointer comparison using only those named mappings.
+It rejects missing or ambiguous metadata. Two negative checks swap the
+primary/mixer buffer operands and the buffer-size/write-offset operands in
+separate temporary executable copies. Both functions still compare as
+normalized exact, but this gate rejects each swap and identifies its routine
+and globals. This is a targeted reference check, not proof of absolute layout
+or coverage of other globals, string literals, or imports.
+
 `make verify-unit-data`, also included in `make verify`, checks the complete
 initialized-data sections recovered for winsys (259 bytes), mono (225),
 auto (7), eject (156), cmpgn (135), fl (236), cutscene (1,297),

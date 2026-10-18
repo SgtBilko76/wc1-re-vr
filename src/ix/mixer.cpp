@@ -19,12 +19,12 @@
 
 #define IX_MIXER_FILE "D:\\rnd\\prj\\ix\\win95\\dsp\\mixer.cpp"
 
+extern unsigned int dwMixerBufferSize;
+extern unsigned int dwMixerWriteOffset;
 extern HANDLE hMixerThread;
 extern HWND hDspWindow;
 extern HANDLE hMixerWakeEvent;
-extern unsigned int dwMixerWriteOffset;
 extern LPDIRECTSOUND pDirectSound;
-extern unsigned int dwMixerBufferSize;
 extern unsigned int dwDspFlags;
 extern LPDIRECTSOUNDBUFFER pMixerBuffer;
 extern unsigned int dwDspTick;

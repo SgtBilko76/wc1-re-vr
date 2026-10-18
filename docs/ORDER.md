@@ -1271,6 +1271,31 @@ call-analysis and 37 global-access diagnostics. Both value checks cover all
 and 39 embedded function pointers retain zero mismatches. The executable
 hash is unchanged through verification.
 
+The mixer declaration checkpoint raises normalized exact matches from 1,249
+to 1,250. Its service routine now matches its complete 932-byte span and 262
+instructions; the thread routine retains its exact 1,180-byte span. Moving
+the existing buffer-size and write-offset extern declarations to the front
+of their local block recovers both comparison operand orders without changing
+function bodies, types, storage, flags, module boundaries, or link order.
+All other 1,522 headline report rows remain unchanged. The report now has
+252 same-size differences and 21 size differences (146 absolute bytes,
+net -6), with average mnemonic similarity still 99.55%.
+
+The new mixer-reference verification requires all 79 operands referring to
+ten identified globals to retain their original targets and function-relative
+positions. It rejects two independent operand swaps in temporary executable
+copies even though both altered routines still score normalized exact. This
+guards against the hidden target exchange observed when unused mixer externs
+were removed during a discarded probe; it is not an absolute-layout check.
+
+Both builds and the required verification gates pass. The 1,097 linked
+globals, 39 embedded function pointers, and both value checks across all
+1,523 functions retain zero mismatches; the eleven call-analysis and 37
+global-access diagnostics remain. The executable hash is unchanged through
+verification. Code, data virtual-size, relocation-section, and file sizes
+are unchanged from the preceding checkpoint. Strict positional matches
+remain 54,079 of 518,656 bytes (10.4268%), and whole-file equality still fails.
+
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates
 start at offsets `0x24` and `0x64`. The branch at `0x00436B97` compares the
