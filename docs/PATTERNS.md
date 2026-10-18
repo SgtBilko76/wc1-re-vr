@@ -1080,6 +1080,36 @@ for similarity decisions.
   advance the runtime source pointer before the disk destination pointer:
   reversing that order moves the destination increment ahead of its store
   and introduces an extra displacement byte.
+- `LoadGameFromSlot` retains `LoadGame`'s result in a short, as its original
+  `MOV BP,AX` and two `TEST BP,BP` instructions show. Declare that result
+  before the save record to recover BP for the result and EBX for the campaign
+  pointer. An int result leaves 70 differing encodings; a short declared
+  after the record or inside the panel block leaves 23. The retained form
+  matches the complete 336-byte span, including padding. Store
+  `nCampaignDataSet` before `nPendingCampaignIndex`, and use the dataset for
+  both pilot-file lookups. The original stores target `0x005A8118` then
+  `0x005A8114`, and the reload after the first packet call targets
+  `0x005A8118`. Address normalization alone cannot validate that ordering.
+- `SaveGame` instead sign-extends the write result into EDI. Its result local
+  must be an int, and its final Boolean expression retains the original
+  one-bit mask. Both save writers interleave each scalar campaign-field
+  read with its corresponding disk-record store. Qualifying those reads
+  and stores preserves that sequence; qualifying only one side does not.
+  These are code-generation constraints, not proof of the original qualifier
+  spelling. `SaveGame` retains its 576-byte span and 828-byte frame, improving
+  from 84 differing instruction encodings to four. Those four are equivalent
+  base/index register orders in the medal, badge, history, and ace-flag loops.
+  Caching the source byte pointers worsens the result to 143 differences;
+  reversing the subscript spelling leaves the four differences unchanged.
+- The same field-transfer sequence reduces `CreateEmptySaveGameFile` from
+  36 differing encodings to fourteen at its original 640-byte span and
+  1,776-byte frame. Its remaining differences are in the objective-position
+  copy. Explicit position pointers, a const objective pointer, and an inlined
+  `memcpy` do not improve that copy. One pointer makes the later `SaveGame`
+  exact but loses the loader's exact match; adding both position pointers
+  also regresses `LoadGame` and `HandleBarracksBunkSelection`. Those probes
+  are reverted. The retained three-function change preserves all other
+  function-report results and the original empty writer's uninitialized fields.
 - Calculate the bunk row before `DrawBarracksBunks` prepares its draw-call
   arguments. Keeping the division inside the argument expression occupies
   AX with the frame number and changes both coordinate indexing and push
@@ -1734,3 +1764,9 @@ Windows 95 DirectDraw and DirectSound behavior.
   spelling the loop as an explicit guard and `do` loop, and qualifying the
   descriptor-bound read as volatile all emit the same four differing
   instructions at the original eighty-byte span. None is retained.
+- `AllocateFontWorkspace`'s loop reloads the workspace before advancing its
+  byte offset. A cached entry pointer leaves ten differing encodings, versus
+  the existing eight. A typed array loop with the increment in the width
+  assignment recovers every mnemonic, but swaps the workspace and index
+  registers, leaving fourteen differences. Reordering those declarations
+  does not resolve the swap. These font probes are not retained.

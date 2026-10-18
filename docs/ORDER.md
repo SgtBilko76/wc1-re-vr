@@ -1171,6 +1171,20 @@ whole-file comparison still fails. Win32 and modern builds, the required
 verification gates, and both deliberately incorrect callback checks pass;
 the existing eleven call-analysis and 37 global-access diagnostics remain.
 
+At the save-game checkpoint, the same 1,523-function report has 1,243
+normalized exact matches, 256 same-size differences, and 24 size differences
+(150 absolute bytes, net -6). `LoadGameFromSlot` matches its full 336-byte
+span; `SaveGame` drops from 84 differing encodings to four, and
+`CreateEmptySaveGameFile` drops from 36 to fourteen. All other 1,520 report
+rows are unchanged. The loader's two campaign-state stores and subsequent
+dataset reload also pass binary-comp's relocated-pointer check against
+their named globals, independently of instruction address normalization.
+The code, data virtual-size, and file-size deficits remain 880, 1,856, and
+1,024 bytes. Strict positional matches are 54,040 of 518,656 bytes
+(10.4192%), three fewer at this still-incorrect layout; whole-file equality
+still fails. Both builds and the required verification gates pass, with
+the same eleven call-analysis and 37 global-access diagnostics.
+
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates
 start at offsets `0x24` and `0x64`. The branch at `0x00436B97` compares the

@@ -225,10 +225,13 @@ void CreateEmptySaveGameFile(void)
             diskRecord.occupied = gameRecord.occupied;
             memcpy(diskRecord.pilots, gameRecord.pilots,
                    sizeof(diskRecord.pilots));
-            diskRecord.campaign.currentPilot =
-                (short)(int)gameRecord.campaign.currentPilot;
-            diskRecord.campaign.playerShipType =
-                (short)gameRecord.campaign.playerShipType;
+            /* Preserve the original field read/store interleaving. */
+            *(short volatile *)&diskRecord.campaign.currentPilot =
+                (short)(int)*(PilotRecord *volatile *)
+                    &gameRecord.campaign.currentPilot;
+            *(short volatile *)&diskRecord.campaign.playerShipType =
+                (short)*(enum ObjectType volatile *)
+                    &gameRecord.campaign.playerShipType;
 
             diskBytes = diskRecord.campaign.medals;
             gameBytes = gameRecord.campaign.medals;
@@ -242,12 +245,12 @@ void CreateEmptySaveGameFile(void)
                 diskBytes[index] = gameBytes[index];
             }
 
-            diskRecord.campaign.currentMission =
-                gameRecord.campaign.currentMission;
-            diskRecord.campaign.currentSeries =
-                gameRecord.campaign.currentSeries;
-            diskRecord.campaign.seriesHistoryCount =
-                gameRecord.campaign.seriesHistoryCount;
+            *(signed char volatile *)&diskRecord.campaign.currentMission =
+                *(signed char volatile *)&gameRecord.campaign.currentMission;
+            *(signed char volatile *)&diskRecord.campaign.currentSeries =
+                *(signed char volatile *)&gameRecord.campaign.currentSeries;
+            *(signed char volatile *)&diskRecord.campaign.seriesHistoryCount =
+                *(signed char volatile *)&gameRecord.campaign.seriesHistoryCount;
             diskBytes = (unsigned char *)
                 diskRecord.campaign.seriesHistory;
             gameBytes = (unsigned char *)
@@ -271,20 +274,20 @@ void CreateEmptySaveGameFile(void)
             for (index = 0; index < 4; index++) {
                 diskBytes[index] = gameBytes[index];
             }
-            diskRecord.campaign.currentDate =
-                gameRecord.campaign.currentDate;
-            diskRecord.campaign.elapsedDate.day =
-                gameRecord.campaign.elapsedDate.day;
-            diskRecord.campaign.elapsedDate.year =
-                gameRecord.campaign.elapsedDate.year;
-            diskRecord.campaign.promotionScore =
-                gameRecord.campaign.promotionScore;
-            diskRecord.campaign.missionScore =
-                gameRecord.campaign.missionScore;
-            diskRecord.campaign.seriesScore =
-                gameRecord.campaign.seriesScore;
-            diskRecord.campaign.campaignIndex =
-                gameRecord.campaign.campaignIndex;
+            *(CampaignDate volatile *)&diskRecord.campaign.currentDate =
+                *(CampaignDate volatile *)&gameRecord.campaign.currentDate;
+            *(short volatile *)&diskRecord.campaign.elapsedDate.day =
+                *(short volatile *)&gameRecord.campaign.elapsedDate.day;
+            *(short volatile *)&diskRecord.campaign.elapsedDate.year =
+                *(short volatile *)&gameRecord.campaign.elapsedDate.year;
+            *(short volatile *)&diskRecord.campaign.promotionScore =
+                *(short volatile *)&gameRecord.campaign.promotionScore;
+            *(short volatile *)&diskRecord.campaign.missionScore =
+                *(short volatile *)&gameRecord.campaign.missionScore;
+            *(short volatile *)&diskRecord.campaign.seriesScore =
+                *(short volatile *)&gameRecord.campaign.seriesScore;
+            *(short volatile *)&diskRecord.campaign.campaignIndex =
+                *(short volatile *)&gameRecord.campaign.campaignIndex;
 
             gameObjective = gameRecord.objectives;
             diskObjective = diskRecord.objectives;
@@ -413,7 +416,7 @@ short SaveGame(short slot, SaveGameRecord *gameRecord)
     short *diskDeathMission;
     int *gameDeathMission;
     short file;
-    short written;
+    int written;
     int index;
 
     PromptInsertNumberedDisk(0x10);
@@ -423,10 +426,11 @@ short SaveGame(short slot, SaveGameRecord *gameRecord)
     diskRecord.occupied = gameRecord->occupied;
     memcpy(diskRecord.pilots, gameRecord->pilots,
            sizeof(diskRecord.pilots));
-    diskRecord.campaign.currentPilot =
-        (short)(int)gameRecord->campaign.currentPilot;
-    diskRecord.campaign.playerShipType =
-        (short)gameRecord->campaign.playerShipType;
+    /* Preserve the original field read/store interleaving. */
+    *(short volatile *)&diskRecord.campaign.currentPilot =
+        (short)(int)*(PilotRecord *volatile *)&gameRecord->campaign.currentPilot;
+    *(short volatile *)&diskRecord.campaign.playerShipType =
+        (short)*(enum ObjectType volatile *)&gameRecord->campaign.playerShipType;
     diskBytes = diskRecord.campaign.medals;
     for (index = 0; index < 5; index++) {
         diskBytes[index] = gameRecord->campaign.medals[index];
@@ -436,12 +440,12 @@ short SaveGame(short slot, SaveGameRecord *gameRecord)
     for (index = 0; index < 12; index++) {
         diskBytes[index] = gameRecord->campaign.badges[index];
     }
-    diskRecord.campaign.currentMission =
-        gameRecord->campaign.currentMission;
-    diskRecord.campaign.currentSeries =
-        gameRecord->campaign.currentSeries;
-    diskRecord.campaign.seriesHistoryCount =
-        gameRecord->campaign.seriesHistoryCount;
+    *(signed char volatile *)&diskRecord.campaign.currentMission =
+        *(signed char volatile *)&gameRecord->campaign.currentMission;
+    *(signed char volatile *)&diskRecord.campaign.currentSeries =
+        *(signed char volatile *)&gameRecord->campaign.currentSeries;
+    *(signed char volatile *)&diskRecord.campaign.seriesHistoryCount =
+        *(signed char volatile *)&gameRecord->campaign.seriesHistoryCount;
     diskBytes = (unsigned char *)diskRecord.campaign.seriesHistory;
     for (index = 0; index < 8; index++) {
         diskBytes[index] =
@@ -460,16 +464,20 @@ short SaveGame(short slot, SaveGameRecord *gameRecord)
     for (index = 0; index < 4; index++) {
         diskBytes[index] = gameRecord->campaign.aceFlags[index];
     }
-    diskRecord.campaign.currentDate = gameRecord->campaign.currentDate;
-    diskRecord.campaign.elapsedDate.day =
-        gameRecord->campaign.elapsedDate.day;
-    diskRecord.campaign.elapsedDate.year =
-        gameRecord->campaign.elapsedDate.year;
-    diskRecord.campaign.promotionScore =
-        gameRecord->campaign.promotionScore;
-    diskRecord.campaign.missionScore = gameRecord->campaign.missionScore;
-    diskRecord.campaign.seriesScore = gameRecord->campaign.seriesScore;
-    diskRecord.campaign.campaignIndex = gameRecord->campaign.campaignIndex;
+    *(CampaignDate volatile *)&diskRecord.campaign.currentDate =
+        *(CampaignDate volatile *)&gameRecord->campaign.currentDate;
+    *(short volatile *)&diskRecord.campaign.elapsedDate.day =
+        *(short volatile *)&gameRecord->campaign.elapsedDate.day;
+    *(short volatile *)&diskRecord.campaign.elapsedDate.year =
+        *(short volatile *)&gameRecord->campaign.elapsedDate.year;
+    *(short volatile *)&diskRecord.campaign.promotionScore =
+        *(short volatile *)&gameRecord->campaign.promotionScore;
+    *(short volatile *)&diskRecord.campaign.missionScore =
+        *(short volatile *)&gameRecord->campaign.missionScore;
+    *(short volatile *)&diskRecord.campaign.seriesScore =
+        *(short volatile *)&gameRecord->campaign.seriesScore;
+    *(short volatile *)&diskRecord.campaign.campaignIndex =
+        *(short volatile *)&gameRecord->campaign.campaignIndex;
 
     gameObjective = gameRecord->objectives;
     diskObjective = diskRecord.objectives;
@@ -492,7 +500,7 @@ short SaveGame(short slot, SaveGameRecord *gameRecord)
                                     (int)slot * 0x33c, 0x33c,
                                     &diskRecord);
     CloseDataFile((unsigned short)file);
-    return (written != 0) & (file >= 0);
+    return ((written != 0) & (file >= 0)) & 1;
 }
 
 /* Function start: 0x41B420 */
@@ -694,8 +702,8 @@ void LoadGameFromSlot(short slot, CampaignState *campaign,
                       PilotRecord *pilots,
                       MissionObjective *objectives)
 {
+    short loaded;
     SaveGameRecord gameRecord;
-    int loaded;
 
     LeaveAllocationScope();
     if (ShowModalTextPanel(0, "Loading Game...") != 0) {
@@ -705,10 +713,10 @@ void LoadGameFromSlot(short slot, CampaignState *campaign,
                    sizeof(gameRecord.pilots));
             memcpy(campaign, &gameRecord.campaign,
                    sizeof(gameRecord.campaign));
-            nPendingCampaignIndex = campaign->campaignIndex;
-            nCampaignDataSet = nPendingCampaignIndex;
+            nCampaignDataSet = campaign->campaignIndex;
+            nPendingCampaignIndex = nCampaignDataSet;
             LoadPacketIntoBuffer(
-                asCampaignPilotFiles[nPendingCampaignIndex], 0,
+                asCampaignPilotFiles[nCampaignDataSet], 0,
                 pConstellationDefinitions);
             LoadPacketIntoBuffer(
                 asCampaignPilotFiles[
