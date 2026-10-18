@@ -806,6 +806,18 @@ common storage and shared declarations, also fails to recover the cached
 profiling reads. It merely relocates the common symbols; it does not establish
 the original private 84-byte run. That narrower ownership trial is reverted.
 
+A later name-sensitive probe does recover all twelve original offsets and
+the 84-byte section with eleven descriptive static-variable renames. This
+works both in an isolated declaration experiment and in the complete main
+source. The same original identifiers as function-local statics instead
+produce 72 bytes in a different order. Integrating the matching file-static
+block and removing its twelve shared declarations changes 202 function
+report rows: 77 exact matches are lost and 47 gained, with ten additional
+size differences. `RunSpaceFlight` itself retains its 77 differing
+encodings. The complete storage move is reverted. Its declaration-scope
+effects in selected other units are retained separately in the later
+checkpoint; the profiler's actual storage remains provisional.
+
 The 200-byte `szSfxWavePath` buffer at `0x00476558` now resides in `music.c`.
 Its two original references both occur in `PlaySfxWaveFileByNumber`: `sprintf`
 formats the filename into it, then `playWAVE` receives the same buffer. Its
@@ -1553,3 +1565,54 @@ zero mismatches or skips. The 1,104 linked globals, 39 code pointers, and
 1,138 checked functions; global-access analysis retains 37 across 1,059.
 The executable hash stays unchanged through the final audit expansion and
 verification. No gameplay validation is claimed.
+
+## Core declaration-scope checkpoint
+
+The profiler storage probe identifies a useful scope correction without
+moving its definitions: the event-manager, startup, training, and video
+units do not reference the twelve flight-profiler globals. Their owner
+markers now exclude those declarations. The event owner also omits the
+parameter names in `PeekInputEvent`'s prototype; its external callers retain
+their existing declaration. No function body, type, calling convention,
+storage definition, compiler flag, or object order changes.
+
+Six functions become normalized exact:
+
+- `ReleaseInputEvent`: thirteen differing encodings removed.
+- `GetViewportIntersection`: all 432 bytes now pass the function comparison,
+  including its original frame, register allocation, and optimized remnants
+  of the reversed `for` clauses; formerly 79 of 116 encodings differed.
+- `initialize_direction_view_frames`: eight differing encodings removed.
+- `SortTrainSimHighScores`: eight differing encodings removed.
+- `InitializeTrainSimHighScores`: eighteen differing encodings removed.
+- `ReleaseContiguousPaletteEntries`: five differing encodings removed.
+
+The cursor capture, draw, and restoration routines each retain only two
+differing encodings, down from twenty, fifteen, and seventeen. The background
+ship renderer improves from 21 to eleven, palette reservation from nine to
+three, and `RunTrainSim` from thirteen to twelve. Three collateral changes
+are retained: `GetNextInputEvent` loses its exact match to an EDI/EDX exchange
+in six encodings, `ReadTextInput` rises from nine to eleven, and
+`UpdateTrainSimHighScores` from eight to nine. The result is 185 fewer
+differing instruction encodings across fifteen changed report rows; the
+other 1,509 rows are unchanged. Attempts to remove the event-reading
+regression are recorded in `docs/PATTERNS.md` and are not retained.
+
+The complete report compares 1,524 functions: 1,256 normalized exact,
+248 same-size differences, and twenty size differences (144 absolute bytes,
+net -6). There are 1,370 mnemonic-perfect routines and 1,514 at or above 90%;
+average mnemonic similarity rises to 99.57%. The 26 missing routines still
+account for 416 bytes. Code remains 448 bytes short, data virtual size 1,872
+bytes short, and file size 512 bytes short.
+
+Both builds, source-order and address audits, and all required verification
+gates pass. Both value checks cover all 1,524 functions without mismatches or
+skips. The 1,104 linked globals, 39 code pointers, 79 mixer operands, and the
+2,340-byte audio storage run retain their passing results. Call analysis
+retains eleven diagnostics across 1,138 checked functions; global-access
+analysis retains 37 across 1,059. No gameplay validation is claimed.
+
+The executable SHA-256 remains
+`60ac420938d363ad255164dc3543eafd127f21f0c737b71280ca3787f1907be9`
+through final verification. Strict positional matches increase by two to
+57,523 of 518,656 bytes (11.0908%). Literal executable equality still fails.

@@ -19,6 +19,28 @@ for similarity decisions.
   complete function report and named reference targets after renaming;
   normalized instruction equality alone can hide wrong global operands.
   The four adjacent audio `.bss` blocks are covered by the unit-data gate.
+- Unused flight-profiler declarations also affect core instruction selection.
+  Keep them out of `eventmgr.c`, `init.c`, `trainsim.c`, and `video.c` through
+  the corresponding owner markers. This recovers normalized-exact output for
+  `GetViewportIntersection`, `ReleaseInputEvent`,
+  `initialize_direction_view_frames`, both high-score sorting/initialization
+  routines, and `ReleaseContiguousPaletteEntries`, without changing their
+  bodies. In the event owner, omit `PeekInputEvent`'s prototype parameter
+  names; its callers retain their existing declaration. This preserves its
+  exact match and improves the complete event-unit result, although
+  `GetNextInputEvent` now exchanges EDI and EDX in six encodings of its first
+  coordinate clamp. The two training text/update routines also gain two and
+  one differing encodings. The complete report improves by 185 differing
+  encodings and five exact functions overall; see `docs/ORDER.md`.
+  These declaration scopes are matching choices, not recovered header text.
+  Peek local declaration permutations, declaration initializers, const and
+  register qualifiers, unsigned temporaries, a local pointer, and equivalent
+  loop syntax do not repair its register swap when prototype names remain.
+  Removing names from all four event-reader prototypes instead loses the
+  rectangle match. Widening GetNext's limit or narrowing its saved X value
+  is worse; long X, declaration order, an explicit field pointer, and a
+  scoped X local do not remove its six differences. None of those body
+  probes is retained.
 - Biased array operands can precede the actual array. The carrier-launch
   fighter loop loads from `0x0046A5AE + frame * 2` for frames 9 through 22.
   Its real 14-word table starts at `0x0046A5C0`; `frame - 9` reproduces the

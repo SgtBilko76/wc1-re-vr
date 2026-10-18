@@ -253,6 +253,10 @@ extern char szWriteDataFileError[0x40]; /* 0x00475da0 */
 extern char szSeekDataFileError[0x80]; /* 0x00475de0 */
 extern int bMonoDebugInstalled; /* 0x00475e70 */
 extern HANDLE hMonoDebugDevice; /* 0x00475e74 */
+/* These units do not use main.c's flight profiler. Its unused declarations
+ * affect VC++ 4.20 code selection, so preserve their compilation-unit scope. */
+#if !defined(WC1_EVENTMGR_SOURCE) && !defined(WC1_INIT_SOURCE) && \
+    !defined(WC1_TRAINSIM_SOURCE) && !defined(WC1_VIDEO_SOURCE)
 extern int nFlightFrameTotalTicks; /* 0x004764f8 */
 extern int nFlightCockpitTicks; /* 0x004764fc */
 extern LARGE_INTEGER liFlightAfterInput; /* 0x00476500 */
@@ -265,6 +269,7 @@ extern LARGE_INTEGER liFlightAfterCockpit; /* 0x00476530 */
 extern int nFlightInputTicks; /* 0x00476538 */
 extern LARGE_INTEGER liFlightAfterRender; /* 0x00476540 */
 extern int nFlightRenderTicks; /* 0x00476548 */
+#endif
 extern unsigned int DAT_00476640;
 extern unsigned int DAT_00476644;
 extern unsigned char *pDIBPixelBuffer; /* 0x00476648 */

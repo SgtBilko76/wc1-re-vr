@@ -1403,7 +1403,12 @@ void RetainInputEventsOfType(int type);                                /* 0x0043
 void RemoveInputEvent(InputEvent *event);                              /* 0x00435940 */
 short __stdcall GetNextInputEvent(InputEventState *event);             /* 0x004359C0 */
 short __stdcall PollInputEvent(InputEventState *event, short filter);  /* 0x00435CC0 */
+#ifdef WC1_EVENTMGR_SOURCE
+/* Parameter names here change the owner's register allocation. */
+short __stdcall PeekInputEvent(InputEventState *, short);             /* 0x00435CE0 */
+#else
 short __stdcall PeekInputEvent(InputEventState *event, short type);    /* 0x00435CE0 */
+#endif
 short __stdcall IsInputEventQueued(short type);                        /* 0x00435D80 */
 void FlushInputEvents(void);                                          /* 0x00435DB0 */
 short __stdcall ResetAllocationDepth(int x, int y);                                          /* 0x00435DC0 */

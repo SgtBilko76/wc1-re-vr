@@ -3,6 +3,7 @@
  *
  *  Address range 4318f0-431a0f (see docs/ORDER.md).
  */
+#define WC1_VIDEO_SOURCE
 #include "wc1.h"
 
 unsigned short nVideoMode = 0xffff; /* 0x0046b168 */
