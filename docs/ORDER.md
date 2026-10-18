@@ -87,6 +87,17 @@ after it starts at `0x005981A8`, leaving 112 bytes: exactly two 56-byte
 `IxStream` records. This agrees with the stream count of two set by
 `ix_dsp_init`; the former eight-entry reconstruction overallocated 336 bytes.
 
+The two stream counters and array occupy a 120-byte run in the original:
+count at offset zero, allocated count at four, and the array at eight.
+Current `dsps.obj` instead has a 124-byte `.bss` section: count at zero,
+array at eight, and allocated count at `0x78`. The emitted order differs
+from the source definition order. A probe moving both counters into
+`dsp.cpp` produces 1,080 DSP bytes and a 112-byte stream array section, but
+puts the count at DSP offset `0x41C` and the allocated count at `0x434`,
+instead of the original adjacent `0x430`/`0x434` positions relative to the
+first DSP state word. That probe is reverted: the resulting sizes do not
+establish ownership or recover the required relative layout.
+
 DSP state also constrains data ownership. The initialized master-volume word
 at `0x0047198C` contains `0xFFFF` and precedes the allocator callbacks at
 `0x00471990` and `0x00471994` in `dsp.cpp`. Its pan table occupies
@@ -125,6 +136,10 @@ move them into initialized `.data`, contradicting the original uninitialized
 range. Both probes are reverted. Removing the flag's shared declaration
 changes code generation in other audio units; the retained DSP declaration
 scope is described in the later checkpoint and `docs/PATTERNS.md`.
+Combining owner-only suppression of the seven externs with reversed storage
+definitions also leaves every emitted offset unchanged. Thus reversing their
+first declaration order does not recover this block either; that combined
+probe is reverted.
 
 The assert anchors name three source trees, `D:\Rnd\Prj\ix\Src\Streamer\`,
 `D:\rnd\prj\ix\win95\dsp\` and `D:\Rnd\prj\ix\src\sound\`; each was a separate
@@ -1295,6 +1310,32 @@ global-access diagnostics remain. The executable hash is unchanged through
 verification. Code, data virtual-size, relocation-section, and file sizes
 are unchanged from the preceding checkpoint. Strict positional matches
 remain 54,079 of 518,656 bytes (10.4268%), and whole-file equality still fails.
+
+The stream-preparation checkpoint raises normalized exact matches from 1,250
+to 1,251 by placing the allocation-count declaration before the stream-count
+declaration for the stream owner. `ix_dsps_prepare` now matches all 342 bytes
+and 95 instructions. The added byte consumes one final alignment byte, so
+`ix_dsps_unlock`'s span changes from four excess bytes to three; its guard
+still differs. All other 1,521 headline report rows are unchanged. There are
+now 252 same-size differences and 20 size differences (144 absolute bytes,
+net -6), with average mnemonic similarity still 99.55%.
+
+The ten stream routines' detailed differing-encoding total falls from 41 to
+34. An additional binary-comp relocated-pointer check verifies the identities
+and order of 86 operands referring to their five globals, including array
+field offsets; the six exact routines also retain their operand positions.
+No function body, type, calling convention, storage definition, compiler
+flag, unit boundary, or link order changes. The counter-ownership and
+sound-system declaration experiments described above are reverted.
+
+Both builds and the required verification gates pass, with the same eleven
+call-analysis and 37 global-access diagnostics. Both value checks cover all
+1,523 functions without mismatches or skips; the 1,097 linked globals, 39
+embedded function pointers, and 79 mixer-global operands also pass. The
+executable hash is unchanged through verification. Section sizes and the
+1,024-byte file deficit remain unchanged. Strict positional matches are
+54,072 of 518,656 bytes (10.4254%), seven fewer at this still-incorrect
+layout; whole-file equality still fails.
 
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates

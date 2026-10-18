@@ -1259,6 +1259,24 @@ for similarity decisions.
   routine but regresses later stream routines; wrapping only its first check
   also disturbs later output. An assert-style Boolean expression adds ten
   bytes per check. None of these guard-form probes is retained.
+  Declaring `nStreamsAllocated` before `nStreamCount` specifically for the
+  stream owner recovers `ix_dsps_prepare`'s original bounds comparison and
+  complete 342-byte span. The other units retain their preceding declaration
+  order. All 120 permutations of the five required stream globals yield
+  four combinations of measured sizes and differing-encoding counts. The
+  retained order reduces the ten routines' total from 41 to 34 while preserving
+  every preceding exact match. The extra preparation byte consumes one byte
+  of the unit's final alignment, reducing the unlock span's excess from four
+  to three bytes; its eight differing encodings remain.
+  A separate relocated-pointer check verifies all 86 operands referring to
+  the five globals, including array-field offsets, across these ten routines.
+  The six exact spans also retain every checked operand's function-relative
+  position. This does not establish their absolute data layout.
+  Consistently qualifying the indices as const, or renaming them, leaves the
+  remaining differences unchanged. Putting the standard-library include
+  before `ix.h` regresses allocation. Hiding unused DSP/system, streamer,
+  and file declarations, individually and in combinations, can recover other
+  guards but loses existing matches. Those further probes are discarded.
 - Local names affect CL 4.20's `/Od` stack allocation. In
   `ix_mixer_thread_proc`, declaration reordering alone did not recover the
   frame. The descriptive names `primaryCaps`, `resultCode`, `bufferDescriptor`,

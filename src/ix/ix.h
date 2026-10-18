@@ -255,8 +255,14 @@ private:
 };
 
 extern IxStream streams[];         /* 0x00598138 */
+/* The stream owner needs its allocation count declared before its limit. */
+#ifdef WC1_IX_DSPS_SOURCE
+extern int      nStreamsAllocated; /* 0x00598134 */
+extern int      nStreamCount;      /* 0x00598130 */
+#else
 extern int      nStreamCount;      /* 0x00598130 */
 extern int      nStreamsAllocated; /* 0x00598134 */
+#endif
 
 #ifndef WC1_IX_DSPV_SOURCE
 extern IxVoice voices[];           /* 0x005981A8 */
