@@ -12,6 +12,17 @@ do not reject a recovered size solely because its positional count is larger.
 
 ## Source choices that affect matching
 
+- A consumer unit may declare another unit's global with a narrower type.
+  `CheckLauncherAndConfig` stores single bytes to three of `main.c`'s int
+  flags while `main.c` stores dwords. Byte casts (`*(unsigned char *)&x = 0`)
+  reproduce the stores but not the allocation: their zero constant attracts
+  EBX, whereas byte-typed globals leave EBX to the `'-'` comparison and store
+  immediate zeros, as the original does. A `WC1_WINMAIN_SOURCE` branch in
+  `globals.h` declares the three flags as `char` for winmain.c only, keeping
+  the declaration count and order. The function becomes exact at all 64
+  probe offsets and its 16 missing bytes return. When an owner and a consumer
+  disagree on access width, try the consumer's width as a declaration before
+  reaching for casts.
 - VC++ 4.20's file-static C globals and uninitialized C++ globals have
   name-dependent COFF ordering.
   Definition order, first-use order, and the assembly listing are not reliable

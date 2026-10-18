@@ -98,10 +98,20 @@ extern int nCannedSceneMode; /* 0x00469fac */
 extern int nArcadeState; /* 0x00469fb0 */
 extern short nFrameSkipCounter; /* 0x00469fb4 */
 extern short nFrameSkip; /* 0x00469fb8 */
+#ifdef WC1_WINMAIN_SOURCE
+/* The Win32 configuration reader declares three of main.c's int flags as
+ * bytes: it stores single bytes, and only byte-typed globals give its 0 and
+ * '-' constants their original register allocation. */
+extern char nOriginDevUnlock; /* 0x00469ff4 */
+extern int bPlayerCollisionsEnabled; /* 0x00469ff8 */
+extern char bPlayerVulnerable; /* 0x00469ffc */
+extern char bPlayerCollisionResponse; /* 0x0046a000 */
+#else
 extern int nOriginDevUnlock; /* 0x00469ff4 */
 extern int bPlayerCollisionsEnabled; /* 0x00469ff8 */
 extern int bPlayerVulnerable; /* 0x00469ffc */
 extern int bPlayerCollisionResponse; /* 0x0046a000 */
+#endif
 extern int bViewBufferEnabled; /* 0x0046a004 */
 extern int bCockpitlessView; /* 0x0046a008 */
 extern short nStartNavPointOverride; /* 0x0046a010 */

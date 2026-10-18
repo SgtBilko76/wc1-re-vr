@@ -507,9 +507,9 @@ void CheckLauncherAndConfig(void)
 #endif
 
     if (ReadCheaterFlagFromRegistry() != 0) {
-        *(unsigned char *)&nOriginDevUnlock = 1;
-        *(unsigned char *)&bPlayerVulnerable = 0;
-        *(unsigned char *)&bPlayerCollisionResponse = 0;
+        nOriginDevUnlock = 1;
+        bPlayerVulnerable = 0;
+        bPlayerCollisionResponse = 0;
     }
 
 #ifdef SDL_PORT
@@ -532,7 +532,7 @@ void CheckLauncherAndConfig(void)
                 command = option[1];
             switch (command) {
             case 'b':
-                *(unsigned char *)&bPlayerCollisionResponse = 0;
+                bPlayerCollisionResponse = 0;
                 break;
             case 'c':
                 bCockpitEnabled = 0;
@@ -541,7 +541,7 @@ void CheckLauncherAndConfig(void)
                 bShowFrameRate = 1;
                 break;
             case 'k':
-                *(unsigned char *)&bPlayerVulnerable = 0;
+                bPlayerVulnerable = 0;
                 break;
             case 'q':
                 bDirectDrawModeCascadeEnabled = 0;
