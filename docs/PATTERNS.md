@@ -2253,3 +2253,37 @@ Windows 95 DirectDraw and DirectSound behavior.
   Making `PromptForTextInput`'s width accumulator long, or retaining the
   prompt width in another integer local, leaves its five body differences
   and two-byte body shortage unchanged.
+- Three more private declaration groups affect native code selection:
+  eventmgr's three event-list globals, joycal's four calibration bounds,
+  and winsys's fourteen keyboard polling variables. Every original direct
+  reference to these groups stays within its corresponding unit. All seven
+  combinations were checked in owners that do not reference the variables.
+  Retain all three exclusions in `fl.c`, event-list plus keyboard exclusions
+  in `mono.c`, and event-list plus calibration exclusions in `view.c`.
+  These are measured declaration scopes, not recovered original headers.
+- With those flight declarations omitted, `Mtarget_missile` keeps a promoted
+  integer object index separately from its short loop counter. Declare the
+  integer before the short at function scope and use it for both object
+  tables. This preserves the original `MOVSX EAX,CX` and the routine's exact
+  176-byte span. A loop-scoped integer restores the six register differences
+  instead. The retained unit context also makes `Mfull_ahead` and `Mgloat`
+  exact; `perform_maneuver` improves from 34 differing encodings to eighteen,
+  although mnemonic similarity falls from 95.19% to 94.23%.
+- The mono declaration context makes `advance_canned_sequence` exact and
+  reduces `print_subtitle` from 37 differing encodings to eighteen. The view
+  context makes `CalcRectangleArea` exact and improves `OpenPacketSection`
+  by two encodings, while each constellation routine gains two differences.
+  All spans remain unchanged, and no existing exact routine regresses.
+  Other tested placements are discarded: in particular, the geometry
+  alternative gains four exact functions but loses three for only seven
+  fewer encodings, and the music alternative trades one exact function for
+  another for only one fewer encoding.
+- Further small body probes are discarded. Saving `MoveNewCampaign`'s day
+  separately, including a qualified rollover-pointer read, leaves its
+  missing pointer reload unchanged. Grouping `DIBupdate`'s integer offsets
+  before adding their base pointers, and saving `RenderSpaceViewFrame`'s
+  bonus in a local, leave their output unchanged. Moving the mine search's
+  counter initialization into its for header worsens its comparison, as
+  does retaining an integer weapon-slot offset with that change. Reversing
+  the three palette-loop source comparisons leaves the same six differences.
+  Inlining the barracks bunk-row expression loses sixteen aligned bytes.

@@ -2256,3 +2256,77 @@ remains `0x0044E5B0` versus `0x0044E770`; 26 missing routines account for
 in 22,973 runs. Literal executable equality remains incomplete. The
 clean-build and post-verification SHA-256 hashes agree:
 `6128b5232f8e0526c7819f8c27573e8c4ec3f518680502827d8c2353db764445`.
+
+## Input-state declaration checkpoint
+
+Three groups have only one observed native user unit each: the three
+input-event list globals are referenced within eventmgr, the four joystick
+calibration bounds within joycal, and fourteen keyboard polling variables
+within winsys. The original disassembly confirms these reference ranges;
+source uses agree. Their existing storage and link order are unchanged.
+
+All seven combinations of omitted declarations were checked across eligible
+core owners. Keep event-list, calibration, and keyboard exclusions in `fl.c`;
+event-list and keyboard exclusions in `mono.c`; and event-list and
+calibration exclusions in `view.c`. These conditional declarations reproduce
+measured compiler context, not recovered original header text. Applying the
+same exclusions indiscriminately introduces size differences and loses
+existing exact matches, so the other placements are discarded.
+
+In the selected flight context, `Mtarget_missile` also needs a separate
+promoted object index for its owner and class table reads. Declaring that
+integer before its short counter at function scope restores the original
+EAX/CX allocation and preserves its exact 176-byte span. A loop-scoped index
+leaves six register differences and is not retained. This body change also
+changes `perform_maneuver`'s instruction selection; the final retained output
+has eighteen differing encodings versus 34 previously, while mnemonic
+similarity falls from 95.19% to 94.23%.
+
+| Routine | Previous differing encodings | Current result | Aligned span |
+| --- | ---: | --- | ---: |
+| `Mfull_ahead` | 5 | Exact | 64 |
+| `Mgloat` | 11 | Exact | 176 |
+| `advance_canned_sequence` | 23 | Exact | 240 |
+| `CalcRectangleArea` | 4 | Exact | 64 |
+| `perform_maneuver` | 34 | 18 differing encodings | 320 |
+| `print_subtitle` | 37 | 18 differing encodings | 352 |
+
+`OpenPacketSection` also drops from eighteen differing encodings to sixteen
+and reaches 100% mnemonic similarity. Two small regressions remain:
+`InitializeConstellationField` and `DrawConstellationField` each rise from
+two differing encodings to four. All reported spans are unchanged and no
+previously exact function regresses. The nine changed report rows remove
+76 differing encodings overall; the other 1,515 rows are unchanged.
+The report has 1,287 normalized exact functions, 221 same-size differences,
+and sixteen size differences (74 absolute bytes, net -6). Mnemonic totals
+are 1,385 perfect, 1,518 at or above 90%, six below, and 99.61% average.
+There are no missing exports, fallbacks, or errors. Calling conventions,
+global types and storage, compiler settings, and unit boundaries are unchanged.
+
+The geometry declaration alternative gains four exact routines but loses
+three for only seven fewer encodings; the music alternative trades one exact
+routine for another for only one fewer encoding. Neither is retained.
+The unsuccessful body probes and their results are recorded in
+`docs/PATTERNS.md` to avoid repeating them.
+
+The clean rebuild regenerates all 78 native objects, archives, and executable
+outputs. Native and modern builds, source-order and address audits, the order
+report, and all required verification gates pass. Both value checks cover
+1,524 functions with zero mismatches or skips. All 1,104 linked globals,
+39 code pointers, 79 mixer operands, and recovered unit-data blocks pass.
+A separate binary-comp reference check verifies the identities, ordering,
+multiplicity, and relative positions of 26 named global operands across
+the four new exact routines and `Mtarget_missile`. Call and global-access
+analyses retain eleven and 35 diagnostics across 1,138 and 1,059 checked
+functions. The modern linker's existing unaligned-pointer warnings remain.
+No gameplay validation is claimed.
+
+All section sizes and placements are unchanged. Code remains 400,663 bytes
+versus 401,111, data virtual size 1,329,724 versus 1,331,596, relocation data
+36,294 versus 36,306, and file size 518,144 versus 518,656. The entry point
+is still `0x0044E5B0` versus `0x0044E770`; 26 missing routines account for
+416 of the 448 absent code bytes. The strict positional comparison remains
+57,592 matching positions out of 518,656 (11.1041%), with 461,064 differing
+positions in 22,973 runs. Literal executable equality remains incomplete.
+The clean-build and post-verification SHA-256 hashes agree:
+`51d0edfc94877a4a38a3d6516499031eccec1740b2532df6352d815b4d13bf94`.

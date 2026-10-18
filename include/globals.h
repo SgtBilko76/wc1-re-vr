@@ -182,9 +182,14 @@ extern signed char acDirectionShapeFrame[ /* 0x0046db28 */
     DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT];
 extern signed char acDirectionShapeFlip[ /* 0x0046dbe8 */
     DIRECTION_VIEW_COUNT * DIRECTION_SHAPE_TABLE_COUNT];
+/* Event-list state is private to eventmgr.c. These owners omit its unused
+ * declarations; the code-selection evidence is in docs/PATTERNS.md. */
+#if !defined(WC1_FL_SOURCE) && !defined(WC1_MONO_SOURCE) && \
+    !defined(WC1_VIEW_SOURCE)
 extern InputEvent *pInputEventHead; /* 0x0046da90 */
 extern InputEvent *pInputEventTail; /* 0x0046da94 */
 extern int bInputEventPoolInitialized; /* 0x0046da98 */
+#endif
 extern short nScreenWidth; /* 0x0046daa4 */
 extern short nScreenHeight; /* 0x0046daa8 */
 extern ScreenViewportGeometry aScreenViewportGeometry[6]; /* 0x0046dab8 */
@@ -232,6 +237,8 @@ extern int anRLESourceSteps[4]; /* 0x0047007c */
 extern const char *apszPilotRankNames[5]; /* 0x00470098 */
 extern CampaignState stInitialCampaignState; /* 0x004700b0 */
 extern int bPanRoomTransition; /* 0x00470510 */
+/* Keyboard polling state is used only by winsys.c. */
+#if !defined(WC1_FL_SOURCE) && !defined(WC1_MONO_SOURCE)
 extern int nInsertKeyState; /* 0x00475b68 */
 extern int nClearedKeyboardState; /* 0x00475b6c */
 extern int nOemPeriodKeyState; /* 0x00475bf0 */
@@ -244,9 +251,12 @@ extern int nClearKeyState; /* 0x00475c08 */
 extern int nDeleteKeyState; /* 0x00475c0c */
 extern int nUpArrowKeyState; /* 0x00475c10 */
 extern int nDownArrowKeyState; /* 0x00475c14 */
+#endif
 extern char szStreamsPath[0x100]; /* 0x00475c18 */
+#if !defined(WC1_FL_SOURCE) && !defined(WC1_MONO_SOURCE)
 extern int nPageUpKeyState; /* 0x00475d18 */
 extern int nLeftArrowKeyState; /* 0x00475d1c */
+#endif
 /* File-error and MONODEBG state are private to mono.c. These owners do
  * not need the declarations; their absence also preserves code selection. */
 #if !defined(WC1_DIB_SOURCE) && !defined(WC1_EJECT_SOURCE)
@@ -534,10 +544,13 @@ extern short nEyePitchGoal; /* 0x0059d61c */
 extern signed char acVduModeStackDepth[16]; /* 0x0059dec0 */
 extern signed char acShipSpawnNavPoint[16]; /* 0x0059ded0 */
 extern short nCurrentNavPoint; /* 0x0059df60 */
+/* Calibration bounds are used only by joycal.c. */
+#if !defined(WC1_FL_SOURCE) && !defined(WC1_VIEW_SOURCE)
 extern int nJoystickCalibrationMinimumY; /* 0x0059df64 */
 extern int nJoystickCalibrationMinimumX; /* 0x0059df68 */
 extern int nJoystickCalibrationMaximumX; /* 0x0059df6c */
 extern int nJoystickCalibrationMaximumY; /* 0x0059df70 */
+#endif
 extern unsigned short awPaletteEntryAllocation[256]; /* 0x0059df80 */
 extern unsigned char *apCommPortraitShapes[16]; /* 0x0059e180 */
 extern char szHudMessageBuffer[0x60]; /* 0x0059e1c0 */

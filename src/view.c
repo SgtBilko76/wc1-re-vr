@@ -4,6 +4,7 @@
  *  Address range 42cdb0-42e31f (see docs/ORDER.md).
  *  Packet and viewport helpers remain in this provisional contiguous unit.
  */
+#define WC1_VIEW_SOURCE
 #include "wc1.h"
 
 short nScriptedViewObject = -1; /* 0x0046a8d0 */

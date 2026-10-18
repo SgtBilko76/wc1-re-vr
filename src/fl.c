@@ -3,6 +3,7 @@
  * the cutscene data. Exact original file boundaries remain provisional.
  * Placement evidence is recorded in docs/ORDER.md.
  */
+#define WC1_FL_SOURCE
 #include "wc1.h"
 
 typedef void (*ShipManeuverHandler)(short, short);
@@ -609,6 +610,7 @@ void Mzip_past(short ship, short target)
 /* Function start: 0x406E10 */
 void Mtarget_missile(short ship, short target)
 {
+    int objectIndex;
     short object;
 
     if (no_goal(ship) != 0)
@@ -617,8 +619,9 @@ void Mtarget_missile(short ship, short target)
 
     object = 0;
     while (object < 10) {
-        if (acObjectOwner[object] == ship &&
-            aeObjectClass[object] == OBJECT_CLASS_MISSILE) {
+        objectIndex = object;
+        if (acObjectOwner[objectIndex] == ship &&
+            aeObjectClass[objectIndex] == OBJECT_CLASS_MISSILE) {
             reset_maneuver(ship, MANEUVER_STRAFE_ENEMY);
             return;
         }
