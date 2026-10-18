@@ -745,6 +745,9 @@ do not reject a recovered size solely because its positional count is larger.
   Reversing the chained assignment direction fails to recover this match.
   A wholly volatile viewport pointer instead
   produces 496 bytes and disturbs two other functions; it is not retained.
+  On the corrected source, reversing the extent multiplication, loading the
+  length separately, and explicitly promoting the percentage to int or long
+  all leave the four remaining differences unchanged. Those probes are reverted.
 - `fire_computer_graphic_missile` retains a signed-byte frame across the
   coordinate calculations. Refresh it after the VDU-mode query and after
   restoring the old background; use that value for background capture, then
@@ -785,13 +788,28 @@ do not reject a recovered size solely because its positional count is larger.
   message origins directly with `cCockpitView` in each draw call. Caching
   that view in an int changes how CL shares the argument setup between the
   switch cases and the normal cockpit path. The direct accesses
-  recover 95.83% mnemonic similarity, but pointer/index allocation still
-  leaves two extra body bytes and therefore a 16-byte larger aligned span.
-  Explicit break/index locals and alternate pointer initialization did not
-  remove that difference. The full-unit check also recovers the exact
+  originally recovered 95.83% mnemonic similarity, but pointer/index allocation
+  left two extra body bytes and therefore a 16-byte larger aligned span.
+  Explicit break/index locals and alternate pointer initialization alone did
+  not remove that difference. The full-unit check also recovered the exact
   `build_your_target_list` without changing that function's source.
   Qualifying the read cursor as `const char *` likewise leaves the generated
   instructions unchanged and is not retained.
+  The complete correction declares the numeric locals before the two cursor
+  pointers. This retains input in ESI, output in EDI, and the short loop index
+  in CX. Promote the index into a real int local after the space test, use it
+  in the remainder expression, and subtract the last-space index from that
+  same local before indexing the output. CL then reuses EBP for the subtraction,
+  matching the original three-instruction newline path. An offset temporary
+  confined to that path or an unchanged promoted local does not suffice.
+  Remove the redundant width temporary and divide the returned short directly
+  when assigning the short character limit. Keeping both the width and promoted
+  index locals makes this routine exact but disturbs `place_damage_on_cockpit`;
+  removing the width local preserves every other cockpit function. The final
+  result is exact over all 143 instructions, the switch table, and padding:
+  512 bytes with the original 220-byte local frame. Narrowing the newline offset
+  to short also recovers the span but introduces different word operations,
+  so that probe is rejected.
 - `vid_transmit` tests the cockpitless-view flag both before and after its
   frame-parity test. Keeping that repeated condition preserves EBX and the
   second `TEST EBX,EBX`, restoring the missing sixteen-byte aligned block.
@@ -1679,6 +1697,13 @@ do not reject a recovered size solely because its positional count is larger.
   Parsing through a character pointer adds different address calculations
   and lowers similarity to 94.37%. A register-qualified prefix local leaves
   the target unchanged while disturbing `MainWindowProc`. Both are reverted.
+  Further guarded-loop and EOF-exit forms, memset-based flag clearing,
+  signed/unsigned command bytes, declaration permutations, and local renames
+  do not resolve the 272-byte span or EBX constant choice. An explicit prefix
+  branch or switch
+  can recover a 288-byte span but adds instructions absent from the original
+  and still keeps zero in EBX. A short command likewise recovers the size
+  through incorrect word operations. No such size-only workaround is retained.
   Similarly, reversing comparison/addition operands or renaming the stream
   parameter did not alter the one-byte differences in the `/Od` DSP stream
   functions. These trials are not retained. Distinguish such body differences

@@ -1753,3 +1753,50 @@ Strict positional matches rise by 24,872 to 82,421 of 518,656 bytes
 (15.8913%). Literal executable equality still fails. The executable hash
 remains unchanged between the full report and final verification:
 `d8961a1ea5b2ccd7ec554597fac255defb6a55a277c6e2c03d4b344885393ca5`.
+
+## HUD text exact checkpoint
+
+`print_message_text` now matches its complete original 512-byte span instead
+of occupying 528 bytes. Numeric locals precede the cursor pointers, and the
+promoted character position is updated before the newline store. These
+choices recover the original registers and subtraction. Removing a redundant
+width temporary preserves allocation in the later cockpit functions. The
+220-byte local frame, all 143 instructions, four-entry switch table, and
+padding match after address normalization. The original forward newline
+offset is preserved.
+
+Only this row changes in the full report; the other 1,523 are unchanged.
+There are now 1,263 normalized exact functions, 244 same-size differences,
+and seventeen reported span differences (80 absolute bytes, net -6).
+The mnemonic-perfect count rises to 1,373. There are still 1,516 functions
+at or above 90%, eight below, and 99.58% average mnemonic similarity.
+
+Additional launcher parsing and cockpit-bar expression probes produce no
+retained changes. The launcher still holds zero in EBX instead of the
+original prefix character, leaving its 272-byte span sixteen bytes short.
+Source forms that recover its size through different instructions are
+rejected. `docs/PATTERNS.md` records these experiments and the HUD correction.
+
+Both builds, source-order and address audits, and all required verification
+gates pass. Both value checks cover 1,524 functions with zero mismatches or
+skips. The global-data audit retains 1,104 matches, and all 39 code pointers
+and 79 mixer operands pass. Call analysis retains eleven diagnostics across
+1,138 checked functions; global-access analysis retains 36 across 1,059.
+No gameplay validation is claimed.
+
+Code now occupies 400,663 bytes versus 401,111, a 448-byte deficit. The 26
+missing routines still account for 416 bytes. The data virtual size remains
+1,329,724 versus 1,331,596, relocation data 36,294 versus 36,306, and the file
+518,144 versus 518,656. The entry point is `0x0044E5B0` versus `0x0044E770`.
+
+Strict positional matches fall to 57,394 of 518,656 bytes (11.0659%), with
+461,262 differing positions in 22,917 runs. The corrected HUD size removes
+an accidental cancellation of the launcher's sixteen-byte deficit:
+`print_message_text` still starts at `0x00416250` versus `0x00416260`, while
+the following `ShowHudTextLine` moves from `0x00416460` to `0x00416450`
+against the original `0x00416460`. This exposes the earlier displacement
+through more subsequent code even though the HUD function is now exact.
+Literal file equality still fails; positional percentage is not a measure
+of how much source has been reconstructed. The executable SHA-256 remains
+unchanged between the full report and final verification:
+`ab859f71414cc6c4d78064f162b292a101bdd4f298e9e5fa73871178879b46fb`.

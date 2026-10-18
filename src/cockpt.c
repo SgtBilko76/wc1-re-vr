@@ -1922,12 +1922,12 @@ void print_message_text(char *text, unsigned short colour)
     Viewport viewport;
     char wrapped[84];
     char source[84];
-    char *input;
-    char *output;
     short charactersPerLine;
     short lastSpace = -1;
     short position;
-    short width;
+    int characterPosition;
+    char *input;
+    char *output;
 
     if (text == 0)
         return;
@@ -1951,20 +1951,21 @@ void print_message_text(char *text, unsigned short colour)
                           (int)cCockpitView * 2 + 1] + 60));
     context.backgroundColour = 0xff;
     context.colour = colour;
-    width = GetRectHeight(&viewport);
-    charactersPerLine = (short)(width / 6);
+    charactersPerLine = GetRectHeight(&viewport) / 6;
     input = source;
     output = wrapped;
     for (position = 0; *input != 0; position++, input++, output++) {
         *output = *input;
         if (*output == ' ')
             lastSpace = position;
-        if ((position + 1) % charactersPerLine == 0) {
+        characterPosition = position;
+        if ((characterPosition + 1) % charactersPerLine == 0) {
             if (lastSpace == -1) {
                 output[1] = '\n';
                 output++;
             } else {
-                output[position - lastSpace] = '\n';
+                characterPosition -= lastSpace;
+                output[characterPosition] = '\n';
             }
         }
     }
