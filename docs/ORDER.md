@@ -2192,3 +2192,67 @@ to 57,566 of 518,656 bytes (11.0991%), with 461,090 differing positions in
 function-relative encodings. The clean-build and post-verification hashes
 agree:
 `c003b4cbffa028dfeee8c78b2e00f0539f7b8a11eeb679cf83a211280289fc19`.
+
+## Scene local-value checkpoint
+
+The original register uses expose two more source-level distinctions.
+`PlaySfxWaveFileByNumber` compares the long vector magnitude in EAX after
+copying it to the integer playback distance in EDI. Retaining both values
+recovers its 135-byte body and complete 144-byte span. `AnimateBarracks`
+saves the bunk animation frame before selecting its sprite, and keeps the
+two final eye-sprite draw paths separate. This restores its repeated frame
+constant and branch-based literal pushes, matching its 553-byte body and
+complete 560-byte span. Both routines retain their original stack frames.
+
+The ending owner also needs the short-scene declaration already recovered
+for cutscene callers. Its `ShowTigerClawEscapeScene` extends the signed
+campaign byte into AX. This owner's prototype leaves the parameter unnamed;
+naming it changes the preceding `ReleasePacketHandle` from exact to seven
+differing encodings. The unnamed declaration preserves the allocator and
+reduces the escape scene from 203 differences to 159 at its unchanged
+928-byte span. Its body still has 36 differing encodings and is two bytes
+shorter than the original.
+
+`ShutdownGameWindow` saves the process handle before setting its priority.
+The original calls `GetCurrentProcess` before pushing the priority constant,
+whereas the nested call expression pushes it first. The recovered ordering
+restores every mnemonic, leaving six cursor-call register differences in
+its unchanged 112-byte span.
+
+| Routine | Previous differing encodings | Current result | Aligned span |
+| --- | ---: | --- | ---: |
+| `AnimateBarracks` | 150 | Exact | 560 |
+| `PlaySfxWaveFileByNumber` | 25 | Exact | 144 |
+| `ShowTigerClawEscapeScene` | 203 | 159 differing encodings | 928 |
+| `ShutdownGameWindow` | 8 | 6 differing encodings | 112 |
+
+The four changed report rows remove 221 differing encodings; all other
+1,520 rows are unchanged. No existing exact match regresses and no reported
+span size changes. The report has 1,283 normalized exact functions, 225
+same-size differences, and sixteen size differences (74 absolute bytes,
+net -6). Mnemonic totals are 1,382 perfect, 1,518 at or above 90%, six below,
+and 99.61% average. There are no missing exports, fallbacks, or errors.
+Calling conventions, storage, compiler settings, and unit boundaries are
+unchanged. The unused local-value probes are recorded in `docs/PATTERNS.md`.
+
+The clean rebuild regenerates all 78 native objects, archives, and executable
+outputs. Native and modern builds, source-order and address audits, the order
+report, and all required verification gates pass. Both value checks cover
+1,524 functions with zero mismatches or skips. All 1,104 linked globals,
+39 code pointers, 79 mixer operands, and recovered unit-data blocks pass.
+A separate binary-comp reference check verifies all seven named global
+operands in the two newly exact routines, including their identities,
+order, multiplicity, and function-relative positions. Call and global-access
+analyses retain eleven and 35 diagnostics across 1,138 and 1,059 checked
+functions. The modern linker's existing unaligned-pointer warnings remain.
+No gameplay validation is claimed.
+
+Section sizes and placements are unchanged: code is 400,663 bytes versus
+401,111, data virtual size is 1,329,724 versus 1,331,596, relocation data is
+36,294 versus 36,306, and file size is 518,144 versus 518,656. The entry point
+remains `0x0044E5B0` versus `0x0044E770`; 26 missing routines account for
+416 of the 448 absent code bytes. Strict positional matches increase by
+26 to 57,592 of 518,656 bytes (11.1041%), with 461,064 differing positions
+in 22,973 runs. Literal executable equality remains incomplete. The
+clean-build and post-verification SHA-256 hashes agree:
+`6128b5232f8e0526c7819f8c27573e8c4ec3f518680502827d8c2353db764445`.

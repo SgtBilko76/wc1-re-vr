@@ -952,8 +952,10 @@ unsigned int free_constellation(void);                            /* 0x00424490 
 void init_vdus(void);                                                  /* 0x004244E0 */
 unsigned int InitializeCockpitResources(signed char mode);             /* 0x004245B0 */
 unsigned int free_cockpit(void);                                       /* 0x004249A0 */
-#if defined(SDL_PORT) || defined(WC1_CUTSCENE_SOURCE)
-/* The native demo caller sign-extends its series byte to a word. */
+#if defined(WC1_ENDING_SOURCE) && !defined(SDL_PORT)
+unsigned int init_3Space_objects(short);
+#elif defined(SDL_PORT) || defined(WC1_CUTSCENE_SOURCE)
+/* These native scene callers sign-extend their series bytes to words. */
 unsigned int init_3Space_objects(short scene);
 #else
 unsigned int init_3Space_objects();                                    /* 0x00424A80 */

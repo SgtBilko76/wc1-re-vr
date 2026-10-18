@@ -842,9 +842,15 @@ void AnimateBarracks(Viewport *viewport, unsigned char *shape,
                         (int)bunkState->animationPeriod == 0)
                     bunkState->animationFrame = 0;
             }
-            frame = 24;
-            if (bunkState->animationFrame < 13)
-                frame = (short)(24 - bunkState->animationFrame);
+            {
+                short animationFrame;
+
+                animationFrame = bunkState->animationFrame;
+                if (animationFrame < 13)
+                    frame = (short)(24 - animationFrame);
+                else
+                    frame = 24;
+            }
         }
         DrawSpriteDefault(viewport,
                           (short)((bunk % 2) * 14 + 148),
@@ -892,10 +898,9 @@ void AnimateBarracks(Viewport *viewport, unsigned char *shape,
         state->blinkDelay = (short)(RandomInRange(0, 15) + 2);
     }
     if (state->eyesOpen != 0)
-        frame = 49;
+        DrawSpriteDefault(viewport, 45, 0, shape, 49);
     else
-        frame = 26;
-    DrawSpriteDefault(viewport, 45, 0, shape, frame);
+        DrawSpriteDefault(viewport, 45, 0, shape, 26);
     CheckCursor();
     if (state->menuLabel != pszCurrentRoomMenuLabel) {
         state->menuLabel = pszCurrentRoomMenuLabel;

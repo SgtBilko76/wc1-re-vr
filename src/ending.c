@@ -4,6 +4,7 @@
  *  Address range 42fa90-43070f (see docs/ORDER.md).
  *  The adjacent tagged-allocation helpers remain in this provisional unit.
  */
+#define WC1_ENDING_SOURCE
 #include "wc1.h"
 
 /* 0x0046ad88 */

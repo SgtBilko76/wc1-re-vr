@@ -2224,3 +2224,32 @@ Windows 95 DirectDraw and DirectSound behavior.
   `InitializeDIBScreenViewport` with a running word offset produces a body
   three bytes too short and worsens its span comparison from nine to eleven
   differing encodings, with either a for loop or a postincrement do loop.
+- `PlaySfxWaveFileByNumber` retains the vector magnitude in a branch-local
+  long before assigning its integer playback distance. Test the magnitude
+  against 32,000, rather than the copied distance. CL then emits the original
+  `MOV EDI,EAX` followed by `CMP EAX,32000`, recovering the complete
+  144-byte span. An assignment inside the condition leaves the old EDI
+  comparison; a ternary clamp adds seven body bytes. Neither is retained.
+- `AnimateBarracks` saves the bunk's animation frame in a short before
+  selecting either `24 - animationFrame` or 24. An if/else or ternary
+  selection reproduces the original second `MOV DX,24`; setting the
+  default before the condition lets CL omit that instruction. Keep the
+  final open-eye and closed-eye sprite calls in separate branches so CL
+  emits the original literal pushes instead of Boolean mask arithmetic.
+  Together these choices recover all 560 bytes, including alignment.
+- The native ending owner also sees a short-scene prototype for
+  `init_3Space_objects`. Its escape scene sign-extends the campaign byte
+  into AX, not EAX. Keep this owner's prototype parameter unnamed: naming
+  it `scene` disturbs the earlier exact `ReleasePacketHandle` by seven
+  encodings. The unnamed declaration preserves that routine and removes
+  44 differences from the escape scene's unchanged 928-byte span.
+- `ShutdownGameWindow` saves `GetCurrentProcess()` in a handle before
+  setting its priority. The original calls the getter before pushing the
+  priority constant; a nested call expression reverses those instructions.
+  The saved handle restores every mnemonic at the unchanged 112-byte span,
+  leaving six register-allocation differences in its cursor calls.
+- Further local-value probes are not retained. An explicit promoted ship
+  index leaves `reset_tactic`'s four register differences unchanged.
+  Making `PromptForTextInput`'s width accumulator long, or retaining the
+  prompt width in another integer local, leaves its five body differences
+  and two-byte body shortage unchanged.

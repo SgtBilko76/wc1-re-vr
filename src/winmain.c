@@ -640,6 +640,10 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous,
 /* Function start: 0x402070 */
 void ShutdownGameWindow(void)
 {
+#ifndef SDL_PORT
+    HANDLE process;
+#endif
+
     nSessionEndTime = (unsigned int)time(0);
 #ifdef SDL_PORT
     {
@@ -666,7 +670,8 @@ void ShutdownGameWindow(void)
     DIBunInstall();
     ClipCursor(0);
     ShowCursor(TRUE);
-    SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
+    process = GetCurrentProcess();
+    SetPriorityClass(process, IDLE_PRIORITY_CLASS);
     CloseHandle(hSingleInstanceSemaphore);
 #endif
     exit(0);

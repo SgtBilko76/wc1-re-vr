@@ -721,11 +721,14 @@ void PlaySfxWaveFileByNumber(int soundNumber, int sourceObject, int looping)
 #endif
 
     if (sourceObject != -1) {
+        long magnitude;
+
         ComputeVectorDelta(&aShipPosition[EYE_OBJECT],
                            &aShipPosition[sourceObject],
                            &delta);
-        distance = Vector_magnitude(&delta);
-        if (distance > 32000)
+        magnitude = Vector_magnitude(&delta);
+        distance = magnitude;
+        if (magnitude > 32000)
             distance = 32000;
     } else {
         distance = 32000;
