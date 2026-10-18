@@ -1054,6 +1054,24 @@ for similarity decisions.
   Computing the run length before the command-type branch adds a byte copy
   and moves the row count into a register, worsening both functions. These
   trials are not retained.
+  In capture, declare the existing count and run-length words before the
+  pointer locals. This recovers the original row-address addition order.
+  Inline the two count-word reads through `memcpy`, and assign the decoded
+  run through a qualified volatile access inside the count subtraction.
+  The assignment value feeds that subtraction without an extra reload.
+  Qualify the run read used to calculate the right edge as well, retaining
+  the original store/reload pattern. Keep the cursor advances in each
+  encoded-run branch and retain one function-scope clipped-length local.
+  Together these forms reduce capture's differing instruction encodings
+  from 168 to 94 of 220 and raise mnemonic similarity from 84.55% to 91.82%,
+  preserving its 752-byte span and forty-byte frame. All other 1,522 report
+  rows remain unchanged. These qualified accesses constrain the generated
+  memory operations; they do not establish the original source qualifiers.
+  The run's stack slot and its retained BP copy still differ, as do clipping
+  registers and some branch operands. Declaring the entire run volatile
+  instead produces a thirty-six-byte frame and excess code. Separate
+  clipped-length scopes also affect later graphics functions and give a
+  worse combined result; neither alternative is retained.
 - `rotate_about_j` multiplies the forward component by sine before multiplying
   the saved right component by cosine. After correcting graphics-workspace
   visibility, CL evaluates these addition terms in the opposite order.

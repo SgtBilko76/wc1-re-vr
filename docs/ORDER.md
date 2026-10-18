@@ -1337,6 +1337,32 @@ executable hash is unchanged through verification. Section sizes and the
 54,072 of 518,656 bytes (10.4254%), seven fewer at this still-incorrect
 layout; whole-file equality still fails.
 
+The sprite-capture checkpoint improves `CaptureSpriteBackground` from
+84.55% to 91.82% mnemonic similarity and from 168 to 94 differing instruction
+encodings out of 220. Its original 752-byte span and forty-byte local frame
+are preserved. The retained declaration, word-copy, qualified-access, and
+cursor-update forms are described in `docs/PATTERNS.md`. Every other 1,522
+function-report row remains unchanged, including sprite restoration and
+the transformed-bounds routine. No global definitions, compiler flags,
+compilation-unit boundaries, or link order change.
+
+The report retains 1,251 normalized exact matches, 252 same-size differences,
+and twenty size differences (144 absolute bytes, net -6). Average mnemonic
+similarity rises to 99.56%; 1,512 functions reach 90%, leaving eleven below
+that threshold. Both builds and all required verification gates pass.
+The 1,097 linked globals, 39 embedded function pointers, 79 mixer-global
+operands, and both value checks across all 1,523 functions report zero
+mismatches; the value checks skip none. The eleven call-analysis and 37
+global-access diagnostics remain unchanged. The modern build retains its
+existing `sprintf` deprecation and packed-pointer/alignment warnings.
+
+The executable hash is unchanged through verification. The code, data
+virtual-size, and file-size deficits remain 880, 1,856, and 1,024 bytes.
+Strict positional matches are 54,064 of 518,656 bytes (10.4239%), eight
+fewer at the current incorrect layout. The improved function comparison
+does not constitute whole-file progress by that positional measure, and
+literal executable equality still fails.
+
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates
 start at offsets `0x24` and `0x64`. The branch at `0x00436B97` compares the
