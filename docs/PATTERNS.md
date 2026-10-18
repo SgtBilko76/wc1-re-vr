@@ -2309,3 +2309,44 @@ Windows 95 DirectDraw and DirectSound behavior.
   does retaining an integer weapon-slot offset with that change. Reversing
   the three palette-loop source comparisons leaves the same six differences.
   Inlining the barracks bunk-row expression loses sixteen aligned bytes.
+- Three additional private declaration groups have confirmed original users:
+  six button-history fields in `input.c`, four raw-coordinate/dead-zone
+  fields in `joycal.c`, and six packet/screen allocation fields in `screen.c`.
+  All 49 relocated references stay within those respective owners. All seven
+  combinations were checked in eligible core units. Retain button-history
+  exclusions in `dib.c`, `fade.c`, `logic.c`, `main.c`, and `nearheap.c`;
+  joystick-state exclusions in `main.c`; and screen-table exclusions in
+  `fade.c`, `logic.c`, and `main.c`.
+  The shared second-button double-click result remains available to `main.c`.
+  These are measured declaration scopes, not recovered original headers.
+- This context makes `PurgeNearHeapBlocks` exact at 144 bytes and
+  `SelectPreviousExternalViewObject` exact at 64 bytes. `FreeNearHeapBlock`
+  and `GetNearHeapBlockSize` reach 100% mnemonic similarity with two remaining
+  differences each: their initial base/size loads remain reversed.
+  `DIBupdate` falls from five differing encodings to two, retaining the
+  reversed destination-pitch multiplication operands. `StepPaletteTransition`
+  falls from six differences to three and reaches 99.35% mnemonic similarity.
+  `get_player_input` rises from eight differences to eleven.
+- In the selected logic context, `try2rout`, `get_rear_spot`,
+  `FindEnemyAimingWithinRange`, `in_danger`, `abandoned`, and
+  `FindSceneAnimationCommand` become exact. `UpdateSceneAnimationObject`
+  drops from 81 differing encodings to nine. Three previous exact matches
+  regress: `report_kilrathi_rout` has eleven differences, `find_ship_index`
+  six, and `set_special` two. `attacker_in_range` rises from eleven to 36
+  differences and falls to 85.42% mnemonic similarity; `hostile_sphere` rises
+  from six differences to ten. These tradeoffs still remove 42 encodings
+  within logic, and 63 across all five selected units, with five additional
+  exact functions overall and no size changes.
+  A scoped integer distance in `attacker_in_range` restores its 154-byte body
+  and reduces its differences to sixteen, but raises the scene-update routine
+  from nine differences to 170. Folding the distance assignment into the
+  comparison leaves both routines unchanged. Both body probes are discarded.
+- Before these declaration changes, reversing the promoted index captures
+  in `object_collision` leaves its two load-order differences unchanged.
+  Reversing the navigation square's bottom sum likewise leaves two
+  differences; saving that bottom in a short local instead shortens its body
+  from sixty to 57 bytes and leaves seven body differences. In
+  `set_objects_data`, qualified scale/owner reads merely move the two
+  scheduling differences to the following scale store. Scoped scale and
+  owner-byte locals plus a qualified destination store leave three differences.
+  All of these body probes are discarded.

@@ -2393,3 +2393,88 @@ absent code bytes. Strict positional matches increase by 88 to 57,680 of
 Literal executable equality remains incomplete. Clean-build and
 post-verification SHA-256 hashes agree:
 `ef3713080970987a3284340e6b4a0adf67d6f6ae2e3ca882fa14932b7e1f28a8`.
+
+## Button and screen declaration checkpoint
+
+Six button-history globals have eighteen original relocated references,
+all in `input.c`. Four raw-coordinate/dead-zone globals have eight references,
+all in `joycal.c`. Six packet-handle and screen-allocation globals have
+23 references, all in `screen.c`. Source uses agree with these owners. The
+second-button double-click result has an additional main-module user and
+is deliberately outside the private button group.
+
+All seven combinations of omitted declarations were tested across eligible
+core units. Retain button-history exclusions in `dib.c`, `fade.c`, `logic.c`,
+`main.c`, and `nearheap.c`; joystick-state exclusions in `main.c`; and
+screen-table exclusions in `fade.c`, `logic.c`, and `main.c`. Existing unit
+markers express these choices, so no function bodies change. These are
+measured compiler contexts, not recovered original header text. Global
+definitions and storage, types, calling conventions, compiler settings, and
+compilation-unit ranges remain unchanged. Other placements introduce size
+changes or produce worse overall comparisons and are discarded.
+
+| Routine | Previous differing encodings | Current result | Aligned span |
+| --- | ---: | --- | ---: |
+| `PurgeNearHeapBlocks` | 4 | Exact | 144 |
+| `SelectPreviousExternalViewObject` | 10 | Exact | 64 |
+| `FreeNearHeapBlock` | 4 | 2 differing encodings | 96 |
+| `GetNearHeapBlockSize` | 4 | 2 differing encodings | 128 |
+| `DIBupdate` | 5 | 2 differing encodings | 384 |
+| `StepPaletteTransition` | 6 | 3 differing encodings | 560 |
+| `get_player_input` | 8 | 11 differing encodings | 224 |
+
+The near-heap purge restores its original loop comparisons; the previous-view
+selector restores its EAX/DX/ECX/BL allocation. Their complete bodies are
+135 and 59 bytes respectively. The other two heap routines now have matching
+mnemonics but retain reversed initial base/size loads. The remaining DIB
+differences are its destination pitch multiplication operands. The palette
+transition reaches 99.35% mnemonic similarity.
+
+The selected logic context makes six more routines exact: `try2rout`,
+`get_rear_spot`, `FindEnemyAimingWithinRange`, `in_danger`, `abandoned`, and
+`FindSceneAnimationCommand`. `UpdateSceneAnimationObject` drops from 81
+differing encodings to nine, while `scan_for_enemy` drops from four to two.
+Three previously exact routines regress: `report_kilrathi_rout` has eleven
+differences, `find_ship_index` six, and `set_special` two. `attacker_in_range`
+rises from eleven to 36 differences and falls from 95.83% to 85.42% mnemonic
+similarity; `hostile_sphere` rises from six differences to ten. The logic
+tradeoff removes 42 differing encodings overall and adds three exact matches
+net, without changing spans.
+
+A separate distance local in the attacker routine reduces its differences
+to sixteen, but raises the scene-update routine from nine to 170; folding
+the distance assignment into the comparison leaves both unchanged. Neither
+body probe is retained. Earlier collision, navigation, and object-initializer
+probes are recorded in `docs/PATTERNS.md`; their sources were also restored.
+A forced rebuild reproduced the preceding checkpoint's executable hash
+before the declaration selection.
+
+The twenty changed report rows remove 63 differing encodings overall; the
+other 1,504 rows and every reported span are unchanged. Eight new exact
+routines and three regressions raise normalized exact matches by five, to
+1,292, with 216 same-size differences and sixteen size differences (74
+absolute bytes, net -6).
+Mnemonic totals are 1,390 perfect, 1,519 at or above 90%, five below, and
+99.63% average. There are no missing exports, fallbacks, or errors. A separate
+binary-comp reference check verifies the identities, order, multiplicity,
+and relative positions of all 43 named global operands across the eight
+new exact routines.
+
+The final clean rebuild regenerates all 78 native objects, archives, and
+executable outputs. Native and modern builds, source-order and address
+audits, the order report, and all required verification gates pass. Both
+value checks cover 1,524 functions with zero mismatches or skips. All 1,104
+linked globals, 39 code pointers, 79 mixer operands, and recovered unit-data
+blocks pass. Call and global-access analyses retain eleven and 35 diagnostics
+across 1,138 and 1,059 checked functions. The modern linker's existing
+unaligned-pointer warnings remain. No gameplay validation is claimed.
+
+All section sizes and placements are unchanged. Code remains 400,663 bytes
+versus 401,111, data virtual size 1,329,724 versus 1,331,596, relocation data
+36,298 versus 36,306, and file size 518,144 versus 518,656. The entry point
+is still `0x0044E5B0` versus `0x0044E770`; 26 missing routines account for
+416 of the 448 absent code bytes. Strict positional matches remain 57,680
+out of 518,656 bytes (11.1211%), with 460,976 differing positions in
+23,061 runs. Literal executable equality remains incomplete. Clean-build
+and post-verification SHA-256 hashes agree:
+`6cf88c069df006c1b0a67956c5a167f29edfdcef8b1c73eab2e87ad157881ec7`.

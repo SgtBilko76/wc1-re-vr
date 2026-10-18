@@ -559,13 +559,20 @@ extern signed char abCommMenuChoiceCommand[7]; /* 0x0059e488 */
 extern const char *pszCommMenuHeading; /* 0x0059e490 */
 extern char szCommMenuHeadingBuffer[0x40]; /* 0x0059e4a0 */
 extern const char *apszCommMenuChoiceText[7]; /* 0x0059e4e0 */
+/* Packet-handle tables and screen row storage have only screen.c users. */
+#if !defined(WC1_FADE_SOURCE) && !defined(WC1_MAIN_SOURCE) && \
+    !defined(WC1_LOGIC_SOURCE)
 extern void *apPacketHandles[0x1000]; /* 0x0059e530 */
 extern int aiPacketHandleOffsets[0x1000]; /* 0x005a2530 */
 extern int nPacketHandleCount; /* 0x005a6530 */
+#endif
 extern Viewport *pAllocatedScreenViewport; /* 0x005a6534 */
+#if !defined(WC1_FADE_SOURCE) && !defined(WC1_MAIN_SOURCE) && \
+    !defined(WC1_LOGIC_SOURCE)
 extern unsigned short awScreenRowOffsets[202]; /* 0x005a6540 */
 extern int nScreenAllocationState; /* 0x005a66e0 */
 extern Viewport *pAllocatedScreenViewportMirror; /* 0x005a66e4 */
+#endif
 extern int aiSoundEffectSourceActive[0x41]; /* 0x005a66ec */
 extern unsigned char abSoundPlaybackSlots[0xf8]; /* 0x005a67f0 */
 extern int nPassingShipSoundCooldown; /* 0x005a68e8 */
@@ -813,25 +820,36 @@ extern int nSfxVolumeSetting; /* 0x00469fbc */
 extern int nMusicVolumeSetting; /* 0x00469fc0 */
 extern int bViewportDirty; /* 0x00469fc4 */
 extern int nInputTickScale; /* 0x0059af90 */
+/* These button-history fields are private to input.c. Selected owners omit
+ * their unused declarations; docs/PATTERNS.md records the matching evidence. */
+#if !defined(WC1_DIB_SOURCE) && !defined(WC1_FADE_SOURCE) && \
+    !defined(WC1_MAIN_SOURCE) && !defined(WC1_NEARHEAP_SOURCE) && \
+    !defined(WC1_LOGIC_SOURCE)
 extern short asInputButton1DoubleClick[2]; /* 0x0059e508 */
 extern short asInputButton1Changed[2]; /* 0x0059e50c */
 extern short asInputButton2Changed[2]; /* 0x0059e510 */
 extern short asPreviousInputButtons[2]; /* 0x0059e514 */
 extern int anInputButton1PressTime[2]; /* 0x0059e518 */
 extern int anInputButton2PressTime[2]; /* 0x0059e500 */
+#endif
 extern short asInputButton2DoubleClick[2]; /* 0x0059e520 */
 
 extern short nActiveInputDevice; /* 0x005a819c */
+/* Dead zones and raw coordinates are used only by joycal.c. */
+#ifndef WC1_MAIN_SOURCE
 extern int nJoystickVerticalDeadZone; /* 0x005a81a0 */
 extern int nJoystickHorizontalDeadZone; /* 0x005a81a4 */
+#endif
 extern int nJoystickUpScale; /* 0x005a81a8 */
 extern int nJoystickLeftScale; /* 0x005a81ac */
 extern int nJoystickMaximumX; /* 0x005a81b0 */
 extern int nJoystickMaximumY; /* 0x005a81b4 */
 extern int nJoystickMinimumX; /* 0x005a81b8 */
 extern int nJoystickMinimumY; /* 0x005a81bc */
+#ifndef WC1_MAIN_SOURCE
 extern int nJoystickRawX; /* 0x005a81c0 */
 extern int nJoystickRawY; /* 0x005a81c4 */
+#endif
 extern int nJoystickVerticalRange; /* 0x005a81c8 */
 extern int nJoystickHorizontalRange; /* 0x005a81cc */
 extern int nJoystickRightScale; /* 0x005a81d0 */
