@@ -389,8 +389,14 @@ and scale-command switch restores the collision routine's original 92-byte
 frame; its corrected sound arguments, collision stores, and mass arithmetic
 leave only two exchanged initial loads in the 1,968-byte span. All nineteen
 space routines retain their original aligned sizes. The animation's remaining
-register and store differences are recorded in `docs/PATTERNS.md`; no unit
-boundary or linker-order change is inferred from these compiler effects.
+scale-arithmetic differences are recorded in `docs/PATTERNS.md`; recovering
+the preceding movement dispatch restored its two separate stores. The
+movement and AI dispatchers now match all instruction mnemonics in their
+816- and 400-byte spans, with four and one differing encodings respectively.
+A separate afterburner-speed local made movement exact but enlarged the
+collision routine; using the existing velocity-magnitude local preserves all
+original spans. No unit boundary or linker-order change is inferred from
+these compiler effects.
 
 The unit-data gate checks the complete reconstructed `.data` sections:
 system paths (259 bytes), file/developer diagnostics (225), autopilot (7),

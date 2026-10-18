@@ -1078,18 +1078,19 @@ unsigned int accelerate_and_move_object(short obj)
     int magnitude;
 
     if (aeObjectClass[obj] >= OBJECT_CLASS_MISSILE) {
-        if (aeSpecialManeuver[obj] ==
-                SPECIAL_MANEUVER_KILL_ENGINES) {
+        switch (aeSpecialManeuver[obj]) {
+        case SPECIAL_MANEUVER_KILL_ENGINES:
             abShipExhaustHeat[obj] = 0;
             if (RandomBelowOrEqual(100) < 10)
                 set_special(obj, SPECIAL_MANEUVER_NONE);
-        } else if (aeSpecialManeuver[obj] ==
-                       SPECIAL_MANEUVER_STOP_DRIFT) {
+            break;
+        case SPECIAL_MANEUVER_STOP_DRIFT:
             approach_zero_speed(obj);
             NormalizeAndScaleVector(&aShipVelocity[obj],
                                     anShipSpeed[obj]);
             if (anShipSpeed[obj] == 0)
                 set_special(obj, SPECIAL_MANEUVER_NONE);
+            break;
         }
         if (aeSpecialManeuver[obj] <
                 SPECIAL_MANEUVER_KILL_ENGINES &&
@@ -1109,11 +1110,13 @@ unsigned int accelerate_and_move_object(short obj)
                     ScaleFixedVector(&aShipForwardVector[obj],
                                      anShipSpeed[obj], &delta);
                 } else {
-                    ScaleFixedVector(
-                        &aShipForwardVector[obj],
+                    magnitude =
                         (aObjectTypeData[
                             aeObjectType[obj]].maximumVelocity +
-                         20) * 0x200,
+                         20) * 0x200;
+                    ScaleFixedVector(
+                        &aShipForwardVector[obj],
+                        magnitude,
                         &delta);
                     drain_fuel(obj, 200);
                     abShipExhaustHeat[obj] = 3;
@@ -1141,7 +1144,7 @@ unsigned int accelerate_and_move_object(short obj)
             magnitude = Vector_magnitude(&delta);
             if (magnitude > 0) {
                 acceleration = GetShipAccelerationRate(obj);
-                if (alert_flag(obj, 1) != 0 && acceleration < 0x500)
+                if ((short)alert_flag(obj, 1) != 0 && acceleration < 0x500)
                     acceleration = 0x500;
                 if (aeSpecialManeuver[obj] ==
                         SPECIAL_MANEUVER_AFTERBURNER ||
@@ -1156,11 +1159,9 @@ unsigned int accelerate_and_move_object(short obj)
                             &delta,
                             &aShipForwardVector[obj]),
                         magnitude) + 0x200);
-                ScaleFixedVector(
-                    &delta,
-                    MinInt(DivideFixed(acceleration >> 1, magnitude),
-                           0x100),
-                    &accelerationVector);
+                acceleration = MinInt(
+                    DivideFixed(acceleration >> 1, magnitude), 0x100);
+                ScaleFixedVector(&delta, acceleration, &accelerationVector);
                 if (aeSpecialManeuver[obj] !=
                         SPECIAL_MANEUVER_AFTERBURNER) {
                     abShipExhaustHeat[obj] = 2;
@@ -1553,10 +1554,12 @@ int object_collision(short obj)
 /* Function start: 0x413880 */
 unsigned int object_intelligence(short obj)
 {
+    short target;
+
     if (nCannedSceneMode == 4)
         return 0;
     if (nCannedSceneMode == 2 &&
-        aeObjectClass[obj] > OBJECT_CLASS_MISSILE) {
+        aeObjectClass[obj] >= OBJECT_CLASS_SHIP) {
         update_canned_sequence(obj);
         return 0;
     }
@@ -1568,13 +1571,13 @@ unsigned int object_intelligence(short obj)
         mine_intelligence(obj);
         break;
     case OBJECT_CLASS_MISSILE:
-        if ((abs((int)nSpaceFrame) & 3) != 0 &&
+        if ((short)(nSpaceFrame % 4) != 0 &&
             nExternalViewShip != obj) {
             break;
         }
-        if (acShipTarget[obj] != -1) {
-            get_facing_range_from_object(
-                obj, acShipTarget[obj]);
+        target = acShipTarget[obj];
+        if (target != -1) {
+            get_facing_range_from_object(obj, target);
         }
         switch (aeObjectType[obj]) {
         case OBJECT_TYPE_DUMB_FIRE_MISSILE:

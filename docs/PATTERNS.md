@@ -95,6 +95,30 @@ for similarity decisions.
   load, while an if-chain changes the maneuver comparisons. The shared guard
   and switch recover the complete 1,008-byte span exactly. A separate ticks
   or maneuver local changes allocation and is not retained.
+- `accelerate_and_move_object` dispatches engine-cut and drift-stop maneuvers
+  with a switch. Its alert test reads only AX, so narrow the `alert_flag`
+  result to short at this call site. Compute the afterburner velocity
+  magnitude before passing it to `ScaleFixedVector`, and likewise save the
+  final clamped acceleration before the later scale call. Direct argument
+  expressions prepare vector addresses too early. Reusing the existing
+  magnitude local for the desired afterburner velocity recovers all 235
+  mnemonics in the original 816-byte span and 32-byte frame, with only four
+  register differences in the afterburner timer decrement, down from 226
+  differing instruction encodings. A separate block-local afterburner speed
+  makes this routine exact but enlarges `object_collision` by sixteen bytes,
+  so it is not retained. Combining the timer decrement and condition leaves
+  the four differences unchanged.
+- `object_intelligence` tests a signed remainder of `nSpaceFrame` divided by
+  four and narrows that result before the zero test. An absolute value and
+  bit mask omit the original sign restoration and word test. Compare the
+  canned-sequence class against `OBJECT_CLASS_SHIP` with `>=`, and promote
+  the signed-byte missile target into a short before comparing or passing it.
+  These choices recover all 123 mnemonics in the original 400-byte span.
+  The routine is exact in the earlier movement context; the recovered engine
+  switch leaves one reversed camera-object comparison, down from 78 differing
+  instruction encodings. Reversing its source operands or nesting the frame
+  and camera guards does not correct it. A volatile-qualified camera read
+  worsens scheduling and adds sixteen bytes; that probe is also reverted.
 - `update_star_field` skips directly to the loop increment when a selected
   star has no yaw or pitch rotation. Put that `continue` inside the star
   case instead of combining the rotation test with its class and random
@@ -1343,17 +1367,18 @@ for similarity decisions.
   were reverted. After recovering the housekeeping dispatch, a short
   scale-change local and a promoted int object index retain the animation's
   original 352-byte span and restore the collision routine's 92-byte frame.
-  The second switch is now retained: mnemonic similarity rises from 81.73%
-  to 95.19%, although differing instruction encodings rise from 75 to 103 of
-  104 because of changed scheduling and registers. The animation pointer and
-  parameter still use different registers, and the compiler merges the two
-  scale stores. A saved current-scale word separates the stores but changes
-  instruction order and enlarges the following collision routine again.
-  Scoping the animation pointer and type, a register hint, a qualified scale
-  store, reversed product operands, and a separate masked-factor assignment
-  do not improve the combined result; none is retained. The existing nine
-  register differences in `hit_asteroid` remain unchanged. A guarded decrement
-  loop and a register hint there do not resolve them either.
+  Recovering the preceding movement routine's engine switch then restores
+  the original animation-pointer and parameter registers and the two distinct
+  scale stores. Similarity is now 96.15%, with nine differing instruction
+  encodings out of 104 in the scale-factor preparation and multiplication,
+  down from 75 before the two dispatch corrections. Reversing the product
+  operands leaves these nine differences unchanged. Earlier probes with a
+  saved current-scale word, scoped animation pointer and type, register hint,
+  qualified scale store, or separate masked-factor assignment either left
+  the differences unchanged or disturbed the following collision routine;
+  none is retained. The existing nine register differences in `hit_asteroid`
+  also remain unchanged. A guarded decrement loop and a register hint there
+  do not resolve them either.
 
 - Giving `objective_lost` an explicit mission-ship index, as either an int
   or a short, leaves its allocation unchanged. Reversing the command/opcode
