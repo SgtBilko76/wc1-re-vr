@@ -112,3 +112,10 @@ void __stdcall SetEventManagerPump(void (*pump)(void))
 {
     pEventManagerPump = pump;
 }
+
+/* Function start: 0x4355E0 */
+/* Empty, and nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it closes the event-manager control entries. */
+void EventManagerControlHook(void)
+{
+}

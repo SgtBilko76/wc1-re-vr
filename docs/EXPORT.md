@@ -45,11 +45,12 @@ the boundary, so the export takes the implemented function's name.
 The map also retains four compiler-generated DSP array initializer entries.
 They deliberately have no source annotations and are checked separately by
 `make verify-array-initializers` (included in `make verify`). The function
-report now counts 1,524 source entries after removal of their four
+report now counts 1,550 source entries after removal of their four
 handwritten stand-ins and recovery of the two graphics diagnostic functions
 `__copyline` and `__wipeline`, the C key-reset forwarder at `0x00436390`,
-the DOS interrupt callback at `0x004368D0`, and the rectangle routine
-`GetViewportIntersection` at `0x00436AC0`;
+the DOS interrupt callback at `0x004368D0`, the rectangle routine
+`GetViewportIntersection` at `0x00436AC0`, and the 26 unreferenced
+event-manager, memory-service and logger stand-ins;
 the separate gate covers the 74 generated array-initializer code bytes.
 
 `make verify-code-pointers`, included in `make verify`, checks the targets

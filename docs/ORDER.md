@@ -1190,20 +1190,25 @@ input even when the music status word is zero. The routine also respects the
 existing music-mode and wait-enable settings.
 
 Several unreferenced event and graphics routines likewise lie between entries
-in the seeded function map. Recovered entries are recorded in `src/map`;
-remaining discovery candidates include legacy event hooks. Do not replace
-these gaps with padding. The apparent
+in the seeded function map. Recovered entries are recorded in `src/map`.
+Do not replace such gaps with padding. The apparent
 entry at `0x004393F0` lies in a switch table/padding range and is not a function.
 
-The current boundary supplement has 26 unimplemented entries in addition to
-the four reproduced array initializers. Their original aligned spans total
-416 bytes: the remaining empty or constant-return routines occupy sixteen
-bytes apiece. The 432-byte rectangle routine is now reconstructed before
-`FillGraphicSuffix` at `0x00436C70`. The missing entries are verified code
-boundaries, not recovered interfaces
-or names. The surrounding empty routines' purposes cannot be established by
-proximity alone. The function report does not score these absent implementations, so
-its average similarity must not be interpreted as whole-program completion.
+The boundary supplement now holds only the four reproduced array
+initializers. The 26 empty or constant-return routines it formerly listed
+are implemented at their original positions: one closes the event-manager
+control entries in `strdos.c`, 24 lie in `eventmgr.c`, and the return-one
+entry at `0x00442740` follows `ix_log_printf` in `ixlog.cpp`. Each occupies
+sixteen bytes with compiler padding, 416 bytes in all, and each is exact.
+The four `RET 4`/`RET 8` entries at `0x00436300`–`0x00436330` are
+`__stdcall`; their argument counts are the only interface the retail bodies
+reveal. Nothing in WC1 or in WC2's matching runs calls any of them, the
+1990 DOS event library is far-pascal assembly in a different order, and the
+other ports supply no names, so their names only place them among their
+neighbours (cursor, frame tick, memory service, keyboard, viewport, joystick,
+shutdown) and their comments say so. Adding them changed no other report row.
+The 432-byte rectangle routine is reconstructed before `FillGraphicSuffix`
+at `0x00436C70`.
 
 The entry at `0x00436390` is now `ResetInputKeyStatePreservingModifiers`.
 The original jumps directly to `ClearInputKeyStatePreservingModifiers`, whose

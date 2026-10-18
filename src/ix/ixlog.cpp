@@ -56,3 +56,11 @@ void ix_log_printf(const char *fmt, ...)
 #endif
     }
 }
+
+/* Function start: 0x442740 */
+/* Returns 1. Nothing in WC1 calls it; the log module's initializer
+ * reporting success, by analogy with the other ix modules' init entries. */
+int ix_log_init_hook(void)
+{
+    return 1;
+}

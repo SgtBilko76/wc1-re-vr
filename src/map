@@ -1,7 +1,7 @@
 # Address-sorted developer functions in WC1.EXE (original addresses).
 # MSVC emits functions in source order, so adjacency here is evidence of
 # shared compilation-unit ownership. Update names and discoveries from evidence.
-# 1513 developer functions; CRT begins at 0x00449100.
+# 1544 developer functions; CRT begins at 0x00449100.
 
 0x00401000 SaveGamePalette
 0x00401020 RestoreGamePalette
@@ -1159,6 +1159,7 @@
 0x004355B0 ReleaseEventManagerPointerHook
 0x004355C0 EventManagerHook
 0x004355D0 SetEventManagerPump
+0x004355E0 EventManagerControlHook
 0x004355F0 TranslatePolledInputEvent
 0x004356A0 QueueInputEventAtCursor
 0x004356E0 AllocateInputEvent
@@ -1173,12 +1174,16 @@
 0x00435D80 IsInputEventQueued
 0x00435DB0 FlushInputEvents
 0x00435DC0 DoUiFn5DC0
+0x00435DD0 IsMouseInstalled
 0x00435DE0 CheckCursor
 0x00435DF0 RefreshMouseCursorHook
+0x00435E00 MouseCursorRedrawHook
+0x00435E10 MouseCursorCaptureHook
 0x00435E20 WcOrphanRoutine435E20
 0x00435EF0 DrawUiFn5EF0
 0x00435FA0 GetUiFn5FA0
 0x00436060 BlitUiFn6060
+0x004360C0 MouseCursorDisplayHook
 0x004360D0 GetUiFn60D0
 0x004360E0 GetUiFn60E0
 0x004360F0 GetUiFn60F0
@@ -1190,8 +1195,10 @@
 0x00436210 ForwardSetMultimediaTimerCallbackv1
 0x00436230 WaitForFrameTick
 0x00436240 IsFrameTickElapsed
+0x00436250 FrameTickHook
 0x00436260 ReturnConst1v5
 0x00436270 AllocateUntaggedMemory
+0x00436280 UntaggedMemoryHook
 0x00436290 ReleaseUntaggedMemory
 0x004362A0 GameNoBodyStubv16
 0x004362B0 GetPacketDecompressionResult
@@ -1199,29 +1206,47 @@
 0x004362D0 GameNoBodyStubv17
 0x004362E0 ReturnConst3E8000v2
 0x004362F0 ReturnConst3E8000v3
+0x00436300 MemoryServiceQueryHook
+0x00436310 MemoryServiceReleaseHook
+0x00436320 MemoryServiceTransferHook
+0x00436330 MemoryServiceMapHook
+0x00436340 MemoryServiceVersionHook
+0x00436350 MemoryServiceShutdownHook
+0x00436360 MemoryServiceStatusHook
+0x00436370 MemoryServiceErrorHook
+0x00436380 MemoryServiceResetHook
 0x00436390 ResetInputKeyStatePreservingModifiers
 0x004363A0 ClearInputKeyStatePreservingModifiers
 0x004363E0 ClearInputKeyState
+0x00436400 KeyboardStateHook
+0x00436410 KeyboardScanHook
 0x00436420 SetInputKeyState
 0x00436460 sort_object_depth
 0x00436520 draw_sorted_objects_to_buffer
 0x00436650 LoopUiFn6650
 0x00436740 set_up_screen_viewport
+0x00436890 ScreenViewportHook
+0x004368A0 ScreenViewportResetHook
+0x004368B0 MouseActivityHook
 0x004368C0 GameNoBodyStubv18
 0x004368D0 DosInterruptHandlerHook
 0x004368E0 ReturnConst8000
 0x004368F0 HelperOf4273C0A
 0x00436900 GameNoBodyStubv19
 0x00436910 GameNoBodyStubv20
+0x00436920 JoystickStatusHook
+0x00436930 JoystickResetHook
 0x00436940 AllocateSmallMemoryBlock
 0x00436950 DoLocalFn6950
 0x00436970 ReturnConst0v10
 0x00436980 GameNoBodyStubv21
+0x00436990 InterruptVectorHook
 0x004369A0 SelectDiskDriveHook
 0x004369B0 GetCurrentDiskDriveHook
 0x004369C0 ReturnConst0v13
 0x004369D0 FinishPacketDecompressionHook
 0x004369E0 GameNoBodyStubv23
+0x004369F0 ExitStatusHook
 0x00436A00 DoLocalFn6A00
 0x00436A30 shrink_vector
 0x00436A70 shrink
@@ -1396,6 +1421,7 @@
 0x004425F0 ShutdownAudioStreamer
 0x00442600 ReadCheaterFlagFromRegistry
 0x004426A0 ix_log_printf
+0x00442740 ix_log_init_hook
 0x00442750 ix_streamer_init
 0x0044286F ix_streamer_destroy
 0x0044291E ix_streamer_configure

@@ -372,6 +372,15 @@ short __stdcall ResetAllocationDepth(int x, int y)
     return 1;
 }
 
+/* Function start: 0x435DD0 */
+/* Returns 1. Nothing in the shipped executable calls it; reporting an
+ * installed mouse is inferred only from its place after the mouse-reset
+ * stand-in at 0x435DC0, which also returns 1. */
+short IsMouseInstalled(void)
+{
+    return 1;
+}
+
 /* Function start: 0x435DE0 */
 void CheckCursor(void)
 {
@@ -380,6 +389,22 @@ void CheckCursor(void)
 /* Function start: 0x435DF0 */
 /* Empty in the Win32 build; the hidden kill-board code at 0x43F8B0 calls it. */
 void RefreshMouseCursorHook(void)
+{
+}
+
+/* Function start: 0x435E00 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits between the cursor hooks and the cursor
+ * drawing routines. */
+void MouseCursorRedrawHook(void)
+{
+}
+
+/* Function start: 0x435E10 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it immediately precedes the cursor background
+ * capture. */
+void MouseCursorCaptureHook(void)
 {
 }
 
@@ -494,6 +519,13 @@ void RefreshMouseCursorDisplay(void)
     RestoreMouseCursorBackground();
 }
 
+/* Function start: 0x4360C0 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it follows the cursor display refresh. */
+void MouseCursorDisplayHook(void)
+{
+}
+
 /* Function start: 0x4360D0 */
 void EnterAllocationScope(void)
 {
@@ -579,6 +611,13 @@ int IsFrameTickElapsed(void)
     return bFrameTickPending == 0;
 }
 
+/* Function start: 0x436250 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it follows the frame-tick queries. */
+void FrameTickHook(void)
+{
+}
+
 /* Function start: 0x436260 */
 unsigned short GetSoundHardwareFlag(void)
 {
@@ -589,6 +628,15 @@ unsigned short GetSoundHardwareFlag(void)
 void *AllocateUntaggedMemory(unsigned int size)
 {
     return AllocateTaggedMemory(size, 0);
+}
+
+/* Function start: 0x436280 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits between the untagged allocation and release
+ * stand-ins. */
+int UntaggedMemoryHook(void)
+{
+    return 0;
 }
 
 /* Function start: 0x436290 */
@@ -632,6 +680,83 @@ unsigned int GetFixedOneMillionAlt(void)
     return 0x3e8000;
 }
 
+/* Function start: 0x436300 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it follows the free-memory stand-ins that the memory
+ * manager reaches through 0x42FB20 and 0x42FB30. The role words of this
+ * and the following eight names only distinguish the entries. */
+int __stdcall MemoryServiceQueryHook(int value)
+{
+    (void)value;
+    return 0;
+}
+
+/* Function start: 0x436310 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits among the memory-service stand-ins. */
+void __stdcall MemoryServiceReleaseHook(int value)
+{
+    (void)value;
+}
+
+/* Function start: 0x436320 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits among the memory-service stand-ins. */
+int __stdcall MemoryServiceTransferHook(int first, int second)
+{
+    (void)first;
+    (void)second;
+    return 0;
+}
+
+/* Function start: 0x436330 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits among the memory-service stand-ins. */
+int __stdcall MemoryServiceMapHook(int value)
+{
+    (void)value;
+    return 0;
+}
+
+/* Function start: 0x436340 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits among the memory-service stand-ins. */
+short MemoryServiceVersionHook(void)
+{
+    return 0;
+}
+
+/* Function start: 0x436350 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits among the memory-service stand-ins. */
+void MemoryServiceShutdownHook(void)
+{
+}
+
+/* Function start: 0x436360 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits among the memory-service stand-ins. */
+int MemoryServiceStatusHook(void)
+{
+    return 0;
+}
+
+/* Function start: 0x436370 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it sits among the memory-service stand-ins. */
+short MemoryServiceErrorHook(void)
+{
+    return 0;
+}
+
+/* Function start: 0x436380 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it is the last of the memory-service stand-ins. */
+short MemoryServiceResetHook(void)
+{
+    return 0;
+}
+
 /* Function start: 0x436390 */
 void ResetInputKeyStatePreservingModifiers(void)
 {
@@ -657,6 +782,20 @@ void ClearInputKeyState(void)
     memset(abInputKeyState, 0,
            sizeof(abInputKeyState));
     ClearDebugPauseFlags();
+}
+
+/* Function start: 0x436400 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it follows the key-state clearing routines. */
+void KeyboardStateHook(void)
+{
+}
+
+/* Function start: 0x436410 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it precedes the key-state setter. */
+void KeyboardScanHook(void)
+{
 }
 
 /* Function start: 0x436420 */
@@ -972,6 +1111,28 @@ void set_up_screen_viewport(signed char mode)
     nViewportOriginY = viewportGeometry->originY;
 }
 
+/* Function start: 0x436890 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it follows set_up_screen_viewport. */
+int ScreenViewportHook(void)
+{
+    return 0;
+}
+
+/* Function start: 0x4368A0 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it follows set_up_screen_viewport. */
+void ScreenViewportResetHook(void)
+{
+}
+
+/* Function start: 0x4368B0 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it precedes the mouse idle hook. */
+void MouseActivityHook(void)
+{
+}
+
 /* Function start: 0x4368C0 */
 void MouseIdleHook(void)
 {
@@ -1007,6 +1168,21 @@ unsigned int JoystickEdgeHook(int button)
     (void)button;
 }
 
+/* Function start: 0x436920 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it follows the joystick edge hook. */
+short JoystickStatusHook(void)
+{
+    return 0;
+}
+
+/* Function start: 0x436930 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it follows the joystick edge hook. */
+void JoystickResetHook(void)
+{
+}
+
 /* Function start: 0x436940 */
 void *AllocateSmallMemoryBlock(short size)
 {
@@ -1032,6 +1208,13 @@ void ShutdownHook(int vector, void *handler)
 {
     (void)vector;
     (void)handler;
+}
+
+/* Function start: 0x436990 */
+/* Empty. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it follows the vector-restoring shutdown hook. */
+void InterruptVectorHook(void)
+{
 }
 
 /* Function start: 0x4369A0 */
@@ -1061,6 +1244,14 @@ void FinishPacketDecompressionHook(void)
 /* Function start: 0x4369E0 */
 void ExitCleanupHook(void)
 {
+}
+
+/* Function start: 0x4369F0 */
+/* Returns 0. Nothing in the shipped executable calls it, so its purpose
+ * cannot be recovered; it follows the exit cleanup hook. */
+short ExitStatusHook(void)
+{
+    return 0;
 }
 
 /* Function start: 0x436A00 */
