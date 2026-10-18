@@ -1363,6 +1363,24 @@ fewer at the current incorrect layout. The improved function comparison
 does not constitute whole-file progress by that positional measure, and
 literal executable equality still fails.
 
+The sprite-restoration checkpoint applies the corresponding memory-access
+and cursor-update forms to `RestoreSpriteBackground`. It improves from
+84.82% to 91.52% mnemonic similarity and from 173 to 109 differing encodings
+out of 224, preserving the original 768-byte span and forty-byte frame.
+All other 1,522 report rows remain unchanged. Exact, same-size, and different-
+size counts remain 1,251, 252, and twenty; average mnemonic similarity is
+99.56%. There are now 1,513 functions at or above 90% and ten below it.
+
+Both builds and all required verification gates pass. Both value checks
+cover all 1,523 functions without mismatches or skips; the 1,097 linked
+globals, 39 embedded function pointers, and 79 mixer-global operands also
+pass. The eleven call-analysis and 37 global-access diagnostics and the
+existing modern-build warnings remain. The executable hash is unchanged
+through verification. Section sizes and the 880-byte code, 1,856-byte data
+virtual-size, and 1,024-byte file deficits are unchanged. Strict positional
+matches rise by four to 54,068 of 518,656 bytes (10.4246%); literal executable
+equality still fails.
+
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates
 start at offsets `0x24` and `0x64`. The branch at `0x00436B97` compares the

@@ -1041,9 +1041,9 @@ for similarity decisions.
   comparison; that separate probe is not retained.
 - `CaptureSpriteBackground` and `RestoreSpriteBackground` also read both
   coordinate words into short locals before promotion. Keep separate command
-  pointer advances for the two words. Restoration calculates the run end
-  inside the second horizontal-bound test; capture retains its preceding
-  assignment. These forms preserve the original aligned function sizes.
+  pointer advances for the two words. Both retain a separate run-end
+  calculation before the horizontal-bound tests. The declaration and
+  qualified-access forms below preserve the original aligned function sizes.
   The original
   spills the run length while retaining clipping values in registers; this
   allocation remains unresolved. Narrowing the run-length declaration's
@@ -1072,6 +1072,18 @@ for similarity decisions.
   instead produces a thirty-six-byte frame and excess code. Separate
   clipped-length scopes also affect later graphics functions and give a
   worse combined result; neither alternative is retained.
+  Restoration benefits from the same count declarations, inline word
+  copies, chained qualified run store, qualified right-edge read, and
+  branch-local cursor advances. With those forms, calculating both encoded
+  and raw run ends before their horizontal tests improves the result over
+  the previous assignments inside the second test. Its differing encodings
+  fall from 173 to 109 of 224 and mnemonic similarity rises from 84.82% to
+  91.52%, preserving the 768-byte span and forty-byte frame. The remaining
+  1,522 report rows, including capture, are unchanged. Keeping common cursor
+  advances or removing the qualified store adds sixteen bytes; separate
+  clipped-length scopes disturb the later transformed-bounds routine.
+  These alternatives are not retained. Run-length spill placement and
+  clipping-register allocation remain unresolved in both routines.
 - `rotate_about_j` multiplies the forward component by sine before multiplying
   the saved right component by cosine. After correcting graphics-workspace
   visibility, CL evaluates these addition terms in the opposite order.

@@ -821,6 +821,8 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
                              short x, short y, unsigned char *shape,
                              short frame)
 {
+    unsigned short count;
+    unsigned short runLength;
     unsigned char *commands;
     unsigned char *saved;
     unsigned char *screen;
@@ -838,8 +840,6 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
     int drawY;
     int endX;
     int skip;
-    unsigned short count;
-    unsigned short runLength;
 
     saved = background;
     if (background == 0)
@@ -856,11 +856,7 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
     top = viewport->top;
     bottom = viewport->bottom;
     commands = shape + *(int *)(shape + frameOffset) + 8;
-#ifdef SDL_PORT
     memcpy(&count, commands, sizeof(count));
-#else
-    count = *(unsigned short *)commands;
-#endif
     pixels = viewport->pixels;
     commands += 2;
     while (count != 0) {
@@ -885,12 +881,13 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
                 code = *commands;
                 commands++;
                 if ((code & 1) != 0) {
-                    runLength = (unsigned short)(code >> 1);
                     commands++;
-                    count -= runLength;
+                    count -= (*(volatile unsigned short *)&runLength =
+                              (unsigned short)(code >> 1));
                     if (top <= drawY && bottom >= drawY) {
-                        if (drawX <= right &&
-                            left <= (endX = drawX + runLength - 1)) {
+                        endX = drawX +
+                               *(volatile unsigned short *)&runLength - 1;
+                        if (drawX <= right && left <= endX) {
                             copyLength = (short)runLength;
                             skip = 0;
                             if (drawX < left) {
@@ -903,12 +900,15 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
                             saved += copyLength;
                         }
                     }
+                    drawX += runLength;
+                    screen += runLength;
                 } else {
-                    runLength = (unsigned short)(code >> 1);
-                    count -= runLength;
+                    count -= (*(volatile unsigned short *)&runLength =
+                              (unsigned short)(code >> 1));
                     if (top <= drawY && bottom >= drawY) {
-                        if (drawX <= right &&
-                            left <= (endX = drawX + runLength - 1)) {
+                        endX = drawX +
+                               *(volatile unsigned short *)&runLength - 1;
+                        if (drawX <= right && left <= endX) {
                             copyLength = (short)runLength;
                             skip = 0;
                             if (drawX < left) {
@@ -922,15 +922,15 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
                         }
                     }
                     commands += runLength;
+                    drawX += runLength;
+                    screen += runLength;
                 }
-                drawX += runLength;
-                screen += runLength;
             }
         } else {
             count >>= 1;
             if (top <= drawY && bottom >= drawY) {
-                if (drawX <= right &&
-                    left <= (endX = drawX + count - 1)) {
+                endX = drawX + count - 1;
+                if (drawX <= right && left <= endX) {
                     copyLength = (short)count;
                     skip = 0;
                     if (drawX < left) {
@@ -945,11 +945,7 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
             }
             commands += count;
         }
-#ifdef SDL_PORT
         memcpy(&count, commands, sizeof(count));
-#else
-        count = *(unsigned short *)commands;
-#endif
         commands += 2;
     }
 refreshScreen:
