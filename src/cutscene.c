@@ -2,6 +2,7 @@
  * The initialized scene tables precede their diagnostic and subtitle literals,
  * which end before the following AI state. See docs/ORDER.md for boundaries.
  */
+#define WC1_CUTSCENE_SOURCE
 #include "wc1.h"
 
 static signed char cScrambleLeftWalkerFrame = 7; /* 0x00465768 */

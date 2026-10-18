@@ -257,7 +257,10 @@ extern HANDLE hMonoDebugDevice; /* 0x00475e74 */
  * affect VC++ 4.20 code selection, so preserve their compilation-unit scope. */
 #if !defined(WC1_EVENTMGR_SOURCE) && !defined(WC1_INIT_SOURCE) && \
     !defined(WC1_TRAINSIM_SOURCE) && !defined(WC1_VIDEO_SOURCE) && \
-    !defined(WC1_WINMAIN_SOURCE)
+    !defined(WC1_WINMAIN_SOURCE) && !defined(WC1_BARRACKS_SOURCE) && \
+    !defined(WC1_CUTSCENE_SOURCE) && !defined(WC1_DAMAGE_SOURCE) && \
+    !defined(WC1_FADE_SOURCE) && !defined(WC1_GAMEFLOW_SOURCE) && \
+    !defined(WC1_KILLBRD_SOURCE) && !defined(WC1_LOGIC_SOURCE)
 extern int nFlightFrameTotalTicks; /* 0x004764f8 */
 extern int nFlightCockpitTicks; /* 0x004764fc */
 extern LARGE_INTEGER liFlightAfterInput; /* 0x00476500 */
@@ -289,7 +292,11 @@ extern char szSpaceFlightMaxFpsMessage[0x80]; /* 0x00486528 */
 #if !defined(WC1_DIB_SOURCE) && !defined(WC1_EJECT_SOURCE) && \
     !defined(WC1_JOYSTICK_SOURCE) && !defined(WC1_MONO_SOURCE) && \
     !defined(WC1_NAV_SOURCE) && !defined(WC1_SCREENS_SOURCE) && \
-    !defined(WC1_WINMAIN_SOURCE)
+    !defined(WC1_WINMAIN_SOURCE) && !defined(WC1_BARRACKS_SOURCE) && \
+    !defined(WC1_DAMAGE_SOURCE) && !defined(WC1_FADE_SOURCE) && \
+    !defined(WC1_GAMEFLOW_SOURCE) && !defined(WC1_LOGIC_SOURCE) && \
+    !defined(WC1_MAIN_SOURCE) && !defined(WC1_MUSIC_SOURCE) && \
+    !defined(WC1_TRAINSIM_SOURCE)
 extern RasterClip stRasterClip; /* 0x00496fc0 */
 extern unsigned char abSolidColourTranslation[256]; /* 0x00497648 */
 extern unsigned char abShapeRLEScratch[0x100000]; /* 0x00497748 */
@@ -340,7 +347,11 @@ extern unsigned char bFilteredKeyWaitStarted; /* 0x00598c34 */
 extern InputEvent aInputEventPool[0x100]; /* 0x00598c40 */
 #if !defined(WC1_DIB_SOURCE) && !defined(WC1_EJECT_SOURCE) && \
     !defined(WC1_JOYSTICK_SOURCE) && !defined(WC1_MONO_SOURCE) && \
-    !defined(WC1_NAV_SOURCE) && !defined(WC1_SCREENS_SOURCE)
+    !defined(WC1_NAV_SOURCE) && !defined(WC1_SCREENS_SOURCE) && \
+    !defined(WC1_BRAINS_SOURCE) && !defined(WC1_DAMAGE_SOURCE) && \
+    !defined(WC1_GAMEFLOW_SOURCE) && !defined(WC1_LAUNCH_SOURCE) && \
+    !defined(WC1_MUSIC_SOURCE) && !defined(WC1_NEARHEAP_SOURCE) && \
+    !defined(WC1_SELECT_SOURCE)
 extern int bStreamerAudioPlaying; /* 0x00597748 */
 extern char szStreamerPath[128]; /* 0x00597750 */
 #endif

@@ -5,6 +5,7 @@
  *  follows the barracks literal pool. Ownership of the string entry remains
  *  provisional within this range.
  */
+#define WC1_FADE_SOURCE
 #include "wc1.h"
 
 short nPaletteTransitionInitialise = 1; /* 0x00469640 */

@@ -1977,3 +1977,81 @@ differing positions in 22,971 runs; literal executable equality still fails.
 The executable SHA-256 is unchanged between the clean-build report and final
 verification:
 `0dd72c35d172451ac377ec81e3e3bdfcba48513fc9e2356fb15bb97256b75dbf`.
+
+## Additional core declaration scopes
+
+The existing compilation-unit boundaries remain unchanged. A bounded check
+of all seven combinations of the twelve flight-profiler declarations, three
+raster declarations, and two streaming declarations identifies the following
+additional exclusions. Each group is unused by its selected owner. Original
+definitions, declaration order within retained groups, types, function bodies,
+compiler flags, and link order are unchanged.
+
+| Owner | Newly omitted groups | Fewer differing encodings | Net exact functions |
+| --- | --- | ---: | ---: |
+| `barracks.c` | profiler, raster | 193 | +1 |
+| `brains.c` | streaming | 40 | +2 |
+| `cutscene.c` | profiler | 106 | 0 |
+| `damage.c` | profiler, raster, streaming | 1 | 0 |
+| `fade.c` | profiler, raster | 117 | 0 |
+| `gameflow.c` | profiler, raster, streaming | 17 | +1 |
+| `killbrd.c` | profiler | 2 | 0 |
+| `launch.c` | streaming | 3 | 0 |
+| `logic.c` | profiler, raster | 88 | +1 |
+| `main.c` | raster | 50 | +1 |
+| `music.c` | raster, streaming | 1 | 0 |
+| `nearheap.c` | streaming | 1 | 0 |
+| `select.c` | streaming | 3 | 0 |
+| `trainsim.c` | raster | 72 | 0 |
+
+Existing owner markers suffice for main and training; the other twelve units
+gain their own marker before `wc1.h`. The baseline is restored and rebuilt
+after the probes, reproducing its executable hash before combining the retained
+choices. The combined full report reproduces every selected unit result.
+These are measured matching scopes, not recovered original header contents.
+
+Ten functions become normalized exact: `SaveGame`, `check_destroy_target`,
+`approach_and_engage`, `funeral_player`, `show_damage_disp`,
+`StartNewCampaign`, `report_kilrathi_rout`, `find_ship_index`,
+`build_squad_list`, and `house_keep`. Four lose exact matches: `landing`
+has two differing encodings, `UpdateDamageDisplay` six, `get_rear_spot`
+eight, and `scan_for_enemy` four.
+
+The largest retained reductions are `BarracksScreen` (219 to 30),
+`StepPaletteTransition` (123 to six), `PlayScrambleHangarScene` (121 to 25),
+`UpdateSceneAnimationObject` (157 to 81), and `SelectTrainSimMission`
+(168 to 93). The training selector rises from 89.44% to 97.03% mnemonic
+similarity. `evaluate_damage` also crosses 90%, from 88.89% to 95.24%, but
+its differing-encoding count increases from eleven to 24; the whole logic
+unit still improves by 88. Three further regressions are retained:
+`GetNearHeapBlockSize` rises from two differences to four,
+`ShowTrainSimHighScores` from 109 to 112, and `RunTrainSim` from twelve
+to thirteen. No reported function span changes.
+
+The complete report changes 34 rows and leaves 1,490 unchanged. It removes
+794 differing encodings and gains six normalized exact functions overall:
+1,275 exact, 233 same-size differences, and sixteen reported span differences
+(74 absolute bytes, net -6). There are 1,380 mnemonic-perfect functions,
+1,518 at or above 90%, six below, and 99.60% average mnemonic similarity.
+
+A clean rebuild regenerates all 78 native objects, archives, and executable
+outputs. Both builds, source-order and address audits, the order report, and
+all required verification gates pass. Both value checks cover all 1,524
+functions with zero mismatches or skips. All 1,104 linked globals, 39 code
+pointers, 79 mixer operands, and recovered unit-data blocks retain their
+passing results. A separate binary-comp reference check verifies the target
+identities, order, multiplicity, and function-relative positions of 130 named
+global operands in the ten newly exact routines. Call and global-access
+analyses retain eleven and 35 diagnostics across 1,138 and 1,059 checked
+functions respectively. No gameplay validation is claimed.
+
+All section sizes and placements remain unchanged. Code is still 400,663
+bytes versus 401,111, data virtual size is 1,329,724 versus 1,331,596,
+relocation data is 36,294 versus 36,306, and the file is 518,144 versus
+518,656. The entry point remains `0x0044E5B0` versus `0x0044E770`, and the
+26 missing routines still account for 416 code bytes. Strict positional
+matches fall by sixteen to 57,579 of 518,656 bytes (11.1016%). There are
+461,077 differing positions in 22,966 runs; literal executable equality
+still fails despite the function-local improvements. The executable hash
+is unchanged between the clean-build report and final verification:
+`c8f44dc32489d1681721fadefa3d9ca8a4083048b38334879964bc52df847ebe`.

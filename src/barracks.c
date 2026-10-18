@@ -6,6 +6,7 @@
  *  literal, then the SAVEGAME.WLD literals; the following palette flag
  *  starts a separate unit after this file's string pool.
  */
+#define WC1_BARRACKS_SOURCE
 #include "wc1.h"
 
 const TitleMenuRegion aBarracksMenuRegions[21] = {

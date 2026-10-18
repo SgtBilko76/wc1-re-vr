@@ -2,6 +2,7 @@
  * DOS near-heap descriptor allocation and compaction.
  * Placement and boundary evidence are recorded in docs/ORDER.md.
  */
+#define WC1_NEARHEAP_SOURCE
 #include "wc1.h"
 
 static volatile short nNearHeapActive = 0; /* 0x004688c0 */

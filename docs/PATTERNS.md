@@ -48,6 +48,26 @@ do not reject a recovered size solely because its positional count is larger.
   is worse; long X, declaration order, an explicit field pointer, and a
   scoped X local do not remove its six differences. None of those body
   probes is retained.
+- Additional core owners benefit from smaller combinations of the twelve
+  profiler, three raster, and two streaming declarations. All seven group
+  combinations were checked across eligible core units; definitions stayed
+  in place, and groups actually referenced by a unit stayed visible. The
+  retained owner combinations are recorded in `docs/ORDER.md`. They change
+  34 function-report rows without changing any reported span size, remove
+  794 differing encodings, and gain six normalized exact functions overall.
+  In particular, profiler plus raster exclusions reduce `BarracksScreen`
+  from 219 differences to 30 and `StepPaletteTransition` from 123 to six.
+  Profiler exclusion alone reduces `PlayScrambleHangarScene` from 121 to 25;
+  raster exclusion in the training owner reduces `SelectTrainSimMission`
+  from 168 to 93 and raises it from 89.44% to 97.03% mnemonic similarity.
+  No function bodies, types, storage, flags, or link order change. These
+  measured declaration scopes are not recovered original headers.
+  Four exact matches are lost alongside ten gains: `landing` gains two
+  differing encodings, `UpdateDamageDisplay` six, `get_rear_spot` eight,
+  and `scan_for_enemy` four. Other small regressions and the improved
+  mnemonic score but increased byte differences in `evaluate_damage` are
+  recorded with the checkpoint. Do not apply any tested declaration group
+  globally: other owners gain size mismatches or lose more exact functions.
 - The five graphics/streaming declarations for `stRasterClip`,
   `abSolidColourTranslation`, `abShapeRLEScratch`, `bStreamerAudioPlaying`,
   and `szStreamerPath` are unused outside `gr.c`. Omit them in `dib.c`,

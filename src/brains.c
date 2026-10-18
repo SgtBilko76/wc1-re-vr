@@ -2,6 +2,7 @@
  * The surviving WINGLEADER module and Mac brain symbol run corroborate the
  * cruise_home through FF_missile_intelligence group. See docs/ORDER.md.
  */
+#define WC1_BRAINS_SOURCE
 #include "wc1.h"
 
 short nEnemySighting = 0x7fff; /* 0x00465c7c */

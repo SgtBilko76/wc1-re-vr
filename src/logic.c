@@ -5,6 +5,7 @@
  *  remain provisional; the preceding startup unit has a separate pool
  *  of initialized data and string literals.
  */
+#define WC1_LOGIC_SOURCE
 #include "wc1.h"
 
 PacketResourceDescriptor aCommon3SpaceResources[12] = {
