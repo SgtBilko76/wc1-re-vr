@@ -480,11 +480,12 @@ for similarity decisions.
   Replacing the descriptor file in a local before one common call loses
   those instructions. Separate source calls restore the original 112-byte
   span and match exactly.
-- `sort_viable_target_list` still lacks the original saved next-outer index
-  on its stack. Natural nested `for` loops, an explicit candidate-distance
-  local, and reordered local declarations did not restore that spill and
-  reduced similarity. Those trials are reverted; extra stack storage must
-  follow from the real variables rather than padding or dummy locals.
+- `sort_viable_target_list` recovers its saved next-outer index by scoping
+  the distance temporary inside the inner loop and assigning the live
+  inner index before saving it. See the later target-sort note for the
+  remaining stack-slot, register, and size differences. Natural nested
+  `for` loops and reordered function-wide declarations did not recover the
+  spill; extra stack storage must follow from real variables.
 - Check neighboring functions after these small source changes too. The five
   exact recoveries above preserve every previously exact function, but
   `transform_objects_to_your_view` and `servicetrack` each gain one differing
@@ -1499,9 +1500,20 @@ for similarity decisions.
   Similarly, reversing comparison/addition operands or renaming the stream
   parameter did not alter the one-byte differences in the `/Od` DSP stream
   functions. These trials are not retained. Distinguish such body differences
-  from the last function's linker padding: `ix_dsp_free` and
-  `ix_thread_get_audio_chunk_size` already have matching instruction bodies,
-  but their object-end alignment contributes size differences to the report.
+  from the last function's linker padding: `ix_dsp_free`,
+  `ix_thread_get_audio_chunk_size`, and `ix_dsps_unlock` already have matching
+  instruction bodies, but their object-end alignment contributes size
+  differences to the report. In particular, binary-comp matches all 83
+  instructions and 290 code bytes of `ix_dsps_unlock`; its original two
+  trailing INT3 bytes become seven at the current placement. Its reported
+  five-byte excess is not excess function code.
+- `ix_sound_start` has three one-byte excesses where its spilled fastcall
+  argument is compared with `pFreeSoundList`. The original loads the global
+  into EAX and compares the stack slot; the rebuild loads the stack slot
+  and compares the global. The corresponding comparison in
+  `ix_sound_unlink_from_free_list` has the same issue. Qualifying those
+  global reads as volatile leaves these comparisons unchanged and worsens
+  neighboring sound routines, so that probe is not retained.
 - The two game-side audio-list removal routines retain comparison-operand
   differences despite 100% mnemonic scores. Reversing equality operands,
   separating declaration order from initialization order, and changing the
@@ -1599,13 +1611,22 @@ for similarity decisions.
   declarations, so their stores need no pointer casts. All mnemonics now
   match; the origin-Y load/store pair in each branch still uses CX where
   the original uses DX. A separate origin-Y local does not alter that result.
-- `sort_viable_target_list` still lacks the original spill of the next outer
-  index. A volatile short plus chained inner-index assignment recovers an
-  eight-byte frame, but places the word at a different offset, caches an
-  extra distance pointer, and leaves the span sixteen bytes short. Explicit
-  candidate-distance storage does not change the retained code; ordinary
-  nested for loops change register allocation without recovering the spill.
-  These trials are not retained.
+- `sort_viable_target_list` declares and initializes its distance temporary
+  inside the inner loop, and computes the next index into `inner` before
+  assigning `nextOuter`. Together these recover the original eight-byte
+  frame and reduce differing instruction encodings from 24 to fifteen.
+  Binary-comp confirms that all other 63 functions in `ship.c` retain their
+  bytes under address normalization. The saved index is still at
+  `[ESP+0x12]` instead of `[ESP+0x10]`, the entry comparison is reversed,
+  and CL caches an outer-distance pointer absent from the original.
+  The aligned span remains 144 bytes instead of 160; the 93.48% mnemonic
+  score and report's size classification conceal this partial improvement.
+  Scoping the distance alone leaves the four-byte frame. A guarded `do`,
+  further next-index or target-value scopes, and qualified distance reads
+  do not improve the retained output. An explicit candidate-distance local
+  also changes neighboring functions and loses exact comparisons; it is
+  reverted. The earlier volatile-next-index and ordinary nested-for probes
+  likewise remain discarded.
 - `get_player_input` copies each twelve-byte input sample with an inlined
   `memcpy`. This also recovers the earlier guard's original load, test,
   increment, and store, raising similarity from 86.44% to 96.61% without

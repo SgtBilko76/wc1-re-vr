@@ -468,7 +468,6 @@ unsigned int sort_viable_target_list(void)
 {
     short nextOuter;
     signed char target;
-    short distance;
     short outer;
     short count;
     short inner;
@@ -478,11 +477,11 @@ unsigned int sort_viable_target_list(void)
         outer = 0;
         if (count - 1 > 0) {
             do {
-                nextOuter = outer + 1;
-                inner = nextOuter;
+                inner = outer + 1;
+                nextOuter = inner;
                 if (inner < count) {
                     for (; inner < count; inner++) {
-                        distance =
+                        short distance =
                             asViableTargetDistance[outer];
                         if (asViableTargetDistance[inner] <
                             distance) {

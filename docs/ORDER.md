@@ -95,6 +95,30 @@ pointer. The voice array, mixer critical section, voice count, and allocated
 voice count occupy `0x005981A8`–`0x00598607` in `dspv.cpp`. These definitions,
 along with `dsps.cpp`'s stream state, are included in the global-data audits.
 
+The following seven sound-system words occupy `0x00598608`–`0x00598623`.
+Their identities follow from the original initialization and sound/sample
+list operations. Their relative positions still differ in the rebuild:
+
+| Global | Original block offset | Current `system.obj` `.bss` offset |
+| --- | --- | --- |
+| `dwIxSystemFlags` | `0x00` | `0x14` |
+| `pFreeSoundList` | `0x04` | `0x18` |
+| `pSampleList` | `0x08` | `0x10` |
+| `nActiveVoices` | `0x0C` | `0x0C` |
+| `nSystemVoiceCount` | `0x10` | `0x08` |
+| `pActiveSoundList` | `0x14` | `0x00` |
+| `pWaitingSoundList` | `0x18` | `0x04` |
+
+The emitted COFF section contains 28 bytes and seven public definitions;
+these are not linker common symbols. The compiler's assembly listing prints
+their source declaration order, which differs from the actual COFF offsets
+and linked map. Use the latter to establish storage order. Reordering the
+definitions, suppressing their preceding extern declarations in the owner,
+changing their linkage to C, and renaming the free-list pointer all leave
+the relative offsets unchanged. Those probes are reverted. The original
+block's adjacency alone does not prove a single owner, and the ordering
+mechanism remains unresolved; no matching unit-data claim is made for it.
+
 The assert anchors name three source trees, `D:\Rnd\Prj\ix\Src\Streamer\`,
 `D:\rnd\prj\ix\win95\dsp\` and `D:\Rnd\prj\ix\src\sound\`; each was a separate
 library. `src/ix/ixlog.cpp` is the one ix unit linked as an object.
@@ -1199,6 +1223,23 @@ equality still fails. Both builds and the required gates pass, with the same
 eleven call-analysis and 37 global-access diagnostics. The executable hash
 is unchanged through verification, so the final report describes the checked
 binary. No compilation-unit boundary or link-order change is involved.
+
+The target-sort checkpoint preserves all 1,523 headline report rows and all
+1,244 normalized exact matches. Its detailed binary-comp byte comparison
+reduces `sort_viable_target_list` from 24 differing encodings to fifteen and
+recovers the original eight-byte frame; the aligned span remains sixteen
+bytes short. A separate baseline-to-current byte comparison confirms that
+the other 63 ship functions are unchanged under address normalization.
+The code, data virtual-size, and file-size deficits remain 880, 1,856, and
+1,024 bytes. The relocation section is now 36,286 bytes versus the original
+36,306: the remaining cached distance pointer removes an absolute reference.
+Strict positional matches are 54,043 of 518,656 bytes (10.4198%), one fewer
+than the preceding checkpoint at this still-incorrect layout. Whole-file
+equality still fails. Both builds and the required verification gates pass,
+with the same eleven call-analysis and 37 global-access diagnostics. The
+executable hash remains unchanged through verification. Audio storage-order
+and comparison-operand experiments are discarded; their findings are recorded
+above and in `docs/PATTERNS.md`.
 
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates
