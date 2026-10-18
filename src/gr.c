@@ -549,20 +549,28 @@ void RasterLineHook(const void *marker)
 void DrawFontGlyph(char character, TextContext *context, int height,
                    int width, int y)
 {
-    int row = y;
-    unsigned char background = context->backgroundColour;
-    unsigned char *characterData = context->font;
-    Viewport *viewport = context->viewport;
-    unsigned char fontColour = characterData[2];
-    unsigned char fontBackground = characterData[3];
-    unsigned char colour = context->colour;
-    unsigned char *source;
-    unsigned char *destination;
-    unsigned char translated;
+    int row;
+    int column;
     unsigned int destinationOffset;
+    unsigned char background;
+    unsigned char *characterData;
+    unsigned char *destination;
+    unsigned char fontColour;
+    unsigned char fontBackground;
+    unsigned char colour;
+    unsigned char *source;
+    Viewport *viewport;
+    unsigned char translated;
     unsigned short rowOffset;
     short characterIndex;
-    int column;
+
+    row = y;
+    background = context->backgroundColour;
+    characterData = context->font;
+    viewport = context->viewport;
+    fontColour = characterData[2];
+    fontBackground = characterData[3];
+    colour = context->colour;
 
     abPaletteTranslation[fontColour] = colour;
     abPaletteTranslation[fontBackground] = background;

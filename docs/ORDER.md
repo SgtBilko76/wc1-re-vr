@@ -1708,3 +1708,48 @@ Strict positional matches increase by 26 to 57,549 of 518,656 bytes
 (11.0958%); literal executable equality still fails. The executable SHA-256
 matches the full-report snapshot and remains unchanged through validation:
 `42802b70085e54fe0bffd9f8f688f2ca7bc0208d59e5dcaf21faf8e480e5c7a8`.
+
+## Font and cockpit-bar size checkpoint
+
+`DrawFontGlyph` now occupies its original 512 bytes instead of 528.
+Declaration ordering retains the font source in EAX, the row induction value
+in ESI, and the viewport in ECX. Initializer expressions execute in their
+previous order, and the 24-byte local frame is unchanged. Mnemonic similarity
+rises from 89.02% to 91.98%, with 61 differing encodings over the complete span.
+
+`vdu_polygon` now occupies its original 464 bytes instead of 432.
+Declaring the frame bytes first and capturing bounds after their global
+stores recovers the original saved values and stack slots. Qualified updates
+and reads preserve the original viewport memory operations instead of
+substituting cached bounds. The function reaches 98.36% mnemonic similarity
+with four differing encodings: divisor/index scheduling and the exchanged
+EAX/EDX multiplication inputs. The detailed source patterns and rejected
+alternatives are recorded in `docs/PATTERNS.md`.
+
+Only these two rows change in the complete report; the other 1,522 are
+unchanged. The report retains 1,262 normalized exact functions, now with
+244 same-size differences and eighteen size differences (96 absolute bytes,
+net +10). There are still 1,372 mnemonic-perfect functions. The count at or
+above 90% rises to 1,516, leaving eight below that threshold, and average
+mnemonic similarity rises to 99.58%.
+
+Both builds, source-order and address audits, and all required verification
+gates pass. Both value checks cover 1,524 functions with zero mismatches or
+skips. All 1,104 linked globals, 39 code pointers, and 79 mixer operands pass.
+Call analysis retains eleven diagnostics across 1,138 checked functions.
+Global-access diagnostics decrease from 37 to 36 across 1,059 checked
+functions: `vdu_polygon` now includes its original left/top viewport reads.
+No gameplay validation is claimed.
+
+The code section grows by sixteen bytes overall to 400,679, leaving a
+432-byte deficit against the original 401,111. The 26 missing routines still
+account for 416 bytes. Relocation data grows from 36,286 to 36,294 bytes,
+versus the original 36,306, as the recovered memory operands add their
+relocations. Data virtual size remains 1,329,724 versus 1,331,596, and the
+file remains 518,144 versus 518,656 bytes. The entry point moves to
+`0x0044E5C0`, still below the original `0x0044E770`.
+
+Strict positional matches rise by 24,872 to 82,421 of 518,656 bytes
+(15.8913%). Literal executable equality still fails. The executable hash
+remains unchanged between the full report and final verification:
+`d8961a1ea5b2ccd7ec554597fac255defb6a55a277c6e2c03d4b344885393ca5`.

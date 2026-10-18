@@ -4,6 +4,12 @@ The original disassembly and extracted strings are authoritative. Decompiled
 code, operational labels, and other releases are only leads. Use `binary-comp`
 for similarity decisions.
 
+Binary-comp's byte report uses positional comparison for equal-sized spans
+and aligned instruction encodings when their sizes differ. A differing-
+instruction count across a size correction therefore changes its basis.
+Inspect the original instructions and both span sizes as well as the count;
+do not reject a recovered size solely because its positional count is larger.
+
 ## Source choices that affect matching
 
 - VC++ 4.20's file-static C globals and uninitialized C++ globals have
@@ -727,6 +733,18 @@ for similarity decisions.
   Declaring bottom before right improves the current match to 88.52%, but
   its aligned span remains 32 bytes short. Moving the right-bound store
   before the bottom-bound load does not change the generated instructions.
+  The later correction declares the three frame bytes before the word
+  locals and captures each bound with `local = stCockpitBar.field = table.field`.
+  Keep that assignment direction: the global receives the table value before
+  the retained local does. Together with qualified volatile updates of the
+  bottom/right bounds and qualified top/left reads in the first comparisons,
+  this recovers the original 464-byte span, four-byte local frame, saved
+  registers, and frame-byte stack slots. It leaves four differing encodings
+  at 98.36% mnemonic similarity: the divisor/index scheduling and exchanged
+  EAX/EDX multiplication inputs. The other cockpit functions are unchanged.
+  Reversing the chained assignment direction fails to recover this match.
+  A wholly volatile viewport pointer instead
+  produces 496 bytes and disturbs two other functions; it is not retained.
 - `fire_computer_graphic_missile` retains a signed-byte frame across the
   coordinate calculations. Refresh it after the VDU-mode query and after
   restoring the old background; use that value for background capture, then
@@ -1070,6 +1088,20 @@ for similarity decisions.
   or adding a row register hint emitted the same code. Using the argument
   directly as the row reduced the frame below the original 24 bytes;
   reusing the source pointer for the character lookup introduced a spill.
+  The later declaration-order correction puts row, column, and destination
+  offset first. The destination pointer follows the character-data pointer;
+  the viewport pointer follows the source pointer after the colour locals.
+  Initialize the existing locals separately in their original order.
+  This retains the source in EAX, the scaled row in ESI, and the viewport
+  in ECX, recovering the original 512-byte span and keeping the 24-byte
+  local frame. Similarity rises from 89.02% to 91.98%; the complete-span
+  comparison has 61 differing encodings. Every other graphics function is
+  unchanged. Separate pointer advances, a shared pixel temporary, const
+  source pointers, long row indices, and reversed colour comparisons do not
+  improve the previous form. A volatile background declaration or qualified
+  background accesses also fail. Permuting only the colour declarations
+  leaves the counter-first result unchanged; pointer declaration order is
+  what recovers the final sixteen bytes.
 - `GetTransformedShapeBounds` returns a short through an integer intersection
   flag. Its null-shape branch assigns the point-in-viewport comparison to that
   integer before returning; this emits full-width constant results, whereas

@@ -341,6 +341,9 @@ void EraseCockpitReadoutRegion(Viewport *viewport, short left,
 /* Function start: 0x413DA0 */
 void vdu_polygon(signed char bar, short percent)
 {
+    signed char filledFrame;
+    signed char emptyFrame;
+    signed char swapFrame;
     short direction;
     short left;
     short top;
@@ -348,21 +351,18 @@ void vdu_polygon(signed char bar, short percent)
     short right;
     short length;
     short extent;
-    signed char filledFrame;
-    signed char emptyFrame;
-    signed char swapFrame;
 
     extent = (short)((percent * (length =
         aaCockpitBars[(int)cCockpitView][(int)bar].length)) / 100);
-    left = aaCockpitBars[(int)cCockpitView][(int)bar].left;
-    stCockpitBar.left = left;
+    left = stCockpitBar.left =
+        aaCockpitBars[(int)cCockpitView][(int)bar].left;
     if (left != -99) {
-        right = aaCockpitBars[(int)cCockpitView][(int)bar].right;
-        top = aaCockpitBars[(int)cCockpitView][(int)bar].top;
-        bottom = aaCockpitBars[(int)cCockpitView][(int)bar].bottom;
-        stCockpitBar.right = right;
-        stCockpitBar.top = top;
-        stCockpitBar.bottom = bottom;
+        right = stCockpitBar.right =
+            aaCockpitBars[(int)cCockpitView][(int)bar].right;
+        top = stCockpitBar.top =
+            aaCockpitBars[(int)cCockpitView][(int)bar].top;
+        bottom = stCockpitBar.bottom =
+            aaCockpitBars[(int)cCockpitView][(int)bar].bottom;
         emptyFrame = (signed char)
             aaCockpitBars[(int)cCockpitView][(int)bar].emptyFrame;
         filledFrame = (signed char)
@@ -376,8 +376,8 @@ void vdu_polygon(signed char bar, short percent)
                 emptyFrame = filledFrame;
                 filledFrame = swapFrame;
             }
-            stCockpitBar.bottom -= extent;
-            if (stCockpitBar.top <= stCockpitBar.bottom)
+            *(volatile short *)&stCockpitBar.bottom -= extent;
+            if (*(volatile short *)&stCockpitBar.top <= stCockpitBar.bottom)
                 DrawSpriteDefault(&stCockpitBar, left, top,
                                   pCockpitDamageShape,
                                   filledFrame);
@@ -394,8 +394,8 @@ void vdu_polygon(signed char bar, short percent)
                 emptyFrame = filledFrame;
                 filledFrame = swapFrame;
             }
-            stCockpitBar.right -= extent;
-            if (stCockpitBar.left <= stCockpitBar.right)
+            *(volatile short *)&stCockpitBar.right -= extent;
+            if (*(volatile short *)&stCockpitBar.left <= stCockpitBar.right)
                 DrawSpriteDefault(&stCockpitBar, left, top,
                                   pCockpitDamageShape,
                                   filledFrame);
