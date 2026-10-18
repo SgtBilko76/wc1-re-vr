@@ -73,15 +73,26 @@ for similarity decisions.
   paths pass the ship argument; replacing the player path's argument with a
   literal zero changes the original register argument. Together these forms
   reduce differing encodings from 71 to 24 of 79 instructions at the original
-  208-byte span. The unit-wide allocation also reverses a comparison/branch
-  pair in each of `replenish_shields` and `your_afterburner`: their differing
-  counts become eleven and two, respectively, from nine and zero. The other
-  ship-unit results are unchanged. Moving the counter initialization before
+  208-byte span. This initially reversed a comparison/branch pair in each
+  of `replenish_shields` and `your_afterburner`, increasing their differing
+  counts from nine and zero to eleven and two. The promoted index in
+  `call_enemy`, described below, subsequently restores both pairs. Moving
+  the counter initialization before
   the slot lookup, restoring an outer count guard with a `do` loop, or changing
   only the ship argument leaves 79 differing instructions. Reordering the
   count and pointer declarations does not improve the retained loop. A
   conditional expression for the afterburner deadline emits the same reversed
   comparison and is not retained.
+- `call_enemy` keeps the short loop counter and its promoted array index
+  as separate locals, declaring the int index first. Sign-extend the counter
+  once at the top of the loop and use that index for all four object arrays.
+  These lifetimes recover the original DI counter, ESI index, and argument
+  load, matching the complete 112-byte span from nine differing encodings.
+  Declaring the counter first leaves those nine differences. The unit-wide
+  allocation also restores `your_afterburner`'s exact match and reduces
+  `replenish_shields` from eleven differing encodings to nine. `fire_turrets`
+  rises from 96.52% to 97.39% mnemonic similarity but still differs in 107
+  of 115 instruction encodings; the other ship results are unchanged.
 - `landing` keeps the damage-level table byte offset in its four-byte frame,
   reloading it for the sound hooks, canopy table, and final comment. A volatile
   offset local restores that storage and frees EBP for the actor shape. The
@@ -783,6 +794,28 @@ for similarity decisions.
   score expressions, reversed comparisons, and extra cached indices did not
   resolve them. Removing the viewport copy also removes the extra `stScreen`
   read reported by the global-access audit.
+- `CloseLook` shares one short counter between the scene-frame loop and
+  the animation countdown. Initialize it before the finished flag, and
+  assign both animation pointers before setting the frame-skip counter.
+  CL schedules those assignments into the original entry sequence, including
+  the zero registers and the constant-one load between the format arguments
+  and their call. The animation-command switch's restart case must fall
+  through to load the first frame and its delay after resetting the cursor;
+  merely resetting the cursor skips an original operation. Increment the
+  finished flag and narrow the timer result before testing it, matching
+  `INC DI` and `TEST AX,AX`.
+  Read the saved start pointer through a volatile-qualified lvalue at the
+  restart. This retains its stack store and reload in the original four-byte
+  frame; qualifying the whole local instead makes an eight-byte frame.
+  The compiler listing assigns the saved pointer and the uninitialized frame
+  word the same slot, reproducing the original overlapping stack accesses.
+  The qualifier expresses the observed accesses, not a claim about original
+  source spelling. Keep the forwarded unused argument as an int to retain
+  its original dword load; the sole caller passes zero and the cdecl stack
+  layout is unchanged. Together these choices recover all 704 bytes from
+  86.00% and 165 differing instruction encodings. The shared prototype change
+  leaves every other function's report unchanged. The original fourteen-
+  character loop is retained despite the ten-record character array.
 - `IsRoomMenuLabelEmpty` returns a byte: the original uses `SBB AL,AL`
   and `NEG AL`, and `RefreshRoomMenuLabel` tests AL after its call. Declare
   the predicate as returning `char`; its zero/one result does not establish
@@ -1209,6 +1242,27 @@ for similarity decisions.
   before text setup or in the loop header leaves scheduling differences.
   These choices recover 32 bytes and match the complete 928-byte span,
   including its switch tables and alignment.
+- `Build_objective_list` loads the source's short index before clearing
+  the destination flags, then dispatches its type with a switch: zero for
+  navigation points and one through four for mission ships. Keep the flight-
+  path append in each case and declare the type before the display-name
+  pointer. These choices recover the original EDI type and EBX name pointer.
+  Its final sentinel index sign-extends the signed objective count; an
+  unsigned-byte cast is incorrect. All 448 bytes now match, from 85.04% and
+  115 differing encodings, with the original twelve-byte frame. Loading the
+  source index after the flag store leaves scheduling differences;
+  declaring the name pointer first exchanges its register with the type.
+- `find_next_ship_turn_slot` retains its promoted object index separately
+  from the short collision-search counter. Declaring the int index first
+  recovers ESI for the object arrays, reducing differing encodings from 20
+  to 15 of 36 at the original 128-byte span. The short counter and object
+  argument still exchange CX and DI, and the final comparison is reversed.
+  This local also restores the following `SetScale`'s complete 416-byte
+  match from twelve differing encodings; the remaining mission functions
+  are unchanged. Delaying the counter initialization until after the global
+  stores worsens the target to 23 differences. A register hint on the object
+  argument and initialization of the counter at its declaration leave the
+  retained fifteen differences unchanged. These further probes are reverted.
 - `init_ship` retains the record's full-width object type through its calls.
   Its normal and hazard paths form an `if`/`else`, with an immediate return
   after successful ship setup and a shared final return for failed setup or
@@ -1515,3 +1569,8 @@ Windows 95 DirectDraw and DirectSound behavior.
   speed difference before multiplying restores part of the register reuse,
   but still saves EBP, leaves 53 differences, and also disturbs `chase_speed`.
   These probes are not retained.
+- `GetLargestFreeNearHeapBlock` still reverses the operands and branch sense
+  of its two descriptor-bound comparisons. Reversing the source comparison,
+  spelling the loop as an explicit guard and `do` loop, and qualifying the
+  descriptor-bound read as volatile all emit the same four differing
+  instructions at the original eighty-byte span. None is retained.

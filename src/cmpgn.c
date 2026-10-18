@@ -746,19 +746,18 @@ unsigned int UpdateMap(char *text, short duration)
 /* Function start: 0x405DE0 */
 unsigned int CloseLook(unsigned char *shape, short shot,
                        short *animation, char *text, short duration,
-                       short unused)
+                       int unused)
 {
     short character;
-    short countdown;
     short escaped;
     short finished;
     short frame;
-    short sceneFrame;
+    short frameCounter;
     short *cursor;
     short *start;
 
+    frameCounter = 0;
     finished = 0;
-    sceneFrame = 0;
     AddPCName(text);
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
@@ -766,27 +765,30 @@ unsigned int CloseLook(unsigned char *shape, short shot,
                               0, 160,
                               nConversationTextColour,
                               szTextScratchBuffer);
-    nFrameSkipCounter = 1;
     cursor = animation;
     start = animation;
+    nFrameSkipCounter = 1;
     if (shot == 2 || shot == 11) {
         if (*cursor != -1) {
-            countdown = 0;
             do {
-                if (countdown-- == 0) {
+                if (frameCounter-- == 0) {
                     if (*cursor != -1)
                         cursor += 2;
-                    if (*cursor == -2)
-                        cursor = start;
-                    else if (*cursor == -1) {
+                    switch (*cursor) {
+                    case -2:
+                        cursor = *(short *volatile *)&start;
+                        /* Restart also loads the first frame and its delay. */
+                    default:
+                        frame = *cursor;
+                        frameCounter = (short)(cursor[1] * 2);
+                        break;
+                    case -1:
                         frame = -1;
                         if (finished == 0) {
-                            finished = 1;
+                            finished++;
                             SetFrameTimerPeriodDirect(duration);
                         }
-                    } else {
-                        frame = *cursor;
-                        countdown = (short)(cursor[1] * 2);
+                        break;
                     }
                 }
                 nFrameSkipCounter--;
@@ -815,14 +817,14 @@ unsigned int CloseLook(unsigned char *shape, short shot,
                     } while (escaped != 0);
                     return 0;
                 }
-                if (finished != 0 && IsFrameTickElapsed() != 0)
+                if (finished != 0 && (short)IsFrameTickElapsed() != 0)
                     return 0;
                 DIBslam();
                 DIBslamReal();
             } while (*cursor != -1);
         }
     } else if (shot == 0) {
-        for (; sceneFrame < 22; sceneFrame++) {
+        for (; frameCounter < 22; frameCounter++) {
             nFrameSkipCounter--;
             if (nFrameSkipCounter < 1) {
                 nFrameSkipCounter = nFrameSkip;
@@ -831,14 +833,14 @@ unsigned int CloseLook(unsigned char *shape, short shot,
                     pConversationBackdropShape, 0);
                 DrawSpriteDefault(&stSceneBuffer, 241, 60,
                                   pBriefingAnimationShape,
-                                  sceneFrame);
+                                  frameCounter);
                 DrawSpriteDefault(&stSceneBuffer, 241, 64,
                                   pBriefingAnimationShape, 22);
                 for (character = 0; character < 14; character++) {
                     DrawBriefingCharacter(
                         character, 0,
                         aBriefingCharacters[character]
-                            .animation[sceneFrame],
+                            .animation[frameCounter],
                         0, 0);
                 }
                 RefreshMemoryStatusOverlay();
@@ -846,8 +848,8 @@ unsigned int CloseLook(unsigned char *shape, short shot,
                 DIBslamReal();
             }
             if (CheckEscaped() != 0)
-                sceneFrame = 20;
-            if (sceneFrame == 20)
+                frameCounter = 20;
+            if (frameCounter == 20)
                 nFrameSkipCounter = 1;
             DIBslam();
             DIBslamReal();

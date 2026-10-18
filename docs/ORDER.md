@@ -307,6 +307,10 @@ no intervening literal proves that internal boundary. The joystick helpers
 beginning at `0x0040CAA0` and navigation helpers at `0x0040CB60` also retain
 provisional ownership in `mission.c`. Its final `Build_objective_list` extends
 through `0x0040D08F`; the old window boundary at `0x0040D000` cut through it.
+Its complete 448-byte span now matches, including the signed sentinel index
+and source-type dispatch. This validates the function span, not the provisional
+internal unit boundaries. The conversation group's final `CloseLook` likewise
+matches all 704 bytes through `0x0040609F`, preserving its four-byte local frame.
 
 The object-data block begins after the pilot-speech diagnostic at
 `0x00466010` and ends with its name literals before navigation state at

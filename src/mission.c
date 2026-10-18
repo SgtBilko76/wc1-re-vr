@@ -868,19 +868,21 @@ unsigned int is_team_member(short missionShip)
 /* Function start: 0x40C780 */
 unsigned int find_next_ship_turn_slot(short obj)
 {
+    int objectIndex;
     short other;
 
+    objectIndex = obj;
     other = 1;
-    acTurnRegulator[obj] = 1;
-    acTurnInterval[obj] = anPilotTurnInterval[aiPilotLevel[obj]];
+    acTurnRegulator[objectIndex] = 1;
+    acTurnInterval[objectIndex] = anPilotTurnInterval[aiPilotLevel[objectIndex]];
     do {
         if (aeObjectClass[other] == OBJECT_CLASS_SHIP &&
             other != obj &&
-            acTurnRegulator[other] == acTurnRegulator[obj] &&
-            acTurnInterval[other] == acTurnInterval[obj]) {
+            acTurnRegulator[other] == acTurnRegulator[objectIndex] &&
+            acTurnInterval[other] == acTurnInterval[objectIndex]) {
             other = 1;
-            acTurnRegulator[obj]++;
-            if (acTurnInterval[obj] < acTurnRegulator[obj])
+            acTurnRegulator[objectIndex]++;
+            if (acTurnInterval[objectIndex] < acTurnRegulator[objectIndex])
                 break;
         }
         other++;
@@ -1204,9 +1206,10 @@ void Build_objective_list(void)
     MissionObjectiveSource *source;
     MissionShipRecord *ship;
     FixedVector position;
-    const char *displayName;
     int type;
+    const char *displayName;
     short flightPathCount;
+    short sourceIndex;
 
     flightPathCount = 0;
     SetNavMapCoordinateScaling(0);
@@ -1214,22 +1217,29 @@ void Build_objective_list(void)
     source = aMissionObjectiveSources;
     type = source->type;
     for (; type != -1; source++, type = source->type) {
+        sourceIndex = source->index;
         aMissionObjectives[
             cMissionObjectiveCount].flags = 0;
-        if (type == 0) {
+        switch (type) {
+        case 0:
             position = aMissionNavPoints[
-                source->index].position;
+                sourceIndex].position;
             displayName = aMissionNavPoints[
-                source->index].name;
+                sourceIndex].name;
             abFlightPath[flightPathCount++] =
                 cMissionObjectiveCount;
-        } else if (type >= 1 && type <= 4) {
-            ship = &aMissionShips[source->index];
+            break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            ship = &aMissionShips[sourceIndex];
             displayName =
                 aObjectTypeData[ship->type].displayName;
             set_sphere_point(ship, &position);
             abFlightPath[flightPathCount++] =
                 cMissionObjectiveCount;
+            break;
         }
 
         aMissionObjectives[
@@ -1253,7 +1263,7 @@ void Build_objective_list(void)
 
     abFlightPath[flightPathCount] = -1;
     aMissionObjectives[
-        (unsigned char)cMissionObjectiveCount].type = -1;
+        cMissionObjectiveCount].type = -1;
     cCurrentNavPointIndex = 0;
     cCurrentObjective = 0;
     if (cMissionObjectiveCount != 0) {

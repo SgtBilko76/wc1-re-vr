@@ -683,16 +683,18 @@ int onboard_explosion(short obj)
 /* Function start: 0x41EDB0 */
 void call_enemy(short obj)
 {
+    int otherIndex;
     short other;
 
     other = 0;
     for (; other < 10; other++) {
-        if (aeObjectClass[other] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[other] !=
+        otherIndex = other;
+        if (aeObjectClass[otherIndex] >= OBJECT_CLASS_SHIP &&
+            aeSpecialManeuver[otherIndex] !=
                 SPECIAL_MANEUVER_UNKNOWN_9 &&
-            aeShipSide[obj] != aeShipSide[other] &&
+            aeShipSide[obj] != aeShipSide[otherIndex] &&
             RandomBelow(100) < 50)
-            acShipTarget[other] = obj;
+            acShipTarget[otherIndex] = obj;
     }
 }
 
