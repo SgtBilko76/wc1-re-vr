@@ -57,6 +57,35 @@ for similarity decisions.
   do not widen the shared short-argument prototype from the title call alone.
   Reversing the bounds condition and spelling its invalid path with a shared
   label leave the same output, so those probes are not retained.
+- `InitializeConstellationField` saves the viewport height in its four-byte
+  frame, at `[ESP+0x12]` after the register saves. The star loop loads that
+  word into DI once; the particle loop reloads it for each Y-position call.
+  A volatile saved height and a separate function-scope `starHeight` recover
+  those lifetimes, including BX for the star counter and DI for the particle
+  counter. Retain a byte offset into the particle records, while accessing
+  their members through `ConstellationParticle` fields. An element index
+  instead omits the original `LEA EBX,[EAX*8]` and changes the stores.
+  Promote density into one integer `population`, use it for the star count,
+  then multiply that same local by sixteen for the particle count. This
+  schedules `SHL ECX,4` before the star-count division, as in the original;
+  independent product locals and a register hint do not. The 368-byte span
+  is unchanged, but similarity rises from 84.54% to 98.97% and differing
+  instructions fall from 89 to two of 97. Only the closing star-loop
+  comparison and branch remain reversed. These source choices reproduce
+  allocation; the original qualifiers and local declarations are unknown.
+  Keeping `starHeight` inside the guarded loop exchanges BX and DI. Direct
+  array indexing removes the explicit offset but exchanges the particle
+  loop's registers. Neither variant is retained.
+  The unit change also exchanges the height and width calculations in
+  `CalcRectangleArea`, changing its previously exact result to four differing
+  instructions out of fourteen. Its source, size, and arithmetic are unchanged.
+  Reordering its product or assignments, splitting the arithmetic into
+  compound assignments, returning the dimension expressions directly,
+  renaming its parameter, and making width unsigned do not restore the
+  original allocation. Volatile bounds reads preserve height-first ordering
+  but exchange AX and DX, increasing the differences to six. Those area
+  probes are not retained; the initializer removes 87 differences while the
+  area helper gains four.
 - `DrawConstellationField` retains a byte offset into its parallel velocity
   and frame word tables across the random-position calls. The original
   sign-extends the random short and saves twice that value with `LEA`; retaining
@@ -986,6 +1015,8 @@ for similarity decisions.
   holds `'-'` in EBX and uses immediate zero stores; CL instead holds zero
   in EBX. Moving the command local outside the loop or using `strcmp` did
   not change that choice; a direct conditional-expression switch was worse.
+  Volatile zero stores and an explicit leading default case also leave the
+  same output; neither probe is retained.
   Similarly, reversing comparison/addition operands or renaming the stream
   parameter did not alter the one-byte differences in the `/Od` DSP stream
   functions. These trials are not retained. Distinguish such body differences
@@ -1173,10 +1204,10 @@ for similarity decisions.
   the local frame; widening height, removing the temporary allocation pointer,
   and removing unsigned promotion casts did not improve the retained result.
   These broader trials are not retained.
-- The constellation initializer still needs its original register lifetimes.
-  Removing the initializer's promoted particle-index local, using separate
-  short counters, or initializing height before width did not recover its
-  saved height and register-held particle counter. Narrowing the draw routine's
+- Earlier constellation probes removed the initializer's promoted
+  particle-index local, used separate short counters, or initialized height
+  before width. None recovered its saved height and register-held particle
+  counter; the storage and cache correction above does. Narrowing the draw routine's
   random index to a short introduced a stack spill and reduced its match.
   These trials are not retained. Negating the combined valid-index condition
   in `ix_dsps_prepare` also left its reversed comparison unchanged.
@@ -1243,3 +1274,11 @@ Windows 95 DirectDraw and DirectSound behavior.
   despite the mnemonic score rising from 81.97% to 88.52%. Assigning that
   offset within the velocity-copy address expression still leaves 58
   differences and drops similarity to 75.41%. Neither probe is retained.
+  Limiting the volatile read to the later position calculation still drops
+  the saved EBP and leaves 58 differences. Chaining the offset store into
+  a real velocity offset, caching the radius before the vector copy, and
+  moving the offset calculation after the scale update do not improve the
+  original 49-difference result. The latter restores four saved registers
+  but hoists the debris index before `set_objects_data`, leaving 54
+  differences. An inlined `memcpy` emits the same copy as struct assignment.
+  These further probes are also reverted.

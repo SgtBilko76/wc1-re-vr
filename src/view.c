@@ -252,44 +252,55 @@ unsigned int InitializeConstellationField(Viewport *viewport,
                                           short direction,
                                           short density)
 {
-    short height;
+    /* The saved height is cached once for stars and reloaded for particles. */
+    volatile short viewportHeight;
+    short starHeight;
     short index;
-    int particleIndex;
+    int particleOffset;
     short randomIndex;
     short width;
+    int population;
 
     pConstellationViewport = viewport;
     nConstellationDirection = direction;
     width = (short)(viewport->right - viewport->left);
-    height = (short)(viewport->bottom - viewport->top);
-    nConstellationStarCount = (short)(density * 10 / 16);
-    nConstellationParticleCount =
-        (short)(density * 16 / 16);
+    viewportHeight = (short)(viewport->bottom - viewport->top);
+    population = density;
+    nConstellationStarCount = (short)(population * 10 / 16);
+    population *= 16;
+    nConstellationParticleCount = (short)(population / 16);
     index = 0;
-    while (index < nConstellationStarCount) {
-        aConstellationStars[index].x =
-            RandomInRange(0, width);
-        aConstellationStars[index].y =
-            RandomInRange(0, height);
-        aConstellationStars[index].frame =
-            (short)(RandomInRange(0, 5) + 32);
-        index++;
+    if (index < nConstellationStarCount) {
+        starHeight = viewportHeight;
+        do {
+            aConstellationStars[index].x =
+                RandomInRange(0, width);
+            aConstellationStars[index].y =
+                RandomInRange(0, starHeight);
+            aConstellationStars[index].frame =
+                (short)(RandomInRange(0, 5) + 32);
+            index++;
+        } while (index < nConstellationStarCount);
     }
     index = 0;
     while (index < nConstellationParticleCount) {
         randomIndex = RandomInRange(0, 15);
-        particleIndex = index;
+        particleOffset = (int)index * sizeof(ConstellationParticle);
         index++;
-        aConstellationParticles[particleIndex].x =
+        ((ConstellationParticle *)((unsigned char *)aConstellationParticles +
+                                  particleOffset))->x =
             (short)(pConstellationViewport->left +
                     RandomInRange(0, width));
-        aConstellationParticles[particleIndex].y =
+        ((ConstellationParticle *)((unsigned char *)aConstellationParticles +
+                                  particleOffset))->y =
             (short)(pConstellationViewport->top +
-                    RandomInRange(0, height));
-        aConstellationParticles[particleIndex].velocity =
+                    RandomInRange(0, viewportHeight));
+        ((ConstellationParticle *)((unsigned char *)aConstellationParticles +
+                                  particleOffset))->velocity =
             (short)(asConstellationVelocity[randomIndex] *
                     nConstellationDirection);
-        aConstellationParticles[particleIndex].frame =
+        ((ConstellationParticle *)((unsigned char *)aConstellationParticles +
+                                  particleOffset))->frame =
             (short)(asConstellationFrame[randomIndex] +
                     RandomInRange(0, 3));
     }
