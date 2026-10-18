@@ -528,10 +528,10 @@ static int SwcStartMissionShips(void)
     short index;
     short prior;
 
-    records[0] = nPlayerMissionShipIndex;
+    records[0] = stMissionHeader.playerMissionShip;
     for (index = 0; index < 18; index++) {
-        record = index < 8 ? nInitialMissionShipIndices[index] :
-            aMissionNavPoints[nMissionEntryNavPoint].missionShips[index - 8];
+        record = index < 8 ? stMissionHeader.initialMissionShips[index] :
+            aMissionNavPoints[stMissionHeader.entryNavPoint].missionShips[index - 8];
         if (record < 0)
             continue;
         for (prior = 0; prior < count && records[prior] != record; prior++) {
@@ -582,8 +582,8 @@ static int SwcStartMissionShips(void)
     nAutoEngageTimer = -1;
     nCommSpeakerObject = -1;
     bIntroSecondaryScene = 0;
-    nCurrentNavPoint = nMissionEntryNavPoint;
-    stCampaignState.playerShipType = aMissionShips[nPlayerMissionShipIndex].type;
+    nCurrentNavPoint = stMissionHeader.entryNavPoint;
+    stCampaignState.playerShipType = aMissionShips[stMissionHeader.playerMissionShip].type;
     bInitialFormationSetup = 1;
     for (index = 0; index < count; index++) {
         record = records[index];

@@ -264,11 +264,7 @@ extern Viewport stRoomDisplayViewport; /* 0x00598a60 */
 extern Viewport stRoomMouseViewport; /* 0x00598a80 */
 extern unsigned char *apRecRoomTextData[3]; /* 0x00598aa0 */
 extern char szTextScratchBuffer[256]; /* 0x00598b00 */
-extern short nRoomMenuCursorFrame; /* 0x00598ab0 */
-extern const TitleMenuRegion *pRoomMenuRegions; /* 0x00598ab2 */
-extern char **ppszRoomMenuLabels; /* 0x00598ab6 */
-extern const char *pszCurrentRoomMenuLabel; /* 0x00598aba */
-extern TextContext stRoomMenuTextContext; /* 0x00598abe */
+extern RoomMenu stRoomMenu; /* 0x00598ab0 */
 extern unsigned char *apRecRoomSceneData[3]; /* 0x00598ae0 */
 extern unsigned char *pBriefingPacket; /* 0x00598aec */
 extern unsigned char *pBriefingTextData; /* 0x00598af0 */
@@ -446,7 +442,7 @@ extern short nFacingToTarget; /* 0x0059d920 */
 extern short asObjectScreenY[SPACE_OBJECT_COUNT]; /* 0x0059d930 */
 extern short asObjectScreenX[SPACE_OBJECT_COUNT]; /* 0x0059d9b0 */
 extern signed char cCockpitView; /* 0x0059dab0 */
-extern HazardField aHazardFields[7]; /* 0x0059d870 */
+extern HazardField aHazardFields[8]; /* 0x0059d870 */
 extern MissionObjective aMissionObjectives[MISSION_OBJECTIVE_COUNT]; /* 0x0059dac0 */
 extern enum ShipManeuver aeShipManeuver[12]; /* 0x0059dcb0 */
 extern const short *apCannedSequence[12]; /* 0x0059dce0 */
@@ -493,10 +489,10 @@ extern Viewport *pAllocatedScreenViewport; /* 0x005a6534 */
 #if !defined(WC1_FADE_SOURCE) && !defined(WC1_MAIN_SOURCE) && \
     !defined(WC1_LOGIC_SOURCE)
 extern unsigned short awScreenRowOffsets[202]; /* 0x005a6540 */
-extern int nScreenAllocationState; /* 0x005a66e0 */
-extern Viewport *pAllocatedScreenViewportMirror; /* 0x005a66e4 */
+extern ScreenAllocation stScreenAllocation; /* 0x005a66e0 */
+extern ScreenAllocation *pScreenAllocation; /* 0x005a66ec */
 #endif
-extern int aiSoundEffectSourceActive[0x41]; /* 0x005a66ec */
+extern int aiSoundEffectSourceActive[0x40]; /* 0x005a66f0 */
 extern unsigned char abSoundPlaybackSlots[0xf8]; /* 0x005a67f0 */
 extern int nPassingShipSoundCooldown; /* 0x005a68e8 */
 extern int *DAT_005a6538;
@@ -649,7 +645,7 @@ extern TextContext stNavLabelTextContext; /* 0x005a8180 */
 extern int DAT_005a7d9c;
 extern DiskFileRecord *pDiskFileRecords; /* 0x005a7cf0 */
 extern Viewport stDiskPromptBackgroundViewport; /* 0x005a7d00 */
-extern unsigned char abDiskPromptDriveState[2]; /* 0x005a7d20 */
+extern unsigned char abDiskPromptDriveState[0x10]; /* 0x005a7d20 */
 extern Viewport stDiskPromptViewport; /* 0x005a7d40 */
 extern TextContext stDiskPromptTextContext; /* 0x005a7d60 */
 extern ShortRect stDiskPromptBounds; /* 0x005a7d80 */
@@ -661,8 +657,7 @@ extern Viewport *pScrambleViewport; /* 0x005a86b4 */
 extern short nScrambleCanopyFrame; /* 0x005a86b8 */
 extern unsigned char *pScrambleDetailShape; /* 0x005a86bc */
 extern short nScrambleCockpitScale; /* 0x005a86c0 */
-extern short nScrambleCockpitDetailX; /* 0x005a86c4 */
-extern short nScrambleCockpitDetailY; /* 0x005a86c6 */
+extern ShortPoint stScrambleCockpitDetail; /* 0x005a86c4 */
 extern unsigned char *pConversationSpecialShape; /* 0x005a86ec */
 extern short nFuneralCasketX; /* 0x005a86c8 */
 extern short nFuneralCasketY; /* 0x005a86ca */
@@ -674,8 +669,7 @@ extern unsigned char *pScrambleBackgroundShape; /* 0x005a870c */
 extern short nFuneralParticleDistance; /* 0x005a8710 */
 extern short nScrambleBackgroundY; /* 0x005a8712 */
 extern short nScrambleBackgroundRightX; /* 0x005a8714 */
-extern short nFuneralForegroundX; /* 0x005a8718 */
-extern short nFuneralForegroundY; /* 0x005a871a */
+extern ShortPoint stFuneralForeground; /* 0x005a8718 */
 extern short nFuneralMainScale; /* 0x005a871c */
 extern short nFuneralRifleFrame; /* 0x005a871e */
 extern short nFuneralBaseX; /* 0x005a8720 */
@@ -690,8 +684,7 @@ extern short nScrambleCanopyOffset; /* 0x005a8736 */
 extern short nFuneralMainDistance; /* 0x005a8738 */
 extern signed char bScrambleCanopyClosed; /* 0x005a873a */
 extern short nFuneralGuardFrame; /* 0x005a873c */
-extern short nScrambleOverlayX; /* 0x005a8740 */
-extern short nScrambleOverlayY; /* 0x005a8742 */
+extern ShortPoint stScrambleOverlay; /* 0x005a8740 */
 extern unsigned char *pScrambleOverlayShape; /* 0x005a8744 */
 extern signed char cScrambleWalkerPair; /* 0x005a8748 */
 extern unsigned char *pScrambleCanopyShape; /* 0x005a874c */
@@ -701,11 +694,7 @@ extern short nTalkingHeadFaceY; /* 0x005a8756 */
 extern short nTalkingHeadMouthY; /* 0x005a8758 */
 extern short nTalkingHeadMouthX; /* 0x005a875a */
 extern char szSoundDebugMessage[512]; /* 0x005a8760 */
-extern short nHomeMissionShipIndex; /* 0x005a8692 */
-extern short nMissionEntryNavPoint; /* 0x005a8690 */
-extern short nPlayerMissionShipIndex; /* 0x005a8694 */
-extern short nInitialMissionShipIndices[8]; /* 0x005a8696 */
-extern short DAT_005a86a6;
+extern MissionHeaderDisk stMissionHeader; /* 0x005a8690 */
 extern unsigned char abMissionAuxData[0x28]; /* 0x005a8210 */
 extern unsigned char abSeriesAuxData[0x28]; /* 0x005a8240 */
 extern MissionObjectiveSource aMissionObjectiveSources[16]; /* 0x005a8270 */

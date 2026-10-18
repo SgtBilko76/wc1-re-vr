@@ -294,7 +294,7 @@ short GameFlow(void)
     PlayScrambleHangarScene();
     stCampaignState.playerShipType =
         aMissionShips[
-            nPlayerMissionShipIndex].type;
+            stMissionHeader.playerMissionShip].type;
     scramble();
     flownSeries = (short)stCampaignState.currentSeries;
     flownMission = (short)stCampaignState.currentMission;

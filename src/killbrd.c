@@ -197,13 +197,13 @@ void CorrectPointers(void)
 /* Function start: 0x43F690 */
 void ClearRoomMenuLabel(void)
 {
-    pszCurrentRoomMenuLabel = 0;
+    stRoomMenu.currentLabel = 0;
 }
 
 /* Function start: 0x43F6A0 */
 char IsRoomMenuLabelEmpty(void)
 {
-    return *(const char *volatile *)&pszCurrentRoomMenuLabel == 0;
+    return *(const char *volatile *)&stRoomMenu.currentLabel == 0;
 }
 
 /* Function start: 0x43F6B0 */
@@ -220,16 +220,16 @@ void DrawRoomMenuLabel(TextContext *context, const char *label)
 void RefreshRoomMenuLabel(void)
 {
     if (IsRoomMenuLabelEmpty())
-        pszCurrentRoomMenuLabel =
+        stRoomMenu.currentLabel =
             pszBlankRoomMenuLabel;
-    DrawRoomMenuLabel(&stRoomMenuTextContext,
-                      pszCurrentRoomMenuLabel);
+    DrawRoomMenuLabel(&stRoomMenu.text,
+                      stRoomMenu.currentLabel);
 }
 
 /* Function start: 0x43F720 */
 void ClearRoomMenuCursorFrame(void)
 {
-    nRoomMenuCursorFrame = 0;
+    stRoomMenu.cursorFrame = 0;
 }
 
 /* Function start: 0x43F730 */
@@ -237,9 +237,9 @@ void SelectRoomMenuLabel(short i)
 {
     const char *label;
 
-    label = ppszRoomMenuLabels[i];
+    label = stRoomMenu.labels[i];
     if (label != 0)
-        pszCurrentRoomMenuLabel = label;
+        stRoomMenu.currentLabel = label;
 }
 
 /* Function start: 0x43F750 */
@@ -247,16 +247,16 @@ void InitializeRoomMenu(const TitleMenuRegion *regions, char **labels,
                         Viewport *viewport, char *text,
                         unsigned char alignment)
 {
-    pRoomMenuRegions = regions;
-    ppszRoomMenuLabels = labels;
-    pszCurrentRoomMenuLabel =
+    stRoomMenu.regions = regions;
+    stRoomMenu.labels = labels;
+    stRoomMenu.currentLabel =
         pszBlankRoomMenuLabel;
-    stRoomMenuTextContext.viewport = viewport;
-    stRoomMenuTextContext.text = text;
-    stRoomMenuTextContext.textCursor = text;
-    stRoomMenuTextContext.alignment = alignment;
+    stRoomMenu.text.viewport = viewport;
+    stRoomMenu.text.text = text;
+    stRoomMenu.text.textCursor = text;
+    stRoomMenu.text.alignment = alignment;
     *text = ""[0];
-    InitializeTextContextFromFont(&stRoomMenuTextContext,
+    InitializeTextContextFromFont(&stRoomMenu.text,
                                   0, cViewportClearColour,
                                   -1);
     ClearRoomMenuCursorFrame();

@@ -231,7 +231,7 @@ static int SwcDrawNavText(SDL_Renderer *renderer, const SwcTextFont *font,
     const char *text[] = {"ConFed Nav", "Scan", "", "SECTOR:", "XR-231.3",
         "SYSTEM:", (const char *)abSeriesAuxData, "", (const char *)abMissionAuxData, ""};
     SDL_Rect clip = {178, 43, 80, 138};
-    int role = aMissionShips[nPlayerMissionShipIndex].missionType;
+    int role = aMissionShips[stMissionHeader.playerMissionShip].missionType;
     int index;
     int result = -1;
 

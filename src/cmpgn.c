@@ -14,14 +14,6 @@ static short asMouthFramesByPhoneme[26] = {
 }; /* 0x004655f0 */
 
 #pragma pack(push, 1)
-typedef struct MissionHeaderDisk {
-    short entryNavPoint;
-    short homeMissionShip;
-    short playerMissionShip;
-    short initialMissionShips[8];
-    short field_16;
-} MissionHeaderDisk;
-
 typedef struct MissionNavPointDisk {
     char name[30];
     signed char type;
@@ -62,8 +54,6 @@ typedef struct MissionShipDisk {
 } MissionShipDisk;
 #pragma pack(pop)
 
-typedef char MissionHeaderDisk_size_must_be_0x18[
-    sizeof(MissionHeaderDisk) == 0x18 ? 1 : -1];
 typedef char MissionNavPointDisk_size_must_be_0x4d[
     sizeof(MissionNavPointDisk) == 0x4d ? 1 : -1];
 typedef char MissionObjectiveDisk_size_must_be_0x40[
@@ -625,16 +615,16 @@ unsigned int LoadMissionData(short series, short mission)
         return 1;
     }
 #endif
-    nMissionEntryNavPoint = header->entryNavPoint;
-    nHomeMissionShipIndex = header->homeMissionShip;
-    nPlayerMissionShipIndex = header->playerMissionShip;
+    stMissionHeader.entryNavPoint = header->entryNavPoint;
+    stMissionHeader.homeMissionShip = header->homeMissionShip;
+    stMissionHeader.playerMissionShip = header->playerMissionShip;
     sourceInitialShip = header->initialMissionShips;
-    initialShip = nInitialMissionShipIndices;
-    for (; initialShip < &nInitialMissionShipIndices[8];
+    initialShip = stMissionHeader.initialMissionShips;
+    for (; initialShip < &stMissionHeader.initialMissionShips[8];
          initialShip++, sourceInitialShip++) {
         *initialShip = *sourceInitialShip;
     }
-    DAT_005a86a6 = header->field_16;
+    stMissionHeader.field_16 = header->field_16;
     ReleasePacketHandle(packet);
 
     packet = FetchDiskPacketRetrying(logicalFile, 1, 0);

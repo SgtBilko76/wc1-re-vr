@@ -470,8 +470,8 @@ unsigned int DrawScrambleFrame(void)
                           nScrambleShipY,
                           pScrambleCockpitShape, 0);
         DrawSpriteScaled(&stSceneBuffer,
-                         nScrambleCockpitDetailX,
-                         nScrambleCockpitDetailY,
+                         stScrambleCockpitDetail.x,
+                         stScrambleCockpitDetail.y,
                          pScrambleCockpitShape, 1, 0,
                          nScrambleCockpitScale, 0);
         break;
@@ -489,8 +489,8 @@ unsigned int DrawScrambleFrame(void)
                           (short)(nScrambleShipY + 5),
                           pScrambleCockpitShape, 2);
         DrawSpriteDefault(&stSceneBuffer,
-                          nScrambleCockpitDetailX,
-                          nScrambleCockpitDetailY,
+                          stScrambleCockpitDetail.x,
+                          stScrambleCockpitDetail.y,
                           pScrambleCockpitShape, 1);
         break;
     case OBJECT_TYPE_SCIMITAR:
@@ -507,8 +507,8 @@ unsigned int DrawScrambleFrame(void)
                           nScrambleShipY,
                           pScrambleCockpitShape, 2);
         DrawSpriteDefault(&stSceneBuffer,
-                          nScrambleCockpitDetailX,
-                          nScrambleCockpitDetailY,
+                          stScrambleCockpitDetail.x,
+                          stScrambleCockpitDetail.y,
                           pScrambleCockpitShape, 1);
         break;
     case OBJECT_TYPE_RAPTOR:
@@ -525,8 +525,8 @@ unsigned int DrawScrambleFrame(void)
                           (short)(nScrambleShipY + 6),
                           pScrambleCockpitShape, 2);
         DrawSpriteDefault(&stSceneBuffer,
-                          nScrambleCockpitDetailX,
-                          nScrambleCockpitDetailY,
+                          stScrambleCockpitDetail.x,
+                          stScrambleCockpitDetail.y,
                           pScrambleCockpitShape, 1);
         break;
     }
@@ -545,10 +545,10 @@ unsigned int DrawScrambleFrame(void)
     }
 
     if (bScrambleCanopyClosed == 1) {
-        if (nScrambleOverlayX != -1000) {
+        if (stScrambleOverlay.x != -1000) {
             DrawSpriteDefault(&stSceneBuffer,
-                              nScrambleOverlayX,
-                              nScrambleOverlayY,
+                              stScrambleOverlay.x,
+                              stScrambleOverlay.y,
                               pScrambleOverlayShape, 0);
         }
         DrawSpriteDefault(&stSceneBuffer, 100, 127,
@@ -572,7 +572,7 @@ unsigned int scramble(void)
     soundHandle = 0;
 #endif
     nScrambleCanopyOffset = 0;
-    nScrambleOverlayX = -1000;
+    stScrambleOverlay.x = -1000;
     nScrambleCanopyFrame = 0;
     nScrambleShipDetailCount = 0;
     if (bEscapePressed == 0) {
@@ -608,27 +608,27 @@ unsigned int scramble(void)
         case OBJECT_TYPE_HORNET:
             nScrambleShipX = -40;
             nScrambleShipY = 96;
-            nScrambleCockpitDetailX = -95;
-            nScrambleCockpitDetailY = 71;
+            stScrambleCockpitDetail.x = -95;
+            stScrambleCockpitDetail.y = 71;
             nScrambleCockpitScale = 316;
             break;
         case OBJECT_TYPE_RAPIER:
             nScrambleShipX = -30;
             nScrambleShipY = 80;
-            nScrambleCockpitDetailX = -15;
-            nScrambleCockpitDetailY = 76;
+            stScrambleCockpitDetail.x = -15;
+            stScrambleCockpitDetail.y = 76;
             break;
         case OBJECT_TYPE_SCIMITAR:
             nScrambleShipX = -40;
             nScrambleShipY = 86;
-            nScrambleCockpitDetailX = 4;
-            nScrambleCockpitDetailY = 83;
+            stScrambleCockpitDetail.x = 4;
+            stScrambleCockpitDetail.y = 83;
             break;
         case OBJECT_TYPE_RAPTOR:
             nScrambleShipX = -40;
             nScrambleShipY = 80;
-            nScrambleCockpitDetailX = -22;
-            nScrambleCockpitDetailY = 67;
+            stScrambleCockpitDetail.x = -22;
+            stScrambleCockpitDetail.y = 67;
             break;
         }
 
@@ -639,12 +639,12 @@ unsigned int scramble(void)
             nScrambleBackgroundRightX--;
             nScrambleShipY =
                 (short)(nScrambleShipY - 2);
-            nScrambleCockpitDetailY =
-                (short)(nScrambleCockpitDetailY - 2);
+            stScrambleCockpitDetail.y =
+                (short)(stScrambleCockpitDetail.y - 2);
             nScrambleShipX =
                 (short)(nScrambleShipX + 4);
-            nScrambleCockpitDetailX =
-                (short)(nScrambleCockpitDetailX + 4);
+            stScrambleCockpitDetail.x =
+                (short)(stScrambleCockpitDetail.x + 4);
             if (bEscapePressed == 1)
                 break;
         }
@@ -657,8 +657,8 @@ unsigned int scramble(void)
                 nScrambleCanopyOffset++;
                 nScrambleShipX =
                     (short)(nScrambleShipX + 4);
-                nScrambleCockpitDetailX =
-                    (short)(nScrambleCockpitDetailX + 4);
+                stScrambleCockpitDetail.x =
+                    (short)(stScrambleCockpitDetail.x + 4);
                 nScrambleBackgroundRightX--;
                 if (nScrambleCanopyFrame < 25)
                     nScrambleCanopyFrame++;
@@ -684,15 +684,15 @@ unsigned int scramble(void)
                     break;
                 case OBJECT_TYPE_RAPIER:
                 case OBJECT_TYPE_RAPTOR:
-                    nScrambleCockpitDetailX =
-                        (short)(nScrambleCockpitDetailX - 2);
+                    stScrambleCockpitDetail.x =
+                        (short)(stScrambleCockpitDetail.x - 2);
                     break;
                 case OBJECT_TYPE_SCIMITAR:
                     if (frame == 21)
-                        nScrambleCockpitDetailY++;
+                        stScrambleCockpitDetail.y++;
                     else
-                        nScrambleCockpitDetailX =
-                            (short)(nScrambleCockpitDetailX - 2);
+                        stScrambleCockpitDetail.x =
+                            (short)(stScrambleCockpitDetail.x - 2);
                     break;
                 }
                 if (nScrambleCanopyFrame < 35)
@@ -786,33 +786,33 @@ unsigned int landing(signed char damageLevel)
                            0x100, 0, 0, 2);
     nScrambleCanopyOffset = 0;
     nScrambleCanopyFrame = 34;
-    nScrambleOverlayX = -1000;
+    stScrambleOverlay.x = -1000;
 
     switch (stCampaignState.playerShipType) {
     case OBJECT_TYPE_HORNET:
         nScrambleShipX = 124;
         nScrambleShipY = 140;
-        nScrambleCockpitDetailX = 69;
-        nScrambleCockpitDetailY = 115;
+        stScrambleCockpitDetail.x = 69;
+        stScrambleCockpitDetail.y = 115;
         nScrambleCockpitScale = 360;
         break;
     case OBJECT_TYPE_RAPIER:
         nScrambleShipX = 124;
         nScrambleShipY = 130;
-        nScrambleCockpitDetailX = 94;
-        nScrambleCockpitDetailY = 125;
+        stScrambleCockpitDetail.x = 94;
+        stScrambleCockpitDetail.y = 125;
         break;
     case OBJECT_TYPE_SCIMITAR:
         nScrambleShipY = 134;
-        nScrambleCockpitDetailY = 132;
+        stScrambleCockpitDetail.y = 132;
         nScrambleShipX = 124;
-        nScrambleCockpitDetailX = 124;
+        stScrambleCockpitDetail.x = 124;
         break;
     case OBJECT_TYPE_RAPTOR:
         nScrambleShipX = 124;
         nScrambleShipY = 126;
-        nScrambleCockpitDetailX = 96;
-        nScrambleCockpitDetailY = 113;
+        stScrambleCockpitDetail.x = 96;
+        stScrambleCockpitDetail.y = 113;
         break;
     }
 
@@ -825,8 +825,8 @@ unsigned int landing(signed char damageLevel)
         DrawScrambleFrame();
         nScrambleShipY =
             (short)(nScrambleShipY - 2);
-        nScrambleCockpitDetailY =
-            (short)(nScrambleCockpitDetailY - 2);
+        stScrambleCockpitDetail.y =
+            (short)(stScrambleCockpitDetail.y - 2);
         if (bEscapePressed == 1)
             break;
     }
@@ -836,7 +836,7 @@ unsigned int landing(signed char damageLevel)
         short canopyFrame;
         const signed char *canopyFrames;
 
-        nScrambleOverlayX =
+        stScrambleOverlay.x =
             (short)(nScrambleShipX + 180);
 #ifdef SDL_PORT
         canopyFrames = apLandingCanopyFrames[damageLevel];
@@ -845,7 +845,7 @@ unsigned int landing(signed char damageLevel)
             ((unsigned char *)apLandingCanopyFrames +
              damageOffset);
 #endif
-        nScrambleOverlayY =
+        stScrambleOverlay.y =
             (short)(nScrambleShipY + 50);
         PlaySfxWaveFileByNumber(15, -1, 0);
         nFrameSkipCounter = 1;
@@ -854,9 +854,9 @@ unsigned int landing(signed char damageLevel)
             if (nRenderedSpaceFrame == 29)
                 nFrameSkipCounter = 1;
             DrawScrambleFrame();
-            nScrambleOverlayY--;
-            nScrambleOverlayX =
-                (short)(nScrambleOverlayX - 4);
+            stScrambleOverlay.y--;
+            stScrambleOverlay.x =
+                (short)(stScrambleOverlay.x - 4);
             switch (stCampaignState.playerShipType) {
             case OBJECT_TYPE_HORNET:
                 nScrambleCockpitScale =
@@ -864,15 +864,15 @@ unsigned int landing(signed char damageLevel)
                 break;
             case OBJECT_TYPE_RAPIER:
             case OBJECT_TYPE_RAPTOR:
-                nScrambleCockpitDetailX =
-                    (short)(nScrambleCockpitDetailX + 2);
+                stScrambleCockpitDetail.x =
+                    (short)(stScrambleCockpitDetail.x + 2);
                 break;
             case OBJECT_TYPE_SCIMITAR:
                 if (canopyFrame == 0)
-                    nScrambleCockpitDetailY--;
+                    stScrambleCockpitDetail.y--;
                 else
-                    nScrambleCockpitDetailX =
-                        (short)(nScrambleCockpitDetailX + 2);
+                    stScrambleCockpitDetail.x =
+                        (short)(stScrambleCockpitDetail.x + 2);
                 break;
             }
             if (canopyFrame > 6 && *canopyFrames != 0x40) {
@@ -974,12 +974,12 @@ unsigned int funeral_player(void)
         }
 
         DrawSpriteDefault(&stSceneBuffer,
-                          nFuneralForegroundX,
-                          nFuneralForegroundY,
+                          stFuneralForeground.x,
+                          stFuneralForeground.y,
                           pConversationSpecialShape, 7);
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nFuneralForegroundX + 180),
-                          nFuneralForegroundY,
+                          (short)(stFuneralForeground.x + 180),
+                          stFuneralForeground.y,
                           pConversationSpecialShape, 6);
         if (bFuneralShowTheEnd != 0)
             print_subtitle(&stSceneBuffer, 56,
@@ -1063,14 +1063,14 @@ unsigned int funeral_sequence(int playerFuneral)
     InitializeConversationViewport();
     nFuneralCasketX = 180;
     nFuneralCasketY = 70;
-    nFuneralForegroundX = 30;
+    stFuneralForeground.x = 30;
     nFuneralMainDistance = 112;
     nFuneralParticleDistance = 16;
     nFuneralGuardFrame = 2;
     nFuneralRifleFrame = 4;
     nFuneralBaseY = 0;
     nFuneralBaseX = 0;
-    nFuneralForegroundY = 0;
+    stFuneralForeground.y = 0;
     for (particle = 0; particle < 7; particle++) {
         aFuneralParticles[particle].x = 0;
     }
@@ -1193,7 +1193,7 @@ unsigned int funeral_sequence(int playerFuneral)
                                             nFuneralMainDistance++;
                                             if (nFuneralCasketX <
                                                 160) {
-                                                nFuneralForegroundX +=
+                                                stFuneralForeground.x +=
                                                     2;
                                                 nFuneralBaseX++;
                                             }
@@ -1238,7 +1238,7 @@ unsigned int funeral_sequence(int playerFuneral)
                                             nFuneralMainDistance++;
                                             if (nFuneralCasketX <
                                                 160) {
-                                                nFuneralForegroundX +=
+                                                stFuneralForeground.x +=
                                                     2;
                                                 nFuneralBaseX++;
                                             }
@@ -1266,7 +1266,7 @@ unsigned int funeral_sequence(int playerFuneral)
                                         frame++;
                                         nFuneralMainDistance++;
                                         nFuneralBaseX++;
-                                        nFuneralForegroundX += 2;
+                                        stFuneralForeground.x += 2;
                                         nFuneralParticleDistance++;
                                         if (frame == 110 &&
                                             playerFuneral != 0)

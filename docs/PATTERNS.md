@@ -1177,7 +1177,7 @@ do not reject a recovered size solely because its positional count is larger.
 - `IsRoomMenuLabelEmpty` returns a byte: the original uses `SBB AL,AL`
   and `NEG AL`, and `RefreshRoomMenuLabel` tests AL after its call. Declare
   the predicate as returning `char`; its zero/one result does not establish
-  signedness. Read `pszCurrentRoomMenuLabel` through a volatile-qualified
+  signedness. Read `stRoomMenu.currentLabel` through a volatile-qualified
   pointer lvalue to produce the original direct memory comparison against
   one; the ordinary expression first loads EAX and compares that register.
   The predicate's complete 16-byte span and its caller's 48-byte span now

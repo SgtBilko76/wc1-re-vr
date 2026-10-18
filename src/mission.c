@@ -119,7 +119,7 @@ void prepare_mission(void)
 
     stCampaignState.missionScore = 0;
     nWingmanKilledThisMission = 0;
-    playerShip = nPlayerMissionShipIndex;
+    playerShip = stMissionHeader.playerMissionShip;
     bPlayerDestroyed = 0;
     nWingmanKillCount = 0;
     nMissionMedalScore = 0;
@@ -128,7 +128,7 @@ void prepare_mission(void)
     stCampaignState.playerShipType = aMissionShips[playerShip].type;
     load_ship(stCampaignState.playerShipType, 0);
     set_objects_data(0, stCampaignState.playerShipType, -1);
-    aMissionShips[playerShip].navPoint = nMissionEntryNavPoint;
+    aMissionShips[playerShip].navPoint = stMissionHeader.entryNavPoint;
     if (nTrainSimActive == 0 && nStartNavPointOverride != -1)
         aMissionShips[playerShip].navPoint = nStartNavPointOverride;
     Set_up_ship_info(0, playerShip, -1);
@@ -139,12 +139,12 @@ void prepare_mission(void)
     nYourWingman = -1;
     initial = 0;
     do {
-        missionShip = nInitialMissionShipIndices[initial];
+        missionShip = stMissionHeader.initialMissionShips[initial];
         if (missionShip != -1) {
             pilot = (short)aMissionShips[missionShip].behaviour.pilot;
             if (is_alive(pilot) != 0 &&
                 find_ships_sphere(missionShip) == -1) {
-                init_ship(missionShip, nMissionEntryNavPoint);
+                init_ship(missionShip, stMissionHeader.entryNavPoint);
                 if (nYourWingman == -1 &&
                     pilot > 4 && pilot < 14)
                     nYourWingman = DAT_0046c010;
@@ -853,11 +853,11 @@ unsigned int is_team_member(short missionShip)
 {
     short index;
 
-    if (missionShip == nPlayerMissionShipIndex)
+    if (missionShip == stMissionHeader.playerMissionShip)
         return 1;
     index = 0;
     while (index < 8) {
-        if (missionShip == nInitialMissionShipIndices[index])
+        if (missionShip == stMissionHeader.initialMissionShips[index])
             return 1;
         index++;
     }
@@ -968,7 +968,7 @@ unsigned int init_intelligence_data(short obj)
             break;
         /* fall through */
     case MISSION_TYPE_COME_HOME:
-        locate_ship(nHomeMissionShipIndex, missionSpot);
+        locate_ship(stMissionHeader.homeMissionShip, missionSpot);
         break;
     case MISSION_TYPE_CANNED_SEQUENCE:
 #ifdef SDL_PORT

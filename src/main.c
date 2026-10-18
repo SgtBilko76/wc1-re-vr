@@ -2046,7 +2046,7 @@ int RunSpaceFlight(short entryNavPoint)
 
     if (entryNavPoint == -1)
         entryNavPoint = aMissionShips[
-            nPlayerMissionShipIndex].navPoint;
+            stMissionHeader.playerMissionShip].navPoint;
     set_up_action_sphere(entryNavPoint);
 
     if (bCockpitlessView != 0) {
@@ -2230,9 +2230,9 @@ void UpdateRoomMenuCursor(void)
     short index;
 
     mouseX = stMouseCursorState.x;
-    frame = nRoomMenuCursorFrame;
+    frame = stRoomMenu.cursorFrame;
     index = 0;
-    region = pRoomMenuRegions;
+    region = stRoomMenu.regions;
     mouseY = stMouseCursorState.y;
     ClearRoomMenuLabel();
     while (region->frame != -1) {

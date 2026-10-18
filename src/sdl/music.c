@@ -270,7 +270,7 @@ int SdlPlayGameSoundEffect(int soundNumber, int sourceObject, int looping)
         if (!SdlPlayDosSoundEffect(
                 soundNumber, volume, pan, sourceObject, looping))
             return 0;
-        aiSoundEffectSourceActive[sourceObject + 1] = 1;
+        aiSoundEffectSourceActive[sourceObject] = 1;
         if (sourceObject == -1)
             bAfterburnerSfxActive = soundNumber == 12;
         return 1;
@@ -283,7 +283,7 @@ int SdlPlayGameSoundEffect(int soundNumber, int sourceObject, int looping)
     }
     if (distance < 10)
         return 0;
-    aiSoundEffectSourceActive[sourceObject + 1] = 1;
+    aiSoundEffectSourceActive[sourceObject] = 1;
     sprintf(szSfxWavePath, "sfx%02i.wav", soundNumber - 1);
     SdlPlayWaveWithPan(szSfxWavePath, looping, distance, pan);
     return 1;

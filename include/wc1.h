@@ -273,11 +273,34 @@ typedef struct HudMessageSlot {
     signed char flashCount;          /* +0x0C */
     const char *text;                /* +0x0D */
 } HudMessageSlot;
+
+/* The killer-board room menu.  Its pointers sit at 2 mod 4 in the original
+ * (0x00598AB2-0x00598ABA) and its text context at 0x00598ABE: LINK aligns
+ * every separate common of four or more bytes, so only one packed aggregate
+ * reproduces this layout. */
+typedef struct RoomMenu {
+    short cursorFrame;                     /* +0x00 */
+    const struct TitleMenuRegion *regions; /* +0x02 */
+    char **labels;                         /* +0x06 */
+    const char *currentLabel;              /* +0x0A */
+    TextContext text;                      /* +0x0E */
+} RoomMenu;
 #pragma pack(pop)
+
+/* The record InitializeDIBScreenViewport fills at 0x005A66E0 and points
+ * 0x005A66EC at.  The pointer's offset fixes the record at twelve bytes;
+ * nothing in the shipped executable reads its third word. */
+typedef struct ScreenAllocation {
+    int state;          /* +0x00 */
+    Viewport *viewport; /* +0x04 */
+    int field_8;        /* +0x08 */
+} ScreenAllocation;
 
 #ifndef SDL_PORT
 typedef char CockpitReadout_size_must_be_0x0a[
     sizeof(CockpitReadout) == 0x0a ? 1 : -1];
+typedef char RoomMenu_size_must_be_0x29[
+    sizeof(RoomMenu) == 0x29 ? 1 : -1];
 #endif
 
 /* Runtime wave-cache node.  The name pointer and next link are established by

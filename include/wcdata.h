@@ -562,6 +562,22 @@ typedef struct TitleMenuRegion {
     short bottom;
 } TitleMenuRegion;
 
+#pragma pack(push, 1)
+/* One mission's header record in the campaign mission file.  The game keeps
+ * a copy of the current mission's header at 0x005A8690; its eight initial
+ * ship indices are scanned as one contiguous array. */
+typedef struct MissionHeaderDisk {
+    short entryNavPoint;
+    short homeMissionShip;
+    short playerMissionShip;
+    short initialMissionShips[8];
+    short field_16;
+} MissionHeaderDisk;
+#pragma pack(pop)
+
+typedef char MissionHeaderDisk_size_must_be_0x18[
+    sizeof(MissionHeaderDisk) == 0x18 ? 1 : -1];
+
 /* One packet-backed pointer slot in a scene resource list. */
 #ifdef SDL_PORT
 typedef unsigned char *PackedResourcePointer

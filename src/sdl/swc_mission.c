@@ -273,11 +273,11 @@ int SdlLoadSwcMissionData(const char *path, short series, short mission)
 
     /* Publish only after every block has decoded successfully. The unchanged
      * WC1 functions consume these same structures for DOS and Saga missions. */
-    nMissionEntryNavPoint = header[0];
-    nHomeMissionShipIndex = header[1];
-    nPlayerMissionShipIndex = header[2];
-    memcpy(nInitialMissionShipIndices, header + 3, sizeof(nInitialMissionShipIndices));
-    DAT_005a86a6 = header[11];
+    stMissionHeader.entryNavPoint = header[0];
+    stMissionHeader.homeMissionShip = header[1];
+    stMissionHeader.playerMissionShip = header[2];
+    memcpy(stMissionHeader.initialMissionShips, header + 3, sizeof(stMissionHeader.initialMissionShips));
+    stMissionHeader.field_16 = header[11];
     memcpy(aMissionNavPoints, navPoints, sizeof(navPoints));
     memcpy(aMissionObjectiveSources, objectives, sizeof(objectives));
     memcpy(aMissionShips, ships, sizeof(ships));

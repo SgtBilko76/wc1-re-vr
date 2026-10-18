@@ -74,7 +74,7 @@ void coming_home(short obj)
         break;
     case TACTIC_HEAD_HOME:
         if (no_goal(obj) != 0)
-            point_parallel(obj, find_ship_index(nHomeMissionShipIndex));
+            point_parallel(obj, find_ship_index(stMissionHeader.homeMissionShip));
         break;
     default:
         fail(obj);

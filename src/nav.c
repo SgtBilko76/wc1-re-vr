@@ -604,7 +604,7 @@ void DrawNavLocationReadout(const char *title, short showFlightData)
                     "* %s *\n",
                     abMissionAuxData);
     playerMissionType = aMissionShips[
-        nPlayerMissionShipIndex].missionType;
+        stMissionHeader.playerMissionShip].missionType;
     DrawNavTextLine(2, cDefaultTextColour,
                     "* %s *\n",
                     apszShipMissionTypeNames[

@@ -181,11 +181,7 @@ unsigned char *pRecRoomBackgroundShape; /* 0x00598a50 */
 Viewport stRoomDisplayViewport; /* 0x00598a60 */
 Viewport stRoomMouseViewport; /* 0x00598a80 */
 unsigned char *apRecRoomTextData[3]; /* 0x00598aa0 */
-short nRoomMenuCursorFrame; /* 0x00598ab0 */
-const TitleMenuRegion *pRoomMenuRegions; /* 0x00598ab2 */
-char **ppszRoomMenuLabels; /* 0x00598ab6 */
-const char *pszCurrentRoomMenuLabel; /* 0x00598aba */
-TextContext stRoomMenuTextContext; /* 0x00598abe */
+RoomMenu stRoomMenu; /* 0x00598ab0 */
 unsigned char *apRecRoomSceneData[3]; /* 0x00598ae0 */
 unsigned char *pBriefingPacket; /* 0x00598aec */
 unsigned char *pBriefingTextData; /* 0x00598af0 */
@@ -361,7 +357,7 @@ signed char abShipNavPointIndex[16]; /* 0x0059d7c0 */
 signed char acTurnInterval[16]; /* 0x0059d7d0 */
 short anObjectRollRotation[SPACE_OBJECT_COUNT]; /* 0x0059d7e0 */
 signed char abShipTurn[16]; /* 0x0059d860 */
-HazardField aHazardFields[7]; /* 0x0059d870 */
+HazardField aHazardFields[8]; /* 0x0059d870 */
 short nFacingToTarget; /* 0x0059d920 */
 short asObjectScreenY[SPACE_OBJECT_COUNT]; /* 0x0059d930 */
 short asObjectScreenX[SPACE_OBJECT_COUNT]; /* 0x0059d9b0 */
@@ -406,9 +402,9 @@ int nPacketHandleCount; /* 0x005a6530 */
 Viewport *pAllocatedScreenViewport; /* 0x005a6534 */
 int *DAT_005a6538;
 unsigned short awScreenRowOffsets[202]; /* 0x005a6540 */
-int nScreenAllocationState; /* 0x005a66e0 */
-Viewport *pAllocatedScreenViewportMirror; /* 0x005a66e4 */
-int aiSoundEffectSourceActive[0x41]; /* 0x005a66ec */
+ScreenAllocation stScreenAllocation; /* 0x005a66e0 */
+ScreenAllocation *pScreenAllocation; /* 0x005a66ec */
+int aiSoundEffectSourceActive[0x40]; /* 0x005a66f0 */
 unsigned char abSoundPlaybackSlots[0xf8]; /* 0x005a67f0 */
 int nPassingShipSoundCooldown; /* 0x005a68e8 */
 int nAllocateViewportCalls; /* 0x005a68ec */
@@ -513,7 +509,10 @@ int nAfterburnerSoundDeadline; /* 0x005a7ce8 */
 int bAfterburnerSfxActive; /* 0x005a7cec */
 DiskFileRecord *pDiskFileRecords; /* 0x005a7cf0 */
 Viewport stDiskPromptBackgroundViewport; /* 0x005a7d00 */
-unsigned char abDiskPromptDriveState[2]; /* 0x005a7d20 */
+/* GetShutdownErrorCode's buffer.  Its 16-byte alignment and the following
+ * prompt viewport bound it to 9-32 bytes; the DOS hook that filled it is
+ * an empty stub, so its true length is unknown. */
+unsigned char abDiskPromptDriveState[0x10]; /* 0x005a7d20 */
 Viewport stDiskPromptViewport; /* 0x005a7d40 */
 int bPointerMovedByKeyboard; /* 0x005a7d54 */
 TextContext stDiskPromptTextContext; /* 0x005a7d60 */
@@ -593,11 +592,7 @@ short nMenuInputRepeatDelay; /* 0x005a8208 */
 unsigned char abMissionAuxData[0x28]; /* 0x005a8210 */
 unsigned char abSeriesAuxData[0x28]; /* 0x005a8240 */
 MissionObjectiveSource aMissionObjectiveSources[16]; /* 0x005a8270 */
-short nMissionEntryNavPoint; /* 0x005a8690 */
-short nHomeMissionShipIndex; /* 0x005a8692 */
-short nPlayerMissionShipIndex; /* 0x005a8694 */
-short nInitialMissionShipIndices[8]; /* 0x005a8696 */
-short DAT_005a86a6;
+MissionHeaderDisk stMissionHeader; /* 0x005a8690 */
 CampaignDate *pCurrentCampaignDate; /* 0x005a86a8 */
 CampaignDate *pElapsedCampaignDate; /* 0x005a86ac */
 signed char cObjectResourceLogicalFile; /* 0x005a86b0 */
@@ -605,8 +600,7 @@ Viewport *pScrambleViewport; /* 0x005a86b4 */
 short nScrambleCanopyFrame; /* 0x005a86b8 */
 unsigned char *pScrambleDetailShape; /* 0x005a86bc */
 short nScrambleCockpitScale; /* 0x005a86c0 */
-short nScrambleCockpitDetailX; /* 0x005a86c4 */
-short nScrambleCockpitDetailY; /* 0x005a86c6 */
+ShortPoint stScrambleCockpitDetail; /* 0x005a86c4 */
 short nFuneralCasketX; /* 0x005a86c8 */
 short nFuneralCasketY; /* 0x005a86ca */
 short nScrambleShipDetailCount; /* 0x005a86cc */
@@ -618,8 +612,7 @@ unsigned char *pScrambleBackgroundShape; /* 0x005a870c */
 short nFuneralParticleDistance; /* 0x005a8710 */
 short nScrambleBackgroundY; /* 0x005a8712 */
 short nScrambleBackgroundRightX; /* 0x005a8714 */
-short nFuneralForegroundX; /* 0x005a8718 */
-short nFuneralForegroundY; /* 0x005a871a */
+ShortPoint stFuneralForeground; /* 0x005a8718 */
 short nFuneralMainScale; /* 0x005a871c */
 short nFuneralRifleFrame; /* 0x005a871e */
 short nFuneralBaseX; /* 0x005a8720 */
@@ -634,8 +627,7 @@ short nScrambleCanopyOffset; /* 0x005a8736 */
 short nFuneralMainDistance; /* 0x005a8738 */
 signed char bScrambleCanopyClosed; /* 0x005a873a */
 short nFuneralGuardFrame; /* 0x005a873c */
-short nScrambleOverlayX; /* 0x005a8740 */
-short nScrambleOverlayY; /* 0x005a8742 */
+ShortPoint stScrambleOverlay; /* 0x005a8740 */
 unsigned char *pScrambleOverlayShape; /* 0x005a8744 */
 signed char cScrambleWalkerPair; /* 0x005a8748 */
 unsigned char *pScrambleCanopyShape; /* 0x005a874c */

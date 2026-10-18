@@ -404,7 +404,7 @@ void FreeBarracksMenuLabels(void)
         }
         bunk++;
     } while (bunk < 8);
-    pszCurrentRoomMenuLabel = 0;
+    stRoomMenu.currentLabel = 0;
 }
 
 /* Function start: 0x41B1E0 */
@@ -902,8 +902,8 @@ void AnimateBarracks(Viewport *viewport, unsigned char *shape,
     else
         DrawSpriteDefault(viewport, 45, 0, shape, 26);
     CheckCursor();
-    if (state->menuLabel != pszCurrentRoomMenuLabel) {
-        state->menuLabel = pszCurrentRoomMenuLabel;
+    if (state->menuLabel != stRoomMenu.currentLabel) {
+        state->menuLabel = stRoomMenu.currentLabel;
         DrawSpriteDefault(viewport, 319, 199, shape, 50);
     }
 }

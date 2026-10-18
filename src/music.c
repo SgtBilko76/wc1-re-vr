@@ -593,7 +593,7 @@ void servicetrack(void)
                 if (asObjectDistance[object] == 0 &&
                     (unsigned short)
                         asPreviousObjectDistance[object] < 50 &&
-                    aiSoundEffectSourceActive[object + 1] == 0)
+                    aiSoundEffectSourceActive[object] == 0)
                     PlaySfxWaveFileByNumber(6, object, 0);
             } else if (aeObjectClass[object] >=
                            OBJECT_CLASS_SHIP &&
@@ -729,7 +729,7 @@ void PlaySfxWaveFileByNumber(int soundNumber, int sourceObject, int looping)
         }
         if (volume >= 10 && SdlPlayDosSoundEffect(
                 soundNumber, volume, 64, sourceObject, looping)) {
-            aiSoundEffectSourceActive[sourceObject + 1] = 1;
+            aiSoundEffectSourceActive[sourceObject] = 1;
             if (sourceObject == -1)
                 bAfterburnerSfxActive = soundNumber == 12;
         }
@@ -751,7 +751,7 @@ void PlaySfxWaveFileByNumber(int soundNumber, int sourceObject, int looping)
         distance = 32000;
     }
     if (distance >= 10) {
-        aiSoundEffectSourceActive[sourceObject + 1] = 1;
+        aiSoundEffectSourceActive[sourceObject] = 1;
         sprintf(szSfxWavePath, "sfx%02i.wav",
                 soundNumber - 1);
         playWAVE(szSfxWavePath, looping, distance);

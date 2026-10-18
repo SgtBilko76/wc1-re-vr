@@ -16,9 +16,9 @@ void cleanup_objectives(void)
     short object;
 
     objective = 0;
-    home = find_ship_index(nHomeMissionShipIndex);
+    home = find_ship_index(stMissionHeader.homeMissionShip);
     proximity = aMissionNavPoints[
-        nMissionEntryNavPoint].proximityRadius;
+        stMissionHeader.entryNavPoint].proximityRadius;
     objectiveType = aMissionObjectives[objective].type;
     for (; objectiveType != -1;
          objective++,
@@ -310,11 +310,10 @@ unsigned short __stdcall InitializeDIBScreenViewport(
     short row;
 
     (void)colour;
-    nScreenAllocationState = 0;
+    stScreenAllocation.state = 0;
     pAllocatedScreenViewport = viewport;
-    pAllocatedScreenViewportMirror = viewport;
-    aiSoundEffectSourceActive[0] =
-        (int)&nScreenAllocationState;
+    stScreenAllocation.viewport = viewport;
+    pScreenAllocation = &stScreenAllocation;
     viewport->right = 319;
     viewport->bottom = 199;
     viewport->left = 0;
