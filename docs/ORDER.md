@@ -1132,15 +1132,16 @@ existing music-mode and wait-enable settings.
 
 Several unreferenced event and graphics routines likewise lie between entries
 in the seeded function map. Recovered entries are recorded in `src/map`;
-remaining discovery candidates include the rectangle routine at `0x00436AC0`
-and legacy event hooks. Do not replace these gaps with padding. The apparent
+remaining discovery candidates include legacy event hooks. Do not replace
+these gaps with padding. The apparent
 entry at `0x004393F0` lies in a switch table/padding range and is not a function.
 
-The current boundary supplement has 27 unimplemented entries in addition to
+The current boundary supplement has 26 unimplemented entries in addition to
 the four reproduced array initializers. Their original aligned spans total
-848 bytes: 26 empty or constant-return routines occupy 16 bytes apiece,
-and the rectangle routine occupies 432 bytes before `FillGraphicSuffix` at
-`0x00436C70`. These are verified code boundaries, not recovered interfaces
+416 bytes: the remaining empty or constant-return routines occupy sixteen
+bytes apiece. The 432-byte rectangle routine is now reconstructed before
+`FillGraphicSuffix` at `0x00436C70`. The missing entries are verified code
+boundaries, not recovered interfaces
 or names. The surrounding empty routines' purposes cannot be established by
 proximity alone. The function report does not score these absent implementations, so
 its average similarity must not be interpreted as whole-program completion.
@@ -1409,7 +1410,7 @@ compiler also cached a selected coordinate across minimum/maximum calls
 where the original reloads it. Sequencing those calls through a real result
 temporary, volatile X-array accesses, and volatile selection loads did not
 recover the original accesses; the latter enlarged the frame to 152 bytes.
-These probes are not retained, and the rectangle remains unimplemented.
+These probes are not retained; they did not recover the rectangle routine.
 
 The compiler slot reuse proven in `SetFleetOverviewView` makes overlapping
 uninitialized locals a possible explanation, but does not establish this
@@ -1435,3 +1436,63 @@ the end of that frame and shortens the span by sixteen bytes (88.79%).
 Neither reproduces the three explicit index shifts. Both are reverted,
 including the exploratory shared prototype, whose insertion also changed
 unrelated compilation units.
+
+The cross-release rectangle recovery resolves the missing source structure.
+WC2's original routine at `0x004651B7` constructs the same sixteen coordinate
+pairs and performs the same nested minimum/maximum calls and overwriting
+result stores. Its original caller at `0x0043F110` passes cockpit and VDU
+rectangles, supporting the descriptive name `GetViewportIntersection`.
+The WC2 disassembly, rather than its reconstructed C, is the useful evidence:
+it initializes the point index but never initializes the inside count.
+Its loop tests the point index's postincrement; the comparison with the point
+count is a discarded iteration expression. The first condition is zero,
+so the body does not execute. The reconstructed WC2 C initializes the inside
+count and uses a different loop form; neither detail can be copied here.
+
+Retaining the reversed `for` clauses, the uninitialized inside count, the
+four-element inside array, and the coordinate construction lets CL 4.20
+produce WC1's 148-byte frame and 432-byte span. This full source structure
+recovers the guard at `[ESP+0x24]`, the three selected-index reads at
+`[ESP+0x14]`, `[ESP+0x18]`, and `[ESP+0x1C]`, the coordinate arrays at
+`[ESP+0x24]` and `[ESP+0x64]`, and all three explicit index shifts by two.
+No padding, dummy locals, hand-written stack accesses, or assembly is added.
+The short return and `__stdcall` convention follow WC1's AX results and
+`RET 0xC`. Both final maxima still overwrite the left/top fields, as shipped.
+An alternative `do`/`break` loop emits 608 bytes and only 69.70% mnemonic
+similarity; the recovered `for` form emits 432 bytes at 96.55%, with 79 of
+116 instruction encodings still different in register allocation and
+scheduling.
+
+The new prototype is visible only to `eventmgr.c` and omits parameter names.
+A named prototype loses the exact matches of `RetainInputEventsOfType` and
+`GetNextInputEvent`; moving it elsewhere in the header does not help.
+Omitting parameter names preserves every existing exact match. The required
+declaration still changes `ReleaseInputEvent` from ten to thirteen differing
+encodings and `shrink_vector` from nine to eight. The other 1,521 existing
+report rows are unchanged. The new annotation replaces the boundary-map
+entry, reducing the unimplemented inventory from 27 spans/848 bytes to
+26 spans/416 bytes.
+
+The rectangle checkpoint compares 1,524 source functions: 1,251 normalized
+exact, 253 same-size differences, and twenty size differences (144 absolute
+bytes, net -6). Average mnemonic similarity remains 99.56%, with 1,514
+functions at or above 90% and ten below it. The source-order inventory and
+address audits pass. Reversing `shrink_vector`'s source operand order does
+not change its eight differing encodings and is not retained.
+
+Both builds and all required verification gates pass. Both value checks
+cover all 1,524 functions without mismatches or skips. The 1,097 linked
+globals, 39 embedded function pointers, and 79 mixer-global operands retain
+zero mismatches. Call analysis checks 1,138 functions with the same eleven
+diagnostics; global-access analysis checks 1,059 with the same 37. The
+modern compiler warns about the deliberately discarded loop comparison,
+in addition to the existing warnings. No gameplay validation is claimed.
+
+The executable hash is unchanged through validation and the restored
+operand-order probe. Adding the recovered 432-byte routine reduces the
+code-section deficit from 880 to 448 bytes; 416 bytes of that remaining
+deficit are the missing small routines. File size rises from 517,632 to
+518,144 bytes, now 512 bytes short. The data virtual-size deficit remains
+1,856 bytes, and the relocation section remains 36,286 bytes versus 36,306
+original. Strict positional matches rise by 3,423 to 57,491 of 518,656 bytes
+(11.0846%). Literal executable equality still fails.

@@ -1106,6 +1106,112 @@ unsigned int shrink(int *component)
     return integerPart;
 }
 
+/* Function start: 0x436AC0 */
+short __stdcall GetViewportIntersection(ShortRect *intersection,
+                                         const ShortRect *first,
+                                         const ShortRect *second)
+{
+    int pointCount;
+    int pointIndex;
+    int xCoordinates[16];
+    int yCoordinates[16];
+    int inside[4];
+    int x;
+    int insideCount;
+    int y;
+
+    pointCount = 0;
+    xCoordinates[pointCount] = first->left;
+    yCoordinates[pointCount] = first->top;
+    pointCount++;
+    xCoordinates[pointCount] = first->left;
+    yCoordinates[pointCount] = first->bottom;
+    pointCount++;
+    xCoordinates[pointCount] = first->right;
+    yCoordinates[pointCount] = first->top;
+    pointCount++;
+    xCoordinates[pointCount] = first->right;
+    yCoordinates[pointCount] = first->bottom;
+    pointCount++;
+    xCoordinates[pointCount] = second->left;
+    yCoordinates[pointCount] = second->top;
+    pointCount++;
+    xCoordinates[pointCount] = second->left;
+    yCoordinates[pointCount] = second->bottom;
+    pointCount++;
+    xCoordinates[pointCount] = second->right;
+    yCoordinates[pointCount] = second->top;
+    pointCount++;
+    xCoordinates[pointCount] = second->right;
+    yCoordinates[pointCount] = second->bottom;
+    pointCount++;
+    xCoordinates[pointCount] = first->left;
+    yCoordinates[pointCount] = second->top;
+    pointCount++;
+    xCoordinates[pointCount] = first->left;
+    yCoordinates[pointCount] = second->bottom;
+    pointCount++;
+    xCoordinates[pointCount] = first->right;
+    yCoordinates[pointCount] = second->top;
+    pointCount++;
+    xCoordinates[pointCount] = first->right;
+    yCoordinates[pointCount] = second->bottom;
+    pointCount++;
+    xCoordinates[pointCount] = second->left;
+    yCoordinates[pointCount] = first->top;
+    pointCount++;
+    xCoordinates[pointCount] = second->left;
+    yCoordinates[pointCount] = first->bottom;
+    pointCount++;
+    xCoordinates[pointCount] = second->right;
+    yCoordinates[pointCount] = first->top;
+    pointCount++;
+    xCoordinates[pointCount] = second->right;
+    yCoordinates[pointCount] = first->bottom;
+    pointCount++;
+
+    /* The original tests the postincrement and discards the comparison.
+     * insideCount and inside remain uninitialized when this loop exits. */
+    for (pointIndex = 0; pointIndex++; pointIndex < pointCount) {
+        x = xCoordinates[pointIndex];
+        y = yCoordinates[pointIndex];
+        if (first->left <= x && x <= first->right &&
+            second->left <= x && x <= second->right &&
+            first->top <= y && y <= first->bottom &&
+            second->top <= y && y <= second->bottom) {
+            if (insideCount == 4)
+                return 0;
+            inside[insideCount] = 1;
+            insideCount++;
+        } else {
+            if (insideCount == 4)
+                return 0;
+            inside[insideCount] = 0;
+            insideCount++;
+        }
+    }
+    if (insideCount != 4)
+        return 0;
+
+    intersection->left = MinShort(
+        (short)xCoordinates[inside[0]],
+        MinShort((short)xCoordinates[inside[1]],
+                 (short)xCoordinates[inside[2]]));
+    intersection->top = MinShort(
+        (short)yCoordinates[inside[0]],
+        MinShort((short)yCoordinates[inside[1]],
+                 (short)yCoordinates[inside[2]]));
+    intersection->left = MaxShort(
+        (short)xCoordinates[inside[0]],
+        MaxShort((short)xCoordinates[inside[1]],
+                 (short)xCoordinates[inside[2]]));
+    intersection->top = MaxShort(
+        (short)yCoordinates[inside[0]],
+        MaxShort((short)yCoordinates[inside[1]],
+                 (short)yCoordinates[inside[2]]));
+    return 1;
+}
+
 /* Function start: 0x436C70 */
 void __stdcall FillGraphicSuffix(char *path, short number, short digits)
 {

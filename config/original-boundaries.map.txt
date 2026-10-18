@@ -32,7 +32,6 @@
  0001:00035930 _FUN_00436930 00436930 f eventmgr.obj
  0001:00035990 _FUN_00436990 00436990 f eventmgr.obj
  0001:000359f0 _FUN_004369F0 004369f0 f eventmgr.obj
- 0001:00035ac0 _FUN_00436AC0 00436ac0 f eventmgr.obj
 
 # Unreferenced return-one function after the optimized diagnostic printer.
  0001:00041740 _FUN_00442740 00442740 f ixlog.obj

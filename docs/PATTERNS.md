@@ -1914,6 +1914,19 @@ Windows 95 DirectDraw and DirectSound behavior.
   spelling the loop as an explicit guard and `do` loop, and qualifying the
   descriptor-bound read as volatile all emit the same four differing
   instructions at the original eighty-byte span. None is retained.
+- `GetViewportIntersection` preserves a reversed `for` header: it tests the
+  point index's postincrement and discards the coordinate-count comparison
+  as its iteration expression. The inside count is not initialized. WC2's
+  original unoptimized counterpart exposes that control flow; its current
+  reconstructed C is not authoritative. Under WC1's optimizer, the complete
+  source retains the two coordinate arrays and reproduces the original
+  overlapping stack reads, three explicit index shifts, 148-byte frame, and
+  432-byte span. Do not repair the loop or initialize its count: these are
+  original defects in an unreferenced routine. The final maximum stores also
+  intentionally overwrite the preceding minimum results. A `do`/`break`
+  rewrite does not produce the same code. Keep the owner-scoped prototype's
+  parameters unnamed; naming them disturbs existing event-manager matches.
+  Detailed cross-release and stack evidence is recorded in `docs/ORDER.md`.
 - `AllocateFontWorkspace`'s loop reloads the workspace before advancing its
   byte offset. A cached entry pointer leaves ten differing encodings, versus
   the existing eight. A typed array loop with the increment in the width

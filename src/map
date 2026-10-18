@@ -1225,6 +1225,7 @@
 0x00436A00 DoLocalFn6A00
 0x00436A30 shrink_vector
 0x00436A70 shrink
+0x00436AC0 GetViewportIntersection
 0x00436C70 FillGraphicSuffix
 0x00436CB0 ConvertChar_Int
 0x00436D00 LoadBriefingRoom

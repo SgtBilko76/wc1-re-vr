@@ -1461,6 +1461,11 @@ void ExitCleanupHook(void);                                           /* 0x00436
 unsigned int IsVectorWithinRange(FixedVector *vector, short range);    /* 0x00436A00 */
 unsigned int shrink_vector(FixedVector *vector);                       /* 0x00436A30 */
 unsigned int shrink(int *component);                                   /* 0x00436A70 */
+#ifdef WC1_EVENTMGR_SOURCE
+/* Parameter names here perturb other CL 4.20 event-manager functions. */
+short __stdcall GetViewportIntersection(ShortRect *, const ShortRect *,
+                                         const ShortRect *);      /* 0x00436AC0 */
+#endif
 void __stdcall FillGraphicSuffix(char *path, short number,
                                  short digits);                        /* 0x00436C70 */
 void __stdcall ConvertChar_Int(char *text, short number,
