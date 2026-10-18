@@ -10,6 +10,7 @@
  *  Implement in ADDRESS ORDER -- MSVC emits functions in source order, so the
  *  list below is the original source order of this file.
  */
+#define WC1_IX_DSPV_SOURCE
 #include "ix.h"
 #include <stdlib.h>
 #include <string.h>

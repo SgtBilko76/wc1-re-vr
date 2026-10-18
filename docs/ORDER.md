@@ -118,6 +118,13 @@ changing their linkage to C, and renaming the free-list pointer all leave
 the relative offsets unchanged. Those probes are reverted. The original
 block's adjacency alone does not prove a single owner, and the ordering
 mechanism remains unresolved; no matching unit-data claim is made for it.
+Making the system flag private, consistent with its two referencing
+functions, also leaves all seven offsets unchanged. Explicit zero
+initializers do emit the declarations in the original relative order, but
+move them into initialized `.data`, contradicting the original uninitialized
+range. Both probes are reverted. Removing the flag's shared declaration
+changes code generation in other audio units; the retained DSP declaration
+scope is described in the later checkpoint and `docs/PATTERNS.md`.
 
 The assert anchors name three source trees, `D:\Rnd\Prj\ix\Src\Streamer\`,
 `D:\rnd\prj\ix\win95\dsp\` and `D:\Rnd\prj\ix\src\sound\`; each was a separate
@@ -1240,6 +1247,29 @@ with the same eleven call-analysis and 37 global-access diagnostics. The
 executable hash remains unchanged through verification. Audio storage-order
 and comparison-operand experiments are discarded; their findings are recorded
 above and in `docs/PATTERNS.md`.
+
+The DSP declaration checkpoint raises normalized exact matches from 1,244
+to 1,249 across the same 1,523 functions. Six report spans become exact,
+including the 694-byte stream allocator and 261-byte stream volume setter;
+the stream-release guard loses its former exact match. The ten stream
+routines' detailed differing-encoding total falls from 191 to 41, including
+the unlock guard's regression. All other 1,514 headline report rows remain
+unchanged. There are now 253 same-size differences and 21 size differences
+(146 absolute bytes, net -6); average mnemonic similarity remains 99.55%.
+The declaration ordering preserves the voice owner's previous output and
+the 74 compiler-generated array-initializer bytes and registrations.
+
+No function body, calling convention, storage definition, compilation-unit
+boundary, or link order changes in this checkpoint. The sound-system BSS
+offsets above remain unresolved. The code, data virtual-size, and file-size
+deficits remain 880, 1,856, and 1,024 bytes; relocation-section sizes remain
+36,306 original and 36,286 rebuilt. Strict positional matches rise by 36 to
+54,079 of 518,656 bytes (10.4268%), but whole-file equality still fails.
+Both builds and the required verification gates pass, with the same eleven
+call-analysis and 37 global-access diagnostics. Both value checks cover all
+1,523 functions with zero mismatches or skips, and the 1,097 linked globals
+and 39 embedded function pointers retain zero mismatches. The executable
+hash is unchanged through verification.
 
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates

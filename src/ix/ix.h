@@ -169,6 +169,9 @@ struct IxSound {
     void ix_sound_set_delete_on_stop(int enabled);
 };
 
+/* Stream control uses only the stream and voice state below. Unused external
+ * globals affect VC++ 4.20's code selection, so keep unrelated state out. */
+#ifndef WC1_IX_DSPS_SOURCE
 extern unsigned int dwIxSystemFlags;
 extern IxSound *pFreeSoundList;
 extern IxSample *pSampleList;
@@ -183,12 +186,17 @@ extern void (__cdecl *pIxFree)(void *);
 extern unsigned short nMasterVolume; /* 0x0047198C */
 extern short          anPanTable[];  /* 0x00597D28 */
 extern CRITICAL_SECTION csMixer;    /* 0x005985E8 */
+#endif
 
 #define IX_MIXER_BASE_RATE 22050    /* 0x5622, the divisor in set_frequency */
 
+/* The voice owner sees its state before the stream declarations; other DSP
+ * users see stream state first. Preserve this compilation-unit distinction. */
+#ifdef WC1_IX_DSPV_SOURCE
 extern IxVoice voices[];           /* 0x005981A8 */
 extern int     nVoiceCount;        /* 0x00598600 */
 extern int     nVoicesAllocated;   /* 0x00598604 */
+#endif
 
 /* The ix source tree lived on D: -- each assert site carries its own copy of
  * this literal (the build did not use /Gf, so identical strings are not
@@ -249,6 +257,14 @@ private:
 extern IxStream streams[];         /* 0x00598138 */
 extern int      nStreamCount;      /* 0x00598130 */
 extern int      nStreamsAllocated; /* 0x00598134 */
+
+#ifndef WC1_IX_DSPV_SOURCE
+extern IxVoice voices[];           /* 0x005981A8 */
+extern int     nVoiceCount;        /* 0x00598600 */
+#ifndef WC1_IX_DSPS_SOURCE
+extern int     nVoicesAllocated;   /* 0x00598604 */
+#endif
+#endif
 
 #define IX_DSPS_FILE "D:\\rnd\\prj\\ix\\win95\\dsp\\dsps.cpp"
 void ix_dsps_alloc(int stream, unsigned int size, int frequency,
@@ -487,6 +503,7 @@ extern "C" unsigned int ix_file_write(FILE *file, const void *source,
                                        unsigned int bytes); /* 0x0046173E */
 extern "C" long ix_file_size(FILE *file);        /* 0x00461764 */
 
+#ifndef WC1_IX_DSPS_SOURCE
 extern unsigned int *pStreamerPacketOffsets;
 extern unsigned int dwStreamerThreadTick;
 extern FILE *pStreamerPackageFile;
@@ -516,5 +533,6 @@ extern char cStreamerBranchTag;
 extern unsigned int nStreamerBranchStackIndex;
 extern CRITICAL_SECTION csStreamer;
 extern IxStreamerTrigger *pStreamerTriggers;
+#endif
 
 #endif /* IX_H */

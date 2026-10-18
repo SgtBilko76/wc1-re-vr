@@ -1224,6 +1224,35 @@ for similarity decisions.
 - An `/Od` format check can retain a jump through an empty default branch.
   `ix_dsps_alloc` has two such branches for its default eight-bit and mono
   formats. Omitting the `else` bodies removes ten original code bytes.
+- Unused external globals in `ix.h` affect VC++ 4.20's `/Od` operand
+  selection. `WC1_IX_DSPS_SOURCE` hides unrelated sound-system, allocator,
+  mixer, and streamer state from the stream-control unit. Its five required
+  globals remain visible. Voice declarations follow stream declarations for
+  DSP users, while `WC1_IX_DSPV_SOURCE` preserves the voice owner's preceding
+  declarations. These are matching header arrangements, not recovered
+  original header spellings; function bodies, types, calling conventions,
+  storage definitions, and flags are unchanged.
+  The resulting full spans of `ix_dsp_set_master_volume` (141 bytes),
+  `ix_dsp_free` (44), `ix_dsps_alloc` (694), `ix_dsps_play` (304),
+  `ix_dsps_stop` (254), and `ix_dsps_set_volume` (261) compare exactly.
+  The free wrapper's earlier instruction body was already exact; its final
+  alignment now matches after the preceding master-volume correction.
+  Across the ten stream routines, binary-comp's detailed differing-encoding
+  count falls from 191 to 41. `ix_dsps_get_buffer_free` falls from 43 to eleven
+  differences but becomes one byte short. The tradeoffs remain explicit:
+  `ix_dsps_free` loses its exact match (seven differing encodings and one
+  missing byte), and `ix_dsps_unlock` gains eight differing encodings in its
+  guard. Both have reversed comparison operands and branch direction.
+  The voice-control unit and every other report row outside DSP/stream
+  control retain their previous results.
+  Excluding only the system flag or sound globals, or additionally omitting
+  streamer types and functions, produces different incomplete results.
+  Removing redundant owner externs, renaming the stream index, and spelling
+  the guards as negated conjunctions do not improve the retained output.
+  Qualified reads do not fix the intended comparisons and can disturb later
+  routines. A volatile release parameter makes the body eighteen bytes
+  longer than the original; a subtraction-based range check adds instructions.
+  Those probes are reverted.
 - Local names affect CL 4.20's `/Od` stack allocation. In
   `ix_mixer_thread_proc`, declaration reordering alone did not recover the
   frame. The descriptive names `primaryCaps`, `resultCode`, `bufferDescriptor`,
@@ -1500,13 +1529,15 @@ for similarity decisions.
   Similarly, reversing comparison/addition operands or renaming the stream
   parameter did not alter the one-byte differences in the `/Od` DSP stream
   functions. These trials are not retained. Distinguish such body differences
-  from the last function's linker padding: `ix_dsp_free`,
-  `ix_thread_get_audio_chunk_size`, and `ix_dsps_unlock` already have matching
-  instruction bodies, but their object-end alignment contributes size
-  differences to the report. In particular, binary-comp matches all 83
-  instructions and 290 code bytes of `ix_dsps_unlock`; its original two
-  trailing INT3 bytes become seven at the current placement. Its reported
-  five-byte excess is not excess function code.
+  from the last function's linker padding: `ix_thread_get_audio_chunk_size`
+  has a matching instruction body, but object-end alignment contributes a
+  size difference. At the target-sort checkpoint, binary-comp also matched
+  all 83 instructions and 290 code bytes of `ix_dsps_unlock`; two original
+  trailing INT3 bytes became seven, explaining its five-byte excess then.
+  The later DSP declaration checkpoint described above changes its guard
+  and body size, so the earlier body-exact result is not a current claim.
+  `ix_dsp_free` now matches its complete span after the preceding function's
+  size correction.
 - `ix_sound_start` has three one-byte excesses where its spilled fastcall
   argument is compared with `pFreeSoundList`. The original loads the global
   into EAX and compares the stack slot; the rebuild loads the stack slot
