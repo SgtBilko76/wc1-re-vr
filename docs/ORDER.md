@@ -1063,3 +1063,14 @@ did not recover the original accesses; the fourth element also enlarged the
 frame from 148 to 152 bytes. These probes are not retained. In particular,
 do not infer four independent uninitialized scalars merely from the final
 branch and index loads: some of those slots already contain coordinates.
+
+A follow-up rectangle probe explicitly tested `x[0]` and initialized the
+first selected index from the first rectangle's left coordinate. With three
+index slots it emitted a 144-byte frame; four slots restored 148 bytes but
+still tested the cached left coordinate at `[ESP+0x10]` instead of the
+original `[ESP+0x24]`. Both reached only 85.34% mnemonic similarity. The
+compiler also cached a selected coordinate across minimum/maximum calls
+where the original reloads it. Sequencing those calls through a real result
+temporary, volatile X-array accesses, and volatile selection loads did not
+recover the original accesses; the latter enlarged the frame to 152 bytes.
+These probes are not retained, and the rectangle remains unimplemented.

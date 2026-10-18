@@ -200,9 +200,9 @@ void ClearRoomMenuLabel(void)
 }
 
 /* Function start: 0x43F6A0 */
-int IsRoomMenuLabelEmpty(void)
+char IsRoomMenuLabelEmpty(void)
 {
-    return pszCurrentRoomMenuLabel == 0;
+    return *(const char *volatile *)&pszCurrentRoomMenuLabel == 0;
 }
 
 /* Function start: 0x43F6B0 */

@@ -529,6 +529,22 @@ for similarity decisions.
   score expressions, reversed comparisons, and extra cached indices did not
   resolve them. Removing the viewport copy also removes the extra `stScreen`
   read reported by the global-access audit.
+- `IsRoomMenuLabelEmpty` returns a byte: the original uses `SBB AL,AL`
+  and `NEG AL`, and `RefreshRoomMenuLabel` tests AL after its call. Declare
+  the predicate as returning `char`; its zero/one result does not establish
+  signedness. Read `pszCurrentRoomMenuLabel` through a volatile-qualified
+  pointer lvalue to produce the original direct memory comparison against
+  one; the ordinary expression first loads EAX and compares that register.
+  The predicate's complete 16-byte span and its caller's 48-byte span now
+  match. This qualified access is a matching choice, not proof of original
+  source spelling or asynchronous updates. Plain and unsigned byte results,
+  explicit return branches, a named byte result, and logical negation did not
+  remove the extra load without that access qualification.
+  Qualifying the global pointer declaration also matches those functions,
+  but binary-comp's declaration parser omits a pointer qualified after its
+  asterisk, reducing the linked-data audit from 1,097 globals to 1,096.
+  That declaration form is not retained. Qualifying only the predicate's
+  read preserves the global's ordinary declaration and verification coverage.
 - `DecodeShapeFrame` receives a full-width height argument and narrows its
   maximum coordinate locally. Its caller sign-extends the height before
   pushing it. Read the two signed coordinate words into short locals before
@@ -1127,6 +1143,13 @@ for similarity decisions.
   resolve them. A guarded decrement loop and a register hint in `hit_asteroid`
   also leave its exchanged registers unchanged. The previous reconstruction is
   retained with only the independently proven unsigned-scale correction.
+
+- Giving `objective_lost` an explicit mission-ship index, as either an int
+  or a short, leaves its allocation unchanged. Reversing the command/opcode
+  equality in `FindSceneAnimationCommand` likewise leaves its compared-byte
+  order unchanged. Saving `nTargetRange` in a short before `Mveer_away`'s
+  proximity test does not change its reversed loads and comparison. These
+  trials are not retained.
 
 Do not hand-write thunks, vtable dispatch, exception tables, or other compiler
 glue. `make audit-compiler-glue` enforces this. A real function annotation must

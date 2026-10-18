@@ -1619,7 +1619,7 @@ int CollectRasterClipColours(RasterClip *clip,
                              unsigned int *colours);                  /* 0x0043F5A9 */
 void CorrectPointers(void);                                            /* 0x0043F640 */
 void ClearRoomMenuLabel(void);                                        /* 0x0043F690 */
-int IsRoomMenuLabelEmpty(void);                                       /* 0x0043F6A0 */
+char IsRoomMenuLabelEmpty(void);                                       /* 0x0043F6A0 */
 void DrawRoomMenuLabel(TextContext *context,
                        const char *label);                            /* 0x0043F6B0 */
 void RefreshRoomMenuLabel(void);                                      /* 0x0043F6F0 */
