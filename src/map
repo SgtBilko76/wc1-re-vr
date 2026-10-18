@@ -1208,6 +1208,7 @@
 0x00436650 LoopUiFn6650
 0x00436740 set_up_screen_viewport
 0x004368C0 GameNoBodyStubv18
+0x004368D0 DosInterruptHandlerHook
 0x004368E0 ReturnConst8000
 0x004368F0 HelperOf4273C0A
 0x00436900 GameNoBodyStubv19

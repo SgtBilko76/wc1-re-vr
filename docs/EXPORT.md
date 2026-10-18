@@ -34,10 +34,27 @@ the boundary, so the export takes the implemented function's name.
 The map also retains four compiler-generated DSP array initializer entries.
 They deliberately have no source annotations and are checked separately by
 `make verify-array-initializers` (included in `make verify`). The function
-report now counts 1,522 source entries after removal of their four
+report now counts 1,523 source entries after removal of their four
 handwritten stand-ins and recovery of the two graphics diagnostic functions
-`__copyline` and `__wipeline`, and the C key-reset forwarder at `0x00436390`;
+`__copyline` and `__wipeline`, the C key-reset forwarder at `0x00436390`,
+and the DOS interrupt callback at `0x004368D0`;
 the separate gate covers the 74 generated array-initializer code bytes.
+
+`make verify-code-pointers`, included in `make verify`, checks the targets
+of HIGHLOW-relocated function pointers embedded in reconstructed routines.
+It uses binary-comp's source/map correspondence and relocated-pointer check,
+preserving each routine's reference order and multiplicity. It currently
+checks 39 pointers in 26 functions. This supplements instruction comparison,
+whose address normalization can accept a pointer to the wrong entry. The
+gate found startup's substitution of the neighboring mouse hook for the
+DOS callback, and `EMStartUp`'s substitution of joystick polling for
+`get_player_input`. Both references now match the original targets. This
+gate checks reference identity, not instruction similarity or absolute layout;
+function pointers stored in data remain covered by the unit-data checks.
+Negative checks on temporary executable copies restore each wrong target
+independently; the gate rejects both and names the affected caller. The
+recovered DOS callback also passes a separate literal binary-comp comparison
+of its complete sixteen-byte span, including compiler padding.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
 initialized-data sections recovered for winsys (259 bytes), mono (225),

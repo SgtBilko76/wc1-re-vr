@@ -105,7 +105,7 @@ unsigned int EMStartUp(void)
     if (InitializeEventManager(20, InitializeEventManagerResources, 0) == 0)
         exit_squadron("EMStartUp Failed");
     ConfigureEventManagerPointer(stMouseCursorState.shape, 0);
-    SetEventManagerPump(PollJoystickButtonEvents);
+    SetEventManagerPump(get_player_input);
     nMenuInputRepeatDelay = 6;
     return 0;
 }

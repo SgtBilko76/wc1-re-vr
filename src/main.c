@@ -2,6 +2,7 @@
  * The initialized state and complete literal order identify this group.
  * Its trailing cursor/palette helpers remain provisional; see docs/ORDER.md.
  */
+#define WC1_MAIN_SOURCE
 #include "wc1.h"
 
 /* Legacy overlay setting: named in the WINGLEADER source screenshot and
@@ -139,6 +140,7 @@ int main(short argc, char **argv)
 {
     char **argumentSlot;
     char *argument;
+    char *option;
     int animationDemo;
     int selection;
     int launchMission;
@@ -158,7 +160,7 @@ int main(short argc, char **argv)
     ExitCleanupHook();
     StartupHook(GetJoystickButtonEdge);
     DAT_0059ab4c = GetStartupErrorCode(0x21);
-    ShutdownHook(0x21, MouseIdleHook);
+    ShutdownHook(0x21, DosInterruptHandlerHook);
 
     argumentCount = LoadWingCmdrCfgFile(argc, argv);
     chdir("gamedat");
@@ -193,7 +195,7 @@ int main(short argc, char **argv)
         case '?':
             SystemDebugPrintf("Version %s.\n", pGameVersion);
         case '-': {
-            char *option = *argumentSlot + 1;
+            option = *argumentSlot + 1;
 
             if (*option == 'm')
                 nShowMemoryStatus = 1;
@@ -217,7 +219,7 @@ int main(short argc, char **argv)
         }
         case 'A':
         case 'a': {
-            char *option = argument + 1;
+            option = argument + 1;
 
             if (*option == 's' || *option == 'S') {
                 nStartNavPointOverride = (short)atoi(argument + 2);

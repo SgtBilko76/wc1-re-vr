@@ -1774,4 +1774,8 @@ void ix_streamer_force_trigger(char trigger);                         /* 0x00443
 void ix_streamer_set_volume(unsigned short volume);                   /* 0x004435BE */
 unsigned short ix_streamer_get_volume(void);                          /* 0x0044363B */
 
+#ifdef WC1_MAIN_SOURCE
+void DosInterruptHandlerHook(void);                                 /* 0x004368D0 */
+#endif
+
 #endif /* GAME_FUNCS_H */

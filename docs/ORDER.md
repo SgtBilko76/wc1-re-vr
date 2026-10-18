@@ -1090,9 +1090,9 @@ remaining discovery candidates include the rectangle routine at `0x00436AC0`
 and legacy event hooks. Do not replace these gaps with padding. The apparent
 entry at `0x004393F0` lies in a switch table/padding range and is not a function.
 
-The current boundary supplement has 28 unimplemented entries in addition to
+The current boundary supplement has 27 unimplemented entries in addition to
 the four reproduced array initializers. Their original aligned spans total
-864 bytes: 27 empty or constant-return routines occupy 16 bytes apiece,
+848 bytes: 26 empty or constant-return routines occupy 16 bytes apiece,
 and the rectangle routine occupies 432 bytes before `FillGraphicSuffix` at
 `0x00436C70`. These are verified code boundaries, not recovered interfaces
 or names. The surrounding empty routines' purposes cannot be established by
@@ -1111,6 +1111,18 @@ Exposing that unused declaration to every unit changed 57 report rows and
 lost five net exact matches; scoping the declaration preserves all other
 units and every pre-existing event-manager result. The recovered boundary
 now comes from the source annotation rather than the supplement.
+
+The empty entry at `0x004368D0` is now `DosInterruptHandlerHook`, retained
+in `eventmgr.c` between `MouseIdleHook` and `GetNavRangeSentinel`. Its role
+comes from a relocated pointer operand at `0x0042752C`: startup passes this
+entry with vector `0x21` to the legacy vector-setting hook. Cleanup restores
+the previously saved vector. The former source incorrectly passed the
+neighboring mouse hook at `0x004368C0`. The original contains only `RET`
+and compiler padding; a plain empty C function reproduces its sixteen bytes.
+Its original name and unused parameter list are not recoverable from that
+body. The minimal void signature preserves its return convention, and its
+`wc1funcs.h` prototype is visible to its caller through `WC1_MAIN_SOURCE`.
+The boundary supplement no longer supplies this implemented entry.
 
 At the autopilot/input size checkpoint of 2026-10-18, the 1,521-function
 report has 1,235 normalized exact matches, 261 same-size differences, and
@@ -1143,6 +1155,21 @@ the other 1,518 rows are unchanged. Literal whole-file matches rise by 616
 to 53,940 of 518,656 bytes (10.4000%). The file-size and data virtual-size
 deficits remain 1,024 and 1,856 bytes respectively; the strict comparison
 still fails.
+
+The subsequent callback checkpoint covers 1,523 functions: 1,242 normalized
+exact matches, 257 same-size differences, and the same 24 reported size
+differences (150 absolute bytes, net -6). All 1,522 pre-existing report rows
+are unchanged. The two corrected callback targets were hidden by address
+normalization; the added code-pointer gate independently verifies 39
+references in 26 routines. The new empty callback reduces the code-section
+deficit to 880 bytes, of which 848 are the remaining missing spans. The
+known import-stub boundary artifact described in `docs/EXPORT.md` remains
+among the reported size differences. Literal whole-file matches increase
+by 103 to 54,043 of 518,656 bytes (10.4198%). The file remains 1,024 bytes
+short and the data virtual-size deficit remains 1,856 bytes. The strict
+whole-file comparison still fails. Win32 and modern builds, the required
+verification gates, and both deliberately incorrect callback checks pass;
+the existing eleven call-analysis and 37 global-access diagnostics remain.
 
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates

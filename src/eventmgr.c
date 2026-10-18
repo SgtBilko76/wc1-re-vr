@@ -977,6 +977,12 @@ void MouseIdleHook(void)
 {
 }
 
+/* The startup code installs this distinct empty entry for vector 0x21. */
+/* Function start: 0x4368D0 */
+void DosInterruptHandlerHook(void)
+{
+}
+
 /* Function start: 0x4368E0 */
 unsigned short GetNavRangeSentinel(void)
 {
@@ -1071,13 +1077,10 @@ unsigned int IsVectorWithinRange(FixedVector *vector, short range)
 /* Function start: 0x436A30 */
 unsigned int shrink_vector(FixedVector *vector)
 {
-    unsigned int shrinking;
-
-    do {
-        shrinking = shrink(&vector->x);
-        shrinking |= shrink(&vector->y);
-        shrinking |= shrink(&vector->z);
-    } while (shrinking != 0);
+    while (shrink(&vector->x) |
+           shrink(&vector->y) |
+           shrink(&vector->z)) {
+    }
     return 0;
 }
 

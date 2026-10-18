@@ -1262,7 +1262,7 @@ for similarity decisions.
   96.62%; sixteen excess bytes and allocation differences remain.
   The subsequent pointer-lifetime recovery removes those sixteen bytes.
   Capture the current argument after the `Origin` comparison, then use a
-  separate option pointer in the `-` and arcade branches. Reload that option
+  separate option pointer for the `-` and arcade branches. Reload that option
   after the version-print call, and retain it across flag stores. The other
   mission options use the captured argument instead of reloading the slot.
   Capture the two campaign values as signed bytes after the timing call and
@@ -1274,14 +1274,29 @@ for similarity decisions.
   comparison, qualified count read, and an explicit video-mode local do not
   fix these remaining differences. Reusing the short argument locals for
   the campaign bytes adds unwanted sign extensions; retain byte locals.
-  Sharing one option local between both switch branches leaves `main`
-  unchanged but loses the newly exact `ReleaseStaleNavTarget`, so the
-  separate scopes remain. `SelectNextExternalViewObject` also becomes exact.
+  At that checkpoint, sharing one option local between both switch branches
+  leaves `main` unchanged but loses the newly exact `ReleaseStaleNavTarget`,
+  so separate scopes are retained. `SelectNextExternalViewObject` also becomes exact.
   The added startup locals initially disturb `UpdateTrainSimMenuCursor`.
   Testing `IsPointInRect`'s result directly, without the saved condition
   local, restores its original allocation and complete 96-byte match.
   Declaration initializers, reordered locals, and a for-loop spelling did
   not restore it. All other main-unit report rows remain unchanged.
+  Recovering startup's distinct DOS interrupt callback subsequently changes
+  this allocation context again. A shared option pointer now retains both
+  branch lifetimes and restores the cursor's exact match while preserving
+  every other main-unit report result, including `ReleaseStaleNavTarget`.
+  Restoring a saved cursor condition, adding declaration initializers, and
+  spelling its loop as a guarded do/while or for loop did not recover the
+  original allocation in this context; none of those cursor probes remains.
+- The recovered DOS callback also changes `shrink_vector`'s allocation.
+  Expressing the three shrink calls as a bitwise-OR loop condition preserves
+  their original X/Y/Z call order and restores the previous 64-byte span,
+  mnemonic score, and nine differing instruction encodings. Explicit
+  component-pointer locals leave ten or eleven differences and change the
+  prologue scheduling; those probes are not retained. The callback's unused
+  prototype is scoped to its actual caller rather than exposed before every
+  event-manager function, preserving `ReleaseInputEvent`'s allocation.
 - `UpdateDamageDisplay` saves the prior component count in a word local
   before counting damaged components. Comparing the promoted new byte count
   with that saved word reproduces the original `MOVSX`/word comparison and
