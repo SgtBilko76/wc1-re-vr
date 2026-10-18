@@ -362,8 +362,10 @@ void DrawTitleLogo(short distance, short y);                            /* 0x004
 void UpdateTitleMenuCursor(void);                                      /* 0x0040FB10 */
 int Title_Sequence(void);                                               /* 0x0040FB70 */
 void CalibrateJoystickInteractive();                                  /* 0x004102B0 */
+#ifndef WC1_MAIN_SOURCE
 void WaitForJoystickButtonRelease(void);                               /* 0x004106C0 */
 void WaitForJoystickButtonPress(void);                                 /* 0x00410700 */
+#endif
 void SetFleetOverviewView(int initializeCockpit);                     /* 0x00410740 */
 unsigned int rotate_eye_to_goal(void);                                 /* 0x00410A30 */
 short GetVectorMagnitude(const FixedVector *vector);                   /* 0x00410AD0 */

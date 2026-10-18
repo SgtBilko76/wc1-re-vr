@@ -2350,3 +2350,42 @@ Windows 95 DirectDraw and DirectSound behavior.
   scheduling differences to the following scale store. Scoped scale and
   owner-byte locals plus a qualified destination store leave three differences.
   All of these body probes are discarded.
+- Seven briefing/medal globals have 48 original relocated references, all
+  within `screens.c`. Omitting their declarations from `gameflow.c` restores
+  the operand order of both screen-pointer comparisons in `free_viewport`.
+  Its 228-byte body and complete 240-byte span now compare exactly. No
+  other game-flow routine changes. The existing `WC1_GAMEFLOW_SOURCE` marker
+  controls the exclusion; storage, types, and function bodies are unchanged.
+- The room, briefing, and conversation declaration matrix checked all seven
+  combinations across eligible core units. The room group's seven globals
+  have 54 original relocated references; the conversation group's five have
+  ten, all in their respective owners. Only the briefing exclusion above is
+  retained. Keep `pDebriefingSceneData` outside this experiment: some encoded
+  operands point to its last byte because they address the following scratch
+  buffer through `szTextScratchBuffer - 1`. An encoded displacement inside
+  a global's range does not by itself prove an access to that global.
+- A second seven-case matrix covers six mission map-bound globals, three
+  navigation-label globals, and six simulator globals. Their twenty, 34,
+  and 87 original relocated references stay within `mission.c`, `nav.c`,
+  and `trainsim.c` respectively. None of these tested exclusions improves
+  a unit while preserving its exact matches and sizes, or offers a useful
+  net improvement, so none is retained.
+- Unused function prototypes also affect CL 4.20 instruction selection.
+  `WaitForJoystickButtonRelease` and `WaitForJoystickButtonPress` have ten
+  original direct references, all within `joystick.c`. Omitting their
+  prototypes from `main.c` reduces `get_player_input` from eleven differing
+  encodings to eight at its unchanged 224-byte span and 222-byte body. Its
+  three saved-input comparisons regain the original operand order. The
+  remaining differences concern scheduling and the copied sample's index
+  register. No other main-module routine changes. All seven combinations
+  with four mono helpers and three campaign helpers were tested; other
+  exclusions are discarded. These are measured declaration contexts, not
+  recovered original header text or changes to linkage or calling convention.
+- Further audio and heap probes are discarded. Renaming the DSP voice
+  parameter to `voiceIndex` leaves all fourteen voice-module report rows
+  unchanged. Qualifying the heap-base read, or both base and size reads in
+  the same expression, leaves the two reversed loads in `FreeNearHeapBlock`
+  and `GetNearHeapBlockSize` unchanged. Sequencing the two qualified reads
+  through the existing descriptor variable adds one body byte to each and
+  leaves seven and nine body differences respectively. Each probe was
+  restored and force-rebuilt to the preceding checkpoint's executable hash.

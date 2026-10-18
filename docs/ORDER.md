@@ -2478,3 +2478,60 @@ out of 518,656 bytes (11.1211%), with 460,976 differing positions in
 23,061 runs. Literal executable equality remains incomplete. Clean-build
 and post-verification SHA-256 hashes agree:
 `6cf88c069df006c1b0a67956c5a167f29edfdcef8b1c73eab2e87ad157881ec7`.
+
+## Briefing and joystick declaration checkpoint
+
+Seven briefing/medal globals have 48 original relocated references, all
+within `screens.c`. Source uses agree. Omit their declarations from
+`gameflow.c`, which does not use them, through its existing unit marker.
+This restores the original operand order of both screen-pointer comparisons
+in `free_viewport`: its 228-byte body and 240-byte aligned span are now
+normalized exact, eliminating two differing encodings.
+
+The joystick button press/release wait helpers have ten original direct
+references, all within `joystick.c`; their reconstructed uses agree. Omit
+their prototypes from `main.c` through its existing marker. The saved-input
+comparisons in `get_player_input` recover their original operand order,
+reducing eleven differing encodings to eight. Its 222-byte body, 224-byte
+span, and 96.61% mnemonic similarity remain unchanged. No other main-module
+routine changes.
+
+Three matrices tested all seven combinations of their respective groups
+across eligible core units: room/briefing/conversation globals,
+mission-map/navigation-label/simulator globals, and mono/campaign/joystick
+helper prototypes. Only the two exclusions above are retained. The other
+cases offer no suitable improvement; detailed ownership evidence and failed
+audio/heap probes are recorded in `docs/PATTERNS.md`. Every discarded probe
+was restored, and forced rebuilds reproduced the preceding checkpoint's
+executable hash. These guards reproduce measured compiler contexts, not
+recovered original header text. Function bodies, storage, types, linkage,
+calling conventions, compiler settings, and compilation-unit ranges are
+unchanged.
+
+The final clean rebuild regenerates all 78 native objects, archives, and
+executable outputs. Only the two expected report rows change, removing five
+differing encodings overall. The other 1,522 rows and every reported span
+are unchanged, and no previously exact routine regresses. Normalized exact
+matches rise from 1,292 to 1,293, with 215 same-size differences and sixteen
+size differences (74 absolute bytes, net -6). Mnemonic totals remain 1,390
+perfect, 1,519 at or above 90%, five below, and 99.63% average. There are no
+missing exports, fallbacks, or errors. A separate binary-comp reference
+check verifies the identities, order, multiplicity, and relative positions
+of all seventeen named global operands in `free_viewport`.
+
+Native and modern builds, source-order and address audits, the order report,
+and all required verification gates pass. Both value checks cover 1,524
+functions with zero mismatches or skips. All 1,104 linked globals, 39 code
+pointers, 79 mixer operands, and recovered unit-data blocks pass. Call and
+global-access analyses retain eleven and 35 diagnostics across 1,138 and
+1,059 checked functions. Existing modern-linker unaligned-pointer warnings
+remain. No gameplay validation is claimed.
+
+All section sizes and placements remain unchanged: code is 400,663 bytes
+versus 401,111, data virtual size 1,329,724 versus 1,331,596, relocation data
+36,298 versus 36,306, and file size 518,144 versus 518,656. The entry point
+remains `0x0044E5B0` versus `0x0044E770`. Strict positional matches remain
+57,680 out of 518,656 bytes (11.1211%), with 460,976 differing positions
+in 23,061 runs. Literal executable equality remains incomplete. Clean-build
+and post-verification SHA-256 hashes agree:
+`4a1fceb32eba2f3b75e06ea14d81fe8512e5c5b98fae8b698dfcc02efa0aae8f`.

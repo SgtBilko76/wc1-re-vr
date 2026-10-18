@@ -345,8 +345,10 @@ extern TextContext stRoomMenuTextContext; /* 0x00598abe */
 extern unsigned char *apRecRoomSceneData[3]; /* 0x00598ae0 */
 extern unsigned char *pBriefingPacket; /* 0x00598aec */
 extern unsigned char *pBriefingTextData; /* 0x00598af0 */
+#ifndef WC1_GAMEFLOW_SOURCE
 extern short *pMouthAnimationCommands; /* 0x00598af4 */
 extern unsigned char *pMedalTextData; /* 0x00598af8 */
+#endif
 extern unsigned char *pDebriefingSceneData; /* 0x00598afc */
 extern unsigned char *pBriefingSceneData; /* 0x00598c00 */
 extern unsigned char *pConversationBackdropShape; /* 0x00598c04 */
@@ -355,12 +357,16 @@ extern short nConversationSceneType; /* 0x00598c0a */
 extern unsigned char *pTalkingHeadShape; /* 0x00598c0c */
 extern short nConversationTextColour; /* 0x00598c10 */
 extern unsigned char *pBriefingAnimationShape; /* 0x00598c14 */
+#ifndef WC1_GAMEFLOW_SOURCE
 extern short *pFaceAnimationCommands; /* 0x00598c18 */
 extern unsigned char *pBriefingBodyShape; /* 0x00598c1c */
 extern unsigned char *pMedalSceneData; /* 0x00598c20 */
 extern unsigned char *pBriefingPortraitShape; /* 0x00598c24 */
+#endif
 extern unsigned char *pDebriefingTextData; /* 0x00598c28 */
+#ifndef WC1_GAMEFLOW_SOURCE
 extern unsigned char *pBriefingCloseupShape; /* 0x00598c2c */
+#endif
 extern unsigned char *pConversationOverlayShape; /* 0x00598c30 */
 extern unsigned char bFilteredKeyWaitStarted; /* 0x00598c34 */
 extern InputEvent aInputEventPool[0x100]; /* 0x00598c40 */
