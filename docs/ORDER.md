@@ -213,7 +213,7 @@ sits at one constant offset from the original.
 | `src/barracks.c` | `0x41A9D0`–`0x41C50F` |
 | `src/fade.c` | `0x41C510`–`0x41C75F` |
 | `src/debug.cpp` | `0x41C760`–`0x41D0BF` |
-| `src/mathutil.c` | `0x41D0C0`–`0x41D11F` |
+| `src/mathutil.c` | `0x41D0C0`–`0x41D11F`; read-only `0x4630DC`–`0x4630E7` |
 | `src/disk.c` | `0x41D120`–`0x41DEDF` |
 | `src/ship.c` | `0x41DEE0`–`0x4219BF` |
 | `src/init.c` | `0x4219C0`–`0x42200F` |
@@ -1161,14 +1161,15 @@ at `0x004631C8` with one address shift and the value-name array at offset
 diagnostic literals occupy
 writable data. Changing the whole unit's string-storage policy would therefore
 be incorrect. The three single-precision constants at `0x004630DC`–`0x004630E7`
-encode approximately pi, degrees per radian, and radians per degree. Their
-names and owner remain unidentified, and no base-relocated pointer targets
-this range. Three `const float` definitions in the temporary `globals.c`
-preserve their bytes and four-byte spacing; the read-only gate verifies all
-twelve bytes and their storage flags. Their absolute placement is still wrong:
-the original precedes the DirectDraw GUIDs, while temporary storage follows
-the graphics registry arrays. The complete read-only section now has the
-original size, which alone does not establish a section match.
+encode pi, degrees per radian, and radians per degree; no base-relocated
+pointer targets them. Their read-only data must come from a unit linked
+between `barracks.obj` and `dib.obj`, none of which has other read-only data,
+so they are now `mathutil.c`'s `fPi`, `fDegreesPerRadian` and
+`fRadiansPerDegree`, beside the integer min/max helpers. The names follow
+the values; the original identifiers are unknown. With them in place the
+whole `.rdata` section matches the original except for 21 bytes, all of them
+CRT code pointers displaced by the sixteen bytes `sort_viable_target_list`
+still lacks; the CRT block holding `28.0f` again starts at `0x00463200`.
 
 The raster library is the one assembled object, and its edges are proven.
 CL pads every optimized function with NOPs to a 16-byte boundary, so the

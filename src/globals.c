@@ -8,15 +8,6 @@
 #include "wc1.h"
 
 
-/* Original single-precision angular constants, with no identified direct
- * references. Keep their names and ownership unresolved. */
-/* 0x004630dc */
-const float DAT_004630dc = 3.1415927410125732421875f;
-/* 0x004630e0 */
-const float DAT_004630e0 = 57.295780181884765625f;
-/* 0x004630e4 */
-const float DAT_004630e4 = 0.01745329238474369049072265625f;
-
 /* The raster library's tables and variables.  The Win32 build takes them
  * from src/raster.asm, which keeps these first tables in its code segment;
  * the SDL build defines them here for the portable routines. */

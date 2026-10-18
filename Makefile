@@ -227,7 +227,7 @@ GLOBALS_MISSING_MAX_ADDRESS = 0x004751ff
 GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/eject.c src/cmpgn.c \
 	src/fl.c src/cutscene.c src/brains.c src/mission.c \
 	src/objdata.c src/nav.c src/nearheap.c src/gameflow.c src/title.c src/spc.c src/cockpt.c src/version.c \
-	src/barracks.c src/fade.c src/debug.cpp \
+	src/barracks.c src/fade.c src/debug.cpp src/mathutil.c \
 	src/disk.c src/ship.c src/init.c src/logic.c src/pilot.cpp src/trainsim.c src/main.c \
 	src/sound.c src/launch.c src/damage.c src/view.c src/music.c src/ending.c src/input.c \
 	src/comm.c src/video.c src/joycal.c src/dib.c src/game.c src/eventmgr.c src/screens.c \

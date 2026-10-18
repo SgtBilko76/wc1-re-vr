@@ -664,13 +664,13 @@ UNITS = {
         ('stRasterSurface', 0x00),
         ('abShapeTransformScratch', 0x18),
     ), frozenset(), storage='.bss', owner='gr.obj', section_size=64024),
-    # The original owner is unresolved. This verifies the constants and
-    # their relative layout in the temporary globals object's .rdata only.
-    'globals-angular': UnitData(0x004630DC, 12, (
-        ('DAT_004630dc', 0x00),
-        ('DAT_004630e0', 0x04),
-        ('DAT_004630e4', 0x08),
-    ), frozenset(), storage='.rdata', owner='globals.obj'),
+    # The angular constants form mathutil's complete read-only section,
+    # between barracks' menu regions and dib's DirectDraw GUIDs.
+    'mathutil-angular': UnitData(0x004630DC, 12, (
+        ('fPi', 0x00),
+        ('fDegreesPerRadian', 0x04),
+        ('fRadiansPerDegree', 0x08),
+    ), frozenset(), storage='.rdata', owner='mathutil.obj'),
     'damage-bss': UnitData(0x00476554, 4, (
         ('nDisplayedComponentDamage', 0x00),
     ), frozenset(), storage='.bss', owner='damage.obj'),

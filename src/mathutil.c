@@ -1,10 +1,18 @@
 /*
- *  Integer min/max used across the game core.
+ *  Integer min/max used across the game core, and the single-precision
+ *  angular constants.
  *
- *  Address range 0x41d0c0-0x41d11f (provisional -- see docs/ORDER.md).
+ *  Address range 41d0c0-41d11f (provisional -- see docs/ORDER.md).
  *  Boundary evidence: MinShort/MaxShort pair, 94 call sites, no other content in the gap.
+ *  The constants' read-only data follows barracks' menu regions and precedes
+ *  the DirectDraw GUIDs, as only a unit linked between those two can place it.
  */
 #include "wc1.h"
+
+/* Nothing in the shipped executable references these three values. */
+const float fPi = 3.1415927410125732421875f; /* 0x004630dc */
+const float fDegreesPerRadian = 57.295780181884765625f; /* 0x004630e0 */
+const float fRadiansPerDegree = 0.01745329238474369049072265625f; /* 0x004630e4 */
 
 /* Function start: 0x41D0C0 */
 short MinShort(short a, short b)
