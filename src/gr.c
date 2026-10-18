@@ -193,7 +193,6 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
     unsigned char colour;
     unsigned short rowCode;
     unsigned short runLength;
-    short copyLength;
     short maximumX;
     short maximumY;
     short sourceX;
@@ -201,7 +200,6 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
     int frameOffset;
     int x;
     int y;
-    int runRight;
     int skip;
 
     if (shape == 0 || frame < 0)
@@ -236,6 +234,9 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
         y = topExtent + sourceY;
         destination = bitmap + y * width + x;
         if ((rowCode & 1) != 0) {
+            short runCopyLength;
+            int runRight;
+
             rowCode >>= 1;
             while (rowCode != 0) {
                 code = *commands;
@@ -250,17 +251,17 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
                         runRight = x + runLength - 1;
                         if (x <= maximumX && runRight >= 0) {
                             skip = 0;
-                            copyLength = (short)runLength;
+                            runCopyLength = (short)runLength;
                             if (x < 0) {
-                                copyLength =
-                                    (short)(copyLength + (short)x);
+                                runCopyLength =
+                                    (short)(runCopyLength + (short)x);
                                 skip = -x;
                             }
                             if (maximumX < runRight)
-                                copyLength = (short)(copyLength -
-                                                       runRight + maximumX);
+                                runCopyLength =
+                                    (short)(runCopyLength - runRight + maximumX);
                             memset(destination + skip, colour,
-                                   (short)copyLength);
+                                   (short)runCopyLength);
                         }
                     }
                     x += runLength;
@@ -273,17 +274,17 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
                         runRight = x + runLength - 1;
                         if (x <= maximumX && runRight >= 0) {
                             skip = 0;
-                            copyLength = (short)runLength;
+                            runCopyLength = (short)runLength;
                             if (x < 0) {
-                                copyLength =
-                                    (short)(copyLength + (short)x);
+                                runCopyLength =
+                                    (short)(runCopyLength + (short)x);
                                 skip = -x;
                             }
                             if (maximumX < runRight)
-                                copyLength = (short)(copyLength -
-                                                       runRight + maximumX);
+                                runCopyLength =
+                                    (short)(runCopyLength - runRight + maximumX);
                             memcpy(destination + skip, commands + skip,
-                                   (short)copyLength);
+                                   (short)runCopyLength);
                         }
                     }
                     commands += runLength;
@@ -292,21 +293,25 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
                 }
             }
         } else {
+            int rowRight;
+
             rowCode >>= 1;
             if (y >= 0 && y <= maximumY) {
-                runRight = x + rowCode - 1;
-                if (x <= maximumX && runRight >= 0) {
+                rowRight = x + rowCode - 1;
+                if (x <= maximumX && rowRight >= 0) {
+                    short rowCopyLength;
+
                     skip = 0;
-                    copyLength = (short)rowCode;
+                    rowCopyLength = (short)rowCode;
                     if (x < 0) {
-                        copyLength = (short)(copyLength + (short)x);
+                        rowCopyLength = (short)(rowCopyLength + (short)x);
                         skip = -x;
                     }
-                    if (maximumX < runRight)
-                        copyLength = (short)(copyLength -
-                                                     runRight + maximumX);
+                    if (maximumX < rowRight)
+                        rowCopyLength =
+                            (short)(rowCopyLength - rowRight + maximumX);
                     memcpy(destination + skip, commands + skip,
-                           (short)copyLength);
+                           (short)rowCopyLength);
                 }
             }
             commands += rowCode;
@@ -577,13 +582,15 @@ void DrawFontGlyph(char character, TextContext *context, int height,
                   characterData[0x104]);
         if (fontColour == colour && fontBackground == background) {
             for (; height-- != 0; row++) {
+                unsigned short *rowOffsets = viewport->rowOffsets;
+
                 if (viewport->top == row) {
                     destinationOffset = (unsigned int)context->cursorX;
-                    rowOffset = viewport->rowOffsets[row];
+                    rowOffset = rowOffsets[row];
                     if ((rowOffset & 0x8000) == 0)
                         destinationOffset += rowOffset;
                 } else {
-                    destinationOffset = viewport->rowOffsets[row] +
+                    destinationOffset = rowOffsets[row] +
                                         (unsigned int)context->cursorX;
                 }
                 destination = viewport->pixels + destinationOffset;
@@ -596,13 +603,15 @@ void DrawFontGlyph(char character, TextContext *context, int height,
             }
         } else {
             for (; height-- != 0; row++) {
+                unsigned short *rowOffsets = viewport->rowOffsets;
+
                 if (viewport->top == row) {
                     destinationOffset = (unsigned int)context->cursorX;
-                    rowOffset = viewport->rowOffsets[row];
+                    rowOffset = rowOffsets[row];
                     if ((rowOffset & 0x8000) == 0)
                         destinationOffset += rowOffset;
                 } else {
-                    destinationOffset = viewport->rowOffsets[row] +
+                    destinationOffset = rowOffsets[row] +
                                         (unsigned int)context->cursorX;
                 }
                 destination = viewport->pixels + destinationOffset;

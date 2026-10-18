@@ -539,9 +539,15 @@ for similarity decisions.
   skip, and advance the destination and X coordinate inside each encoded-run
   branch. CL merges the common tail while preserving separate run-length
   promotions. Initialize both maximum coordinates before the command pointer.
-  These forms recover the original 640-byte span and 94.90% mnemonic
-  similarity; 34 of 196 instructions still differ in the byte comparison,
-  principally in clipping registers and scheduling.
+  Keep the encoded runs' clipped length and right edge in their shared
+  encoded-row block. The raw-row branch has its own right edge and an inner
+  clipped-length word. These independent lifetimes recover the original
+  destination-offset register copy, the 640-byte span, and the encoded-run
+  clipping registers. The current result is 97.96% mnemonic similarity with
+  eight differing instructions out of 196, all in raw-row clipping. Giving
+  each of the three copy paths separate length, right-edge, and skip locals
+  instead reaches 98.98% similarity but differs in 93 instructions; the byte
+  comparison, not that higher mnemonic score, decides which form to retain.
 - `PrepareShapeRLEData` serializes the four short extents and four integer
   bounds with individual copies through an advancing byte pointer. Taking
   the bounds' addresses preserves their four stack slots. Copy the frame
@@ -565,14 +571,21 @@ for similarity decisions.
   Keep the row and background initialization before the font-colour reads.
   Load the viewport pointer before those font-colour bytes as well. With the
   two following diagnostic functions now delimited separately, the original
-  span is 512 bytes; the current rebuilt span is 544 bytes.
+  span is 512 bytes; the current rebuilt span is 528 bytes.
   Initialize the existing character-data pointer from the font before loading
   the viewport, and use it for the two initial font-colour reads. Reload it
   after writing the palette entries, as before. This retains the second
-  font-colour byte in a register for the translation-table store and reaches
-  91.62% similarity with the current declarations, up from 90.42%.
-  Explicit row-offset pointer locals did not recover the size and changed
-  the previously exact palette-marker function, so they are not retained.
+  font-colour byte in a register for the translation-table store.
+  Each row loop now reads the viewport's row-offset table into a local pointer
+  before its top-row test, matching the original shared field load. Together
+  with the decoder's corrected scopes, this reduces the previous 544-byte
+  span by sixteen bytes and preserves the palette-marker's exact match.
+  Mnemonic similarity falls from 91.62% to 89.02%, but the byte comparator's
+  differing-instruction count also falls, from 115 of 167 to 111 of 164.
+  A single function-scope row-table pointer retains the excess 32 bytes;
+  separate column locals worsen allocation. A volatile background byte
+  restores the previous mnemonic score but introduces a different stack slot
+  and more differing instructions. Those alternatives are not retained.
   Register allocation and scheduling remain different. Keep the font's
   split-byte offset in the source-pointer expression; a separate offset
   local also perturbs later functions. Reversing pointer-addition operands
@@ -838,12 +851,15 @@ for similarity decisions.
   to function scope worsens the loop allocation. A separate recharge divisor,
   reversed index/counter declarations, and a parameter `register` hint do not
   resolve the guard. These trials are not retained.
-- After the sound-flush declaration correction, `DecodeShapeFrame` remains
-  sixteen bytes short. Grouping the destination offset, separating the bitmap
+- After the sound-flush declaration correction, `DecodeShapeFrame` became
+  sixteen bytes short, before the clipping-scope correction described above.
+  Grouping the destination offset, separating the bitmap
   assignment from its addition, and retaining an explicit row offset do not
   recover the original extra register copy. Explicit promoted clipping bounds
   also leave this function unchanged and perturb later graphics functions.
-  These trials are not retained.
+  After the scope correction, a separate raw-row right-limit integer and
+  reversing the row-length/X addition still leave its eight differing
+  instructions unchanged. These trials are not retained.
 - Shared declarations affect optimized CL 4.20 register allocation even in
   units that do not use those declarations. Removing damage's private tables
   and former named literals from `globals.h` changes unrelated functions:
