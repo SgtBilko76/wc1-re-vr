@@ -7,20 +7,28 @@
 #define WC1_MUSIC_SOURCE
 #include "wc1.h"
 
+/* The DAT_ words in this block are zero-initialized original data that
+ * nothing in the shipped executable references. */
 short nMusicPlaybackMode = 0; /* 0x0046a9f8 */
 static int bMusicCommandSuppressed = 0; /* 0x0046a9fc */
+static int DAT_0046aa00 = 0; /* 0x0046aa00 */
 short nMusicTrackComplete = 1; /* 0x0046aa04 */
+static int DAT_0046aa08 = 0; /* 0x0046aa08 */
 static short nMusicWaitForInput = 1; /* 0x0046aa0c */
 short nFuneralSequenceActive = 0; /* 0x0046aa10 */
 int nCurrentMusicTrack = -1; /* 0x0046aa14 */
 static int nMusicStreamSet = -1; /* 0x0046aa18 */
+static int DAT_0046aa1c = 0; /* 0x0046aa1c */
+static int DAT_0046aa20 = 0; /* 0x0046aa20 */
 volatile int nInFlightMusicSlotA = -1; /* 0x0046aa24 */
+static int DAT_0046aa28 = 0; /* 0x0046aa28 */
 volatile int nInFlightMusicSlotB = -1; /* 0x0046aa2c */
 int nWaitForMusicEnabled = 1; /* 0x0046aa30 */
 int nFlightSoundEffectsEnabled = 1; /* 0x0046aa34 */
 int nInitialFlightMusicPending = 1; /* 0x0046aa38 */
 int nCombatMusicActive = 0; /* 0x0046aa3c */
 int nInFlightMusicActive = 0; /* 0x0046aa40 */
+static int DAT_0046aa44 = 0; /* 0x0046aa44 */
 static short nPassingShipSoundObject = -1; /* 0x0046aa48 */
 static short nPassingShipSoundCountdown = 0; /* 0x0046aa4c */
 
@@ -351,6 +359,10 @@ int ProcessMusicScriptCommand(int track, int command, short enabled)
             Streamer_trigger(track);
         }
     } else {
+        /* A compiled-out trace: nothing references its literal at
+         * 0x0046ac98, which precedes the live one below. */
+        if (0)
+            SoundDebugPrintf(" queue_start ");
         switch (command) {
         case 0:
             SoundDebugPrintf(" queue_start ");
@@ -672,15 +684,20 @@ unsigned int SoundFxTick(void)
 /* Function start: 0x42EF10 */
 void FlushSoundEffectsAndLog(int soundHandle, short fadeTicks)
 {
-    (void)soundHandle;
     (void)fadeTicks;
     FlushSoundEffects();
+    return;
+    /* Unreachable: only its wave-name literal survives, at 0x0046ad04. */
+    sprintf(szSfxWavePath, "sfx%02i.wav", soundHandle - 1);
 }
 
 /* Function start: 0x42EF20 */
 void sound_effect(void)
 {
     WriteDebugString("sound_effect");
+    return;
+    /* Unreachable: only its wave-name literal survives, at 0x0046ad20. */
+    sprintf(szSfxWavePath, "sfx%02i.wav", 0);
 }
 
 /* Function start: 0x42EF30 */

@@ -18,10 +18,14 @@ static LPDIRECTDRAWPALETTE pDirectDrawPalette = 0; /* 0x0046b1b0 */
 static int nDIBCascadeLevel = -1; /* 0x0046b1b4 */
 int nFrameIntervalMs = 62; /* 0x0046b1b8 */
 static int nFrameDeadlineMs = 0; /* 0x0046b1bc */
+/* Nothing in the shipped executable references this zero word. */
+static int DAT_0046b1c0 = 0; /* 0x0046b1c0 */
 static int nPreviousFrameTimeMs = 0; /* 0x0046b1c4 */
 static int bSpaceFlightFrameTiming = 0; /* 0x0046b1c8 */
 static float fSpaceFlightFrameRate = 20.0f; /* 0x0046b1cc */
 static float fCinematicFrameRate = 16.0f; /* 0x0046b1d0 */
+/* Nothing in the shipped executable references this zero word either. */
+static int DAT_0046b1d4 = 0; /* 0x0046b1d4 */
 
 /* DirectDraw's SDK identifiers occur in this order before the frame-timing
  * constants. The original SDK also emitted the unused class/interface IDs. */

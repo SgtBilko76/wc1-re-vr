@@ -240,6 +240,7 @@ sits at one constant offset from the original.
 | `src/dib.c` | `0x431F00`–`0x43390F` |
 | `src/game.c` | `0x433910`–`0x433ABF` |
 | `src/smart.c` | `0x433AC0`–`0x434CCF` |
+| `src/data.c` | Data only, `0x46DA90`–`0x46E14B`; original code ownership is unknown |
 | `src/mathfp.c` | `0x434CD0`–`0x4353FF` |
 | `src/strdos.c` | `0x435400`–`0x4355EF` |
 | `src/eventmgr.c` | `0x4355F0`–`0x436CFF` |
@@ -311,7 +312,7 @@ ownership and qualifiers:
 | `0x00468910`–`0x00468F01` | `title.c`: opening-text pointer, Secret Missions message, credits, title-menu and resource records, and the following cinematic literals |
 | `0x00468F04`–`0x00468FF1` | `joystick.c`: five interactive calibration prompts and three separate calibration-file literals |
 | `0x00468FF4`–`0x00468FFF` | `spc.c`: capital-ship view distance, landing authorization, and alternate chase-view state |
-| `0x00469000`–`0x004693B0` | `cockpt.c`: cockpit state, shared weapon-name array, tables, and following message literals; eight zero bytes at `0x00469010` remain unrecovered |
+| `0x00469000`–`0x004693B0` | `cockpt.c`: cockpit state, the unreferenced eight zero bytes at `0x00469010`, shared weapon-name array, tables, and following message literals |
 | `0x004693B4`–`0x004693C0` | `version.c`: version pointer and its following literal; original object name and associated code remain unknown |
 | `0x004693C8`–`0x0046963F` | `barracks.c`: bunk origins, menu pointers, modal bounds/state, campaign file numbers, and the following string literals |
 | `0x00469640`–`0x00469641` | `fade.c`: palette-transition initialization flag |
@@ -320,8 +321,8 @@ ownership and qualifiers:
 | `0x00469878`–`0x00469995` | `ship.c`: damage-system and debris tables, gun refire delays, and the following four HUD literals |
 | `0x00469998`–`0x00469BBD` | `init.c`: graphics defaults, the shared low-memory message, reservation tables, and startup literals |
 | `0x00469BC0`–`0x00469D7E` | `logic.c`: resource descriptors, scene state, and the scene text-format literal |
-| `0x00469D80`–`0x00469D9C` | `pilot.cpp`: transition subtitle, empty answer input, and answer label; the following word at `0x00469DA0` remains unidentified |
-| `0x00469DA8`–`0x00469FA6` | `trainsim.c`: panel state, high-score name pointers, menu regions, simulator state, and the following UI literals |
+| `0x00469D80`–`0x00469D9C` | `pilot.cpp`: transition subtitle, empty answer input, and answer label |
+| `0x00469DA0`–`0x00469FA6` | `trainsim.c`: an unreferenced word, panel state, high-score name pointers, menu regions, simulator state, and the following UI literals |
 | `0x00469FA8`–`0x0046A3A1` | `main.c`: legacy overlay setting, game/input state, and process, startup, flight, HUD, and score literals |
 | `0x0046A3A4`–`0x0046A436` | `pload.c`: compressed-data and non-pushed-buffer diagnostics; trailing audio helpers retain provisional ownership |
 | `0x0046A748`–`0x0046A8CD` | `damage.c`: cockpit damage tables and the following report literals |
@@ -503,9 +504,9 @@ references and now have private storage; shared resource pointers, the pending
 message, and the navigation-pointer object retain external visibility. The
 unit-data gate checks a 16-byte prefix and a 921-byte tail, including every
 declared offset and both string pointers. The current COFF section has 937
-bytes. The unexplained eight zero bytes at `0x00469010`–`0x00469017` prevent a
-complete 945-byte cockpit match; their declaration and alignment split are
-unknown, so no storage is invented for them.
+bytes. The eight zero bytes at `0x00469010`–`0x00469017` have no reference;
+alignment cannot produce them, so they are an unreferenced original object,
+kept as `DAT_00469010[2]`. The complete 945-byte section now matches.
 
 The version pointer follows the cockpit literal pool at `0x004693B4`, proving
 another object boundary: CL emits initialized declarations before literals.
@@ -532,8 +533,9 @@ so they are declarations rather than literals emitted at the call sites.
 The surrounding zero-valued flags and heap counters need explicit zero
 initializers: tentative C definitions put them in the linker's common storage
 instead of this initialized-data range. The words at `0x00465078` (one) and
-`0x00465084` (zero) still need identification; do not replace them with padding
-declarations.
+`0x00465084` (zero) have no reference anywhere; they are kept with their
+values as `DAT_00465078` and `DAT_00465084`, and the complete 795-byte
+section now matches.
 
 Three partial-section checks cover the 56-byte prefix, eight-byte middle,
 and 723-byte tail around those missing words. Their rebuilt owner contains
@@ -668,8 +670,10 @@ literals: `"Meanwhile..."`, the empty answer input, and `"Answer: "`.
 Their complete 29-byte section matches, including the empty literal's byte
 load. Named arrays previously overallocated these literals and placed them
 in the temporary globals unit. Three alignment bytes follow the label;
-the unreferenced word `10` at `0x00469DA0` and the four bytes after it remain
-outside the recovered section.
+the unreferenced word `10` at `0x00469DA0` follows them. A unit's
+initialized variables precede its literals, so that word cannot belong to
+`pilot.cpp`: it is `trainsim.c`'s first variable, `DAT_00469da0`, and the four
+zero bytes after it are the eight-byte alignment of the panel viewport.
 
 The training-simulator block starts at `0x00469DA8`, after the scene
 literals and the Win32 console wrappers. Its viewport, bounds, shared title
@@ -685,8 +689,8 @@ ending before the process-exit routines. These game functions use the C core
 profile; the console allocation wrapper and its `/GX` construction cleanup
 remain in `pilot.cpp`. That file's internal C/C++ boundary is still provisional.
 The complete 511-byte simulator data section and all six name-pointer targets
-match with one address shift. The preceding unreferenced word `10` at
-`0x00469DA0` remains unidentified.
+match with one address shift, now from the unreferenced word `10` at
+`0x00469DA0`.
 
 The next word, `0x1370` at `0x00469FA8`, has stronger evidence. The surviving
 WINGLEADER main-source screenshot (`../squadronsourcecode.png`) declares
@@ -932,14 +936,20 @@ Five state variables have references only within music and are private;
 the other state and the table remain shared. The map supplement resolves
 private music symbols from COFF in the same way as damage and view.
 
-This does not complete the music unit's layout. Its rebuilt `.data` is 768
-bytes versus the original 832-byte run ending before `0x0046AD38`. Six
-zero-valued slots at `0x0046AA00`, `0x0046AA08`, `0x0046AA1C`, `0x0046AA20`,
-`0x0046AA28`, and `0x0046AA44` lack identified declarations. The literal pool
-also contains an unreferenced `" queue_start "` at `0x0046AC98` and two unused
-`"sfx%02i.wav"` copies at `0x0046AD04` and `0x0046AD20`. Their combined 40
-bytes plus the 24 state bytes account for the remaining 64-byte difference.
-Do not fill these gaps with dummy globals or invented dead code.
+The music unit's layout is now complete. Six zero-valued slots at
+`0x0046AA00`, `0x0046AA08`, `0x0046AA1C`, `0x0046AA20`, `0x0046AA28` and
+`0x0046AA44` have no reference anywhere and are kept as `DAT_` statics at
+their positions. The literal pool also contains an unreferenced
+`" queue_start "` at `0x0046AC98` and two `"sfx%02i.wav"` copies at
+`0x0046AD04` and `0x0046AD20`. With `/Gf` off each literal belongs to a use
+site, and CL 4.20 keeps the literal of a use the optimizer deletes (checked:
+both an `if (0)` call and a call after `return` keep their literals and emit
+no code). So the original had eliminated uses at those points in source
+order: in `ProcessMusicScriptCommand` before the live queue-start trace, and
+in the two stubs `FlushSoundEffectsAndLog` and `sound_effect`. The source
+reproduces them as a compiled-out trace and as unreachable wave-name
+formatting after each stub's `return`; the original form of that code is
+unknown, but all three functions remain exact.
 
 The linked-data audit checks the complete 296-byte descriptor table and 408
 bytes of used music literals in four separate runs. The final run also checks
@@ -1015,18 +1025,17 @@ state belong to `dib.c`. The first seven declarations occupy 28 bytes at
 `0x0046B1A4`–`0x0046B1BF`; four further declarations occupy 16 bytes at
 `0x0046B1C4`–`0x0046B1D3`. The ten variables used only by this unit are
 private, while `nFrameIntervalMs` remains shared with the SDL flight code.
-Both observed state runs match after relocation, but the zero words at
-`0x0046B1C0` and `0x0046B1D4` have no known references or recovered declaration
-form. They remain unresolved rather than being represented by filler variables.
+The zero words at `0x0046B1C0` and `0x0046B1D4` have no reference anywhere;
+they are kept as `DAT_0046b1c0` and `DAT_0046b1d4` at their positions, so the
+whole state run matches.
 
 The complete 3,620-byte DirectDraw literal pool follows at `0x0046B1D8`,
 ending with `DirectDrawResultToText`'s `"<undefined>"` terminator at
 `0x0046BFFB`. `DIBcascade` must spell the surface-lock failure branch before
 the success path so their separate diagnostic strings appear in that order.
 This pool is checked through `abDIBDiagnosticLiterals` comparison metadata.
-The current `dib.obj` `.data` section is 3,664 bytes, eight short of the
-observed 3,672-byte span. Its full layout is therefore not included among the
-complete-unit gates; its uninitialized storage also remains in `globals.c`.
+With the two words recovered, `dib.obj`'s `.data` section has the observed
+3,672 bytes; its uninitialized storage still remains in `globals.c`.
 
 The shared game state begins at `0x0046C000`, after the DirectDraw literal
 pool. Its camera scripts, mission records, and maneuver tables precede
@@ -1038,12 +1047,16 @@ original address order. Thirteen canned scripts and five defense-maneuver
 lists are private because only the pointer tables in this unit reference
 them; shared state and tables keep their public declarations.
 
-The 112-byte state run at `0x0046C000` and the 21-byte run at `0x0046C074`
-match independently. The four zero bytes at `0x0046C070` have no known
-references or declaration form and remain unrecovered. Their absence also
-changes the alignment before the first script, leaving the rebuilt section
-eight bytes short: 6,788 bytes versus the observed 6,796-byte span.
-`verify-unit-data` explicitly labels these as partial-section checks.
+The four zero bytes at `0x0046C070` have no reference anywhere; they are kept
+as `DAT_0046c070`, which also restores the alignment before the first script.
+`verify-unit-data` now checks the complete 6,796-byte section.
+
+Policy for unreferenced initialized data: earlier checkpoints left such
+words out rather than add "filler" declarations. A byte-identical
+executable needs them, so each is now an unidentified `DAT_<address>`
+global with its original value at its original position, as the naming
+policy prescribes for unidentified globals. Each is placed only where
+alignment cannot account for the bytes, and none is referenced by code.
 
 The full 6,652-byte run from `asIntroCameraSequence` at `0x0046C090` through
 the final display-string terminator at `0x0046DA8B` matches with one address
@@ -1091,13 +1104,17 @@ loop still uses only 48 samples. Keeping ten explicit zero initializers for
 literal produced by `char active[10] = ""`; the complete 262-byte literal
 pool now has the original contents, duplicate formats, and alignment.
 
-The earlier shared-data range contains input state at `0x0046DA90`, six
+The shared-data range contains input state at `0x0046DA90`, seven
 viewport geometry records at `0x0046DAB8`, and direction/cockpit tables from
-`0x0046DB28`. Its direct users span several existing source units, and its
-position before the text diagnostic at `0x0046E14C` does not establish an
-owner. These definitions remain in the temporary `globals.c`, now ordered
-by original address. Moving their annotations outside the initializers also
-lets the linked-data audit check ten previously omitted tables.
+`0x0046DB28`. It follows `game.c`'s literals (after the eight-byte section
+alignment at `0x0046DA8C`) and precedes the only two literals of the next
+units, `DrawTextString`'s `"FATAL : INVALID STRING"` at `0x0046E14C` and
+`SetInputKeyState`'s keyboard diagnostic at `0x0046E16C`. A unit's variables
+precede its literals, so neither of those units owns the block: it is a
+separate data-only object linked before them, `src/data.c`, after `smart.c`
+(which has no data). The Super Wing Commander symbols also name a `data`
+module. Moving the definitions out of the temporary `globals.c` puts the
+whole block at its original address.
 
 The 1,572-byte run from `0x0046DB28` through `0x0046E14B` matches with one
 address shift, including all table alignment. Its final twenty bytes contain
@@ -1105,8 +1122,10 @@ ten signed words initialized to `-400`, now retained as `DAT_0046e138[10]`.
 No identified direct reference establishes their name or purpose; the scalar
 width follows the repeated two-byte values, without claiming the original
 array declaration. The earlier 26-byte input-state and 96-byte geometry runs
-also match individually. Twelve unexplained zero bytes at `0x0046DAAC` and
-sixteen at `0x0046DB18` prevent a complete-range match. They remain unresolved.
+also match individually. The twelve zero bytes at `0x0046DAAC` are three
+unreferenced words, and the sixteen at `0x0046DB18` are a seventh, all-zero
+geometry record that no mode selects. The complete 1,724-byte block is
+checked as `data.obj`, adjacent to `game.obj`.
 
 The room/kill-board initialized-data block runs from `0x00470090` through
 `0x00470673`, after the raster library. Its 25 declarations now reside in

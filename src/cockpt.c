@@ -13,6 +13,8 @@ static short asVduSelectionSound[2] = { 0x7f, 0 }; /* 0x00469000 */
 char *pszPendingHudMessage = 0; /* 0x00469004 */
 static char *pszDisplayedHudMessage = 0; /* 0x00469008 */
 static unsigned char cRenderedPilotHandFrame = 0xff; /* 0x0046900c */
+/* Nothing in the shipped executable references these eight zero bytes. */
+static int DAT_00469010[2] = { 0, 0 }; /* 0x00469010 */
 /* 0x00469018 */
 static short asPilotHandOffsets[34] = {
     6, -3, 7, 2, 7, 9, 7, 12, 8, 13, 0, -1, -1, -1,

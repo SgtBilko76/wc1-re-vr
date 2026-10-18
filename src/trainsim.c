@@ -7,6 +7,9 @@
 #define WC1_TRAINSIM_SOURCE
 #include "wc1.h"
 
+/* Nothing in the shipped executable references this word. The panel that
+ * follows is eight-byte aligned, which accounts for the next four zeros. */
+int DAT_00469da0 = 10; /* 0x00469da0 */
 Viewport stTrainSimPanelViewport = {0}; /* 0x00469da8 */
 ShortRect stTrainSimPanelBounds = {
     0x30, 0x1d, 0x110, 0x6d

@@ -202,7 +202,7 @@ extern int bInputEventPoolInitialized; /* 0x0046da98 */
 #endif
 extern short nScreenWidth; /* 0x0046daa4 */
 extern short nScreenHeight; /* 0x0046daa8 */
-extern ScreenViewportGeometry aScreenViewportGeometry[6]; /* 0x0046dab8 */
+extern ScreenViewportGeometry aScreenViewportGeometry[7]; /* 0x0046dab8 */
 extern int aiIntelligenceEvent[10]; /* 0x0046d368 */
 extern signed char *apDefenseManeuvers[5]; /* 0x0046d3d0 */
 extern ManeuverChoice aRatedManeuverChoices[13][9][3]; /* 0x0046d3e8 */

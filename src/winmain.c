@@ -27,8 +27,12 @@ unsigned int nGuardedAllocationPeakBytes = 0; /* 0x00465068 */
 int bShowKilrathiSagaCredits = 0; /* 0x0046506C */
 int bShowFrameRate = 0; /* 0x00465070 */
 int bDirectDrawModeCascadeEnabled = 1; /* 0x00465074 */
+/* Nothing in the shipped executable references this word or the zero at
+ * 0x00465084; both are original initialized data of unknown purpose. */
+int DAT_00465078 = 1; /* 0x00465078 */
 int bCockpitEnabled = 1; /* 0x0046507C */
 volatile int bMainWindowMinimized = 0; /* 0x00465080 */
+int DAT_00465084 = 0; /* 0x00465084 */
 
 char szMainWindowClassName[] = "Wing Commander"; /* 0x00465088 */
 char szMainWindowTitle[] = "Wing Commander"; /* 0x00465098 */

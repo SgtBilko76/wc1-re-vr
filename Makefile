@@ -230,7 +230,7 @@ GLOBALS_DISTRIBUTED_SOURCES = src/winmain.c src/mono.c src/auto.c src/eject.c sr
 	src/barracks.c src/fade.c src/debug.cpp src/mathutil.c \
 	src/disk.c src/ship.c src/init.c src/logic.c src/pilot.cpp src/trainsim.c src/main.c \
 	src/sound.c src/launch.c src/damage.c src/view.c src/music.c src/ending.c src/input.c \
-	src/comm.c src/video.c src/joycal.c src/dib.c src/game.c src/eventmgr.c src/screens.c \
+	src/comm.c src/video.c src/joycal.c src/dib.c src/game.c src/data.c src/eventmgr.c src/screens.c \
 	src/killbrd.c src/gr.c \
 	src/ix/dsp.cpp src/ix/dsps.cpp src/ix/dspv.cpp src/ix/system.cpp
 GLOBALS_DEFINITION_SOURCES = src/globals.c $(GLOBALS_DISTRIBUTED_SOURCES)
@@ -375,6 +375,7 @@ SRCS_ORDERED_CORE = \
 	src/dib.c \
 	src/game.c \
 	src/smart.c \
+	src/data.c \
 	src/mathfp.c \
 	src/strdos.c \
 	src/eventmgr.c \
@@ -489,6 +490,7 @@ MODERN_GAMEPLAY_SRCS = \
 	src/screens.c \
 	src/ship.c \
 	src/smart.c \
+	src/data.c \
 	src/spc.c \
 	src/strdos.c \
 	src/trainsim.c \

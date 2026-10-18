@@ -33,7 +33,7 @@ CRITICAL_SECTION csStreamerFileQueue;
 CRITICAL_SECTION csStreamerThread;
 unsigned int nStreamerAudioChunk;
 DWORD dwStreamerThreadId;
-extern "C" unsigned int dwStreamerState = 0;
+unsigned int dwStreamerState;
 HANDLE hStreamerWakeEvent;
 unsigned int nStreamerFileChunk;
 unsigned int nStreamerBytesPerSecond;
@@ -43,7 +43,6 @@ IxStreamerTrigger *pStreamerTriggers;
 unsigned short nStreamerVolume = 0xffff;
 char cStreamerBranchTag = -1;
 unsigned int nStreamerBranchStackIndex = 0;
-unsigned int dwStreamerId = 0x4d525453;
 
 /* Function start: 0x00442750 */   /* source line(s) 60;63;75: Streamer already inited! | Failed to init DSP | Failed to start streamer_thread! */
 extern "C" int ix_streamer_init(void)
@@ -156,7 +155,7 @@ extern "C" int ix_streamer_open_stream_file(char *path)
     }
     ix_file_read(pStreamerPackageFile,
                  pStreamerHeader, sizeof(IxStreamerHeader));
-    if (pStreamerHeader->id != dwStreamerId) {
+    if (pStreamerHeader->id != *(unsigned int *)"STRM") {
         ix_log_printf("Warning [%s - %d]:\n", IX_STREAMER_FILE, 150);
         ix_log_printf("Invalid stream ID");
         return -1;

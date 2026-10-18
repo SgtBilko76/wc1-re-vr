@@ -82,6 +82,10 @@ short nTargetLockMarkerAngle = 0;
 /* 0x0046c06c */
 signed char cTargetDisplayObject = -1;
 
+/* Nothing in the shipped executable references this zero word. */
+/* 0x0046c070 */
+static int DAT_0046c070 = 0;
+
 /* 0x0046c074 */
 int bTargetLockAcquired = 0;
 
