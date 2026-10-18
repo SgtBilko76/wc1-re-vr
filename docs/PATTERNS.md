@@ -1260,6 +1260,28 @@ for similarity decisions.
   The normal campaign loop falls through before the direct-mission path.
   These choices recover the 20-byte frame and raise `main` from 82.95% to
   96.62%; sixteen excess bytes and allocation differences remain.
+  The subsequent pointer-lifetime recovery removes those sixteen bytes.
+  Capture the current argument after the `Origin` comparison, then use a
+  separate option pointer in the `-` and arcade branches. Reload that option
+  after the version-print call, and retain it across flag stores. The other
+  mission options use the captured argument instead of reloading the slot.
+  Capture the two campaign values as signed bytes after the timing call and
+  qualify their five destination stores to preserve the observed order.
+  The complete 1,264-byte span now matches in size, at 98.86% similarity and
+  six differing instructions. The final argument comparison is reversed,
+  and the `0x13` constant load still precedes the timing call instead of
+  following the two byte loads. A guarded do/while loop, reversed source
+  comparison, qualified count read, and an explicit video-mode local do not
+  fix these remaining differences. Reusing the short argument locals for
+  the campaign bytes adds unwanted sign extensions; retain byte locals.
+  Sharing one option local between both switch branches leaves `main`
+  unchanged but loses the newly exact `ReleaseStaleNavTarget`, so the
+  separate scopes remain. `SelectNextExternalViewObject` also becomes exact.
+  The added startup locals initially disturb `UpdateTrainSimMenuCursor`.
+  Testing `IsPointInRect`'s result directly, without the saved condition
+  local, restores its original allocation and complete 96-byte match.
+  Declaration initializers, reordered locals, and a for-loop spelling did
+  not restore it. All other main-unit report rows remain unchanged.
 - `UpdateDamageDisplay` saves the prior component count in a word local
   before counting damaged components. Comparing the promoted new byte count
   with that saved word reproduces the original `MOVSX`/word comparison and
@@ -1651,6 +1673,9 @@ Windows 95 DirectDraw and DirectSound behavior.
   `ix_thread_handle_file_chunk` survive volatile global reads, volatile local
   indices, and long indices in place of int indices. None of those probes
   changed their comparison order or size, so they are not retained.
+  Casting both operands of `ix_dspv_set_active`'s upper-bound comparison to
+  long likewise leaves its differing comparison unchanged, while disturbing
+  other voice routines and the following mixer span. That probe is reverted.
   `ix_sound_is_playing` also has a matching instruction body; its reported
   four-byte shortage comes from object-end alignment, like the thread and
   DSP final functions discussed above.

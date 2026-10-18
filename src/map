@@ -1199,6 +1199,7 @@
 0x004362D0 GameNoBodyStubv17
 0x004362E0 ReturnConst3E8000v2
 0x004362F0 ReturnConst3E8000v3
+0x00436390 ResetInputKeyStatePreservingModifiers
 0x004363A0 ClearInputKeyStatePreservingModifiers
 0x004363E0 ClearInputKeyState
 0x00436420 SetInputKeyState

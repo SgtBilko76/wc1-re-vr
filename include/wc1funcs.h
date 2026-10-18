@@ -1432,6 +1432,10 @@ unsigned short IdentityWord(unsigned short v);                         /* 0x0043
 void TimerStopHook(void);                                           /* 0x004362D0 */
 unsigned int GetFixedOneMillion(void);                                 /* 0x004362E0 */
 unsigned int GetFixedOneMillionAlt(void);                              /* 0x004362F0 */
+#ifdef WC1_EVENTMGR_SOURCE
+/* Unreferenced retail entry retained in its owning compilation unit. */
+void ResetInputKeyStatePreservingModifiers(void);                     /* 0x00436390 */
+#endif
 void ClearInputKeyStatePreservingModifiers(void);                     /* 0x004363A0 */
 void ClearInputKeyState(void);                                        /* 0x004363E0 */
 void SetInputKeyState(int scanCode, unsigned char pressed);            /* 0x00436420 */

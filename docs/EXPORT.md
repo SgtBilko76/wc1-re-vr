@@ -34,10 +34,10 @@ the boundary, so the export takes the implemented function's name.
 The map also retains four compiler-generated DSP array initializer entries.
 They deliberately have no source annotations and are checked separately by
 `make verify-array-initializers` (included in `make verify`). The function
-report therefore counts 1,521 source entries after removal of their four
+report now counts 1,522 source entries after removal of their four
 handwritten stand-ins and recovery of the two graphics diagnostic functions
-`__copyline` and `__wipeline`; the separate gate covers the 74 generated
-code bytes.
+`__copyline` and `__wipeline`, and the C key-reset forwarder at `0x00436390`;
+the separate gate covers the 74 generated array-initializer code bytes.
 
 `make verify-unit-data`, also included in `make verify`, checks the complete
 initialized-data sections recovered for winsys (259 bytes), mono (225),

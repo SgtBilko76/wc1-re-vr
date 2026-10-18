@@ -138,6 +138,7 @@ int main(short argc, char **argv)
 #endif
 {
     char **argumentSlot;
+    char *argument;
     int animationDemo;
     int selection;
     int launchMission;
@@ -187,14 +188,17 @@ int main(short argc, char **argv)
         if (strcmp("Origin", (*argumentSlot)) == 0)
             nOriginDevUnlock = 1;
 
-        switch ((*argumentSlot)[0]) {
+        argument = *argumentSlot;
+        switch (argument[0]) {
         case '?':
             SystemDebugPrintf("Version %s.\n", pGameVersion);
-        case '-':
-            if ((*argumentSlot)[1] == 'm')
+        case '-': {
+            char *option = *argumentSlot + 1;
+
+            if (*option == 'm')
                 nShowMemoryStatus = 1;
             if (nOriginDevUnlock != 0) {
-                switch ((*argumentSlot)[1]) {
+                switch (*option) {
                 case 'b':
                     bPlayerCollisionResponse = 0;
                     break;
@@ -210,16 +214,20 @@ int main(short argc, char **argv)
                 }
             }
             break;
+        }
         case 'A':
-        case 'a':
-            if ((*argumentSlot)[1] == 's' || (*argumentSlot)[1] == 'S') {
-                nStartNavPointOverride = (short)atoi((*argumentSlot) + 2);
+        case 'a': {
+            char *option = argument + 1;
+
+            if (*option == 's' || *option == 'S') {
+                nStartNavPointOverride = (short)atoi(argument + 2);
             } else {
                 nMusicPlaybackMode = 2;
                 nArcadeStartupParameter =
-                    (short)atoi((*argumentSlot) + 1);
+                    (short)atoi(option);
             }
             break;
+        }
         case 'E':
         case 'e':
             bSlowSceneAnimation = 1;
@@ -250,33 +258,38 @@ int main(short argc, char **argv)
             break;
         case 'm':
             if (nOriginDevUnlock != 0)
-                mission = (short)atoi((*argumentSlot) + 1);
+                mission = (short)atoi(argument + 1);
             break;
         case 's':
             if (nOriginDevUnlock != 0) {
                 bCampaignActive = 1;
-                series = (short)atoi((*argumentSlot) + 1);
+                series = (short)atoi(argument + 1);
             }
             break;
         case 'w':
             if (nOriginDevUnlock != 0) {
                 animationDemo = 1;
-                animationIndex = (short)atoi((*argumentSlot) + 1);
+                animationIndex = (short)atoi(argument + 1);
             }
             break;
         }
     }
 
     SetCinematicFrameTiming();
-    stCampaignState.currentSeries = (signed char)series;
-    nVideoMode = 0x13;
-    stInitialCampaignState.currentSeries =
-        (signed char)series;
-    stCampaignState.currentMission = (signed char)mission;
-    stInitialCampaignState.currentMission =
-        (signed char)mission;
-    LoadOriginFxDrivers();
-    nVideoMode = 0x13;
+    {
+        signed char initialSeries;
+        signed char initialMission;
+
+        initialSeries = *(signed char volatile *)&series;
+        initialMission = *(signed char volatile *)&mission;
+        *(signed char volatile *)&stCampaignState.currentSeries = initialSeries;
+        *(short volatile *)&nVideoMode = 0x13;
+        *(signed char volatile *)&stInitialCampaignState.currentSeries = initialSeries;
+        *(signed char volatile *)&stCampaignState.currentMission = initialMission;
+        *(signed char volatile *)&stInitialCampaignState.currentMission = initialMission;
+        LoadOriginFxDrivers();
+        nVideoMode = 0x13;
+    }
 
     if (animationDemo == 1) {
         SystemDebugPrintf("Pre animation: %lu.\n",
@@ -2180,7 +2193,6 @@ void UpdateTrainSimMenuCursor(void)
 {
     short mouseX;
     short mouseY;
-    short state;
     short frame;
     TitleMenuRegion *region;
 
@@ -2189,8 +2201,7 @@ void UpdateTrainSimMenuCursor(void)
     mouseY = stMouseCursorState.y;
     region = aTrainSimMissionRegions;
     while (region->frame != -1) {
-        state = IsPointInRect(mouseX, mouseY, &region->left);
-        if (state != 0)
+        if (IsPointInRect(mouseX, mouseY, &region->left) != 0)
             frame = region->frame;
         region++;
     }

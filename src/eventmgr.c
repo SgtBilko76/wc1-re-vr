@@ -5,6 +5,7 @@
  *  The FM Towns executable preserves the original source name
  *  "source\\eventmgr.c" for this unit.
  */
+#define WC1_EVENTMGR_SOURCE
 #include "wc1.h"
 
 /* The SDL renderer also reads the saved cursor background. */
@@ -629,6 +630,12 @@ unsigned int GetFixedOneMillion(void)
 unsigned int GetFixedOneMillionAlt(void)
 {
     return 0x3e8000;
+}
+
+/* Function start: 0x436390 */
+void ResetInputKeyStatePreservingModifiers(void)
+{
+    ClearInputKeyStatePreservingModifiers();
 }
 
 /* Function start: 0x4363A0 */

@@ -5,7 +5,6 @@
 # FUN names mark unknown intent; $E names mark compiler-generated initializers.
 # None of these entries supplies source code.
 # Remove an entry here when its source annotation provides the boundary.
-# The jump-only entry at 00436390 is compiler glue; do not hand-write it.
 # The apparent 004393F0 entry is switch-table data and is deliberately excluded.
 
  0001:000345e0 _FUN_004355E0 004355e0 f eventmgr.obj
@@ -24,7 +23,6 @@
  0001:00035360 _FUN_00436360 00436360 f eventmgr.obj
  0001:00035370 _FUN_00436370 00436370 f eventmgr.obj
  0001:00035380 _FUN_00436380 00436380 f eventmgr.obj
- 0001:00035390 _FUN_00436390 00436390 f eventmgr.obj
  0001:00035400 _FUN_00436400 00436400 f eventmgr.obj
  0001:00035410 _FUN_00436410 00436410 f eventmgr.obj
  0001:00035890 _FUN_00436890 00436890 f eventmgr.obj

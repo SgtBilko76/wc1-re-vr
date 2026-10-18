@@ -1090,17 +1090,27 @@ remaining discovery candidates include the rectangle routine at `0x00436AC0`
 and legacy event hooks. Do not replace these gaps with padding. The apparent
 entry at `0x004393F0` lies in a switch table/padding range and is not a function.
 
-The current boundary supplement has 29 unimplemented entries in addition to
+The current boundary supplement has 28 unimplemented entries in addition to
 the four reproduced array initializers. Their original aligned spans total
-880 bytes: 27 empty or constant-return routines occupy 16 bytes apiece,
-the jump-only entry at `0x00436390` occupies another 16-byte span, and the
-rectangle routine occupies 432 bytes before `FillGraphicSuffix` at
+864 bytes: 27 empty or constant-return routines occupy 16 bytes apiece,
+and the rectangle routine occupies 432 bytes before `FillGraphicSuffix` at
 `0x00436C70`. These are verified code boundaries, not recovered interfaces
-or names. In particular, the jump entry targets
-`ClearInputKeyStatePreservingModifiers` and must be compiler-generated;
-the surrounding empty routines' purposes cannot be established by proximity
-alone. The function report does not score these absent implementations, so
+or names. The surrounding empty routines' purposes cannot be established by
+proximity alone. The function report does not score these absent implementations, so
 its average similarity must not be interpreted as whole-program completion.
+
+The entry at `0x00436390` is now `ResetInputKeyStatePreservingModifiers`.
+The original jumps directly to `ClearInputKeyStatePreservingModifiers`, whose
+key-array clear, retained Ctrl/Alt bytes, and debug-pause reset establish the
+forwarder's behavior. A normal C call lets CL emit the tail jump; no assembly
+is written by hand. Binary-comp verifies all sixteen bytes, including padding,
+literally, and its decoded rebuilt target resolves to the existing reset
+routine. The entry has no identified callers elsewhere. Its prototype remains
+in `wc1funcs.h`, visible only to `eventmgr.c` through `WC1_EVENTMGR_SOURCE`.
+Exposing that unused declaration to every unit changed 57 report rows and
+lost five net exact matches; scoping the declaration preserves all other
+units and every pre-existing event-manager result. The recovered boundary
+now comes from the source annotation rather than the supplement.
 
 At the autopilot/input size checkpoint of 2026-10-18, the 1,521-function
 report has 1,235 normalized exact matches, 261 same-size differences, and
@@ -1122,6 +1132,17 @@ The code and data deficits remain unchanged. Strict positional matches
 are 53,324 of 518,656 bytes (10.2812%), two fewer than that checkpoint at
 this still-incorrect layout. The file remains 1,024 bytes short, and the
 strict whole-file comparison still fails.
+
+At the startup/key-reset checkpoint, the report covers 1,522 functions:
+1,241 normalized exact matches, 257 same-size differences, and 24 size
+differences (150 absolute bytes, net -6). The added sixteen-byte reset entry
+and removal of `main`'s sixteen excess bytes leave the total code-section
+deficit at 896 bytes. The remaining 28 missing spans account for 864 bytes.
+Three existing function rows improve and the recovered entry is exact;
+the other 1,518 rows are unchanged. Literal whole-file matches rise by 616
+to 53,940 of 518,656 bytes (10.4000%). The file-size and data virtual-size
+deficits remain 1,024 and 1,856 bytes respectively; the strict comparison
+still fails.
 
 The rectangle routine's stack reads need particular care. Relative to ESP
 after its four register saves, its two arrays of sixteen 32-bit coordinates
