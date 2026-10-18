@@ -6,6 +6,7 @@
  *  Boundary evidence: MonoDebug_install/MonoDebug_print anchor the final block;
  *  the Mac auto unit starts at visit_the_cinema (403e50).
  */
+#define WC1_MONO_SOURCE
 #include "wc1.h"
 
 short nPacketError = 0; /* 0x00465460 */

@@ -6,7 +6,8 @@ for similarity decisions.
 
 ## Source choices that affect matching
 
-- VC++ 4.20's uninitialized C++ globals have name-dependent COFF ordering.
+- VC++ 4.20's file-static C globals and uninitialized C++ globals have
+  name-dependent COFF ordering.
   Definition order, first-use order, and the assembly listing are not reliable
   substitutes for actual COFF offsets. Isolated sound-system compilations
   retain the same order after removing or reversing function bodies and
@@ -41,6 +42,26 @@ for similarity decisions.
   is worse; long X, declaration order, an explicit field pointer, and a
   scoped X local do not remove its six differences. None of those body
   probes is retained.
+- The five graphics/streaming declarations for `stRasterClip`,
+  `abSolidColourTranslation`, `abShapeRLEScratch`, `bStreamerAudioPlaying`,
+  and `szStreamerPath` are unused outside `gr.c`. Omit them in `dib.c`,
+  `eject.c`, `joystick.c`, `mono.c`, `nav.c`, and `screens.c` through their
+  owner markers. This changes fourteen report rows and removes 354 differing
+  encodings overall, gaining eight normalized-exact functions and losing
+  two. The largest gains are `CalibrateJoystickInteractive` (213 to 39
+  differences) and `PanToScreen` (115 to zero). Four small regressions are
+  retained: `UpdateInflightNavText` gains five differences,
+  `ReturnToBriefingLongShot` gains nine, and `EstablishingShot` and
+  `SceneDirector` each gain two. In nav and screens, omitting only the
+  three raster declarations or only the two streaming declarations loses
+  additional exact matches; neither subset is retained. These are measured
+  declaration scopes, not recovered original header text.
+  A complete graphics-storage move with descriptive renames reproduces the
+  order of the seven identified objects, but removes these declarations
+  everywhere and changes 150 function rows, losing fifteen exact matches
+  overall and introducing four size differences. An RLE-buffer-only move
+  also regresses the complete report. Both storage moves are reverted;
+  their recovered ordering and unexplained gap are recorded in `docs/ORDER.md`.
 - Biased array operands can precede the actual array. The carrier-launch
   fighter loop loads from `0x0046A5AE + frame * 2` for frames 9 through 22.
   Its real 14-word table starts at `0x0046A5C0`; `frame - 9` reproduces the

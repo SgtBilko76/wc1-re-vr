@@ -284,9 +284,14 @@ extern unsigned char abDIBPaletteCache[1024]; /* 0x00486110 */
 extern float fMeasuredFrameRate; /* 0x00486510 */
 extern int bDIBSlamPending; /* 0x00486518 */
 extern char szSpaceFlightMaxFpsMessage[0x80]; /* 0x00486528 */
+/* Unused graphics declarations affect register allocation in these owners. */
+#if !defined(WC1_DIB_SOURCE) && !defined(WC1_EJECT_SOURCE) && \
+    !defined(WC1_JOYSTICK_SOURCE) && !defined(WC1_MONO_SOURCE) && \
+    !defined(WC1_NAV_SOURCE) && !defined(WC1_SCREENS_SOURCE)
 extern RasterClip stRasterClip; /* 0x00496fc0 */
 extern unsigned char abSolidColourTranslation[256]; /* 0x00497648 */
 extern unsigned char abShapeRLEScratch[0x100000]; /* 0x00497748 */
+#endif
 extern int DAT_00598888;
 extern int DAT_0059888c;
 extern int DAT_00598890;
@@ -331,8 +336,12 @@ extern unsigned char *pBriefingCloseupShape; /* 0x00598c2c */
 extern unsigned char *pConversationOverlayShape; /* 0x00598c30 */
 extern unsigned char bFilteredKeyWaitStarted; /* 0x00598c34 */
 extern InputEvent aInputEventPool[0x100]; /* 0x00598c40 */
+#if !defined(WC1_DIB_SOURCE) && !defined(WC1_EJECT_SOURCE) && \
+    !defined(WC1_JOYSTICK_SOURCE) && !defined(WC1_MONO_SOURCE) && \
+    !defined(WC1_NAV_SOURCE) && !defined(WC1_SCREENS_SOURCE)
 extern int bStreamerAudioPlaying; /* 0x00597748 */
 extern char szStreamerPath[128]; /* 0x00597750 */
+#endif
 extern int nMouseCursorSavedY; /* 0x0059a840 */
 extern int nMouseCursorSavedX; /* 0x0059a844 */
 extern unsigned char bInputMode; /* 0x0059a848 */

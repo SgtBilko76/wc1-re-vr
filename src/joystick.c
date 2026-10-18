@@ -2,6 +2,7 @@
  * Interactive joystick calibration and button waits.
  * Placement and boundary evidence are recorded in docs/ORDER.md.
  */
+#define WC1_JOYSTICK_SOURCE
 #include "wc1.h"
 
 /* Function start: 0x4102B0 */

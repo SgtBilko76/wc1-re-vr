@@ -8,6 +8,7 @@
  *  szFrameRateText and fMeasuredFrameRate, and its 1000.0 constant follows
  *  the unit's DirectDraw GUIDs in .rdata.
  */
+#define WC1_DIB_SOURCE
 #include "wc1.h"
 
 static LPDIRECTDRAW2 pDirectDraw2 = 0; /* 0x0046b1a4 */

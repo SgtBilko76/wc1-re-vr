@@ -850,6 +850,41 @@ put the stream path before the RLE buffer and the raster clip before the
 raster surface, contrary to the original. Those definitions remain in
 temporary storage; the matching prefix does not establish the later layout.
 
+A later isolated CL 4.20 probe establishes that descriptive identifier
+changes can recover the order of all seven identified graphics objects.
+The minimal retained-symbol probe and complete `gr.c` compilation agree on
+their actual COFF positions; the assembly listing alone does not show this
+order. The successful probe uses the following spellings, which are not
+recovered original names and are not retained in production:
+
+| Original address | Current name | Probe name | Probe `.bss` offset |
+| --- | --- | --- | --- |
+| `0x004875A8` | `stRasterSurface` | `stScreenRasterSurface` | `0x000000` |
+| `0x004875C0` | `abShapeTransformScratch` | `abTransformScratch` | `0x000018` |
+| `0x00496FC0` | `stRasterClip` | `stRasterViewport` | `0x00FA18` |
+| `0x00497648` | `abSolidColourTranslation` | `abSolidColorTranslation` | `0x00FA30` |
+| `0x00497748` | `abShapeRLEScratch` | unchanged | `0x00FB30` |
+| `0x00597748` | `bStreamerAudioPlaying` | `bStreamingAudioPlaying` | `0x10FB30` |
+| `0x00597750` | `szStreamerPath` | `szStreamPath` | `0x10FB38` |
+
+The section contains 1,113,016 bytes. The original span through the end of
+the stream path is 1,114,664 bytes. After the 20-byte raster clip, the
+original has 1,652 unexplained bytes before the colour table; the compiler
+inserts only four alignment bytes there. No original HIGHLOW relocation
+targets that unexplained interval. Its ownership and source-level purpose remain
+unidentified, so no speculative object or padding is added.
+
+Moving all five definitions out of `globals.c` and deleting their shared
+declarations changes 150 function-report rows: normalized exact matches
+fall from 1,256 to 1,241 and size differences rise from twenty to twenty-four.
+The code section grows by 32 bytes and strict positional matching rises to
+17.5795%, but this also reflects shifted code, not proof of correct final
+layout. The complete move is reverted. A narrower RLE-only move, using
+`abShapePixelScratch` and `abShapeRLEBuffer`, preserves the existing prefix
+but changes 58 rows, loses twelve exact matches overall, and introduces
+one size difference. That move is also reverted. The useful declaration
+scopes in six other units are retained separately below.
+
 The damage-display unit starts with `show_damage_disp` at `0x0042C800`.
 Its initialized tables start at `0x0046A748`, after the installation
 literal pool ending at `0x0046A740` and seven linker alignment bytes.
@@ -1616,3 +1651,60 @@ The executable SHA-256 remains
 `60ac420938d363ad255164dc3543eafd127f21f0c737b71280ca3787f1907be9`
 through final verification. Strict positional matches increase by two to
 57,523 of 518,656 bytes (11.0908%). Literal executable equality still fails.
+
+## Graphics declaration-scope checkpoint
+
+The five provisional graphics/streaming globals remain in `globals.c` while
+storage recovery continues. Their declarations are now omitted from the
+DIB, ejection, joystick-calibration, developer-console, navigation, and
+screen-sequence units. Each owner defines its marker before including
+`wc1.h`. All five globals are used only by `gr.c`, so the scoped units lose
+no dependency. Function bodies, types, conventions, storage, compiler flags,
+and link order remain unchanged.
+
+Fourteen of the 1,524 function-report rows change, with 354 fewer differing
+instruction encodings overall; the other 1,510 rows are unchanged. Eight
+routines become normalized exact:
+
+| Function | Previous differing encodings |
+| --- | ---: |
+| `DIBslamReal` | 2 |
+| `MeasureScaledIntroTextWidth` | 12 |
+| `GetLineLength` | 12 |
+| `NavMapLabelPositionAvailable` | 11 |
+| `FindNavMapLabelAtPoint` | 10 |
+| `DrawNavSquareMarker` | 23 |
+| `DrawMedalLongShot` | 10 |
+| `PanToScreen` | 115 |
+
+`CalibrateJoystickInteractive` improves from 213 to 39 differing encodings,
+with mnemonic similarity rising from 96.39% to 98.36%. `ejection_sequence`
+improves from 88 to 85. Four small regressions accompany these gains:
+`UpdateInflightNavText` changes from exact to five differing encodings,
+`ReturnToBriefingLongShot` from exact to nine, `EstablishingShot` from seven
+to nine, and `SceneDirector` from two to four. The nav and screens probes
+that omit only the raster declarations or only the streaming declarations
+lose additional exact matches; both are reverted.
+
+The complete report now has 1,262 normalized exact matches, 242 same-size
+differences, and twenty size differences (144 absolute bytes, net -6).
+There are 1,372 mnemonic-perfect routines; 1,514 remain at or above 90%,
+with ten below. Average mnemonic similarity remains 99.57%.
+
+Both builds, source-order and address audits, and all required verification
+gates pass. Both value checks cover all 1,524 functions with zero mismatches
+or skips. The global-data audit retains 1,104 matches without missing
+symbols; the 39 code pointers and 79 mixer operands also pass. A separate
+binary-comp reference check covers 65 named-global operands in the eight
+newly exact functions. Their targets, order, multiplicity, and
+function-relative relocation offsets all match. Call analysis retains
+eleven diagnostics across 1,138 checked functions; global-access analysis
+retains 37 across 1,059. No gameplay validation is claimed.
+
+The file remains 518,144 bytes versus 518,656, the code section 400,663
+versus 401,111, and the data virtual size 1,329,724 versus 1,331,596.
+The 26 missing routines still account for 416 of the 448 absent code bytes.
+Strict positional matches increase by 26 to 57,549 of 518,656 bytes
+(11.0958%); literal executable equality still fails. The executable SHA-256
+matches the full-report snapshot and remains unchanged through validation:
+`42802b70085e54fe0bffd9f8f688f2ca7bc0208d59e5dcaf21faf8e480e5c7a8`.

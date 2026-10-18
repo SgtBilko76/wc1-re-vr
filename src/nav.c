@@ -2,6 +2,7 @@
  * Navigation map, objective labels, and the in-flight computer.
  * Placement and boundary evidence are recorded in docs/ORDER.md.
  */
+#define WC1_NAV_SOURCE
 #include "wc1.h"
 
 short nNavMapCoordinateScaling = 0; /* 0x00468660 */
