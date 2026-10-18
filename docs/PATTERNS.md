@@ -33,6 +33,20 @@ for similarity decisions.
   improves only the two shift users and preserves every other result.
 - Preserve visible local-variable order, branch direction, fall-through, and
   epilogue placement. Equivalent C often emits different instructions.
+- `landing` keeps the damage-level table byte offset in its four-byte frame,
+  reloading it for the sound hooks, canopy table, and final comment. A volatile
+  offset local restores that storage and frees EBP for the actor shape. The
+  canopy phase has its own short counter and scoped frame-table pointer;
+  this gives the counter SI and the pointer EDI. Initialize that counter in
+  the `for` statement after the sound call and frame-skip assignment. An
+  earlier initialization hoists the clear and table load ahead of the
+  coordinate stores. These choices recover an exact 1,248-byte function,
+  including both switch tables, from 95.27% and a sixteen-byte shortage.
+  The other eleven functions in the unit are unchanged. The qualifier and
+  scopes reproduce the observed storage and lifetimes; their original
+  source spelling is unknown. Scoping only the canopy pointer still leaves
+  fourteen differing instructions; a separate counter reduces that to eight,
+  and its later initialization removes the remaining eight.
 - `update_star_field` skips directly to the loop increment when a selected
   star has no yaw or pitch rotation. Put that `continue` inside the star
   case instead of combining the rotation test with its class and random
@@ -63,6 +77,10 @@ for similarity decisions.
   Qualifying the X store instead gives the same seven differences, while
   reversing the coordinate additions without a qualified access still
   omits the reload. These alternatives are not retained.
+  Indexing the origin table directly with `cCockpitView` also omits the
+  reload. A qualified Y-coordinate read into the separate locals leaves
+  the same seven differences and the following routine's six register
+  differences; both further probes are reverted.
 - `ShowCarrierLaunchSequence` zero-extends the unsigned scale word but
   performs a signed division after shifting it. Promote the word to a
   signed int before the shift. The second animation phase passes an
@@ -77,6 +95,9 @@ for similarity decisions.
   the addition moves the extension back but widens the add. A long
   intermediate with a short local leaves the retained output unchanged.
   Those alternatives are reverted; the short local is retained.
+  Retaining a separate integer object index for the array accesses likewise
+  leaves the frame and all 337 byte differences unchanged, so that probe is
+  also reverted.
 - `FormatTextTokens` uses the VC4.20 `va_list` and `va_arg` macros. Its native
   short and unsigned-short arguments consume four-byte slots while loading
   only the original halfwords. Treating the cursor as an `unsigned long *`

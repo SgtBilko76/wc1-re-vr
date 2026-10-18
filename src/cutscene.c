@@ -727,11 +727,11 @@ unsigned int scramble(void)
 unsigned int landing(signed char damageLevel)
 {
     unsigned char *actorShape;
-    const signed char *canopyFrames;
     short frame;
     signed char detail;
     signed char prior;
-    int damageOffset;
+    /* The native routine saves this table byte offset in its four-byte frame. */
+    volatile int damageOffset;
 
     PreloadMusicTrackHook(0x1d);
     spacetrack(0x1d, 2, 1);
@@ -832,6 +832,9 @@ unsigned int landing(signed char damageLevel)
 
     FlushSoundEffectsAndLog(damageOffset, 0);
     if (bEscapePressed != 1) {
+        short canopyFrame;
+        const signed char *canopyFrames;
+
         nScrambleOverlayX =
             (short)(nScrambleShipX + 180);
 #ifdef SDL_PORT
@@ -843,10 +846,9 @@ unsigned int landing(signed char damageLevel)
 #endif
         nScrambleOverlayY =
             (short)(nScrambleShipY + 50);
-        frame = 0;
         PlaySfxWaveFileByNumber(15, -1, 0);
         nFrameSkipCounter = 1;
-        for (; frame < 30; frame++) {
+        for (canopyFrame = 0; canopyFrame < 30; canopyFrame++) {
             PumpWindowMessages();
             if (nRenderedSpaceFrame == 29)
                 nFrameSkipCounter = 1;
@@ -865,14 +867,14 @@ unsigned int landing(signed char damageLevel)
                     (short)(nScrambleCockpitDetailX + 2);
                 break;
             case OBJECT_TYPE_SCIMITAR:
-                if (frame == 0)
+                if (canopyFrame == 0)
                     nScrambleCockpitDetailY--;
                 else
                     nScrambleCockpitDetailX =
                         (short)(nScrambleCockpitDetailX + 2);
                 break;
             }
-            if (frame > 6 && *canopyFrames != 0x40) {
+            if (canopyFrame > 6 && *canopyFrames != 0x40) {
                 nScrambleCanopyOffset = *canopyFrames;
                 canopyFrames++;
             }

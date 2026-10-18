@@ -691,6 +691,21 @@ relative symbol offsets, complete object `.bss` sizes, and zero-filled bytes.
 Their absolute addresses and the intervening uninitialized storage remain
 unrecovered.
 
+Declaration order alone does not recover the remaining private C storage.
+A trial moving the twelve flight-timing variables into `main.c` produced
+an 88-byte `.bss`, with the simulation timestamp first, instead of the
+observed 84-byte run beginning with the total-tick count at `0x004764F8`.
+Reversing all twelve declarations left their emitted order unchanged.
+Making the two MONODEBG variables private to `mono.c` likewise emitted the
+device handle before the installed flag, opposite to their original order
+at `0x00475E70` and `0x00475E74`; renaming the handle to describe the debug
+channel did not change that result. Removing their shared declarations also
+disturbed code generation elsewhere: the timing trial changed 200 function
+comparisons, and the MONODEBG trial lost fourteen exact comparisons overall.
+These trials are reverted. Ownership evidence is not sufficient to claim a
+matching storage block without checking its emitted offsets and the full
+function report.
+
 The 200-byte `szSfxWavePath` buffer at `0x00476558` now resides in `music.c`.
 Its two original references both occur in `PlaySfxWaveFileByNumber`: `sprintf`
 formats the filename into it, then `playWAVE` receives the same buffer. Its
