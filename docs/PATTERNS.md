@@ -16,6 +16,18 @@ for similarity decisions.
   convention from the terminating `RET`. Core functions are normally
   `__cdecl`; `ix` methods receive the implicit object in ECX.
 - Prefer `short` when the original emits 16-bit operations.
+- `ObjectTypeData.lifetime` is a signed 32-bit field at offset `0x10`,
+  also used as ship fuel capacity. `update_lights` divides by the full
+  dword, and the damage routines divide it by four with signed rounding.
+  The original Hornet, Rapier, Scimitar, and Raptor records contain
+  200000, 250000, 280000, and 300000 respectively. The former pair of
+  shorts (`lifetime` and the unused `weaponDamage`) split those values
+  incorrectly. Combine their initializer words into one int and access
+  the field directly; the packed 135-byte record and all following offsets
+  remain unchanged. Projectile code can narrow the result while still
+  loading the field as a dword, as `fire`, `fire_weapon`, and
+  `house_keep_objects` do. The complete object-data gate checks that the
+  corrected declarations preserve the original bytes and relocations.
 - The word array at `0x0059C790` is unsigned object mass, copied from
   `ObjectTypeData.mass` at offset `0x0A`. Its only readers are the two
   force-application routines and `object_collision`: they zero-extend it
@@ -33,6 +45,28 @@ for similarity decisions.
   improves only the two shift users and preserves every other result.
 - Preserve visible local-variable order, branch direction, fall-through, and
   epilogue placement. Equivalent C often emits different instructions.
+- `fire` initializes its mine-present flag at declaration and dispatches
+  weapon classes with a switch. Keep the weapon's byte offset as an integer
+  while accessing the typed slot fields; retaining an absolute slot pointer
+  changes both the load and the disabled-flag store. Assign the complete
+  mine-firing condition to `shouldFire` after computing the intercept.
+  A conditional update instead keeps the flag live across `vector_angle`,
+  changing its register and the weapon-data registers. That call receives
+  the owner's velocity first and the target's second. Together with the
+  corrected lifetime field, these choices recover an exact 1,296-byte span
+  from 93.18% and a sixteen-byte shortage. The original uninitialized angle
+  check and contradictory facing conditions remain as observed.
+- `fire_weapon` computes the projectile range in a separate assignment
+  before `ScaleFixedVector`, and divides the missile interception distance
+  by velocity before preparing the next vector call. Inlining either
+  calculation into an argument changes argument scheduling. Its sound
+  switch assigns the sound number and calls the playback function inside
+  each case; CL merges their common call and cleanup. The default path
+  reaches the single final return. Retaining the used sound-number local
+  preserves the original register allocation, whereas literal-only calls
+  also disturb later functions in the unit. With the 32-bit lifetime field,
+  these choices recover an exact 1,248-byte span from 94.07% and a
+  sixteen-byte excess, including both switch tables.
 - `landing` keeps the damage-level table byte offset in its four-byte frame,
   reloading it for the sound hooks, canopy table, and final comment. A volatile
   offset local restores that storage and frees EBP for the actor shape. The

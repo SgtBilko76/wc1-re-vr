@@ -714,7 +714,7 @@ void update_lights(void)
 
     fuelPercent = (short)(
         (anShipFuel[0] * 100) /
-        *(int *)&aObjectTypeData[
+        aObjectTypeData[
             aeObjectType[0]].lifetime);
     SetCockpitLightBlink(6, fuelPercent);
     vdu_polygon(0, fuelPercent);

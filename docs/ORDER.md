@@ -328,6 +328,14 @@ inside the block: 56 name pointers and 24 animation pointers. The strict
 unit gate checks all 9,773 bytes and all 25 declaration offsets, including
 interior animation targets and the separate empty-name addresses.
 
+The object-type records retain their 135-byte stride with one signed
+32-bit lifetime/fuel-capacity field at offset `0x10`. The two words formerly
+declared there are one value: the first four ship records contain 200000,
+250000, 280000, and 300000. The full-width fuel division and projectile
+lifetime loads independently establish this layout. Combining the initializer
+words preserves every table byte; no field follows at offset `0x12`.
+The next field, damage capacity, remains at `0x14`.
+
 The navigation unit's 360-byte literal pool follows its map state and pointer
 tables, ending immediately before the initialized near-heap state at
 `0x004688C0`. This establishes a boundary before `MergeAdjacentNearHeapBlocks`

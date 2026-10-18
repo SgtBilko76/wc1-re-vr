@@ -373,8 +373,7 @@ typedef struct ObjectTypeData {
     unsigned short mass;              /* +0x0A */
     short scale;                      /* +0x0C */
     short animationDelay;             /* +0x0E */
-    short lifetime;                   /* +0x10 */
-    short weaponDamage;               /* +0x12 */
+    int lifetime;                     /* +0x10: fuel capacity for ships */
     short damageCapacity;             /* +0x14 */
     short explosionDamage;            /* +0x16 */
     short maximumVelocity;            /* +0x18 */

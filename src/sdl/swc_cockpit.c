@@ -1260,9 +1260,7 @@ int SdlDrawSwcCockpit(void)
     frame = asShipMaximumSpeed[0] > 0 ?
         (anShipSpeed[0] >> 8) * 13 / asShipMaximumSpeed[0] : 0;
     SwcDrawInstrument(SWC_THROTTLE, SDL_clamp(frame, 0, 13), 0, 0);
-    /* WC1 stores the 32-bit ship fuel capacity across these two packed
-       words. memcpy avoids its reference build's unaligned int load. */
-    memcpy(&fuelCapacity, &type->lifetime, sizeof(fuelCapacity));
+    fuelCapacity = type->lifetime;
     frame = anShipFuel[0] < 0 || fuelCapacity <= 0 ? 0 :
         (int)((int64_t)anShipFuel[0] * 13 / fuelCapacity) + 1;
     SwcDrawInstrument(SWC_FUEL, SDL_clamp(frame, 0, 13), 0, 0);

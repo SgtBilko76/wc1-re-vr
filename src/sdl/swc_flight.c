@@ -318,7 +318,7 @@ void SdlSwcUpdateSpace(void)
 static void SwcSetObjectData(ObjectTypeData saved[OBJECT_TYPE_COUNT])
 {
     /* CODE_08 +0x0286/+0x47cc. The shared runtime has the same object IDs
-       through 57, but packed seven-byte loadouts and split fuel storage. */
+       through 57, but packed seven-byte loadouts. */
     int type;
 
     memcpy(saved, aObjectTypeData, sizeof(aObjectTypeData));
@@ -326,7 +326,7 @@ static void SwcSetObjectData(ObjectTypeData saved[OBJECT_TYPE_COUNT])
     for (type = 0; type < 22; type++) {
         ObjectTypeData *data = &aObjectTypeData[type];
 
-        memcpy(&data->lifetime, &swcShipFuel[type], sizeof(int));
+        data->lifetime = swcShipFuel[type];
         data->weaponLoadout[0] = swcWeaponCounts[type];
         memcpy(data->weaponLoadout + 1, swcWeaponLoadouts[type],
                sizeof(swcWeaponLoadouts[type]));

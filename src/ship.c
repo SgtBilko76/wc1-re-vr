@@ -259,7 +259,7 @@ void set_objects_data(short obj, enum ObjectType type, short owner)
             aasShipArmor[obj][2] = typeData->armorLeft;
             aasShipArmor[obj][3] = typeData->armorRight;
             aasShipArmor[obj][1] = typeData->armorRear;
-            anShipFuel[obj] = *(int *)&typeData->lifetime;
+            anShipFuel[obj] = typeData->lifetime;
             acShipIonDriveDamage[obj] = 0;
             acShipDamage[obj] = 0;
             recalc_max_velocity(obj);
@@ -797,7 +797,7 @@ int internal_damage(short attacker, short victim, short damage,
             if (quadrant == 1) {
                 events--;
                 drain_fuel(victim,
-                           (short)(*(int *)&aObjectTypeData[
+                           (short)(aObjectTypeData[
                                        type].lifetime / 4));
                 if (RandomBelowOrEqual(1) != 0 ||
                     anShipFuel[victim] < 0)
@@ -942,7 +942,7 @@ int your_internal_damage(short attacker, short damage, short quadrant)
             break;
         case 7:
             drain_fuel(0,
-                       (short)(*(int *)&aObjectTypeData[
+                       (short)(aObjectTypeData[
                                    playerType].lifetime / 4));
             if (RandomBelowOrEqual(1) != 0 ||
                 anShipFuel[0] < 0)
@@ -1534,7 +1534,6 @@ int launch_object(short parent, short child, FixedVector direction,
 /* Function start: 0x4202D0 */
 void fire(short obj, short target)
 {
-    ShipWeaponSlot *slot;
     ObjectTypeData *weaponData;
     enum ObjectType weaponType;
     enum ObjectClass weaponClass;
@@ -1552,9 +1551,10 @@ void fire(short obj, short target)
     short shouldFire;
     int canFire;
     int fireMissile;
-    int minePresent;
+    int minePresent = 0;
     int targetInRange;
     int loadoutOffset;
+    int weaponOffset;
 
     canFire = asObjectCounter[obj] <= 0;
     get_facing_range_from_object(obj, target);
@@ -1566,7 +1566,6 @@ void fire(short obj, short target)
     if (fireMissile &&
         find_child_ship(obj, OBJECT_CLASS_MISSILE, target) != -1)
         fireMissile = 0;
-    minePresent = 0;
     if (find_child_object(obj, OBJECT_CLASS_MINE) != -1)
         minePresent = 1;
 
@@ -1575,10 +1574,9 @@ void fire(short obj, short target)
          weapon < *(signed char *)((unsigned char *)
              aShipWeapons + loadoutOffset);
          weapon++) {
-        slot = (ShipWeaponSlot *)((unsigned char *)
-            aShipWeapons + loadoutOffset +
-            weapon * sizeof(ShipWeaponSlot) + 1);
-        weaponType = slot->type;
+        weaponOffset = weapon * sizeof(ShipWeaponSlot) + loadoutOffset;
+        weaponType = ((ShipWeaponSlot *)((unsigned char *)
+            aShipWeapons + weaponOffset + 1))->type;
         weaponData = &aObjectTypeData[weaponType];
         weaponVelocity = weaponData->maximumVelocity;
         if (closingSpeed < 0)
@@ -1588,7 +1586,8 @@ void fire(short obj, short target)
         shouldFire = 0;
         weaponClass = weaponData->objectClass;
 
-        if (weaponClass == OBJECT_CLASS_PROJECTILE) {
+        switch (weaponClass) {
+        case OBJECT_CLASS_PROJECTILE:
             if (canFire && targetInRange) {
                 switch (weaponType) {
                 case OBJECT_TYPE_LASER_CANNON:
@@ -1605,7 +1604,9 @@ void fire(short obj, short target)
                     break;
                 }
             }
-            slot->disabled = (signed char)!shouldFire;
+            ((ShipWeaponSlot *)((unsigned char *)
+                aShipWeapons + weaponOffset + 1))->disabled =
+                (signed char)!shouldFire;
             if (shouldFire) {
                 firedObject = (short)fire_weapon(obj, weapon);
                 if (weaponType == OBJECT_TYPE_TURRET) {
@@ -1616,7 +1617,8 @@ void fire(short obj, short target)
                                   real_velocity(firedObject));
                 }
             }
-        } else if (weaponClass == OBJECT_CLASS_MINE) {
+            break;
+        case OBJECT_CLASS_MINE:
             /* The first angle test deliberately preserves the original
              * stack-local ordering recovered at 0x42056a. */
             if (!minePresent && weaponType == OBJECT_TYPE_SPACE_MINE &&
@@ -1625,8 +1627,8 @@ void fire(short obj, short target)
                 nFacingToTarget >= -50 &&
                 nTargetFacing <= 90) {
                 velocityAngle = vector_angle(
-                    aShipVelocity[target],
-                    aShipVelocity[obj]);
+                    aShipVelocity[obj],
+                    aShipVelocity[target]);
                 predictionTime = (short)(900 /
                     (short)((anShipSpeed[obj] >> 8) + 20));
                 predictedSeparation = (short)(predictionTime *
@@ -1635,12 +1637,8 @@ void fire(short obj, short target)
                     mineTime = range;
                 else
                     mineTime = (short)(range / (closingSpeed + 20));
-                if (range < 2000 && nFacingToTarget < -50 &&
-                    nTargetFacing > 90) {
-                    shouldFire = 1;
-                    if (predictedSeparation <= 50)
-                        shouldFire = 0;
-                }
+                shouldFire = range < 2000 && nFacingToTarget < -50 &&
+                             nTargetFacing > 90 && predictedSeparation > 50;
             }
             if (shouldFire) {
                 firedObject = (short)drop_mine(
@@ -1660,7 +1658,8 @@ void fire(short obj, short target)
                 }
                 minePresent = 1;
             }
-        } else if (weaponClass == OBJECT_CLASS_MISSILE) {
+            break;
+        case OBJECT_CLASS_MISSILE:
             if (fireMissile && targetInRange) {
                 switch (weaponType) {
                 case OBJECT_TYPE_DUMB_FIRE_MISSILE:
@@ -1682,6 +1681,7 @@ void fire(short obj, short target)
                 fire_weapon(obj, weapon);
                 fireMissile = 0;
             }
+            break;
         }
     }
 }
@@ -1898,10 +1898,10 @@ int fire_weapon(short obj, short weapon)
                                 &aShipForwardVector[projectile],
                                 &aShipVelocity[projectile]);
         if (weaponClass == OBJECT_CLASS_PROJECTILE) {
+            range = (short)((weaponData->lifetime + 5) *
+                             weaponData->maximumVelocity);
             ScaleFixedVector(&aShipForwardVector[obj],
-                (int)(short)((weaponData->lifetime + 5) *
-                             weaponData->maximumVelocity) << 8,
-                &vector);
+                             range << 8, &vector);
             AddFixedVectors(&aShipPosition[obj], &vector,
                             &vector);
             point_at(projectile, vector);
@@ -1958,9 +1958,10 @@ int fire_weapon(short obj, short weapon)
                         &aShipPosition[
                             acShipTarget[projectile]], &vector);
                     range = Vector_magnitude(&vector);
+                    range /= get_ship_max_velocity(projectile);
                     ScaleFixedVector(&aShipVelocity[
                         acShipTarget[projectile]],
-                        range / get_ship_max_velocity(projectile), &vector);
+                        range, &vector);
                     AddFixedVectors(&aShipPosition[
                         acShipTarget[projectile]], &vector,
                         &vector);
@@ -2000,21 +2001,21 @@ int fire_weapon(short obj, short weapon)
         case OBJECT_TYPE_LASER_CANNON:
         case OBJECT_TYPE_NEUTRON_PARTICLE_GUN:
             sound = 8;
+            PlaySfxWaveFileByNumber(sound, projectile, 0);
             break;
         case OBJECT_TYPE_MASS_DRIVER_CANNON:
         case OBJECT_TYPE_TURRET:
             sound = 5;
+            PlaySfxWaveFileByNumber(sound, projectile, 0);
             break;
         case OBJECT_TYPE_DUMB_FIRE_MISSILE:
         case OBJECT_TYPE_HEAT_SEEKING_MISSILE:
         case OBJECT_TYPE_FF_MISSILE:
         case OBJECT_TYPE_IMAGE_RECOGNITION_MISSILE:
             sound = 1;
+            PlaySfxWaveFileByNumber(sound, projectile, 0);
             break;
-        default:
-            return projectile;
         }
-        PlaySfxWaveFileByNumber(sound, projectile, 0);
     }
     return projectile;
 }

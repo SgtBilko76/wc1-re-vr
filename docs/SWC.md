@@ -1198,7 +1198,7 @@ armor, weapons, projectile damage/lifetime and animation commands. The native
 83-record, 204-byte table is never copied directly into WC1's packed records.
 Ten-byte Mac weapon slots become seven-byte WC1 slots, with the quantity byte
 preserved in SDL-only arrays alongside them; 32-bit ship fuel is
-preserved across WC1's combined lifetime/weaponDamage storage. Mac pointers
+stored in WC1's 32-bit lifetime/fuel-capacity field. Mac pointers
 are replaced by host strings/animation arrays or SDL-owned resources. Definitions
 are installed for SWC flight and restored on exit. IDs 58..82 remain unsupported.
 

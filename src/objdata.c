@@ -83,7 +83,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 0: Hornet */
     {
         "Hornet",
-        OBJECT_CLASS_SHIP, 100, 125, 1024, 5, 3392, 3, 5, 4000,
+        OBJECT_CLASS_SHIP, 100, 125, 1024, 5, 200000, 5, 4000,
         42, 30, 0, 819, 8, 9, 8, 900,
         {
             5,
@@ -98,7 +98,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 1: Rapier */
     {
         "Rapier",
-        OBJECT_CLASS_SHIP, 120, 135, 1024, 3, -12144, 3, 6, 6000,
+        OBJECT_CLASS_SHIP, 120, 135, 1024, 3, 250000, 6, 6000,
         45, 25, 0, 1075, 10, 10, 10, 1000,
         {
             9,
@@ -117,7 +117,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 2: Scimitar */
     {
         "Scimitar",
-        OBJECT_CLASS_SHIP, 165, 160, 1152, 6, 17856, 4, 7, 6000,
+        OBJECT_CLASS_SHIP, 165, 160, 1152, 6, 280000, 7, 6000,
         36, 15, 0, 614, 6, 6, 7, 1300,
         {
             7,
@@ -134,7 +134,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 3: Raptor */
     {
         "Raptor",
-        OBJECT_CLASS_SHIP, 180, 200, 1152, 3, -27680, 4, 8, 8000,
+        OBJECT_CLASS_SHIP, 180, 200, 1152, 3, 300000, 8, 8000,
         40, 25, 0, 588, 6, 5, 6, 2000,
         {
             10,
@@ -154,7 +154,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 4: Venture */
     {
         "Venture",
-        OBJECT_CLASS_CAPITAL_SHIP, 240, 400, 1024, 5, 3392, 3, 70,
+        OBJECT_CLASS_CAPITAL_SHIP, 240, 400, 1024, 5, 200000, 70,
         20000, 25, 10, 0, 256, 3, 3, 3, 4000,
         {
             2,
@@ -166,7 +166,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 5: Dilligent */
     {
         "Dilligent",
-        OBJECT_CLASS_CAPITAL_SHIP, 240, 400, 1024, 4, 3392, 3, 60,
+        OBJECT_CLASS_CAPITAL_SHIP, 240, 400, 1024, 4, 200000, 60,
         20000, 15, 10, 0, 128, 2, 2, 2, 10000,
         {
             1,
@@ -177,7 +177,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 6: Drayman */
     {
         "Drayman",
-        OBJECT_CLASS_CAPITAL_SHIP, 240, 400, 1024, 4, 3392, 3, 60,
+        OBJECT_CLASS_CAPITAL_SHIP, 240, 400, 1024, 4, 200000, 60,
         10000, 15, 10, 0, 128, 2, 2, 2, 20000,
         {
             1,
@@ -188,7 +188,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 7: Exeter */
     {
         "Exeter",
-        OBJECT_CLASS_CAPITAL_SHIP, 500, 5000, 2048, 2, 3392, 3, 200,
+        OBJECT_CLASS_CAPITAL_SHIP, 500, 5000, 2048, 2, 200000, 200,
         30000, 20, 15, 0, 256, 2, 2, 2, 20000,
         {
             5,
@@ -203,7 +203,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 8: Tiger's Claw */
     {
         "Tiger's Claw",
-        OBJECT_CLASS_CAPITAL_SHIP, 700, 10000, 4096, 1, 3392, 3,
+        OBJECT_CLASS_CAPITAL_SHIP, 700, 10000, 4096, 1, 200000,
         560, 30000, 0, 0, 0, 256, 1, 1, 1, 20000,
         {
             8,
@@ -221,7 +221,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 9: Salthi */
     {
         "Salthi",
-        OBJECT_CLASS_SHIP, 120, 120, 1024, 10, 3392, 3, 5, 4000,
+        OBJECT_CLASS_SHIP, 120, 120, 1024, 10, 200000, 5, 4000,
         48, 30, 0, 972, 14, 12, 22, 1000,
         {
             3,
@@ -234,7 +234,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 10: Dralthi */
     {
         "Dralthi",
-        OBJECT_CLASS_SHIP, 160, 140, 1024, 6, 3392, 3, 7, 6000,
+        OBJECT_CLASS_SHIP, 160, 140, 1024, 6, 200000, 7, 6000,
         40, 23, 0, 768, 10, 14, 10, 1200,
         {
             7,
@@ -251,7 +251,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 11: Krant */
     {
         "Krant",
-        OBJECT_CLASS_SHIP, 140, 126, 1024, 5, 3392, 3, 6, 6000,
+        OBJECT_CLASS_SHIP, 140, 126, 1024, 5, 200000, 6, 6000,
         36, 20, 0, 716, 7, 10, 7, 1200,
         {
             6,
@@ -267,7 +267,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 12: Gratha */
     {
         "Gratha",
-        OBJECT_CLASS_SHIP, 140, 126, 1024, 4, 3392, 3, 7, 7000,
+        OBJECT_CLASS_SHIP, 140, 126, 1024, 4, 200000, 7, 7000,
         32, 20, 0, 614, 6, 6, 14, 1400,
         {
             10,
@@ -287,7 +287,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 13: Jalthi */
     {
         "Jalthi",
-        OBJECT_CLASS_SHIP, 160, 180, 1024, 7, 3392, 3, 7, 8000,
+        OBJECT_CLASS_SHIP, 160, 180, 1024, 7, 200000, 7, 8000,
         28, 20, 0, 512, 5, 5, 5, 1600,
         {
             8,
@@ -305,7 +305,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 14: Spikeri */
     {
         "Spikeri",
-        OBJECT_CLASS_CAPITAL_SHIP, 200, 200, 1536, 4, 3392, 3, 45,
+        OBJECT_CLASS_CAPITAL_SHIP, 200, 200, 1536, 4, 200000, 45,
         12000, 15, 10, 0, 460, 4, 4, 4, 4000,
         { 0 },
         70, 70, 80, 80, 60, 60, 0, 0
@@ -313,7 +313,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 15: Dorkir */
     {
         "Dorkir",
-        OBJECT_CLASS_CAPITAL_SHIP, 260, 400, 2048, 5, 3392, 3, 35,
+        OBJECT_CLASS_CAPITAL_SHIP, 260, 400, 2048, 5, 200000, 35,
         24000, 15, 10, 0, 204, 2, 2, 2, 5000,
         {
             4,
@@ -327,7 +327,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 16: Lumbari */
     {
         "Lumbari",
-        OBJECT_CLASS_CAPITAL_SHIP, 260, 400, 2048, 5, 3392, 3, 35,
+        OBJECT_CLASS_CAPITAL_SHIP, 260, 400, 2048, 5, 200000, 35,
         16000, 15, 10, 0, 204, 2, 2, 2, 5000,
         {
             4,
@@ -341,7 +341,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 17: Ralari */
     {
         "Ralari",
-        OBJECT_CLASS_CAPITAL_SHIP, 325, 3000, 4096, 3, 3392, 3, 90,
+        OBJECT_CLASS_CAPITAL_SHIP, 325, 3000, 4096, 3, 200000, 90,
         20000, 15, 10, 0, 256, 2, 2, 2, 18000,
         {
             7,
@@ -358,7 +358,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 18: Fralthi */
     {
         "Fralthi",
-        OBJECT_CLASS_CAPITAL_SHIP, 450, 10000, 4096, 2, 3392, 3, 110,
+        OBJECT_CLASS_CAPITAL_SHIP, 450, 10000, 4096, 2, 200000, 110,
         30000, 15, 10, 0, 256, 2, 2, 2, 10000,
         {
             8,
@@ -376,7 +376,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 19: Snakeir */
     {
         "Snakeir",
-        OBJECT_CLASS_CAPITAL_SHIP, 600, 10000, 2048, 1, 3392, 3, 320,
+        OBJECT_CLASS_CAPITAL_SHIP, 600, 10000, 2048, 1, 200000, 320,
         30000, 15, 10, 0, 204, 1, 1, 1, 10000,
         { 0 },
         70, 70, 80, 80, 60, 60, 0, 0
@@ -384,7 +384,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 20: Sivar */
     {
         "Sivar",
-        OBJECT_CLASS_CAPITAL_SHIP, 400, 12000, 4096, 1, 3392, 3, 200,
+        OBJECT_CLASS_CAPITAL_SHIP, 400, 12000, 4096, 1, 200000, 200,
         32000, 20, 15, 0, 179, 1, 1, 1, 15000,
         {
             8,
@@ -402,7 +402,7 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 21: Kilrathi base */
     {
         "Star post",
-        OBJECT_CLASS_CAPITAL_SHIP, 400, 20000, 2048, 4, 3392, 3, 120,
+        OBJECT_CLASS_CAPITAL_SHIP, 400, 20000, 2048, 4, 200000, 120,
         32000, 0, 0, 0, 0, 0, 0, 0, 10000,
         {
             8,
@@ -422,130 +422,130 @@ ObjectTypeData aObjectTypeData[OBJECT_TYPE_COUNT] = {
     /* 24: laser cannon bolt */
     {
         "Laser cannon",
-        OBJECT_CLASS_PROJECTILE, 10, 0, 512, 7, 30, 0, 25, 0,
+        OBJECT_CLASS_PROJECTILE, 10, 0, 512, 7, 30, 25, 0,
         160, 0, 0, 0, 0, 0, 0, 0, { 0 },
         0, 0, 0, 0, 0, 0, 0, 0
     },
     { "Neutron gun",
-      OBJECT_CLASS_PROJECTILE, 10, 1, 832, 14, 20, 0, 40, 0,
+      OBJECT_CLASS_PROJECTILE, 10, 1, 832, 14, 20, 40, 0,
       140, 0 }, /* 25: neutron particle gun */
     { "Mass driver",
-      OBJECT_CLASS_PROJECTILE, 10, 0, 512, 9, 25, 0, 30, 0,
+      OBJECT_CLASS_PROJECTILE, 10, 0, 512, 9, 25, 30, 0,
       120, 0 }, /* 26: mass driver cannon */
     { "",
-      OBJECT_CLASS_PROJECTILE, 15, 0, 832, 15, 40, 0, 50, 1000,
+      OBJECT_CLASS_PROJECTILE, 15, 0, 832, 15, 40, 50, 1000,
       150, 0 }, /* 27: turret bolt; resources alias laser */
     { "Dart DF",
-      OBJECT_CLASS_MISSILE, 20, 5, 768, 500, 120, 0, 4, 14500,
+      OBJECT_CLASS_MISSILE, 20, 5, 768, 500, 120, 4, 14500,
       130, 0, 0, 1433, 15, 15, 15, 100 }, /* 28 */
     { "Javelin HS",
-      OBJECT_CLASS_MISSILE, 20, 5, 768, 400, 140, 0, 4, 13500,
+      OBJECT_CLASS_MISSILE, 20, 5, 768, 400, 140, 4, 13500,
       110, 0, 0, 1689, 11, 11, 11, 100 }, /* 29 */
     { "Pilum FF",
-      OBJECT_CLASS_MISSILE, 20, 5, 768, 400, 160, 0, 4, 10500,
+      OBJECT_CLASS_MISSILE, 20, 5, 768, 400, 160, 4, 10500,
       90, 0, 0, 1689, 11, 11, 11, 100 }, /* 30 */
     { "Spiculum IR",
-      OBJECT_CLASS_MISSILE, 20, 5, 768, 400, 110, 0, 4, 11500,
+      OBJECT_CLASS_MISSILE, 20, 5, 768, 400, 110, 4, 11500,
       110, 0, 0, 1689, 11, 11, 11, 100 }, /* 31 */
     { "",
-      OBJECT_CLASS_MISSILE, 25, 10, 768, 400, 200, 0, 4, 30000,
+      OBJECT_CLASS_MISSILE, 25, 10, 768, 400, 200, 4, 30000,
       50, 0, 0, 1280, 10, 10, 10, 100 }, /* 32 */
     { "Porcupine",
-      OBJECT_CLASS_MINE, 20, 5, 768, 110, 120, 0, 4, 10000,
+      OBJECT_CLASS_MINE, 20, 5, 768, 110, 120, 4, 10000,
       20, 20, (unsigned char *)anAnimMine,
       0, 0, 2, 2 },
     { "",
-      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, 0, -1, 0,
+      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, -1, 0,
       0, 0, (unsigned char *)anAnimAsteroidForward,
       0, 0, 1, 13 },
     { "",
-      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, 0, -1, 0,
+      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, -1, 0,
       0, 0, (unsigned char *)anAnimAsteroidShortForward,
       0, 0, 1, 12 },
     { "",
-      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, 0, -1, 0,
+      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, -1, 0,
       0, 0, (unsigned char *)anAnimAsteroidReverse,
       0, 0, 1, 13 },
     { "",
-      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, 0, -1, 0,
+      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, -1, 0,
       0, 0, (unsigned char *)anAnimAsteroidShortReverse,
       0, 0, 1, 12 },
     { "",
-      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, 0, -1, 0,
+      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, -1, 0,
       0, 0, (unsigned char *)anAnimAsteroidForward,
       0, 0, 2, 13 },
     { "",
-      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, 0, -1, 0,
+      OBJECT_CLASS_ASTEROID, 100, 300, 640, 0, 0, -1, 0,
       0, 0, (unsigned char *)anAnimAsteroidShortForward,
       0, 0, 2, 12 },
     { "",
-      OBJECT_CLASS_DEBRIS, 10, 4, 192, 0, 0, 0, -1, 0,
+      OBJECT_CLASS_DEBRIS, 10, 4, 192, 0, 0, -1, 0,
       0, 0, (unsigned char *)anAnimAsteroidForward,
       0, 0, 2, 13 },
     { "",
-      OBJECT_CLASS_DEBRIS, 10, 1, 2048, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_DEBRIS, 10, 1, 2048, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimGirder,
       0, 0, 2, 5 },
     { "",
-      OBJECT_CLASS_DEBRIS, 10, 1, 2048, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_DEBRIS, 10, 1, 2048, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimTubing,
       0, 0, 2, 5 },
     { "",
-      OBJECT_CLASS_DEBRIS, 20, 2, 1280, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_DEBRIS, 20, 2, 1280, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimMetalSheet,
       0, 0, 1, 11 },
     { "",
-      OBJECT_CLASS_DEBRIS, 20, 2, 1280, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_DEBRIS, 20, 2, 1280, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimWing,
       0, 0, 1, 15 },
     { "",
-      OBJECT_CLASS_DEBRIS, 20, 2, 768, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_DEBRIS, 20, 2, 768, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimGlass,
       0, 0, 1, 15 },
     { "",
-      OBJECT_CLASS_DEBRIS, 2, 1, 1792, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_DEBRIS, 2, 1, 1792, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimORing,
       0, 0, 1, 5 },
     { "",
-      OBJECT_CLASS_DEBRIS, 6, 1, 1536, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_DEBRIS, 6, 1, 1536, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimPipe,
       0, 0, 1, 5 },
     { "",
-      OBJECT_CLASS_EXPLOSION, 0, 0, 768, 0, 0, 0, -1, 6000,
+      OBJECT_CLASS_EXPLOSION, 0, 0, 768, 0, 0, -1, 6000,
       0, 0, (unsigned char *)anAnimExplosion0,
       0, 0, 1, 0 },
     { "",
-      OBJECT_CLASS_EXPLOSION, 0, 0, 256, 0, 0, 0, -1, 6000,
+      OBJECT_CLASS_EXPLOSION, 0, 0, 256, 0, 0, -1, 6000,
       0, 0, (unsigned char *)anAnimExplosion1,
       0, 0, 1, 0 },
     { "",
-      OBJECT_CLASS_EXPLOSION, 0, 0, 256, 0, 0, 0, -1, 6000,
+      OBJECT_CLASS_EXPLOSION, 0, 0, 256, 0, 0, -1, 6000,
       0, 0, (unsigned char *)anAnimExplosion2,
       0, 0, 1, 0 },
     { "",
-      OBJECT_CLASS_EXPLOSION, 0, 0, 256, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_EXPLOSION, 0, 0, 256, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimLaserSpark,
       0, 0, 1, 0 },
     { "",
-      OBJECT_CLASS_EXPLOSION, 0, 0, 256, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_EXPLOSION, 0, 0, 256, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimRedSpark,
       0, 0, 2, 3 },
     { "",
-      OBJECT_CLASS_EXPLOSION, 0, 0, 256, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_EXPLOSION, 0, 0, 256, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimBlueSpark,
       0, 0, 2, 3 },
     { "",
-      OBJECT_CLASS_EXPLOSION, 1, 1, 256, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_EXPLOSION, 1, 1, 256, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimSparkTrail,
       0, 0, 2, 3 },
     { "",
-      OBJECT_CLASS_FIXED_OBJECT, 0, 0, 256, 0, 0, 0, 0 },
+      OBJECT_CLASS_FIXED_OBJECT, 0, 0, 256, 0, 0, 0 },
     { "",
-      OBJECT_CLASS_DEBRIS, 6, 1, 512, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_DEBRIS, 6, 1, 512, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimEjectedPilot,
       0, 0, 1, 12 },
     { "",
-      OBJECT_CLASS_EXPLOSION, 0, 0, 1024, 0, 0, 0, 0, 0,
+      OBJECT_CLASS_EXPLOSION, 0, 0, 1024, 0, 0, 0, 0,
       0, 0, (unsigned char *)anAnimHyperspaceJumpFlash,
       0, 0, 1, 0 }
 };
