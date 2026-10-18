@@ -2152,3 +2152,34 @@ Windows 95 DirectDraw and DirectSound behavior.
   assignment recovers every mnemonic, but swaps the workspace and index
   registers, leaving fourteen differences. Reordering those declarations
   does not resolve the swap. These font probes are not retained.
+- Two further unused-declaration groups affect core code selection: the nine
+  DIB buffer declarations from `DAT_00476640` through `nDIBSlamCount`, and
+  mono's four file-error buffers plus its two MONODEBG variables. Original
+  references place the first group only in `dib.c` and the second only in
+  `mono.c`. Omitting the DIB declarations in `cmpgn.c`, `eject.c`, and
+  `screens.c`, and the mono declarations in `dib.c` and `eject.c`, removes
+  65 differing instruction encodings without losing an existing exact
+  function or changing any reported span. `EstablishingShot` and
+  `SceneDirector` become exact; `DIBupdate` falls from 45 differing
+  instructions to five. These guards reproduce declaration context, not
+  recovered original header names. Both individual groups and their
+  combination were checked across eligible core units; the other placements
+  are not retained. In particular, omitting mono's declarations in `geom.c`
+  gains four exact functions but loses three existing exact functions for
+  only three fewer differing encodings overall, so it is rejected.
+- Further small source probes do not improve the retained build.
+  `close_behind` is unchanged by descriptive range-parameter names, a
+  const-volatile parameter, an early failure return, or nested tests.
+  Chaining `ResetStringBuilder`'s cursor assignment with its byte clear,
+  or clearing through the assigned cursor, leaves its four register
+  differences. Reversing `animate_pilot`'s equality or saving its desired
+  byte frame does not fix its four body differences; the saved frame also
+  disturbs `place_damage_on_cockpit`. Separate wingman assignment in
+  `clean_up_cockpit`, and scoped or function-scope enum-class locals in
+  `check_futurion`, leave their output unchanged. An explicit failure test
+  in `equ_vector` leaves that routine unchanged while disturbing later
+  geometry functions. `Mfull_ahead`'s direct post-decrement test becomes
+  exact but disturbs `general_zig` and increases the unit's total differing
+  encodings by six. Saving the post-decrement result in the existing live
+  counter local restores the baseline output throughout. None of these
+  source probes is retained.

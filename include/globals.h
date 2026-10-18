@@ -247,12 +247,16 @@ extern int nDownArrowKeyState; /* 0x00475c14 */
 extern char szStreamsPath[0x100]; /* 0x00475c18 */
 extern int nPageUpKeyState; /* 0x00475d18 */
 extern int nLeftArrowKeyState; /* 0x00475d1c */
+/* File-error and MONODEBG state are private to mono.c. These owners do
+ * not need the declarations; their absence also preserves code selection. */
+#if !defined(WC1_DIB_SOURCE) && !defined(WC1_EJECT_SOURCE)
 extern char szReadDataFileError[0x40]; /* 0x00475d20 */
 extern char szCreateDataFileError[0x40]; /* 0x00475d60 */
 extern char szWriteDataFileError[0x40]; /* 0x00475da0 */
 extern char szSeekDataFileError[0x80]; /* 0x00475de0 */
 extern int bMonoDebugInstalled; /* 0x00475e70 */
 extern HANDLE hMonoDebugDevice; /* 0x00475e74 */
+#endif
 /* These units do not use main.c's flight profiler. Its unused declarations
  * affect VC++ 4.20 code selection, so preserve their compilation-unit scope. */
 #if !defined(WC1_EVENTMGR_SOURCE) && !defined(WC1_INIT_SOURCE) && \
@@ -274,6 +278,10 @@ extern int nFlightInputTicks; /* 0x00476538 */
 extern LARGE_INTEGER liFlightAfterRender; /* 0x00476540 */
 extern int nFlightRenderTicks; /* 0x00476548 */
 #endif
+/* DIB buffer state is unused by these units. Preserve the declaration
+ * scope that reproduces their original VC++ 4.20 code selection. */
+#if !defined(WC1_CMPGN_SOURCE) && !defined(WC1_EJECT_SOURCE) && \
+    !defined(WC1_SCREENS_SOURCE)
 extern unsigned int DAT_00476640;
 extern unsigned int DAT_00476644;
 extern unsigned char *pDIBPixelBuffer; /* 0x00476648 */
@@ -283,6 +291,7 @@ extern unsigned char abDIBPixelBackup[0xfa00]; /* 0x00476658 */
 extern unsigned char szFrameRateText[32]; /* 0x00476620 */
 extern int DAT_00486058;
 extern int nDIBSlamCount; /* 0x00486060 */
+#endif
 extern HWND hDIBWindow; /* 0x00486074 */
 extern unsigned char abDIBPaletteCache[1024]; /* 0x00486110 */
 extern float fMeasuredFrameRate; /* 0x00486510 */

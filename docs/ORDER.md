@@ -2055,3 +2055,68 @@ matches fall by sixteen to 57,579 of 518,656 bytes (11.1016%). There are
 still fails despite the function-local improvements. The executable hash
 is unchanged between the clean-build report and final verification:
 `c8f44dc32489d1681721fadefa3d9ca8a4083048b38334879964bc52df847ebe`.
+
+## DIB and MONODEBG declaration scope checkpoint
+
+Two more declaration groups have evidence-backed single-unit use. All
+original direct references to the nine DIB buffer globals from
+`szFrameRateText` at `0x00476620` through `nDIBSlamCount` at `0x00486060`
+occur inside `0x00431F00`–`0x0043390F`. References to mono's four file-error
+buffers and two MONODEBG variables, at `0x00475D20`–`0x00475E74`, occur
+inside `0x00403500`–`0x00403E4F`. Their reconstructed use sites agree.
+This establishes declaration use; it does not recover the original header
+organization or justify moving their temporary storage.
+
+Checking each group and their combination across eligible core units gives
+four retained scope changes:
+
+| Unit | Unused declarations omitted | Fewer differing encodings | Added exact functions |
+| --- | --- | ---: | ---: |
+| `cmpgn.c` | DIB buffer state | 1 | 0 |
+| `dib.c` | File-error and MONODEBG state | 40 | 0 |
+| `eject.c` | Both groups | 11 | 0 |
+| `screens.c` | DIB buffer state | 13 | 2 |
+
+`EstablishingShot` and `SceneDirector` now have exact normalized spans of
+352 and 1,136 bytes, including alignment and the director's switch data.
+`DIBupdate` retains its 384-byte span while dropping from 45 differing
+instruction encodings to five. `ejection_sequence` drops from 85 to 74,
+and `LoadFace` from 58 to 57. `LoadMissionData` retains 209 differing
+encodings while mnemonic similarity rises from 95.73% to 96.58%.
+
+The six changed report rows remove 65 differing encodings; the other 1,518
+rows are unchanged. No previously exact routine regresses, and all reported
+spans are unchanged. The report has 1,277 normalized exact functions, 231
+same-size differences, and sixteen size differences (74 absolute bytes,
+net -6). Mnemonic totals remain 1,380 perfect, 1,518 at or above 90%, six
+below, and 99.60% average. There are no missing exports, fallbacks, or errors.
+Function bodies, types, storage, calling conventions, compiler settings, and
+link order are unchanged.
+
+The unused-mono declaration probe in `geom.c` improves four routines to
+exact but disturbs three existing exact routines, for only three fewer
+differing encodings overall. It is not retained. The other group placements
+are also reverted. `docs/PATTERNS.md` records the unsuccessful small-source
+probes so that these bounded searches need not be repeated.
+
+A clean rebuild regenerates all 78 native objects, archives, and executable
+outputs. Native and modern builds, source-order and address audits, the order
+report, and all required verification gates pass. Both value checks cover
+1,524 functions with zero mismatches or skips. All 1,104 linked globals,
+39 code pointers, 79 mixer operands, and recovered unit-data blocks pass.
+A separate binary-comp reference check verifies the identities, order,
+multiplicity, and function-relative positions of 46 named global operands
+in the two newly exact routines. Call and global-access analyses retain
+eleven and 35 diagnostics across 1,138 and 1,059 checked functions. Modern
+linking retains the existing unaligned-pointer warnings. No gameplay
+validation is claimed.
+
+Section sizes and placements remain unchanged: code is 400,663 bytes versus
+401,111, data virtual size is 1,329,724 versus 1,331,596, relocation data is
+36,294 versus 36,306, and file size is 518,144 versus 518,656. The entry point
+remains `0x0044E5B0` versus `0x0044E770`. The 26 missing routines still
+account for 416 of the 448 absent code bytes. Strict positional matches
+increase by six to 57,585 of 518,656 bytes (11.1027%); 461,071 positions
+differ in 22,969 runs. Literal executable equality remains incomplete.
+The executable hash stays unchanged through final verification:
+`e71a0b9cf7d337af801a6381d3a1452f7b0680e314aa0ae01b78a90ac0fdba4e`.
