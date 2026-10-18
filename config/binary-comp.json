@@ -76,6 +76,7 @@
     },
     "reviewed_layout_issues": {
       "full": {
+        "REBUILT_LAYOUT_ADJACENT_SPLIT:0x005a7dbe": "False positive for fire_computer_graphic_missile's qualified short compound assignments in src/cockpt.c: the address-tail scanner treats the +=/-= operators as pointer arithmetic. Both original and rebuilt ADD/SUB instructions access only the two-byte nReleaseWeaponDisplayY object, with no displacement into the following eReleaseWeaponDisplayType. Their relative storage positions are not a dependency; the original and rebuilt global-span audits remain enabled.",
         "HEADER_EXTERN_NO_GLOBALS_C_DEF:0x0043d4bf": "anRLEQuarterCosine is defined in the assembled .text section of src/raster.asm; the C initializer is used only by the SDL build.",
         "HEADER_EXTERN_NO_GLOBALS_C_DEF:0x0043e778": "abIffBmhdChunkId is defined in the assembled .text section of src/raster.asm; the C initializer is used only by the SDL build.",
         "HEADER_EXTERN_NO_GLOBALS_C_DEF:0x0043e77c": "abIffCmapChunkId is defined in the assembled .text section of src/raster.asm; the C initializer is used only by the SDL build.",

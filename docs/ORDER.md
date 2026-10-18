@@ -2330,3 +2330,66 @@ is still `0x0044E5B0` versus `0x0044E770`; 26 missing routines account for
 positions in 22,973 runs. Literal executable equality remains incomplete.
 The clean-build and post-verification SHA-256 hashes agree:
 `51d0edfc94877a4a38a3d6516499031eccec1740b2532df6352d815b4d13bf94`.
+
+## Cockpit access-order checkpoint
+
+`fire_computer_graphic_missile` remains in the established cockpit range.
+Qualified accesses to its two coordinate words recover the original memory
+updates and three-register save sequence. Its aligned span remains 336 bytes,
+mnemonic similarity rises from 85.87% to 96.59%, and differing encodings fall
+from 82 to 58. The body comparison improves from sixty differences to ten;
+the remaining duplicated shape-pointer load makes the body 335 bytes versus
+329 originally. Qualifying only Y instead enlarges the span to 352 bytes and
+is not retained.
+
+The same unit's `objective_lost` preserves the signed-byte mission-state read
+before the objective-type read through qualified accesses. Its body remains
+78 bytes within the original 80-byte span. All mnemonics now match, up from
+84.62%; thirteen register encodings still differ, down from fifteen. These
+qualifications reproduce observed accesses without claiming the original
+source declared volatile globals. No declarations, global storage, compiler
+settings, calling conventions, or unit boundaries change.
+
+The full report changes only these two rows, removing 26 differing encodings
+with all other 1,522 rows unchanged. Normalized exact matches remain 1,287,
+with 221 same-size differences and sixteen size differences (74 absolute
+bytes, net -6). There are now 1,386 functions at 100% mnemonic similarity,
+1,520 at or above 90%, four below, and 99.63% average. There are no missing
+exports, fallbacks, or errors. A separate binary-comp reference check verifies
+32 named global operands in the two changed routines, excluding the known
+duplicated shape-pointer load; the objective operands also retain their
+original relative positions.
+
+The layout audit initially reports a false adjacent-global dependency for
+the qualified Y compound assignments. Its text scanner treats += and -= as
+pointer offsets. Original instructions at `0x00414E18` and `0x00414E21`, and
+rebuilt instructions at `0x00414E0E` and `0x00414E17`, use two-byte memory
+operands at Y itself. Neither reaches the following type object. The existing
+review configuration records this specific false positive; original and
+rebuilt global-span checks remain enabled.
+
+A read-only relocation scan also found no HIGHLOW targets inside the
+unexplained keyboard gap `0x00475B70`–`0x00475BEF`, mono gap
+`0x00475E60`–`0x00475E6F`, or console-to-profiler gap
+`0x004763F4`–`0x004764F7`. This supplies no evidence for new storage objects,
+so their ownership and content remain unresolved.
+
+The clean rebuild regenerates all 78 native objects, archives, and executable
+outputs. Native and modern builds, source-order and address audits, the order
+report, and all required verification gates pass. Both value checks cover
+1,524 functions with zero mismatches or skips. All 1,104 linked globals,
+39 code pointers, 79 mixer operands, and recovered unit-data blocks pass.
+Call and global-access analyses retain eleven and 35 diagnostics across
+1,138 and 1,059 checked functions. The modern linker's existing
+unaligned-pointer warnings remain. No gameplay validation is claimed.
+
+Code remains 400,663 bytes versus 401,111, data virtual size 1,329,724 versus
+1,331,596, and file size 518,144 versus 518,656. Relocation data increases
+by four bytes to 36,298, versus the original 36,306. Section placements and
+the entry point remain unchanged; the latter is `0x0044E5B0` versus
+`0x0044E770`. The 26 missing routines still account for 416 of the 448
+absent code bytes. Strict positional matches increase by 88 to 57,680 of
+518,656 bytes (11.1211%), with 460,976 differing positions in 23,061 runs.
+Literal executable equality remains incomplete. Clean-build and
+post-verification SHA-256 hashes agree:
+`ef3713080970987a3284340e6b4a0adf67d6f6ae2e3ca882fa14932b7e1f28a8`.

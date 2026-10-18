@@ -1029,33 +1029,33 @@ void fire_computer_graphic_missile(void)
     if (cReleaseWeaponDisplayState != 0) {
         RestoreSpriteBackground(
             &stLeftVdu, pReleaseWeaponDisplayBackground,
-            nReleaseWeaponDisplayX,
-            nReleaseWeaponDisplayY,
+            (*(short volatile *)&nReleaseWeaponDisplayX),
+            (*(short volatile *)&nReleaseWeaponDisplayY),
             pCockpitWeaponShape,
             frame);
     }
     frame = cReleaseWeaponDisplayFrame;
-    if (nReleaseWeaponDisplayY > stLeftVdu.top - 10 &&
-        nReleaseWeaponDisplayY < stLeftVdu.bottom) {
+    if ((*(short volatile *)&nReleaseWeaponDisplayY) > stLeftVdu.top - 10 &&
+        (*(short volatile *)&nReleaseWeaponDisplayY) < stLeftVdu.bottom) {
         if (eReleaseWeaponDisplayType ==
             OBJECT_TYPE_SPACE_MINE)
-            nReleaseWeaponDisplayY +=
+            (*(short volatile *)&nReleaseWeaponDisplayY) +=
                 (short)cReleaseWeaponDisplayTicks;
         else
-            nReleaseWeaponDisplayY -=
+            (*(short volatile *)&nReleaseWeaponDisplayY) -=
                 (short)cReleaseWeaponDisplayTicks;
         cReleaseWeaponDisplayTicks++;
         if (visible != 0) {
             CaptureSpriteBackground(
                 &stLeftVdu,
                 pReleaseWeaponDisplayBackground,
-                nReleaseWeaponDisplayX,
-                nReleaseWeaponDisplayY,
+                (*(short volatile *)&nReleaseWeaponDisplayX),
+                (*(short volatile *)&nReleaseWeaponDisplayY),
                 pCockpitWeaponShape,
                 frame);
             DrawSpriteDefault(
-                &stLeftVdu, nReleaseWeaponDisplayX,
-                nReleaseWeaponDisplayY,
+                &stLeftVdu, (*(short volatile *)&nReleaseWeaponDisplayX),
+                (*(short volatile *)&nReleaseWeaponDisplayY),
                 pCockpitWeaponShape,
                 cReleaseWeaponDisplayFrame);
         }
@@ -1464,9 +1464,9 @@ unsigned int objective_lost(short objective)
 {
     unsigned short state;
 
-    state = aMissionShips[
+    state = *(signed char volatile *)&aMissionShips[
         aMissionObjectives[objective].index].state;
-    switch (aMissionObjectives[objective].type) {
+    switch (*(int volatile *)&aMissionObjectives[objective].type) {
         case 2:
         case 3:
             return state >= 1;

@@ -861,7 +861,23 @@ do not reject a recovered size solely because its positional count is larger.
   frame reads and recover sixteen bytes, restoring the 336-byte span at
   85.87%. Explicit shape/background pointer locals and a promoted Y local
   did not improve the match and are not retained. Coordinate caching and
-  an extra saved register remain different.
+  an extra saved register remained different at that checkpoint.
+  Qualified volatile accesses to both coordinate words now preserve the
+  original reloads and direct memory ADD/SUB updates, removing the extra
+  EBP save. The aligned span stays 336 bytes, mnemonic similarity reaches
+  96.59%, and differing encodings fall from 82 to 58. The body comparison
+  drops from sixty differences to ten; the rebuilt body is 335 bytes versus
+  the original 329 because the shape-pointer load is duplicated across the
+  restore branches. Qualifying Y alone instead produces a 352-byte span
+  and retains the extra register save, so that intermediate form is discarded.
+  These access qualifications constrain code generation; they do not prove
+  the original globals were declared volatile.
+  The layout audit's address-tail scanner interprets the compound assignment
+  operators as pointer arithmetic and reports an adjacent-global dependency.
+  This is reviewed at `REBUILT_LAYOUT_ADJACENT_SPLIT:0x005a7dbe` in the
+  configuration: both images use word ADD/SUB at Y itself, and neither
+  accesses the following type object through that address. The original and
+  rebuilt global-span checks stay enabled.
 - `target_locking` dispatches through a weapon-type switch, with the
   heat-seeking body before image recognition. Keep the countdown in a
   short local, increment it, and store it before returning. Accumulate the
@@ -1975,6 +1991,12 @@ do not reject a recovered size solely because its positional count is larger.
   explicit promoted indices, a cached collision radius, and moving the byte
   offset calculation all retained the incorrect twelve-byte frame and reduced
   similarity. These trials are reverted; its original frame is sixteen bytes.
+  Qualifying the objective routine's signed-byte state read and subsequent
+  integer type read as volatile preserves their original order. Its 78-byte
+  body and 80-byte aligned span are unchanged, mnemonic similarity rises
+  from 84.62% to 100%, and differing encodings fall from fifteen to thirteen.
+  EAX/ECX/EDX allocation still differs. Together with the missile-coordinate
+  qualifications above, the other 123 cockpit report rows remain unchanged.
 - `select_new_release_weapon` retains the starting cycle index as a signed
   word, even though its running index and weapon count are signed bytes.
   The original sign-extends DL into DI and later compares AX with DI.
