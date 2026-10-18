@@ -8,6 +8,7 @@
  *  Implement in ADDRESS ORDER -- MSVC emits functions in source order, so the
  *  list below is the original source order of this file.
  */
+#define WC1_IX_SOUND_SOURCE
 #include "ix.h"
 
 #define IX_SOUND_FILE "D:\\Rnd\\prj\\ix\\src\\sound\\sound.cpp"
@@ -190,10 +191,14 @@ extern "C" void __fastcall ix_sound_release(IxSound *sound)
     if ((sound->flags & IX_SOUND_PLAYING) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_SOUND_FILE, 151);
         ix_log_printf("can't release non playing sound!");
-    } else if ((sound->flags & IX_SOUND_LOOPING) == 0) {
+        return;
+    }
+    if ((sound->flags & IX_SOUND_LOOPING) == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_SOUND_FILE, 152);
         ix_log_printf("can't release non looping sound!");
-    } else if ((sound->flags & IX_SOUND_HAS_VOICE) != 0) {
+        return;
+    }
+    if ((sound->flags & IX_SOUND_HAS_VOICE) != 0) {
         ix_dspv_clear_flag4(sound->voice);
         sound->flags |= IX_SOUND_RELEASE_PENDING;
     } else {
@@ -267,19 +272,15 @@ extern "C" void __fastcall ix_sound_stop(IxSound *sound)
 void IxSound::ix_sound_reprioritise(void)
 {
     unsigned int newPriority;
-    IxSound *waitingSound;
-    int releasedVoice;
-    IxSound *playingSound;
-    int reassignedVoice;
 
     newPriority = (volume << 8) / 0xffff +
                   (pitchOffset << 8) / 0xac44 + basePriority;
     if ((flags & IX_SOUND_HAS_VOICE) != 0) {
         if (priority > newPriority) {
-            waitingSound = ix_system_find_highest_waiting(
+            IxSound *waitingSound = ix_system_find_highest_waiting(
                 pQueuedSoundList, newPriority);
             if (waitingSound != 0) {
-                releasedVoice = ix_system_release_voice(this);
+                int releasedVoice = ix_system_release_voice(this);
 
                 if (this == pPlayingSoundList)
                     pPlayingSoundList = next;
@@ -308,10 +309,10 @@ void IxSound::ix_sound_reprioritise(void)
             }
         }
     } else if ((flags & IX_SOUND_PLAYING) != 0 && priority < newPriority) {
-        playingSound = ix_system_find_lowest_playing(
+        IxSound *playingSound = ix_system_find_lowest_playing(
             pPlayingSoundList, newPriority);
         if (playingSound != 0) {
-            reassignedVoice = ix_system_release_voice(playingSound);
+            int reassignedVoice = ix_system_release_voice(playingSound);
 
             if (playingSound == pPlayingSoundList)
                 pPlayingSoundList = playingSound->next;

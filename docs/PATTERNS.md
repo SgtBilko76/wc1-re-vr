@@ -100,6 +100,27 @@ do not reject a recovered size solely because its positional count is larger.
   from owner-specific prototypes either has no effect or disturbs other
   functions. None of these probes is retained. The complete change removes
   94 differing encodings and gains one exact function overall.
+- `ix/sound.cpp` omits 42 unused system, allocator, mixer, voice, stream,
+  and streamer globals through `WC1_IX_SOUND_SOURCE`. Its five required
+  declarations appear as `nActiveVoices`, `nSystemVoices`, `pIdleSoundList`,
+  `pPlayingSoundList`, and `pQueuedSoundList`. This recovers the complete
+  109-byte free-list unlink and 838-byte sound-start routines. Other owners
+  retain their declarations, and no storage, types, flags, or link order
+  changes. These are measured declaration scopes, not recovered header text.
+  Explicit returns after the two release warnings reproduce their original
+  jumps to the epilogue, making `ix_sound_release` exact over 177 bytes.
+  In `ix_sound_reprioritise`, declare each selected sound and released voice
+  inside its branch. This restores all five original local slots and the
+  implicit object slot in the 24-byte frame. One comparison still loads the
+  global head before the local sound instead of the reverse, leaving the
+  routine one byte short and its final unit alignment one byte longer.
+  All 120 orders of the five globals were checked with these local scopes;
+  none removes this difference while retaining the other matches. Reversed
+  equality, local pointer qualifiers, shared branch-local names, separated
+  initializers, wider local scopes, an explicit else block, and qualified
+  reads also leave it unchanged. None of these further probes is retained.
+  A const-qualified free-function pointer parameter changes CL 4.20's C++
+  mangling and fails to link; do not use it to tune operand selection.
 - Biased array operands can precede the actual array. The carrier-launch
   fighter loop loads from `0x0046A5AE + frame * 2` for frames 9 through 22.
   Its real 14-word table starts at `0x0046A5C0`; `frame - 9` reproduces the

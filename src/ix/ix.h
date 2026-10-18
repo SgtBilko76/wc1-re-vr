@@ -169,9 +169,17 @@ struct IxSound {
     void ix_sound_set_delete_on_stop(int enabled);
 };
 
-/* Stream control uses only the stream and voice state below. Unused external
- * globals affect VC++ 4.20's code selection, so keep unrelated state out. */
+/* Keep each owner's unused external state out of its declaration scope:
+ * VC++ 4.20's code selection also depends on these declarations and their
+ * order. Sound uses only the two voice counts and three list heads here. */
 #ifndef WC1_IX_DSPS_SOURCE
+#ifdef WC1_IX_SOUND_SOURCE
+extern int nActiveVoices;                    /* 0x00598614 */
+extern int nSystemVoices;                    /* 0x00598618 */
+extern IxSound *pIdleSoundList;               /* 0x0059860C */
+extern IxSound *pPlayingSoundList;            /* 0x0059861C */
+extern IxSound *pQueuedSoundList;             /* 0x00598620 */
+#else
 extern unsigned int dwSoundStateFlags;       /* 0x00598608 */
 extern IxSound *pIdleSoundList;               /* 0x0059860C */
 extern IxSample *pSamples;                   /* 0x00598610 */
@@ -186,6 +194,7 @@ extern void (__cdecl *pIxFree)(void *);
 extern unsigned short nMasterVolume; /* 0x0047198C */
 extern short          asPanGains[];  /* 0x00597D28 */
 extern CRITICAL_SECTION csMixer;    /* 0x005985E8 */
+#endif
 #endif
 
 #define IX_MIXER_BASE_RATE 22050    /* 0x5622, the divisor in set_frequency */
@@ -254,6 +263,7 @@ private:
     friend void ix_dsps_unlock(int);
 };
 
+#ifndef WC1_IX_SOUND_SOURCE
 extern IxStream streams[];         /* 0x00598138 */
 /* The stream owner needs its allocation count declared before its limit. */
 #ifdef WC1_IX_DSPS_SOURCE
@@ -263,8 +273,9 @@ extern int      nStreamCount;      /* 0x00598130 */
 extern int      nStreamCount;      /* 0x00598130 */
 extern int      nAllocatedStreams; /* 0x00598134 */
 #endif
+#endif
 
-#ifndef WC1_IX_DSPV_SOURCE
+#if !defined(WC1_IX_DSPV_SOURCE) && !defined(WC1_IX_SOUND_SOURCE)
 extern IxVoice aVoices[];           /* 0x005981A8 */
 extern int     nVoiceCount;        /* 0x00598600 */
 #ifndef WC1_IX_DSPS_SOURCE
@@ -509,7 +520,7 @@ extern "C" unsigned int ix_file_write(FILE *file, const void *source,
                                        unsigned int bytes); /* 0x0046173E */
 extern "C" long ix_file_size(FILE *file);        /* 0x00461764 */
 
-#ifndef WC1_IX_DSPS_SOURCE
+#if !defined(WC1_IX_DSPS_SOURCE) && !defined(WC1_IX_SOUND_SOURCE)
 extern unsigned int *pStreamerPacketOffsets;
 extern unsigned int dwStreamerThreadTick;
 extern FILE *pStreamerPackageFile;

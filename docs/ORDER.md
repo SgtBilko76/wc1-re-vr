@@ -1854,3 +1854,60 @@ There are 461,098 differing positions in 22,925 runs; literal executable
 equality still fails. The executable SHA-256 remains unchanged between the
 full report and final verification:
 `1f9908d45f246339a7d4491197bceac3ed9492893675154a1ac087672fee67cf`.
+
+## Sound declaration and local-scope checkpoint
+
+The fourteen-function `ix/sound.cpp` unit now has twelve normalized exact
+matches, up from nine. It sees only its five required system globals, with
+the two voice counts preceding the three sound-list heads. This removes
+42 unused external declarations from that owner's scope without changing
+other owners, storage, types, compiler flags, or link order. The complete
+109-byte free-list unlink and 838-byte sound-start functions become exact.
+Explicit returns after the two release warnings recover the original
+epilogue jumps and make the 177-byte release function exact as well.
+
+The priority routine's selected sounds and released voices are declared
+inside their branches. Its original local slots are now restored: priority
+at EBP-4, waiting sound at EBP-8, released voice at EBP-12, playing sound at
+EBP-16, reassigned voice at EBP-20, and the implicit object at EBP-24.
+The frame remains 24 bytes. One comparison still loads the playing-list
+head before the local sound, whereas the original loads the local and
+compares against the global. This leaves 810 bytes against 811 and changes
+the affected branch displacements. Binary-comp reports fifteen differing
+encodings on its unequal-size comparison basis; the previous same-size
+result had forty positional differences. Those counts are not directly
+interchangeable. The final `ix_sound_is_playing` still has an exact
+19-instruction body; its reported span changes from 52 to 57 against the
+original 56 because of object-end alignment. The unit's overall extent is
+unchanged. Rejected scope and source-form probes are recorded in
+`docs/PATTERNS.md`.
+
+Only these five rows change in the complete report; the other 1,519 are
+unchanged. There are now 1,267 normalized exact functions, 241 same-size
+differences, and sixteen reported span differences (74 absolute bytes,
+net -6). There are still 1,375 mnemonic-perfect functions, 1,516 at or above
+90%, eight below, and 99.58% average mnemonic similarity.
+
+A clean rebuild removes and regenerates all 78 native objects, archives,
+and executable outputs before measurement. Both builds, source-order and
+address audits, the order report, and all required verification gates pass.
+Both value checks cover 1,524 functions with zero mismatches or skips. All
+1,104 global-data definitions, 39 code pointers, and 79 mixer operands pass.
+A separate binary-comp reference check verifies 379 operands referring to
+26 named audio globals across 58 functions. It checks identity, order, and
+multiplicity throughout, and function-relative offsets in normalized-exact
+routines, including the newly exact unlink and start functions. Call and
+global-access analyses retain eleven and 35 diagnostics across 1,138 and
+1,059 checked functions respectively. No gameplay validation is claimed.
+
+All section sizes and placements remain unchanged: code is 400,663 bytes
+versus 401,111, data virtual size is 1,329,724 versus 1,331,596, relocation
+data is 36,294 versus 36,306, and the file is 518,144 versus 518,656.
+The entry point remains `0x0044E5B0` versus `0x0044E770`. The 26 missing
+routines still account for 416 bytes.
+
+Strict positional matches rise by 38 to 57,596 of 518,656 bytes (11.1049%).
+There are 461,060 differing positions in 22,972 runs; literal executable
+equality still fails. The executable SHA-256 remains unchanged between
+the full report and final verification:
+`49fc6c3748d6f08ab47ea043f7bce1fbcedef927108c67a6a11c874d8f67ca4c`.

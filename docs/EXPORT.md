@@ -16,6 +16,17 @@ disassembly needed by `compare-func`, `report`, and `order`.
 Keep `--discover` when overriding the default export flags: discovered CRT
 and thunk boundaries also delimit the byte spans of adjacent source functions.
 
+Rapid source probes need a forced rebuild of their generated outputs. With
+the local GNU Make 3.81, `make -W src/ix/sound.cpp WC1.EXE` can leave a stale
+archive or executable when writes fall within one timestamp interval. Remove
+the affected object, its owning archive, and `WC1.EXE` before rebuilding;
+do the same when restoring a probe. For the sound owner these are
+`out/ix/sound.obj`, `out/ix/sound.lib`, and `WC1.EXE`. A clean rebuild of all
+native objects and archives reproduced the preceding checkpoint's SHA-256,
+confirming that its retained source and measured executable agreed. Run
+reports and verification with `--no-build` after an explicit build, and check
+the executable hash before and after validation.
+
 Keep `nop` out of `padding_mnemonics` in `config/checkValuesCapstone.json`.
 The original high-score routine contains a reachable `NOP` at `0x00426BAD`.
 Filtering it creates a gap in the decoded control flow and drops the following
