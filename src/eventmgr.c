@@ -1053,8 +1053,6 @@ void intro_drawbackgroundships(void)
 void set_up_screen_viewport(signed char mode)
 {
     int modeIndex;
-    short viewportWidth;
-    const ScreenViewportGeometry *viewportGeometry;
 
     cScreenViewportMode = mode;
     modeIndex = (int)mode;
@@ -1074,14 +1072,12 @@ void set_up_screen_viewport(signed char mode)
     }
 
     if (bCockpitlessView != 0 && bCockpitlessView != -2) {
-        viewportWidth = pScreenViewportGeometry->width;
-        viewportGeometry = pScreenViewportGeometry;
-        nScreenWidth = viewportWidth;
-        nViewCenterX = (short)(viewportWidth / 2);
-        nScreenHeight = viewportGeometry->height;
+        nScreenWidth = pScreenViewportGeometry->width;
+        nViewCenterX = (short)(nScreenWidth / 2);
+        nScreenHeight = pScreenViewportGeometry->height;
         nViewCenterY = (short)(nScreenHeight / 2);
-        nViewportOriginX = viewportGeometry->originX;
-        nViewportOriginY = viewportGeometry->originY;
+        nViewportOriginX = pScreenViewportGeometry->originX;
+        nViewportOriginY = pScreenViewportGeometry->originY;
         switch ((int)cCockpitView) {
         case 0:
             nViewportOriginY += 10;
@@ -1101,14 +1097,12 @@ void set_up_screen_viewport(signed char mode)
         return;
     }
 
-    viewportWidth = pScreenViewportGeometry->width;
-    viewportGeometry = pScreenViewportGeometry;
-    nScreenWidth = viewportWidth;
-    nViewCenterX = (short)(viewportWidth / 2);
-    nScreenHeight = viewportGeometry->height;
+    nScreenWidth = pScreenViewportGeometry->width;
+    nViewCenterX = (short)(nScreenWidth / 2);
+    nScreenHeight = pScreenViewportGeometry->height;
     nViewCenterY = (short)(nScreenHeight / 2);
-    nViewportOriginX = viewportGeometry->originX;
-    nViewportOriginY = viewportGeometry->originY;
+    nViewportOriginX = pScreenViewportGeometry->originX;
+    nViewportOriginY = pScreenViewportGeometry->originY;
 }
 
 /* Function start: 0x436890 */

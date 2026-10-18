@@ -498,7 +498,7 @@ int nMouseCursorDrawnX; /* 0x0059a8e4 */
 int anObjectDepthPlaced[SPACE_OBJECT_COUNT]; /* 0x0059a8f0 */
 short DAT_0059a9f0;
 signed char cScreenViewportMode; /* 0x0059a9f2 */
-const ScreenViewportGeometry * volatile
+const ScreenViewportGeometry *
     pScreenViewportGeometry; /* 0x0059a9f4 */
 int anSortedObject[SPACE_OBJECT_COUNT]; /* 0x0059aa00 */
 short nPacketDecompressInputPosition; /* 0x0059ab00 */
@@ -830,8 +830,8 @@ int nFreeViewportCalls; /* 0x005a8110 */
 short nPendingCampaignIndex; /* 0x005a8114 */
 short nMissionMedalScore; /* 0x005a8116 */
 short nCampaignDataSet; /* 0x005a8118 */
-volatile int nNearHeapSize; /* 0x005a811c */
-volatile int nNearHeapBase; /* 0x005a8120 */
+int nNearHeapSize; /* 0x005a811c */
+int nNearHeapBase; /* 0x005a8120 */
 int nNearHeapFirstDescriptor; /* 0x005a8124 */
 void * volatile pNearHeapAllocation; /* 0x005a8128 */
 short nNavMapMaximumX; /* 0x005a812c */

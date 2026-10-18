@@ -117,8 +117,8 @@ unsigned int ShowMemoryStatusDebug(void)
         sprintf(value, "%ld", dwOriginalFreeMemory);
         DrawFormattedText("%X%YOriginal FMem %s.", 0, 0, value);
         stDefaultTextContext = savedContext;
+        pCurrentTextContext = previousContext;
     }
-    pCurrentTextContext = previousContext;
     return 0;
 }
 
@@ -144,8 +144,8 @@ int main(short argc, char **argv)
     int animationDemo;
     int selection;
     int launchMission;
-    short argumentCount;
     short argumentIndex;
+    short argumentCount;
     short animationIndex;
     short mission;
     short series;
@@ -278,20 +278,13 @@ int main(short argc, char **argv)
     }
 
     SetCinematicFrameTiming();
-    {
-        signed char initialSeries;
-        signed char initialMission;
-
-        initialSeries = *(signed char volatile *)&series;
-        initialMission = *(signed char volatile *)&mission;
-        *(signed char volatile *)&stCampaignState.currentSeries = initialSeries;
-        *(short volatile *)&nVideoMode = 0x13;
-        *(signed char volatile *)&stInitialCampaignState.currentSeries = initialSeries;
-        *(signed char volatile *)&stCampaignState.currentMission = initialMission;
-        *(signed char volatile *)&stInitialCampaignState.currentMission = initialMission;
-        LoadOriginFxDrivers();
-        nVideoMode = 0x13;
-    }
+    stInitialCampaignState.currentSeries =
+        stCampaignState.currentSeries = (signed char)series;
+    stInitialCampaignState.currentMission =
+        stCampaignState.currentMission = (signed char)mission;
+    nVideoMode = 0x13;
+    LoadOriginFxDrivers();
+    nVideoMode = 0x13;
 
     if (animationDemo == 1) {
         SystemDebugPrintf("Pre animation: %lu.\n",
@@ -586,7 +579,6 @@ void init_player_input(void)
 void get_player_input(void)
 {
     int device;
-    InputDeviceSample *sample;
 
     if (nActiveInputDevice != -1 &&
         bInputPollingGuard == 0) {
@@ -601,17 +593,13 @@ void get_player_input(void)
                 aInputDeviceSamples[device].buttons !=
                     stLastPolledFlightInput.buttons) {
                 TranslatePolledInputEvent(6, 0);
-                device = (int)nActiveInputDevice;
-                sample = &aInputDeviceSamples[device];
+                stLastPolledFlightInput = aInputDeviceSamples[nActiveInputDevice];
                 bInputPollingGuard--;
-                memcpy(&stLastPolledFlightInput, sample, sizeof(*sample));
                 return;
             }
         } else {
             TranslatePolledInputEvent(6, 0);
-            device = (int)nActiveInputDevice;
-            sample = &aInputDeviceSamples[device];
-            memcpy(&stLastPolledFlightInput, sample, sizeof(*sample));
+            stLastPolledFlightInput = aInputDeviceSamples[nActiveInputDevice];
         }
         bInputPollingGuard--;
     }
@@ -711,12 +699,12 @@ int process_player_input(void)
             } else {
                 if (shift != 0)
                     nPitchInput = 9;
-                if (nPitchInput < 9 ||
-                    cPreviousKey < 0) {
+                if (nPitchInput < 9)
                     nPitchInput++;
-                } else {
+                else if (cPreviousKey < 0)
+                    nPitchInput++;
+                else
                     nPitchInput--;
-                }
             }
             break;
         case 0x50:
@@ -739,9 +727,8 @@ int process_player_input(void)
                     nPitchInput--;
                 else if (cPreviousKey < 0)
                     nPitchInput--;
-                else {
+                else
                     nPitchInput++;
-                }
             }
             break;
         case 0x4d:

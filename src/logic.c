@@ -1575,7 +1575,6 @@ unsigned int init_constellation(short scene)
 {
     short slot;
     short object;
-    int definitionBase;
 
     if (pConstellationShape != 0)
         return 0;
@@ -1586,16 +1585,14 @@ unsigned int init_constellation(short scene)
     if (nTrainSimActive != 0 || scene < 0)
         return;
 
-    definitionBase = (int)scene * 4;
     slot = 0;
     do {
-        if (pConstellationDefinitions[
-                definitionBase + slot].shapePacket != -1) {
+        if (pConstellationDefinitions[scene * 4 + slot].shapePacket !=
+            -1) {
             object = find_vacant_3d_object();
             if (object != -1) {
                 InitializeConstellationObject(
-                    &pConstellationDefinitions[
-                        definitionBase + slot],
+                    &pConstellationDefinitions[scene * 4 + slot],
                     object);
             }
             asConstellationObjectIndices[slot] = object;
@@ -1940,19 +1937,19 @@ unsigned int init_inflight_music(void)
 /* Function start: 0x424C80 */
 unsigned int free_inflight_music(void)
 {
-    int slot;
+    int *record;
 
     StopMusicUnlessSuppressed();
     nInFlightMusicActive = 0;
     if (nInFlightMusicSlotA != -1) {
-        slot = nInFlightMusicSlotA;
+        record = (int *)(abSoundPlaybackSlots + nInFlightMusicSlotA * 6);
         nInFlightMusicSlotA = -1;
-        *(int *)(abSoundPlaybackSlots + slot * 6) = 0;
+        *record = 0;
     }
     if (nInFlightMusicSlotB != -1) {
-        slot = nInFlightMusicSlotB;
+        record = (int *)(abSoundPlaybackSlots + nInFlightMusicSlotB * 6);
         nInFlightMusicSlotB = -1;
-        *(int *)(abSoundPlaybackSlots + slot * 6) = 0;
+        *record = 0;
     }
     return 0;
 }

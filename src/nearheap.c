@@ -56,19 +56,14 @@ void PurgeNearHeapBlocks(unsigned short flags)
 {
     NearHeapBlock *block;
     int descriptorAddress;
-    int descriptorBytes;
 
     if (nNearHeapActive != 0) {
         if ((flags & 0x10) != 0) {
-            descriptorAddress = nNearHeapBase;
-            descriptorAddress += nNearHeapSize;
-            descriptorAddress -= 8;
-            nNearHeapFirstDescriptor = descriptorAddress;
-            block = DosNearPtrToFar(descriptorAddress);
+            nNearHeapFirstDescriptor = nNearHeapBase + nNearHeapSize - 8;
+            block = DosNearPtrToFar(nNearHeapFirstDescriptor);
             block->address = nNearHeapBase;
-            descriptorBytes = nNearHeapMaxDescriptors * 8;
             block->sizeAndFlags =
-                nNearHeapSize - descriptorBytes;
+                nNearHeapSize - nNearHeapMaxDescriptors * 8;
             return;
         }
         descriptorAddress = nNearHeapBase +
@@ -85,13 +80,9 @@ void PurgeNearHeapBlocks(unsigned short flags)
 /* Function start: 0x40E9E0 */
 unsigned short InitializeNearHeap(void)
 {
-    short initialSize;
-    int adjustedSize;
-
     if (nNearHeapActive == 0) {
-        initialSize = (short)GetNavRangeSentinel();
+        nNearHeapSize = (short)GetNavRangeSentinel();
         pNearHeapAllocation = 0;
-        nNearHeapSize = initialSize;
         if (nNearHeapMaxDescriptors * 8 < nNearHeapSize)
             pNearHeapAllocation =
                 AllocateTaggedMemory(nNearHeapSize, 0);
@@ -100,13 +91,10 @@ unsigned short InitializeNearHeap(void)
             nNearHeapBase =
                 DosFarPtrToNear(pNearHeapAllocation);
             if (*(unsigned short *)0x00400013 == 0x270) {
-                adjustedSize = 0x9c000 - nNearHeapSize;
-                adjustedSize -= nNearHeapBase;
-                nNearHeapRelocationBytes = adjustedSize;
-                adjustedSize =
-                    0x98000 - nNearHeapRelocationBytes;
-                adjustedSize -= nNearHeapBase;
-                nNearHeapSize = adjustedSize;
+                nNearHeapRelocationBytes =
+                    0x9c000 - nNearHeapSize - nNearHeapBase;
+                nNearHeapSize =
+                    0x98000 - nNearHeapRelocationBytes - nNearHeapBase;
                 if (nNearHeapMaxDescriptors * 8 <
                     nNearHeapSize) {
                     DosMemcpy(

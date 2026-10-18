@@ -39,13 +39,11 @@ void ReportPacketLoadError(void *packet, short logicalFile,
     short error;
     const char *operation;
 
-    error = nPacketError;
-    if (packet != 0) {
-        if (error == 0 || error == 8)
-            return;
-    }
-    if (packet == 0 && error == 8)
+    if (packet != 0 && (nPacketError == 0 || nPacketError == 8))
         return;
+    if (packet == 0 && nPacketError == 8)
+        return;
+    error = nPacketError;
     if (section != -1)
         packetSize = GetPacketSize(
             pDiskFileRecords[logicalFile].name, section);
@@ -105,7 +103,7 @@ void *LoadPacketAllocated(short logicalFile, short section)
 
 /* Function start: 0x41D2E0 */
 void *FetchDiskPacketRetrying(short logicalFile, short section,
-                              unsigned short flags)
+                              short flags)
 {
     void *packet = 0;
     short retries = 5;
@@ -128,38 +126,36 @@ void *FetchDiskPacketRetrying(short logicalFile, short section,
             break;
     } while (nPacketError != 8);
 
-    if (packet == 0) {
-        if (stSpaceBuffer.pixels != 0) {
-            free_viewport(&stSpaceBuffer);
-            do {
-                retries--;
-                FreePacketAndClear(&packet, flags);
-                packet = PacketLoad(pDiskFileRecords[logicalFile].name,
-                                    section, 0, flags, 0);
-                if (retries <= 0 || nPacketError == 0)
-                    break;
-            } while (nPacketError != 8);
-            if (AllocateViewport(&stSpaceBuffer,
-                                 (short)cPrimaryViewBufferColour, 0x20) == 0) {
-                ReportPacketLoadError(0, logicalFile, flags, flags,
-                                      "LP2");
-            }
+    if (packet == 0 && stSpaceBuffer.pixels != 0) {
+        free_viewport(&stSpaceBuffer);
+        do {
+            retries--;
+            FreePacketAndClear(&packet, flags);
+            packet = PacketLoad(pDiskFileRecords[logicalFile].name,
+                                section, 0, flags, 0);
+            if (retries <= 0 || nPacketError == 0)
+                break;
+        } while (nPacketError != 8);
+        if (AllocateViewport(&stSpaceBuffer,
+                             (short)cPrimaryViewBufferColour, 0x20) == 0) {
+            ReportPacketLoadError(0, logicalFile, flags, flags,
+                                  "LP2");
         }
-        if (packet == 0 && stSceneBuffer.pixels != 0) {
-            free_viewport(&stSceneBuffer);
-            do {
-                retries--;
-                FreePacketAndClear(&packet, flags);
-                packet = PacketLoad(pDiskFileRecords[logicalFile].name,
-                                    section, 0, flags, 0);
-                if (retries <= 0 || nPacketError == 0)
-                    break;
-            } while (nPacketError != 8);
-            if (AllocateViewport(&stSceneBuffer,
-                                 (short)cBlackColour, 0) == 0) {
-                ReportPacketLoadError(0, logicalFile, flags, section,
-                                      "LP3");
-            }
+    }
+    if (packet == 0 && stSceneBuffer.pixels != 0) {
+        free_viewport(&stSceneBuffer);
+        do {
+            retries--;
+            FreePacketAndClear(&packet, flags);
+            packet = PacketLoad(pDiskFileRecords[logicalFile].name,
+                                section, 0, flags, 0);
+            if (retries <= 0 || nPacketError == 0)
+                break;
+        } while (nPacketError != 8);
+        if (AllocateViewport(&stSceneBuffer,
+                             (short)cBlackColour, 0) == 0) {
+            ReportPacketLoadError(0, logicalFile, flags, section,
+                                  "LP3");
         }
     }
     if (packet == 0 && (flags & 4) == 0 &&

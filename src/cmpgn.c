@@ -253,6 +253,9 @@ unsigned int LoadFace(short face)
                                      -1, 16);
         bConversationConstellation = 1;
         break;
+    case 3:
+        nConversationBackdropFrame = 1;
+        break;
     case 4:
         nConversationBackdropFrame = 2;
         break;
@@ -269,7 +272,6 @@ unsigned int LoadFace(short face)
     case 12:
         nConversationBackdropFrame = 0;
         break;
-    case 3:
     case 11:
     case 13:
         nConversationBackdropFrame = 1;
@@ -278,10 +280,12 @@ unsigned int LoadFace(short face)
         nConversationBackdropFrame = -1;
         break;
     }
-    if (face != nTalkingHeadFace &&
-        pTalkingHeadShape != 0)
-        FreePacketAndClear(&pTalkingHeadShape, 0);
-    if (pTalkingHeadShape == 0)
+    if (face != nTalkingHeadFace) {
+        if (pTalkingHeadShape != 0)
+            FreePacketAndClear(&pTalkingHeadShape, 0);
+        pTalkingHeadShape =
+            FetchDiskPacketRetrying(6, face, 0);
+    } else if (pTalkingHeadShape == 0)
         pTalkingHeadShape =
             FetchDiskPacketRetrying(6, face, 0);
     nTalkingHeadFace = face;
@@ -317,9 +321,9 @@ unsigned int LongTalk(unsigned char *talker, char *text,
     AddPCName(text);
     faceStart = faceCommands;
     mouthStart = mouthCommands;
-    faceFrame = 0;
     ClearViewport(&stConversationTextViewport,
                   cBlackColour);
+    faceFrame = 0;
     mouthFrame = 0;
     faceCountdown = 0;
     mouthCountdown = 0;

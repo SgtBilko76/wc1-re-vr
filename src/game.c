@@ -564,10 +564,9 @@ void show_info_disp(void)
                       (int)nMissionMedalScore);
     DrawFormattedText("Promotion Score=%d\n",
                       (int)stCampaignState.promotionScore);
-    objective = 0;
     DrawFormattedText("OBJECTIVES\n");
     strcpy(objectiveSummary, "");
-    for (; objective < 16; objective++) {
+    for (objective = 0; objective < 16; objective++) {
         marker = " ";
         if (objective < cMissionObjectiveCount) {
             sprintf(objectiveMarker, "%c", objective % 10 + '1');

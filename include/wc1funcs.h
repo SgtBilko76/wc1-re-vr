@@ -736,7 +736,7 @@ void *LoadPacketIntoBuffer(short logicalFile, short section,
                            void *destination);                         /* 0x0041D200 */
 void *LoadPacketAllocated(short logicalFile, short section);           /* 0x0041D250 */
 void *FetchDiskPacketRetrying(short logicalFile, short section,
-                              unsigned short flags);                    /* 0x0041D2E0 */
+                              short flags);                             /* 0x0041D2E0 */
 unsigned int InitializeTextContextFromFont(TextContext *context,
                                            short fontIndex,
                                            unsigned char colour,

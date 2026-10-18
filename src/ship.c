@@ -123,6 +123,7 @@ unsigned int remove_weapon(short obj, short weapon)
     enum ObjectType preferredType;
     enum ObjectClass objectClass;
     unsigned char *loadout;
+    short slot;
 
 #ifdef SDL_PORT
     if (SdlSwcFlightActive()) {
@@ -146,8 +147,8 @@ unsigned int remove_weapon(short obj, short weapon)
         ((ShipWeaponSlot *)&aShipWeapons[obj][weapon * 7 + 1])->type;
     objectClass = aObjectTypeData[preferredType].objectClass;
     if (weapon < (signed char)loadout[0] - 1) {
-        for (; weapon < (signed char)loadout[0] - 1; weapon++) {
-            unsigned char *entry = loadout + weapon * 7;
+        for (slot = weapon; slot < (signed char)loadout[0] - 1; slot++) {
+            unsigned char *entry = loadout + slot * 7;
 
 #ifdef SDL_PORT
             /* The seven-byte records are intentionally unaligned. */
@@ -2043,11 +2044,10 @@ int fire_missile(short ship)
 {
     short weapon;
     ShipWeaponSlot *slot;
-    signed char weaponCount;
 
     slot = (ShipWeaponSlot *)&aShipWeapons[ship][1];
-    weaponCount = (signed char)aShipWeapons[ship][0];
-    for (weapon = 0; weapon < weaponCount; weapon++, slot++) {
+    for (weapon = 0; weapon < (signed char)aShipWeapons[ship][0];
+         weapon++, slot++) {
         if (aObjectTypeData[slot->type].objectClass ==
                 OBJECT_CLASS_MISSILE) {
             if (ship != 0)
@@ -2126,11 +2126,10 @@ int drop_mine(short obj, signed char weapon, enum ObjectType type,
 /* Function start: 0x421350 */
 void fire_afterburner(short obj, short time)
 {
-    int speed;
     short timer;
 
-    speed = Vector_magnitude(&aShipVelocity[obj]);
-    if (speed < get_ship_max_velocity(obj) * 0x500L) {
+    if (Vector_magnitude(&aShipVelocity[obj]) <
+        get_ship_max_velocity(obj) * 0x500L) {
         set_special(obj, SPECIAL_MANEUVER_AFTERBURNER);
         if (aeSpecialManeuver[obj] != SPECIAL_MANEUVER_AFTERBURNER)
             timer = 0;
@@ -2341,27 +2340,25 @@ unsigned int housekeep_power_plant_and_fuel(short ship)
 unsigned int replenish_shields(short ship)
 {
     signed char shield;
-    int shipIndex;
 
     if (ship == 0 && acPlayerComponentDamage[1] > 0 &&
         nSpaceFrame %
             (acPlayerComponentDamage[1] + 1) != 0)
         return 0;
-    shipIndex = ship;
     shield = 0;
     do {
         short maximum;
         short current;
 
-        maximum = aasShipMaximumShield[shipIndex][shield];
-        if (aasShipShield[shipIndex][shield] > maximum)
-            aasShipShield[shipIndex][shield] = maximum;
-        current = aasShipShield[shipIndex][shield];
+        maximum = aasShipMaximumShield[ship][shield];
+        if (aasShipShield[ship][shield] > maximum)
+            aasShipShield[ship][shield] = maximum;
+        current = aasShipShield[ship][shield];
         if (current < maximum &&
             nSpaceFrame %
                 aObjectTypeData[
-                    aeObjectType[shipIndex]].animationDelay == 0) {
-            aasShipShield[shipIndex][shield] =
+                    aeObjectType[ship]].animationDelay == 0) {
+            aasShipShield[ship][shield] =
                 (short)(current + 1);
         }
         shield++;

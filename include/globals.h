@@ -400,7 +400,7 @@ extern int nMouseCursorDrawnX; /* 0x0059a8e4 */
 extern int anObjectDepthPlaced[SPACE_OBJECT_COUNT]; /* 0x0059a8f0 */
 extern short DAT_0059a9f0;
 extern signed char cScreenViewportMode; /* 0x0059a9f2 */
-extern const ScreenViewportGeometry * volatile
+extern const ScreenViewportGeometry *
     pScreenViewportGeometry; /* 0x0059a9f4 */
 extern short nEventManagerActive; /* 0x0059a850 */
 extern short nViewCenterX; /* 0x0059a852 */
@@ -726,8 +726,8 @@ extern int nFreeViewportCalls; /* 0x005a8110 */
 extern short nPendingCampaignIndex; /* 0x005a8114 */
 extern short nMissionMedalScore; /* 0x005a8116 */
 extern short nCampaignDataSet; /* 0x005a8118 */
-extern volatile int nNearHeapSize; /* 0x005a811c */
-extern volatile int nNearHeapBase; /* 0x005a8120 */
+extern int nNearHeapSize; /* 0x005a811c */
+extern int nNearHeapBase; /* 0x005a8120 */
 extern int nNearHeapFirstDescriptor; /* 0x005a8124 */
 extern void * volatile pNearHeapAllocation; /* 0x005a8128 */
 extern short nNavMapMaximumX; /* 0x005a812c */
