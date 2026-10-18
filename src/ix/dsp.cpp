@@ -25,18 +25,18 @@ void *(__cdecl *pIxMalloc)(unsigned int) = malloc; /* 0x00471990 */
 #endif
 void (__cdecl *pIxFree)(void *) = free; /* 0x00471994 */
 
-HANDLE hMixerThread;                   /* 0x00597D00 */
-HWND hDspWindow;                       /* 0x00597D04 */
-HANDLE hMixerWakeEvent;                /* 0x00597D08 */
+HANDLE hIxPlaybackThread;                   /* 0x00597D00 */
+HWND hPlaybackWindow;                       /* 0x00597D04 */
+HANDLE hAudioWakeEvent;                /* 0x00597D08 */
 unsigned int dwMixerWriteOffset;       /* 0x00597D0C */
-LPDIRECTSOUND pDirectSound;            /* 0x00597D10 */
-unsigned int dwMixerBufferSize;        /* 0x00597D14 */
+LPDIRECTSOUND pDspDevice;            /* 0x00597D10 */
+unsigned int dwSoundBufferSize;        /* 0x00597D14 */
 unsigned int dwDspFlags;               /* 0x00597D18 */
 DWORD dwMixerThreadId;                /* 0x00597D1C */
 LPDIRECTSOUNDBUFFER pMixerBuffer;      /* 0x00597D20 */
-short anPanTable[512];                /* 0x00597D28 */
+short asPanGains[512];                /* 0x00597D28 */
 unsigned int dwDspTick;                /* 0x00598128 */
-LPDIRECTSOUNDBUFFER pPrimarySoundBuffer; /* 0x0059812C */
+LPDIRECTSOUNDBUFFER pDspPrimaryBuffer; /* 0x0059812C */
 
 /* Function start: 0x00444910 */   /* source line 62 */
 int ix_dsp_init(void)
@@ -46,15 +46,15 @@ int ix_dsp_init(void)
         nStreamCount = 2;
         dwMixerWriteOffset = 0;
         InitializeCriticalSection(&csMixer);
-        hMixerWakeEvent = CreateEventA(0, TRUE, FALSE, 0);
+        hAudioWakeEvent = CreateEventA(0, TRUE, FALSE, 0);
         ix_dsp_build_pan_tables();
 #ifdef SDL_PORT
         dwDspFlags |= 4;
 #endif
-        hMixerThread = CreateThread(
+        hIxPlaybackThread = CreateThread(
             0, 0x1000, ix_mixer_thread_proc, 0, 0,
             &dwMixerThreadId);
-        if (hMixerThread == 0) {
+        if (hIxPlaybackThread == 0) {
             ix_log_printf("Fatal [%s - %d]:\n", IX_DSP_FILE, 62);
             ix_log_printf("Failed to start mixer");
             exit(-1);
@@ -69,26 +69,26 @@ void ix_dsp_shutdown(void)
 {
     if ((dwDspFlags & 1) != 0) {
 #ifdef SDL_PORT
-        if (hMixerThread != 0) {
+        if (hIxPlaybackThread != 0) {
             dwDspFlags &= ~4U;
-            SetEvent(hMixerWakeEvent);
-            WaitForSingleObject(hMixerThread, INFINITE);
-            CloseHandle(hMixerThread);
-            hMixerThread = 0;
+            SetEvent(hAudioWakeEvent);
+            WaitForSingleObject(hIxPlaybackThread, INFINITE);
+            CloseHandle(hIxPlaybackThread);
+            hIxPlaybackThread = 0;
         }
 #else
         if ((dwDspFlags & 4) != 0) {
             dwDspFlags &= ~4U;
-            SetEvent(hMixerWakeEvent);
-            WaitForSingleObject(hMixerThread, INFINITE);
+            SetEvent(hAudioWakeEvent);
+            WaitForSingleObject(hIxPlaybackThread, INFINITE);
         }
-        if (pDirectSound != 0) {
-            pDirectSound->Release();
-            pDirectSound = 0;
+        if (pDspDevice != 0) {
+            pDspDevice->Release();
+            pDspDevice = 0;
         }
 #endif
         DeleteCriticalSection(&csMixer);
-        CloseHandle(hMixerWakeEvent);
+        CloseHandle(hAudioWakeEvent);
         dwDspFlags &= 0x7ffffffe;
     }
 }
@@ -98,14 +98,14 @@ void ix_dsp_configure(int option, void *value)
 {
     switch (option) {
     case 0:
-        hDspWindow = (HWND)value;
+        hPlaybackWindow = (HWND)value;
         break;
     case 1:
-        pDirectSound = (LPDIRECTSOUND)value;
+        pDspDevice = (LPDIRECTSOUND)value;
         break;
     case 2:
         if ((dwDspFlags & 1) != 0)
-            SetEvent(hMixerWakeEvent);
+            SetEvent(hAudioWakeEvent);
         break;
     case 3:
         if (value != 0)
@@ -135,23 +135,23 @@ BOOL CALLBACK ix_dsp_open_driver(LPGUID guid, LPSTR description,
 #else
     HRESULT result;
 
-    if (pDirectSound != 0) {
-        pDirectSound->Release();
-        pDirectSound = 0;
+    if (pDspDevice != 0) {
+        pDspDevice->Release();
+        pDspDevice = 0;
     }
-    result = DirectSoundCreate(guid, &pDirectSound, 0);
+    result = DirectSoundCreate(guid, &pDspDevice, 0);
     if (result == DS_OK) {
-        result = pDirectSound->SetCooperativeLevel(
-            hDspWindow,
+        result = pDspDevice->SetCooperativeLevel(
+            hPlaybackWindow,
             (dwDspFlags & 0x10) == 0
                 ? DSSCL_WRITEPRIMARY : DSSCL_EXCLUSIVE);
         if (result == DS_OK) {
             ix_log_printf("sound driver: %s [%s]\n", description, module);
             return FALSE;
         }
-        if (pDirectSound != 0) {
-            pDirectSound->Release();
-            pDirectSound = 0;
+        if (pDspDevice != 0) {
+            pDspDevice->Release();
+            pDspDevice = 0;
         }
     }
     return TRUE;
@@ -198,7 +198,7 @@ int ix_dsp_get_voice_count(void)
 void ix_dsp_set_voice_count(int voiceCount)
 {
     if (nVoicesAllocated != 0 ||
-        nStreamsAllocated != 0) {
+        nAllocatedStreams != 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_DSP_FILE, 176);
         ix_log_printf("can't change voice count while voices are in use");
         return;
@@ -219,7 +219,7 @@ int ix_dsp_get_stream_count(void)
 void ix_dsp_set_stream_count(int streamCount)
 {
     if (nVoicesAllocated != 0 ||
-        nStreamsAllocated != 0) {
+        nAllocatedStreams != 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_DSP_FILE, 187);
         ix_log_printf("can't change stream count while voices are in use");
         return;
@@ -248,7 +248,7 @@ void ix_dsp_set_master_volume(unsigned short volume)
         nMasterVolume = 0;
     }
     for (voice = 0; voice < nVoiceCount; voice++) {
-        if ((voices[voice].flags & IX_VOICE_ACTIVE) != 0)
+        if ((aVoices[voice].flags & IX_VOICE_ACTIVE) != 0)
             ix_dspv_recalc_mix(voice);
     }
 }
@@ -267,22 +267,22 @@ void ix_dsp_build_pan_tables(void)
     for (panPosition = 0; panPosition < 0x40; panPosition++) {
         panDistance = (short)(0x20 - panPosition);
         right = (short)(panDistance * volumeStep);
-        anPanTable[panPosition * 2] = left;
-        anPanTable[panPosition * 2 + 1] = right;
-        anPanTable[0x100 + panPosition * 2] =
+        asPanGains[panPosition * 2] = left;
+        asPanGains[panPosition * 2 + 1] = right;
+        asPanGains[0x100 + panPosition * 2] =
             (short)(left * -1);
-        anPanTable[0x100 + panPosition * 2 + 1] =
+        asPanGains[0x100 + panPosition * 2 + 1] =
             (short)(right * -1);
     }
     right = (short)0x8001;
     for (panPosition = 0x40; panPosition < 0x80; panPosition++) {
         panDistance = (short)(0x60 - panPosition);
         left = (short)(panDistance * volumeStep);
-        anPanTable[panPosition * 2] = left;
-        anPanTable[panPosition * 2 + 1] = right;
-        anPanTable[0x100 + panPosition * 2] =
+        asPanGains[panPosition * 2] = left;
+        asPanGains[panPosition * 2 + 1] = right;
+        asPanGains[0x100 + panPosition * 2] =
             (short)(left * -1);
-        anPanTable[0x100 + panPosition * 2 + 1] =
+        asPanGains[0x100 + panPosition * 2 + 1] =
             (short)(right * -1);
     }
 }

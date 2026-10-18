@@ -64,11 +64,11 @@ void IxSample::ix_sample_construct(void)
 {
     flags = 0;
     buffer = 0;
-    next = pSampleList;
+    next = pSamples;
     previous = 0;
-    if (pSampleList != 0)
-        pSampleList->previous = this;
-    pSampleList = this;
+    if (pSamples != 0)
+        pSamples->previous = this;
+    pSamples = this;
 }
 
 /* Function start: 0x0044870F */
@@ -78,8 +78,8 @@ void IxSample::ix_sample_destruct(void)
         ix_dsp_free(buffer);
         buffer = 0;
     }
-    if (this == pSampleList)
-        pSampleList = next;
+    if (this == pSamples)
+        pSamples = next;
     if (next != 0)
         next->previous = previous;
     if (previous != 0)

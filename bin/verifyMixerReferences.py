@@ -27,9 +27,9 @@ from binary_comp.source.globals import parse_globals_source
 
 FUNCTIONS = ('ix_mixer_thread_proc', 'ix_mixer_service')
 GLOBALS = (
-    'nMasterVolume', 'csMixer', 'hMixerWakeEvent', 'dwMixerWriteOffset',
-    'pDirectSound', 'dwMixerBufferSize', 'dwDspFlags', 'pMixerBuffer',
-    'dwDspTick', 'pPrimarySoundBuffer',
+    'nMasterVolume', 'csMixer', 'hAudioWakeEvent', 'dwMixerWriteOffset',
+    'pDspDevice', 'dwSoundBufferSize', 'dwDspFlags', 'pMixerBuffer',
+    'dwDspTick', 'pDspPrimaryBuffer',
 )
 
 

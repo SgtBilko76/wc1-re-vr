@@ -6,6 +6,19 @@ for similarity decisions.
 
 ## Source choices that affect matching
 
+- VC++ 4.20's uninitialized C++ globals have name-dependent COFF ordering.
+  Definition order, first-use order, and the assembly listing are not reliable
+  substitutes for actual COFF offsets. Isolated sound-system compilations
+  retain the same order after removing or reversing function bodies and
+  reversing definitions, but change it when identifiers change. Keep names
+  descriptive and preserve types and storage: `nAllocatedStreams` puts the
+  allocation count before the stream array, recovering 120 bytes instead of
+  124; `aVoices` puts the voice array before its lock and counters. The DSP
+  and system names likewise recover their original relative positions.
+  These are matching spellings, not recovered original names. Validate the
+  complete function report and named reference targets after renaming;
+  normalized instruction equality alone can hide wrong global operands.
+  The four adjacent audio `.bss` blocks are covered by the unit-data gate.
 - Biased array operands can precede the actual array. The carrier-launch
   fighter loop loads from `0x0046A5AE + frame * 2` for frames 9 through 22.
   Its real 14-word table starts at `0x0046A5C0`; `frame - 9` reproduces the

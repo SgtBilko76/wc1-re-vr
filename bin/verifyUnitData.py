@@ -687,6 +687,40 @@ UNITS = {
     'cockpt-bss': UnitData(0x00475FF0, 1024, (
         ('abMouseCursorBackground', 0x00),
     ), frozenset(), storage='.bss', owner='cockpt.obj'),
+    'ix-dsp-bss': UnitData(0x00597D00, 1072, (
+        ('hIxPlaybackThread', 0x000),
+        ('hPlaybackWindow', 0x004),
+        ('hAudioWakeEvent', 0x008),
+        ('dwMixerWriteOffset', 0x00C),
+        ('pDspDevice', 0x010),
+        ('dwSoundBufferSize', 0x014),
+        ('dwDspFlags', 0x018),
+        ('dwMixerThreadId', 0x01C),
+        ('pMixerBuffer', 0x020),
+        ('asPanGains', 0x028),
+        ('dwDspTick', 0x428),
+        ('pDspPrimaryBuffer', 0x42C),
+    ), frozenset(), storage='.bss', owner='ix/dsp.obj'),
+    'ix-dsps-bss': UnitData(0x00598130, 120, (
+        ('nStreamCount', 0x00),
+        ('nAllocatedStreams', 0x04),
+        ('streams', 0x08),
+    ), frozenset(), storage='.bss', owner='ix/dsps.obj'),
+    'ix-dspv-bss': UnitData(0x005981A8, 1120, (
+        ('aVoices', 0x000),
+        ('csMixer', 0x440),
+        ('nVoiceCount', 0x458),
+        ('nVoicesAllocated', 0x45C),
+    ), frozenset(), storage='.bss', owner='ix/dspv.obj'),
+    'ix-system-bss': UnitData(0x00598608, 28, (
+        ('dwSoundStateFlags', 0x00),
+        ('pIdleSoundList', 0x04),
+        ('pSamples', 0x08),
+        ('nActiveVoices', 0x0C),
+        ('nSystemVoices', 0x10),
+        ('pPlayingSoundList', 0x14),
+        ('pQueuedSoundList', 0x18),
+    ), frozenset(), storage='.bss', owner='ix/system.obj'),
 }
 
 
@@ -707,6 +741,7 @@ ADJACENT_UNITS = (
     ('sound', 'damage-bss', 'music-bss'),
     ('eventmgr-bss', 'gr-bss-prefix'),
     ('fl-bss', 'nav-bss', 'cockpt-bss', 'pilot'),
+    ('ix-dsp-bss', 'ix-dsps-bss', 'ix-dspv-bss', 'ix-system-bss'),
 )
 
 
@@ -768,12 +803,12 @@ def main() -> int:
     starts = {}
     for unit in args.unit or UNITS:
         block = UNITS[unit]
-        owner = block.owner or unit + '.obj'
+        object_path = args.objects_root / (block.owner or unit + '.obj')
+        owner = object_path.name
         if block.globals:
             start = address(owner, block.globals[0][0])
         else:
-            sections, _, bases = recover_layout(args.objects_root / owner,
-                                                 symbols, rebuilt)
+            sections, _, bases = recover_layout(object_path, symbols, rebuilt)
             matches = [bases[index] for index, section in sections.items()
                        if section[0] == block.storage and index in bases]
             require(len(matches) == 1,
@@ -783,7 +818,7 @@ def main() -> int:
         section_size = block.size if block.section_size is None else block.section_size
         require(section_size >= block.size,
                 f'{unit}: verified span exceeds its containing section')
-        require(data_section_size(str(args.objects_root / owner), block.storage) == section_size,
+        require(data_section_size(str(object_path), block.storage) == section_size,
                 f'{owner}: {block.storage} must contain exactly {section_size} bytes')
         for name, offset in block.globals:
             require(address(owner, name) == start + offset,

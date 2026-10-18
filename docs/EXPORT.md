@@ -102,12 +102,19 @@ complete data check also verifies its 22 public symbol offsets and empty
 relocation set, in addition to matching the linked bytes.
 The same gate checks the uninitialized blocks owned by fl (5 bytes), nav (368),
 cockpt (1,024), pilot (4),
-sound (8), damage (4), music (200), and eventmgr (4,096).
+sound (8), damage (4), music (200), eventmgr (4,096),
+ix/dsp (1,072), ix/dsps (120), ix/dspv (1,120), and ix/system (28).
 These must be genuine COFF `.bss` sections with no raw data
 or relocations, and their linker symbols must belong to the expected object
 at the recovered relative offsets. Binary-comp compares the loader-visible
 zero-filled bytes. These checks establish local storage and layout;
 they do not claim that the surrounding uninitialized region matches.
+The four ix blocks must also form one 2,340-byte run with all 26 named
+positions intact. Negative checks exchange two named positions in temporary
+map copies for each block; the gate rejects all four exchanges. Library
+objects are located beneath `out/ix`, while map ownership uses their object
+basenames. This extends the same verification to library members without
+changing its byte-comparison policy.
 The graphics check covers only its 64,024-byte uninitialized prefix: the
 20-byte raster surface, four alignment bytes, and 64,000-byte transformation
 buffer. It requires the current 64,024-byte COFF section and both private

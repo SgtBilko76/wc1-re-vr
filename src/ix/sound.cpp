@@ -32,11 +32,11 @@ void IxSound::ix_system_sound_init(IxSample *newSample,
     startTime = stopTime;
     priority = ((int)volume << 8) / 0xffff +
                (pitchOffset << 8) / 0xac44 + basePriority;
-    next = pFreeSoundList;
+    next = pIdleSoundList;
     previous = 0;
-    if (pFreeSoundList != 0)
-        pFreeSoundList->previous = this;
-    pFreeSoundList = this;
+    if (pIdleSoundList != 0)
+        pIdleSoundList->previous = this;
+    pIdleSoundList = this;
 }
 
 /* Function start: 0x00447B17 */
@@ -55,8 +55,8 @@ void IxSound::ix_system_sound_construct_centred(IxSample *newSample)
 /* Function start: 0x00447B7A */
 void __fastcall ix_sound_unlink_from_free_list(IxSound *sound)
 {
-    if (sound == pFreeSoundList)
-        pFreeSoundList = sound->next;
+    if (sound == pIdleSoundList)
+        pIdleSoundList = sound->next;
     if (sound->next != 0)
         sound->next->previous = sound->previous;
     if (sound->previous != 0)
@@ -123,63 +123,63 @@ extern "C" void __fastcall ix_sound_start(IxSound *sound)
             (sound->sample->frequency + sound->pitchOffset);
     }
 
-    if (nActiveVoices < nSystemVoiceCount) {
+    if (nActiveVoices < nSystemVoices) {
         voice = ix_system_find_free_voice();
 
-        if (sound == pFreeSoundList)
-            pFreeSoundList = sound->next;
+        if (sound == pIdleSoundList)
+            pIdleSoundList = sound->next;
         if (sound->next != 0)
             sound->next->previous = sound->previous;
         if (sound->previous != 0)
             sound->previous->next = sound->next;
-        sound->next = pActiveSoundList;
+        sound->next = pPlayingSoundList;
         sound->previous = 0;
-        if (pActiveSoundList != 0)
-            pActiveSoundList->previous = sound;
-        pActiveSoundList = sound;
+        if (pPlayingSoundList != 0)
+            pPlayingSoundList->previous = sound;
+        pPlayingSoundList = sound;
         ix_system_assign_voice(sound, voice);
     } else {
         lowestPlaying = ix_system_find_lowest_playing(
-            pActiveSoundList, sound->priority);
+            pPlayingSoundList, sound->priority);
         if (lowestPlaying != 0) {
             releasedVoice = ix_system_release_voice(lowestPlaying);
 
-            if (lowestPlaying == pActiveSoundList)
-                pActiveSoundList = lowestPlaying->next;
+            if (lowestPlaying == pPlayingSoundList)
+                pPlayingSoundList = lowestPlaying->next;
             if (lowestPlaying->next != 0)
                 lowestPlaying->next->previous = lowestPlaying->previous;
             if (lowestPlaying->previous != 0)
                 lowestPlaying->previous->next = lowestPlaying->next;
-            lowestPlaying->next = pWaitingSoundList;
+            lowestPlaying->next = pQueuedSoundList;
             lowestPlaying->previous = 0;
-            if (pWaitingSoundList != 0)
-                pWaitingSoundList->previous = lowestPlaying;
-            pWaitingSoundList = lowestPlaying;
+            if (pQueuedSoundList != 0)
+                pQueuedSoundList->previous = lowestPlaying;
+            pQueuedSoundList = lowestPlaying;
 
-            if (sound == pFreeSoundList)
-                pFreeSoundList = sound->next;
+            if (sound == pIdleSoundList)
+                pIdleSoundList = sound->next;
             if (sound->next != 0)
                 sound->next->previous = sound->previous;
             if (sound->previous != 0)
                 sound->previous->next = sound->next;
-            sound->next = pActiveSoundList;
+            sound->next = pPlayingSoundList;
             sound->previous = 0;
-            if (pActiveSoundList != 0)
-                pActiveSoundList->previous = sound;
-            pActiveSoundList = sound;
+            if (pPlayingSoundList != 0)
+                pPlayingSoundList->previous = sound;
+            pPlayingSoundList = sound;
             ix_system_assign_voice(sound, releasedVoice);
         } else {
-            if (sound == pFreeSoundList)
-                pFreeSoundList = sound->next;
+            if (sound == pIdleSoundList)
+                pIdleSoundList = sound->next;
             if (sound->next != 0)
                 sound->next->previous = sound->previous;
             if (sound->previous != 0)
                 sound->previous->next = sound->next;
-            sound->next = pWaitingSoundList;
+            sound->next = pQueuedSoundList;
             sound->previous = 0;
-            if (pWaitingSoundList != 0)
-                pWaitingSoundList->previous = sound;
-            pWaitingSoundList = sound;
+            if (pQueuedSoundList != 0)
+                pQueuedSoundList->previous = sound;
+            pQueuedSoundList = sound;
         }
     }
 }
@@ -217,46 +217,46 @@ extern "C" void __fastcall ix_sound_stop(IxSound *sound)
     if ((sound->flags & IX_SOUND_HAS_VOICE) != 0) {
         voice = ix_system_release_voice(sound);
         replacement = ix_system_find_highest_waiting(
-            pWaitingSoundList, 0);
+            pQueuedSoundList, 0);
 
-        if (sound == pActiveSoundList)
-            pActiveSoundList = sound->next;
+        if (sound == pPlayingSoundList)
+            pPlayingSoundList = sound->next;
         if (sound->next != 0)
             sound->next->previous = sound->previous;
         if (sound->previous != 0)
             sound->previous->next = sound->next;
-        sound->next = pFreeSoundList;
+        sound->next = pIdleSoundList;
         sound->previous = 0;
-        if (pFreeSoundList != 0)
-            pFreeSoundList->previous = sound;
-        pFreeSoundList = sound;
+        if (pIdleSoundList != 0)
+            pIdleSoundList->previous = sound;
+        pIdleSoundList = sound;
 
         if (replacement != 0) {
             ix_system_assign_voice(replacement, voice);
-            if (replacement == pWaitingSoundList)
-                pWaitingSoundList = replacement->next;
+            if (replacement == pQueuedSoundList)
+                pQueuedSoundList = replacement->next;
             if (replacement->next != 0)
                 replacement->next->previous = replacement->previous;
             if (replacement->previous != 0)
                 replacement->previous->next = replacement->next;
-            replacement->next = pActiveSoundList;
+            replacement->next = pPlayingSoundList;
             replacement->previous = 0;
-            if (pActiveSoundList != 0)
-                pActiveSoundList->previous = replacement;
-            pActiveSoundList = replacement;
+            if (pPlayingSoundList != 0)
+                pPlayingSoundList->previous = replacement;
+            pPlayingSoundList = replacement;
         }
     } else {
-        if (sound == pWaitingSoundList)
-            pWaitingSoundList = sound->next;
+        if (sound == pQueuedSoundList)
+            pQueuedSoundList = sound->next;
         if (sound->next != 0)
             sound->next->previous = sound->previous;
         if (sound->previous != 0)
             sound->previous->next = sound->next;
-        sound->next = pFreeSoundList;
+        sound->next = pIdleSoundList;
         sound->previous = 0;
-        if (pFreeSoundList != 0)
-            pFreeSoundList->previous = sound;
-        pFreeSoundList = sound;
+        if (pIdleSoundList != 0)
+            pIdleSoundList->previous = sound;
+        pIdleSoundList = sound;
     }
 
     if ((sound->flags & IX_SOUND_DELETE_ON_STOP) != 0)
@@ -277,65 +277,65 @@ void IxSound::ix_sound_reprioritise(void)
     if ((flags & IX_SOUND_HAS_VOICE) != 0) {
         if (priority > newPriority) {
             waitingSound = ix_system_find_highest_waiting(
-                pWaitingSoundList, newPriority);
+                pQueuedSoundList, newPriority);
             if (waitingSound != 0) {
                 releasedVoice = ix_system_release_voice(this);
 
-                if (this == pActiveSoundList)
-                    pActiveSoundList = next;
+                if (this == pPlayingSoundList)
+                    pPlayingSoundList = next;
                 if (next != 0)
                     next->previous = previous;
                 if (previous != 0)
                     previous->next = next;
-                next = pWaitingSoundList;
+                next = pQueuedSoundList;
                 previous = 0;
-                if (pWaitingSoundList != 0)
-                    pWaitingSoundList->previous = this;
-                pWaitingSoundList = this;
+                if (pQueuedSoundList != 0)
+                    pQueuedSoundList->previous = this;
+                pQueuedSoundList = this;
 
-                if (waitingSound == pWaitingSoundList)
-                    pWaitingSoundList = waitingSound->next;
+                if (waitingSound == pQueuedSoundList)
+                    pQueuedSoundList = waitingSound->next;
                 if (waitingSound->next != 0)
                     waitingSound->next->previous = waitingSound->previous;
                 if (waitingSound->previous != 0)
                     waitingSound->previous->next = waitingSound->next;
-                waitingSound->next = pActiveSoundList;
+                waitingSound->next = pPlayingSoundList;
                 waitingSound->previous = 0;
-                if (pActiveSoundList != 0)
-                    pActiveSoundList->previous = waitingSound;
-                pActiveSoundList = waitingSound;
+                if (pPlayingSoundList != 0)
+                    pPlayingSoundList->previous = waitingSound;
+                pPlayingSoundList = waitingSound;
                 ix_system_assign_voice(waitingSound, releasedVoice);
             }
         }
     } else if ((flags & IX_SOUND_PLAYING) != 0 && priority < newPriority) {
         playingSound = ix_system_find_lowest_playing(
-            pActiveSoundList, newPriority);
+            pPlayingSoundList, newPriority);
         if (playingSound != 0) {
             reassignedVoice = ix_system_release_voice(playingSound);
 
-            if (playingSound == pActiveSoundList)
-                pActiveSoundList = playingSound->next;
+            if (playingSound == pPlayingSoundList)
+                pPlayingSoundList = playingSound->next;
             if (playingSound->next != 0)
                 playingSound->next->previous = playingSound->previous;
             if (playingSound->previous != 0)
                 playingSound->previous->next = playingSound->next;
-            playingSound->next = pWaitingSoundList;
+            playingSound->next = pQueuedSoundList;
             playingSound->previous = 0;
-            if (pWaitingSoundList != 0)
-                pWaitingSoundList->previous = playingSound;
-            pWaitingSoundList = playingSound;
+            if (pQueuedSoundList != 0)
+                pQueuedSoundList->previous = playingSound;
+            pQueuedSoundList = playingSound;
 
-            if (this == pWaitingSoundList)
-                pWaitingSoundList = next;
+            if (this == pQueuedSoundList)
+                pQueuedSoundList = next;
             if (next != 0)
                 next->previous = previous;
             if (previous != 0)
                 previous->next = next;
-            next = pActiveSoundList;
+            next = pPlayingSoundList;
             previous = 0;
-            if (pActiveSoundList != 0)
-                pActiveSoundList->previous = this;
-            pActiveSoundList = this;
+            if (pPlayingSoundList != 0)
+                pPlayingSoundList->previous = this;
+            pPlayingSoundList = this;
             ix_system_assign_voice(this, reassignedVoice);
         }
     }

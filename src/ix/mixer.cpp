@@ -19,16 +19,16 @@
 
 #define IX_MIXER_FILE "D:\\rnd\\prj\\ix\\win95\\dsp\\mixer.cpp"
 
-extern unsigned int dwMixerBufferSize;
+extern unsigned int dwSoundBufferSize;
 extern unsigned int dwMixerWriteOffset;
-extern HANDLE hMixerThread;
-extern HWND hDspWindow;
-extern HANDLE hMixerWakeEvent;
-extern LPDIRECTSOUND pDirectSound;
+extern HANDLE hIxPlaybackThread;
+extern HWND hPlaybackWindow;
+extern HANDLE hAudioWakeEvent;
+extern LPDIRECTSOUND pDspDevice;
 extern unsigned int dwDspFlags;
 extern LPDIRECTSOUNDBUFFER pMixerBuffer;
 extern unsigned int dwDspTick;
-extern LPDIRECTSOUNDBUFFER pPrimarySoundBuffer;
+extern LPDIRECTSOUNDBUFFER pDspPrimaryBuffer;
 
 BOOL CALLBACK ix_dsp_open_driver(LPGUID guid, LPSTR description,
                                  LPSTR module, LPVOID context);
@@ -46,8 +46,8 @@ DWORD WINAPI ix_mixer_thread_proc(void *parameter)
         exit(-1);
     }
     while ((dwDspFlags & 4) != 0) {
-        WaitForSingleObject(hMixerWakeEvent, INFINITE);
-        ResetEvent(hMixerWakeEvent);
+        WaitForSingleObject(hAudioWakeEvent, INFINITE);
+        ResetEvent(hAudioWakeEvent);
     }
     SdlStopAudio();
     return 0;
@@ -62,13 +62,13 @@ DWORD WINAPI ix_mixer_thread_proc(void *parameter)
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
     DirectSoundEnumerateA(ix_dsp_open_driver, 0);
     if ((dwDspFlags & 0x10) == 0 &&
-        pDirectSound == 0) {
+        pDspDevice == 0) {
         ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 46);
         ix_log_printf("Failed to find write primary driver, using secondary buffer");
         dwDspFlags |= 0x10;
         DirectSoundEnumerateA(ix_dsp_open_driver, 0);
     }
-    if (pDirectSound == 0) {
+    if (pDspDevice == 0) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_MIXER_FILE, 50);
         ix_log_printf("Failed to init directsound");
         exit(-1);
@@ -76,7 +76,7 @@ DWORD WINAPI ix_mixer_thread_proc(void *parameter)
 
     memset(&soundCaps, 0, 0x60);
     soundCaps.dwSize = 0x60;
-    pDirectSound->GetCaps(&soundCaps);
+    pDspDevice->GetCaps(&soundCaps);
     if ((dwDspFlags & 0x10) == 0 &&
         (soundCaps.dwFlags &
          (DSCAPS_PRIMARY16BIT | DSCAPS_PRIMARYSTEREO)) !=
@@ -85,7 +85,7 @@ DWORD WINAPI ix_mixer_thread_proc(void *parameter)
         ix_log_printf("sound driver doesn't support our primary buffer format, using secondary buffer");
         dwDspFlags |= 0x10;
         DirectSoundEnumerateA(ix_dsp_open_driver, 0);
-        if (pDirectSound == 0) {
+        if (pDspDevice == 0) {
             ix_log_printf("Fatal [%s - %d]:\n", IX_MIXER_FILE, 63);
             ix_log_printf("Failed to init directsound");
             exit(-1);
@@ -103,15 +103,15 @@ DWORD WINAPI ix_mixer_thread_proc(void *parameter)
     memset(&bufferDescriptor, 0, 0x14);
     bufferDescriptor.dwSize = 0x14;
     bufferDescriptor.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME;
-    resultCode = pDirectSound->CreateSoundBuffer(
-        &bufferDescriptor, &pPrimarySoundBuffer, 0);
+    resultCode = pDspDevice->CreateSoundBuffer(
+        &bufferDescriptor, &pDspPrimaryBuffer, 0);
     if (resultCode != DS_OK) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_MIXER_FILE, 81);
         ix_log_printf("Failed to create primary buffer");
         exit(-1);
     }
 
-    resultCode = pPrimarySoundBuffer->SetFormat(
+    resultCode = pDspPrimaryBuffer->SetFormat(
         (LPWAVEFORMATEX)&outputFormat);
     if (resultCode != DS_OK) {
         ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 84);
@@ -124,7 +124,7 @@ DWORD WINAPI ix_mixer_thread_proc(void *parameter)
         bufferDescriptor.dwFlags = DSBCAPS_CTRLVOLUME;
         bufferDescriptor.dwBufferBytes = 0x8000;
         bufferDescriptor.lpwfxFormat = (LPWAVEFORMATEX)&outputFormat;
-        resultCode = pDirectSound->CreateSoundBuffer(
+        resultCode = pDspDevice->CreateSoundBuffer(
             &bufferDescriptor, &pMixerBuffer, 0);
         if (resultCode != DS_OK) {
             ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 96);
@@ -132,43 +132,43 @@ DWORD WINAPI ix_mixer_thread_proc(void *parameter)
                           ix_dsp_result_to_text(resultCode));
             return (DWORD)-1;
         }
-        dwMixerBufferSize = 0x8000;
+        dwSoundBufferSize = 0x8000;
         ix_log_printf("secondary buffer, size = %d\n",
-                      dwMixerBufferSize);
+                      dwSoundBufferSize);
     } else {
         memset(&primaryCaps, 0, 0x14);
         primaryCaps.dwSize = 0x14;
-        pPrimarySoundBuffer->GetCaps(&primaryCaps);
-        pMixerBuffer = pPrimarySoundBuffer;
-        dwMixerBufferSize = primaryCaps.dwBufferBytes;
+        pDspPrimaryBuffer->GetCaps(&primaryCaps);
+        pMixerBuffer = pDspPrimaryBuffer;
+        dwSoundBufferSize = primaryCaps.dwBufferBytes;
         ix_log_printf("primary buffer, size = %d\n",
-                      dwMixerBufferSize);
+                      dwSoundBufferSize);
     }
 
-    pPrimarySoundBuffer->SetVolume(
+    pDspPrimaryBuffer->SetVolume(
         10000 - (nMasterVolume * 10000) / 0xffff);
     while ((dwDspFlags & 4) != 0) {
         ix_mixer_service();
         if ((dwDspFlags & 4) != 0) {
-            WaitForSingleObject(hMixerWakeEvent, 1000);
-            ResetEvent(hMixerWakeEvent);
+            WaitForSingleObject(hAudioWakeEvent, 1000);
+            ResetEvent(hAudioWakeEvent);
             pMixerBuffer->Restore();
         }
     }
 
-    if (pMixerBuffer == pPrimarySoundBuffer) {
-        pPrimarySoundBuffer = 0;
-    } else if (pPrimarySoundBuffer != 0) {
-        pPrimarySoundBuffer->Release();
-        pPrimarySoundBuffer = 0;
+    if (pMixerBuffer == pDspPrimaryBuffer) {
+        pDspPrimaryBuffer = 0;
+    } else if (pDspPrimaryBuffer != 0) {
+        pDspPrimaryBuffer->Release();
+        pDspPrimaryBuffer = 0;
     }
     if (pMixerBuffer != 0) {
         pMixerBuffer->Release();
         pMixerBuffer = 0;
     }
-    if (pDirectSound != 0) {
-        pDirectSound->Release();
-        pDirectSound = 0;
+    if (pDspDevice != 0) {
+        pDspDevice->Release();
+        pDspDevice = 0;
     }
     return 0;
 #endif
@@ -230,7 +230,7 @@ int ix_mixer_service(void)
                 return -1;
             }
             if (playCursor > dwMixerWriteOffset)
-                playCursor -= dwMixerBufferSize;
+                playCursor -= dwSoundBufferSize;
             bufferedBytes = dwMixerWriteOffset - playCursor;
             delay = (unsigned int)(bufferedBytes * 0x42) / 0x16f8;
 
@@ -269,7 +269,7 @@ int ix_mixer_service(void)
                     if (secondBuffer != 0) {
                         dwMixerWriteOffset = secondBytes;
                     } else {
-                        if (dwMixerWriteOffset >= dwMixerBufferSize)
+                        if (dwMixerWriteOffset >= dwSoundBufferSize)
                             dwMixerWriteOffset = 0;
                     }
                 }

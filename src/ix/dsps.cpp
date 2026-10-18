@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 int      nStreamCount;           /* 0x00598130 */
-int      nStreamsAllocated;      /* 0x00598134 */
+int      nAllocatedStreams;      /* 0x00598134 */
 IxStream streams[2];             /* 0x00598138 */
 
 /* Function start: 0x4451B5 */   /* source lines 26, 27, 28, 32 */
@@ -48,7 +48,7 @@ void ix_dsps_alloc(int stream, unsigned int size, int freq, int bps, int channel
     streams[stream].pending = streams[stream].playPos;
     InitializeCriticalSection(&streams[stream].cs);
 
-    v = &voices[nVoiceCount + stream];
+    v = &aVoices[nVoiceCount + stream];
     v->flags = IX_VOICE_FLAG4 | 1;
     if (bps == 16) {
         v->flags |= IX_VOICE_16BIT;
@@ -70,7 +70,7 @@ void ix_dsps_alloc(int stream, unsigned int size, int freq, int bps, int channel
     v->rightGainHi = (unsigned char)((unsigned short)v->volume >> 8);
     v->field_10 = 0;
     v->rate = (short)((freq << 8) / IX_MIXER_BASE_RATE);
-    nStreamsAllocated = nStreamsAllocated + 1;
+    nAllocatedStreams = nAllocatedStreams + 1;
     streams[stream].flags |= IX_STREAM_ALLOCATED;
 }
 
@@ -91,7 +91,7 @@ void ix_dsps_free(int stream)
         ix_dsps_stop(stream);
     DeleteCriticalSection(&streams[stream].cs);
     delete[] streams[stream].buffer;
-    nStreamsAllocated = nStreamsAllocated - 1;
+    nAllocatedStreams = nAllocatedStreams - 1;
     streams[stream].flags &= ~IX_STREAM_ALLOCATED;
 }
 
@@ -116,7 +116,7 @@ void ix_dsps_prepare(int stream)
     streams[stream].playPos = 0;
     streams[stream].pending = streams[stream].playPos;
     streams[stream].writePos = streams[stream].pending;
-    voices[nVoiceCount + stream].cursor =
+    aVoices[nVoiceCount + stream].cursor =
         streams[stream].buffer;
 }
 
@@ -140,7 +140,7 @@ void ix_dsps_play(int stream)
         ix_log_printf("stream is already playing!");
         exit(-1);
     }
-    v = &voices[nVoiceCount + stream];
+    v = &aVoices[nVoiceCount + stream];
     v->cursor = streams[stream].playPos
               + streams[stream].buffer;
     v->flags |= IX_VOICE_ACTIVE;
@@ -165,7 +165,7 @@ void ix_dsps_stop(int stream)
         ix_log_printf("stream isnt playing!");
         exit(-1);
     }
-    voices[nVoiceCount + stream].flags &= ~IX_VOICE_ACTIVE;
+    aVoices[nVoiceCount + stream].flags &= ~IX_VOICE_ACTIVE;
     streams[stream].flags &= ~IX_STREAM_PLAYING;
 }
 
@@ -184,7 +184,7 @@ void ix_dsps_set_volume(int stream, unsigned short vol)
         ix_log_printf("stream is not ready!");
         exit(-1);
     }
-    v = &voices[nVoiceCount + stream];
+    v = &aVoices[nVoiceCount + stream];
     v->volume =
         (unsigned short)(((int)(vol & 0xffff) * 0x7fff) / 0xffff);
     v->leftGain = v->volume;
@@ -220,7 +220,7 @@ int ix_dsps_get_buffer_free(int streamIndex)
     unsigned int consumedBytes = 0;
     EnterCriticalSection(&streams[streamIndex].cs);
     unsigned int bufferPosition =
-        voices[nVoiceCount + streamIndex].cursor - streams[streamIndex].buffer;
+        aVoices[nVoiceCount + streamIndex].cursor - streams[streamIndex].buffer;
     if (streams[streamIndex].pending < 0) {
         streams[streamIndex].pending = 0;
         streams[streamIndex].playPos = bufferPosition;

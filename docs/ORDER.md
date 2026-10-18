@@ -89,18 +89,17 @@ after it starts at `0x005981A8`, leaving 112 bytes: exactly two 56-byte
 
 The two stream counters and array occupy a 120-byte run in the original:
 count at offset zero, allocated count at four, and the array at eight.
-Current `dsps.obj` instead has a 124-byte `.bss` section: count at zero,
-array at eight, and allocated count at `0x78`. The emitted order differs
-from the source definition order. A probe moving both counters into
-`dsp.cpp` produces 1,080 DSP bytes and a 112-byte stream array section, but
-puts the count at DSP offset `0x41C` and the allocated count at `0x434`,
-instead of the original adjacent `0x430`/`0x434` positions relative to the
-first DSP state word. That probe is reverted: the resulting sizes do not
-establish ownership or recover the required relative layout.
+Renaming the allocation counter from `nStreamsAllocated` to
+`nAllocatedStreams` reproduces those offsets and the complete 120-byte
+`dsps.obj` `.bss`. The former spelling placed the allocation counter at
+`0x78`, after the array, producing 124 bytes. Moving both counters into
+`dsp.cpp` was an unsuccessful earlier probe: it produced 1,080 DSP bytes
+and a 112-byte stream section, with incorrect counter positions. Both
+counters remain in the stream-control unit.
 
 DSP state also constrains data ownership. The initialized master-volume word
 at `0x0047198C` contains `0xFFFF` and precedes the allocator callbacks at
-`0x00471990` and `0x00471994` in `dsp.cpp`. Its pan table occupies
+`0x00471990` and `0x00471994` in `dsp.cpp`. Its `asPanGains` table occupies
 `0x00597D28`–`0x00598127`, immediately before the DSP tick and primary-buffer
 pointer. The voice array, mixer critical section, voice count, and allocated
 voice count occupy `0x005981A8`–`0x00598607` in `dspv.cpp`. These definitions,
@@ -108,38 +107,51 @@ along with `dsps.cpp`'s stream state, are included in the global-data audits.
 
 The following seven sound-system words occupy `0x00598608`–`0x00598623`.
 Their identities follow from the original initialization and sound/sample
-list operations. Their relative positions still differ in the rebuild:
+list operations. Their relative positions now match in `system.obj`:
 
-| Global | Original block offset | Current `system.obj` `.bss` offset |
+| Global | Original and rebuilt block offset |
+| --- | --- |
+| `dwSoundStateFlags` | `0x00` |
+| `pIdleSoundList` | `0x04` |
+| `pSamples` | `0x08` |
+| `nActiveVoices` | `0x0C` |
+| `nSystemVoices` | `0x10` |
+| `pPlayingSoundList` | `0x14` |
+| `pQueuedSoundList` | `0x18` |
+
+VC++ 4.20's uninitialized-data ordering depends on identifier spelling.
+Fresh isolated compilations reproduce the former wrong order with no
+function bodies, reversed function order, and reversed definitions.
+Changing the names changes COFF offsets, including in a minimal file with
+only forward-declared record types and the seven storage definitions.
+The assembly listing prints declaration order and does not establish the
+actual storage layout. These symbols are section definitions, not linker
+common symbols. Earlier linkage, owner-extern suppression, private-flag,
+and single free-list rename probes did not recover the block; explicit
+zero initializers changed storage to `.data` and were also rejected.
+
+Six descriptive system-global renames recover the seven-word order.
+Renaming `voices` to `aVoices` places the 34-record voice array before
+`csMixer` and the two voice counters. Seven DSP-global renames recover its
+handle, buffer, pan-table, and tick order, including four compiler-produced
+alignment bytes before the pan table. No flags, types, initializers,
+control flow, or storage owners change. The spellings are matching
+reconstruction choices; the developer's original identifiers are unknown.
+
+`make verify-unit-data` checks these four complete `.bss` contributions:
+
+| Object | Original start | Size |
 | --- | --- | --- |
-| `dwIxSystemFlags` | `0x00` | `0x14` |
-| `pFreeSoundList` | `0x04` | `0x18` |
-| `pSampleList` | `0x08` | `0x10` |
-| `nActiveVoices` | `0x0C` | `0x0C` |
-| `nSystemVoiceCount` | `0x10` | `0x08` |
-| `pActiveSoundList` | `0x14` | `0x00` |
-| `pWaitingSoundList` | `0x18` | `0x04` |
+| `ix/dsp.obj` | `0x00597D00` | 1,072 |
+| `ix/dsps.obj` | `0x00598130` | 120 |
+| `ix/dspv.obj` | `0x005981A8` | 1,120 |
+| `ix/system.obj` | `0x00598608` | 28 |
 
-The emitted COFF section contains 28 bytes and seven public definitions;
-these are not linker common symbols. The compiler's assembly listing prints
-their source declaration order, which differs from the actual COFF offsets
-and linked map. Use the latter to establish storage order. Reordering the
-definitions, suppressing their preceding extern declarations in the owner,
-changing their linkage to C, and renaming the free-list pointer all leave
-the relative offsets unchanged. Those probes are reverted. The original
-block's adjacency alone does not prove a single owner, and the ordering
-mechanism remains unresolved; no matching unit-data claim is made for it.
-Making the system flag private, consistent with its two referencing
-functions, also leaves all seven offsets unchanged. Explicit zero
-initializers do emit the declarations in the original relative order, but
-move them into initialized `.data`, contradicting the original uninitialized
-range. Both probes are reverted. Removing the flag's shared declaration
-changes code generation in other audio units; the retained DSP declaration
-scope is described in the later checkpoint and `docs/PATTERNS.md`.
-Combining owner-only suppression of the seven externs with reversed storage
-definitions also leaves every emitted offset unchanged. Thus reversing their
-first declaration order does not recover this block either; that combined
-probe is reverted.
+The gate verifies all 26 named positions, object section sizes and storage
+flags, empty relocation sets, and loader-visible zeros through binary-comp.
+It also verifies the complete adjacent 2,340-byte run with one permitted
+address shift. This establishes matching relative storage in the current
+owners, not original identifier spelling or final executable placement.
 
 The assert anchors name three source trees, `D:\Rnd\Prj\ix\Src\Streamer\`,
 `D:\rnd\prj\ix\win95\dsp\` and `D:\Rnd\prj\ix\src\sound\`; each was a separate
@@ -1496,3 +1508,48 @@ deficit are the missing small routines. File size rises from 517,632 to
 1,856 bytes, and the relocation section remains 36,286 bytes versus 36,306
 original. Strict positional matches rise by 3,423 to 57,491 of 518,656 bytes
 (11.0846%). Literal executable equality still fails.
+
+## Audio uninitialized-data ordering checkpoint
+
+The name-dependent COFF ordering described above recovers the DSP, stream,
+voice, and sound-system storage as one 2,340-byte adjacent run. Fifteen
+descriptive identifier changes suffice. The source changes are identifier
+substitutions and address comments; types, initializers, logic, conventions,
+compiler settings, and link order stay unchanged. The handwritten mixer's
+external voice-array symbol is renamed consistently.
+
+The complete report retains all 1,524 previous rows unchanged: 1,251
+normalized exact, 253 same-size differences, and twenty size differences
+(144 absolute bytes, net -6). Average mnemonic similarity remains 99.56%,
+with ten routines below 90%. A separate binary-comp reference check verifies
+379 operands across 58 functions against the 26 audio globals, including
+array field offsets. Target order and multiplicity match throughout;
+instruction offsets also match in every normalized-exact routine.
+
+The permanent unit-data gate now covers all four audio sections and their
+adjacency. Four negative map probes exchange two named positions in each
+block; each is rejected. The seven sound-system definitions now carry
+original-address annotations and participate in the collected global audit,
+increasing its coverage from 1,097 to 1,104 entries. The existing 79-operand
+mixer gate follows the renamed symbols without changing its checking policy.
+
+The stream section shrinks from 124 to its original 120 bytes, changing
+subsequent linker alignment. The complete `.data` virtual size is now
+1,329,724 versus the original 1,331,596: a 1,872-byte deficit. The recovered
+audio run still starts at the wrong absolute address. File size remains
+518,144, code size 400,663, and relocation size 36,286. The file is still
+512 bytes short and code 448 bytes short; the 26 missing routines account
+for 416 bytes of the latter.
+
+Strict positional matches increase by thirty to 57,521 of 518,656 bytes
+(11.0904%). The executable SHA-256 is
+`dc3590e78d6e0ee89feaadd9200479f6380b9e746712ade647112c493ce67445`.
+Literal executable equality remains incomplete.
+
+Both builds, the source-order and address audits, and all required
+verification gates pass. Both value checks cover all 1,524 functions with
+zero mismatches or skips. The 1,104 linked globals, 39 code pointers, and
+79 mixer operands pass. Call analysis retains eleven diagnostics across
+1,138 checked functions; global-access analysis retains 37 across 1,059.
+The executable hash stays unchanged through the final audit expansion and
+verification. No gameplay validation is claimed.

@@ -10,33 +10,33 @@
  */
 #include "ix.h"
 
-unsigned int dwIxSystemFlags;
-IxSound *pFreeSoundList;
-IxSample *pSampleList;
-int nActiveVoices;
-int nSystemVoiceCount;
-IxSound *pActiveSoundList;
-IxSound *pWaitingSoundList;
+unsigned int dwSoundStateFlags;       /* 0x00598608 */
+IxSound *pIdleSoundList;               /* 0x0059860C */
+IxSample *pSamples;                   /* 0x00598610 */
+int nActiveVoices;                    /* 0x00598614 */
+int nSystemVoices;                    /* 0x00598618 */
+IxSound *pPlayingSoundList;            /* 0x0059861C */
+IxSound *pQueuedSoundList;             /* 0x00598620 */
 
 #define IX_SYSTEM_FILE "D:\\Rnd\\prj\\ix\\src\\sound\\system.cpp"
 
 /* Function start: 0x00447200 */   /* source line 33 */
 extern "C" int ix_system_init(void)
 {
-    if ((dwIxSystemFlags & 1) == 0) {
+    if ((dwSoundStateFlags & 1) == 0) {
         if (ix_dsp_init() != 0) {
             ix_log_printf("Warning [%s - %d]:\n", IX_SYSTEM_FILE, 33);
             ix_log_printf("Failed to init DSP");
             return -1;
         }
         nActiveVoices = 0;
-        nSystemVoiceCount = ix_dsp_get_voice_count();
-        pWaitingSoundList = 0;
-        pActiveSoundList = pWaitingSoundList;
-        pFreeSoundList = pActiveSoundList;
-        pSampleList = 0;
+        nSystemVoices = ix_dsp_get_voice_count();
+        pQueuedSoundList = 0;
+        pPlayingSoundList = pQueuedSoundList;
+        pIdleSoundList = pPlayingSoundList;
+        pSamples = 0;
         ix_system_set_master_volume(0xffff);
-        dwIxSystemFlags |= 1;
+        dwSoundStateFlags |= 1;
     }
     return 0;
 }
@@ -44,8 +44,8 @@ extern "C" int ix_system_init(void)
 /* Function start: 0x004472A7 */
 extern "C" void ix_system_service_sounds(void)
 {
-    if (pWaitingSoundList != 0) {
-        IxSound *sound = pWaitingSoundList;
+    if (pQueuedSoundList != 0) {
+        IxSound *sound = pQueuedSoundList;
         unsigned int now = ix_dsp_get_tick();
 
         while (sound != 0) {
@@ -58,8 +58,8 @@ extern "C" void ix_system_service_sounds(void)
         }
     }
 
-    if (pActiveSoundList != 0) {
-        IxSound *sound = pActiveSoundList;
+    if (pPlayingSoundList != 0) {
+        IxSound *sound = pPlayingSoundList;
 
         while (sound != 0) {
             IxSound *next = sound->next;
@@ -91,11 +91,11 @@ extern "C" void ix_system_service_sounds(void)
 /* Function start: 0x004473F3 */
 extern "C" void ix_system_shutdown(void)
 {
-    if ((dwIxSystemFlags & 1) != 0) {
+    if ((dwSoundStateFlags & 1) != 0) {
         ix_system_delete_all_sounds();
         ix_system_delete_all_samples();
         ix_dsp_shutdown();
-        dwIxSystemFlags &= ~1U;
+        dwSoundStateFlags &= ~1U;
     }
 }
 
@@ -120,7 +120,7 @@ extern "C" void ix_system_set_master_volume(unsigned short volume)
 /* Function start: 0x00447477 */
 extern "C" int ix_system_get_voice_count(void)
 {
-    return nSystemVoiceCount;
+    return nSystemVoices;
 }
 
 /* Function start: 0x0044748C */   /* source line 137 */
@@ -131,7 +131,7 @@ extern "C" void ix_system_set_voice_count(int voiceCount)
         ix_log_printf("Not a good ideal to change the number of voices while some are playing.");
     }
     ix_dsp_set_voice_count(voiceCount);
-    nSystemVoiceCount = ix_dsp_get_voice_count();
+    nSystemVoices = ix_dsp_get_voice_count();
 }
 
 /* Function start: 0x004474E3 */
@@ -160,7 +160,7 @@ extern "C" void ix_system_delete_all_samples(void)
     IxSample *sample;
     IxSample *next;
 
-    sample = pSampleList;
+    sample = pSamples;
     while (sample != 0) {
         next = sample->next;
         ix_system_delete_sample(sample);
@@ -200,19 +200,19 @@ extern "C" void ix_system_delete_all_sounds(void)
     IxSound *nextWaiting;
     IxSound *nextFree;
 
-    sound = pActiveSoundList;
+    sound = pPlayingSoundList;
     while (sound != 0) {
         nextActive = sound->next;
         ix_system_delete_sound(sound);
         sound = nextActive;
     }
-    sound = pWaitingSoundList;
+    sound = pQueuedSoundList;
     while (sound != 0) {
         nextWaiting = sound->next;
         ix_system_delete_sound(sound);
         sound = nextWaiting;
     }
-    sound = pFreeSoundList;
+    sound = pIdleSoundList;
     while (sound != 0) {
         nextFree = sound->next;
         ix_system_delete_sound(sound);
@@ -319,7 +319,7 @@ int ix_system_find_free_voice(void)
 {
     int voice = 0;
 
-    while (voice < nSystemVoiceCount) {
+    while (voice < nSystemVoices) {
         if ((ix_dspv_get_flags(voice) & IX_VOICE_ACTIVE) == 0)
             return voice;
         voice++;

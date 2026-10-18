@@ -172,19 +172,19 @@ struct IxSound {
 /* Stream control uses only the stream and voice state below. Unused external
  * globals affect VC++ 4.20's code selection, so keep unrelated state out. */
 #ifndef WC1_IX_DSPS_SOURCE
-extern unsigned int dwIxSystemFlags;
-extern IxSound *pFreeSoundList;
-extern IxSample *pSampleList;
-extern int nActiveVoices;
-extern int nSystemVoiceCount;
-extern IxSound *pActiveSoundList;
-extern IxSound *pWaitingSoundList;
+extern unsigned int dwSoundStateFlags;       /* 0x00598608 */
+extern IxSound *pIdleSoundList;               /* 0x0059860C */
+extern IxSample *pSamples;                   /* 0x00598610 */
+extern int nActiveVoices;                    /* 0x00598614 */
+extern int nSystemVoices;                    /* 0x00598618 */
+extern IxSound *pPlayingSoundList;            /* 0x0059861C */
+extern IxSound *pQueuedSoundList;             /* 0x00598620 */
 extern void *(__cdecl *pIxMalloc)(unsigned int);
 extern void (__cdecl *pIxFree)(void *);
 
 /* Master volume and the stereo pan table (two shorts per position). */
 extern unsigned short nMasterVolume; /* 0x0047198C */
-extern short          anPanTable[];  /* 0x00597D28 */
+extern short          asPanGains[];  /* 0x00597D28 */
 extern CRITICAL_SECTION csMixer;    /* 0x005985E8 */
 #endif
 
@@ -193,7 +193,7 @@ extern CRITICAL_SECTION csMixer;    /* 0x005985E8 */
 /* The voice owner sees its state before the stream declarations; other DSP
  * users see stream state first. Preserve this compilation-unit distinction. */
 #ifdef WC1_IX_DSPV_SOURCE
-extern IxVoice voices[];           /* 0x005981A8 */
+extern IxVoice aVoices[];           /* 0x005981A8 */
 extern int     nVoiceCount;        /* 0x00598600 */
 extern int     nVoicesAllocated;   /* 0x00598604 */
 #endif
@@ -257,15 +257,15 @@ private:
 extern IxStream streams[];         /* 0x00598138 */
 /* The stream owner needs its allocation count declared before its limit. */
 #ifdef WC1_IX_DSPS_SOURCE
-extern int      nStreamsAllocated; /* 0x00598134 */
+extern int      nAllocatedStreams; /* 0x00598134 */
 extern int      nStreamCount;      /* 0x00598130 */
 #else
 extern int      nStreamCount;      /* 0x00598130 */
-extern int      nStreamsAllocated; /* 0x00598134 */
+extern int      nAllocatedStreams; /* 0x00598134 */
 #endif
 
 #ifndef WC1_IX_DSPV_SOURCE
-extern IxVoice voices[];           /* 0x005981A8 */
+extern IxVoice aVoices[];           /* 0x005981A8 */
 extern int     nVoiceCount;        /* 0x00598600 */
 #ifndef WC1_IX_DSPS_SOURCE
 extern int     nVoicesAllocated;   /* 0x00598604 */

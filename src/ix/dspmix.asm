@@ -8,7 +8,7 @@
         .model flat, c
         option casemap:none
 
-        extern syscall ?voices@@3PAUIxVoice@@A:byte
+        extern syscall ?aVoices@@3PAUIxVoice@@A:byte
         extern syscall ?nVoiceCount@@3HA:dword
         extern syscall ?nStreamCount@@3HA:dword
         public ix_dspv_mix
@@ -31,7 +31,7 @@ ix_dspv_mix proc
         mov ecx, dword ptr [ebp + 0Ch]
         shr ecx, 2
         rep stosd
-        mov ebx, offset ?voices@@3PAUIxVoice@@A
+        mov ebx, offset ?aVoices@@3PAUIxVoice@@A
         mov ecx, dword ptr [?nVoiceCount@@3HA]
         add ecx, dword ptr [?nStreamCount@@3HA]
 
