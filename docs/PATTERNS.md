@@ -773,10 +773,25 @@ for similarity decisions.
   the two refill buffers, counts, cursor positions, buffered-byte count,
   result, and requested-byte count inside it. The request is assigned `0x16f8`
   before the lock call. The two success-result writes before and after the
-  loop are absent from the original. This restores its 52-byte frame and
-  932-byte span at 99.62% similarity. The initial-fill slots now match; refill
-  slots and the final unsigned wrap comparison still differ. Reversing or
-  negating that comparison did not change its encoding and is not retained.
+  loop are absent from the original. The refill locals need separate scopes
+  too: second-byte count and play cursor at EBP -20/-24; result, hardware
+  write cursor, and buffered-byte count at -28/-32/-36; first-byte count and
+  first-buffer pointer at -40/-44; and requested-byte count and second-buffer
+  pointer at -48/-52. In that innermost scope, declare the pointer before
+  the requested count. Keep the cursor query and delay calculation before
+  the buffer scopes, and write the cursor-wrap test as
+  `playCursor > dwMixerWriteOffset`. Reversing that test introduces an extra
+  instruction byte and changes subsequent branch offsets. The scopes recover
+  allocation; they do not prove the original block structure.
+  Binary-comp now finds one differing instruction out of 262 instead of 35,
+  preserving the original 52-byte frame and 932-byte span at 99.62%
+  similarity. The remaining final wrap check loads the write offset before
+  comparing the buffer size and uses `JA`; the original loads the size,
+  compares the offset, and uses `JB`. Relocation-aware comparison masks the
+  two global addresses, so it counts only the branch opcode as different.
+  Reversing or negating that final comparison did not change its encoding.
+  Alternative descriptive local names and flattening the refill scopes into
+  one declaration block also failed; those probes are not retained.
 - Preserve the observed order of calls inside comparisons. The audio-service
   loops call `ix_thread_get_audio_chunk_size` before `ix_dsps_get_buffer_free`;
   putting the chunk-size call on the left of `<` reproduces the original
@@ -1190,3 +1205,17 @@ Windows 95 DirectDraw and DirectSound behavior.
   output; moving the X expression directly into `SetTextCursor` worsens the
   comparison from two to eight differing instructions. Both probes are
   reverted, preserving the original load scheduling recovered so far.
+- Reversing the comparison operands in `ix_dsp_set_master_volume`,
+  `ix_thread_handle_file_chunk`, `ix_thread_service_streams`, and
+  `ix_system_find_free_voice` does not improve their current output.
+  Declaring the master-volume loop index in the `for` initializer and
+  naming the free-voice index `voiceIndex` likewise leaves their comparisons
+  unchanged. A volatile input-pointer local in the extended-number converter,
+  combined with original-order low-mantissa terms, still leaves ten differing
+  body instructions. These probes are not retained.
+- A volatile byte-offset local in `onboard_explosion` recovers a sixteen-byte
+  local frame but drops the original saved EBP, leaving its effective stack
+  slots wrong. Byte differences increase from 49 to 58 of 61 instructions
+  despite the mnemonic score rising from 81.97% to 88.52%. Assigning that
+  offset within the velocity-copy address expression still leaves 58
+  differences and drops similarity to 75.41%. Neither probe is retained.

@@ -211,58 +211,69 @@ int ix_mixer_service(void)
 
     dwMixerWriteOffset = 0x2df0;
     while ((dwDspFlags & 4) != 0) {
-        HRESULT result;
-        void *firstBuffer;
-        DWORD firstBytes;
-        void *secondBuffer;
+        /* Separate scopes preserve the original refill stack slots. */
         DWORD secondBytes;
         DWORD playCursor;
-        DWORD hardwareWriteCursor;
-        int bufferedBytes;
-        DWORD requestedBytes;
+        {
+            HRESULT result;
+            DWORD hardwareWriteCursor;
+            int bufferedBytes;
 
-        Sleep(delay);
-        dwDspTick++;
-        result = pMixerBuffer->GetCurrentPosition(
-            &playCursor, &hardwareWriteCursor);
-        if (result != DS_OK) {
-            ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 176);
-            ix_log_printf("Failed to get current position, %s",
-                          ix_dsp_result_to_text(result));
-            return -1;
-        }
-        if (dwMixerWriteOffset < playCursor)
-            playCursor -= dwMixerBufferSize;
-        bufferedBytes = dwMixerWriteOffset - playCursor;
-        delay = (unsigned int)(bufferedBytes * 0x42) / 0x16f8;
+            Sleep(delay);
+            dwDspTick++;
+            result = pMixerBuffer->GetCurrentPosition(
+                &playCursor, &hardwareWriteCursor);
+            if (result != DS_OK) {
+                ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 176);
+                ix_log_printf("Failed to get current position, %s",
+                              ix_dsp_result_to_text(result));
+                return -1;
+            }
+            if (playCursor > dwMixerWriteOffset)
+                playCursor -= dwMixerBufferSize;
+            bufferedBytes = dwMixerWriteOffset - playCursor;
+            delay = (unsigned int)(bufferedBytes * 0x42) / 0x16f8;
 
-        requestedBytes = 0x16f8;
-        result = pMixerBuffer->Lock(
-            dwMixerWriteOffset, requestedBytes,
-            &firstBuffer, &firstBytes, &secondBuffer, &secondBytes, 0);
-        if (result != DS_OK) {
-            ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 186);
-            ix_log_printf("Failed to Lock, %s", ix_dsp_result_to_text(result));
-            return -1;
-        }
-        EnterCriticalSection(&csMixer);
-        ix_dspv_mix(firstBuffer, firstBytes);
-        if (secondBuffer != 0)
-            ix_dspv_mix(secondBuffer, secondBytes);
-        LeaveCriticalSection(&csMixer);
-        result = pMixerBuffer->Unlock(
-            firstBuffer, firstBytes, secondBuffer, secondBytes);
-        if (result != DS_OK) {
-            ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 196);
-            ix_log_printf("Failed to Unlock, %s", ix_dsp_result_to_text(result));
-            return -1;
-        }
-        dwMixerWriteOffset += firstBytes;
-        if (secondBuffer != 0) {
-            dwMixerWriteOffset = secondBytes;
-        } else {
-            if (dwMixerWriteOffset >= dwMixerBufferSize)
-                dwMixerWriteOffset = 0;
+            {
+                DWORD firstBytes;
+                void *firstBuffer;
+                {
+                    void *secondBuffer;
+                    DWORD requestedBytes;
+
+                    requestedBytes = 0x16f8;
+                    result = pMixerBuffer->Lock(
+                        dwMixerWriteOffset, requestedBytes,
+                        &firstBuffer, &firstBytes,
+                        &secondBuffer, &secondBytes, 0);
+                    if (result != DS_OK) {
+                        ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 186);
+                        ix_log_printf("Failed to Lock, %s",
+                                      ix_dsp_result_to_text(result));
+                        return -1;
+                    }
+                    EnterCriticalSection(&csMixer);
+                    ix_dspv_mix(firstBuffer, firstBytes);
+                    if (secondBuffer != 0)
+                        ix_dspv_mix(secondBuffer, secondBytes);
+                    LeaveCriticalSection(&csMixer);
+                    result = pMixerBuffer->Unlock(
+                        firstBuffer, firstBytes, secondBuffer, secondBytes);
+                    if (result != DS_OK) {
+                        ix_log_printf("Warning [%s - %d]:\n", IX_MIXER_FILE, 196);
+                        ix_log_printf("Failed to Unlock, %s",
+                                      ix_dsp_result_to_text(result));
+                        return -1;
+                    }
+                    dwMixerWriteOffset += firstBytes;
+                    if (secondBuffer != 0) {
+                        dwMixerWriteOffset = secondBytes;
+                    } else {
+                        if (dwMixerWriteOffset >= dwMixerBufferSize)
+                            dwMixerWriteOffset = 0;
+                    }
+                }
+            }
         }
     }
     return 0;
