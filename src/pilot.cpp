@@ -89,16 +89,14 @@ void LoadAnswerPromptAndResponse(short entry, char *prompt,
     char *scan;
     char *responseLine;
     short line;
-    char *packet;
+    char *volatile packet;
 
     packet = 0;
     PromptInsertNumberedDisk(0x3c);
-    line = 0;
-    packet = (char *)FetchDiskPacketRetrying(0x3c, 0, 0);
-    promptLine = packet;
-    scan = packet;
+    packet = scan = (char *)FetchDiskPacketRetrying(0x3c, 0, 0);
     responseLine = packet;
-    do {
+    promptLine = packet;
+    for (line = 0; line < 20; line++, scan++) {
         if (entry * 2 - line == 0)
             promptLine = scan;
         if (entry * 2 - line == -1)
@@ -107,9 +105,7 @@ void LoadAnswerPromptAndResponse(short entry, char *prompt,
             scan++;
         scan[-1] = '\0';
         *scan = '\0';
-        line++;
-        scan++;
-    } while (line < 20);
+    }
     DosStrcpy(prompt, promptLine);
     DosStrcpy(response, responseLine);
     FreePacketAndClear((int *)&packet, 0);

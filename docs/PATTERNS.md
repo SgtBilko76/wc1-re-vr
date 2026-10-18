@@ -536,11 +536,30 @@ for similarity decisions.
   Earlier register hints, reordered extent declarations, an explicitly
   guarded do/while loop, and reusing the right/bottom parameters as extents
   also failed to recover the original allocation. These trials are not retained.
-- `DIBsetPalette` still reads the RGB pointer before calculating its cache
-  offset, unlike the original. An explicit byte-offset local did not change
-  the generated sequence. Reading a volatile index parameter once into an
-  int local and using that local throughout likewise left its 85.33% result
-  unchanged. Both probes are reverted.
+- `DIBsetPalette` calculates its four-byte palette-cache offset before
+  capturing the RGB pointer through a qualified volatile lvalue. Use that
+  pointer for the component comparisons and stores, and retain the original
+  index for the word palette and DirectDraw call. Together these lifetimes
+  recover the original pointer load after the first two register saves,
+  followed by the original DX/EBX/EDI comparison allocation. The complete
+  272-byte span is exact, up from 85.33% and 51 differing encodings, with
+  the original four-byte local frame. All other DIB rows remain unchanged.
+  The qualification reproduces the observed read; it does not prove the
+  original source spelling. An offset local alone, or a volatile index
+  captured into an int local, did not recover the sequence and is not retained.
+- `LoadAnswerPromptAndResponse` saves the fetched packet in its existing
+  four-byte stack slot, then reloads it for the response and prompt pointers.
+  A volatile pointer declaration retains both reads; qualified lvalue casts
+  on an ordinary local are still folded into the fetched register value by
+  CL 4.20. Capture the scan pointer in the packet-assignment chain and use
+  a counted `for` loop so its word counter is initialized between the disk
+  prompt and packet-fetch calls. These choices retain the 160-byte span and
+  raise similarity from 89.83% to 93.22%, reducing differing encodings from
+  49 to 46 of 59. Scan/prompt/counter registers and some scheduling remain
+  wrong. Reversing the assignment chain or pointer declarations does not
+  improve that result. A separate doubled-entry index worsens both scheduling
+  and comparison direction and is not retained. Other pilot-unit rows remain
+  unchanged, including the compiler-generated construction cleanup.
 - Keep direct array-field accesses when the original repeatedly uses an index
   plus an absolute field address. A cached structure pointer can produce the
   same mnemonics with shorter displacements, changing the function's size.

@@ -1156,3 +1156,13 @@ scopes gives the original 148-byte frame and 432-byte span, but still reads
 the wrong slots and differs in all 116 compared instruction encodings.
 These additional probes are also discarded; matching the span alone does
 not reconstruct the observed behavior.
+
+A single 32-element coordinate array produces the same unsuccessful
+148-byte frame and 432-byte span as the two-array scoped trial: 89.66%
+mnemonic similarity, with all 116 instruction encodings different. Keeping
+three volatile selected-index scalars in the later scope and capturing each
+once also gives a 148-byte frame, but places the guard and index reads at
+the end of that frame and shortens the span by sixteen bytes (88.79%).
+Neither reproduces the three explicit index shifts. Both are reverted,
+including the exploratory shared prototype, whose insertion also changed
+unrelated compilation units.
