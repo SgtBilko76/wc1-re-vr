@@ -693,30 +693,30 @@ void BriefingMap_DisplayMap(void)
 /* Function start: 0x40E2B0 */
 short SelectNavObjectiveAtPoint(short mouseX, short mouseY)
 {
-    short mapX;
+    short y;
     short mapY;
+    short mapX;
     short oldNavPoint;
     short selected;
     short pathIndex;
-    signed char objective;
+    short x;
 
     oldNavPoint = (short)cCurrentNavPtIdx;
-    mouseX = (short)(mouseX - 30);
-    mouseY = (short)(mouseY - 22);
+    x = (short)(mouseX - 30);
     pathIndex = 0;
+    y = (short)(mouseY - 22);
     selected = 0;
-    objective = abFlightPathList[pathIndex];
-    while (objective != -1) {
-        if (hidden_objective((short)objective) == 0) {
+    while (abFlightPathList[pathIndex] != -1) {
+        if (hidden_objective((short)abFlightPathList[pathIndex]) == 0) {
             ScaleNavMapCoordinates(
                 &mapX, &mapY,
-                aMissionObjectivesArray[objective].mapX,
-                aMissionObjectivesArray[objective].mapY);
-            if ((short)(abs((int)mouseX - mapX) +
-                        abs((int)mouseY - mapY)) < 6 ||
+                aMissionObjectivesArray[abFlightPathList[pathIndex]].mapX,
+                aMissionObjectivesArray[abFlightPathList[pathIndex]].mapY);
+            if ((short)(abs((int)x - mapX) +
+                        abs((int)y - mapY)) < 6 ||
                 IsPointInNavMapLabel(
                     (short)awMapNavObjectiveLabelIndex[pathIndex],
-                    mouseX, mouseY) != 0) {
+                    x, y) != 0) {
                 selected = 1;
                 set_new_objective(pathIndex);
                 if (pathIndex == oldNavPoint)
@@ -724,7 +724,6 @@ short SelectNavObjectiveAtPoint(short mouseX, short mouseY)
             }
         }
         pathIndex++;
-        objective = abFlightPathList[pathIndex];
     }
     return selected;
 }
@@ -770,7 +769,6 @@ void InflightComputer(void)
     short displayedNavPoint;
     short eventType;
     int frame;
-    unsigned char markerColour;
     unsigned char *background;
     InputEventState event;
     Viewport pointerViewport;
@@ -845,11 +843,9 @@ void InflightComputer(void)
             FormatNavCoordinates(
                 (unsigned char *)pElapsedCampaignDatePtr);
             stMapNavigationLabelTextContext.viewport = &stScreenView;
-            frame = nTickCount60Hz / 15;
-            markerColour = cDarkGreyColour;
-            if (frame % 2 != 0)
-                markerColour = cViewportClearColour;
-            DrawNavPlayerMarker(markerColour, 0);
+            frame = (int)nTickCount60Hz / 15;
+            DrawNavPlayerMarker(frame % 2 != 0 ? cViewportClearColour
+                                               : cDarkGreyColour, 0);
             stCurrentNavMapTxtCtx.viewport = &stScreenView;
             UpdateInflightNavText((short)((frame / 4) % 2));
             SetRectBounds(&stScreenView, 0, 0, 319, 199);
@@ -883,7 +879,7 @@ void InflightComputer(void)
             bEscapePressedFlag = 0;
             cCurrentNavPtIdx =
                 (signed char)savedNavPoint;
-            set_new_objective(savedNavPoint);
+            set_new_objective(cCurrentNavPtIdx);
         }
         free_viewport(&stSceneBuffer);
         LeaveAllocationScope();
