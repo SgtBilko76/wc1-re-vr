@@ -9,6 +9,12 @@
  *  These live in one place only because the game-core compilation-unit
  *  boundaries are still unknown; each global belongs in whichever module
  *  defines it, and moves there as docs/ORDER.md is filled in.
+ *
+ *  Declarations follow address order except where code requires otherwise.
+ *  CL 4.20 breaks register and operand-order ties by symbol index, and a
+ *  global keeps its own index in every function that uses it, so a few
+ *  externs sit where the original header must have had them
+ *  (docs/PATTERNS.md, "Symbol-index costs").
  */
 #ifndef GAME_GLOBALS_H
 #define GAME_GLOBALS_H
@@ -51,10 +57,10 @@ extern short nPreviousPlayerShipType; /* 0x004688dc */
 extern int bCampaignActive; /* 0x004688f0 */
 extern char *pszPendingHudMessage; /* 0x00469004 */
 extern unsigned char *pCockpitExplosionBackground; /* 0x00469060 */
+extern short nNavPointerObject; /* 0x00469208 */
 extern unsigned char *pCockpitExplosionShape; /* 0x00469064 */
 extern short nCockpitExplosionFrame; /* 0x00469068 */
 extern unsigned char *pReleaseWeaponDisplayBackground; /* 0x0046906c */
-extern short nNavPointerObject; /* 0x00469208 */
 extern unsigned char *pConfedCommBackground; /* 0x00469278 */
 extern unsigned char *pCommStaticShape; /* 0x0046927c */
 extern unsigned char *pKilrathiCommBackground; /* 0x00469280 */
@@ -120,7 +126,6 @@ extern int bMouseCursorVisible; /* 0x0046a018 */
 extern unsigned char bInputPollingGuard; /* 0x0046a01c */
 extern unsigned char *pDamageDisplayBackground; /* 0x0046a748 */
 extern const char *apszComponentNames[9]; /* 0x0046a778 */
-extern short nMusicPlaybackMode; /* 0x0046a9f8 */
 extern short nMusicTrackComplete; /* 0x0046aa04 */
 extern short nFuneralSequenceActive; /* 0x0046aa10 */
 extern int nCurrentMusicTrack; /* 0x0046aa14 */
@@ -130,6 +135,7 @@ extern int nWaitForMusicEnabled; /* 0x0046aa30 */
 extern int nFlightSoundEffectsEnabled; /* 0x0046aa34 */
 extern int nInitialFlightMusicPending; /* 0x0046aa38 */
 extern int nCombatMusicActive; /* 0x0046aa3c */
+extern short nMusicPlaybackMode; /* 0x0046a9f8 */
 extern int nInFlightMusicActive; /* 0x0046aa40 */
 extern unsigned char aabSoundEffectDescriptors[37][8]; /* 0x0046aa50 */
 extern short nCommMenuChoiceCount; /* 0x0046af60 */
@@ -154,26 +160,27 @@ extern CockpitBarDefinition aaCockpitBars[5][8]; /* 0x0046dd88 */
 extern const GUID guidDirectDraw2; /* 0x00463118 */
 extern unsigned char bCurrentKey; /* 0x0046c014 */
 extern signed char cPreviousKey; /* 0x0046c018 */
+extern signed char cViewObject; /* 0x0046c000 */
 extern short nCurrentWave; /* 0x0046c01c */
 extern int bIntroSecondaryScene; /* 0x0046c024 */
 extern signed char abHazardObjects[0x14]; /* 0x0046c028 */
 extern short DAT_0046c010;
+extern short nExternalViewShip; /* 0x0046c040 */
 extern short nEyePitchRate; /* 0x0046c004 */
 extern short nEyeYawRate; /* 0x0046c008 */
 extern short nEyeRollRate; /* 0x0046c00c */
 extern signed char cCurrentObjective; /* 0x0046c020 */
 extern int nCameraViewMode; /* 0x0046c03c */
-extern signed char cViewObject; /* 0x0046c000 */
-extern short nExternalViewShip; /* 0x0046c040 */
 extern short nEjectedPilotObject; /* 0x0046c044 */
 extern short nClosestVisibleObject; /* 0x0046c048 */
-extern short nYourWingman; /* 0x0046c04c */
 extern short nPlayerCollisionObject; /* 0x0046c050 */
 extern enum ObjectType eSelectedGunType; /* 0x0046c054 */
+extern short nYourWingman; /* 0x0046c04c */
 extern int nSelectedReleaseWeaponIndex; /* 0x0046c058 */
 extern short DAT_0046c05c; /* 0x0046c05c */
 extern short bTargetLockReadoutDirty; /* 0x0046c060 */
 extern short nTargetLockCountdown; /* 0x0046c064 */
+extern signed char cViableTargetCount; /* 0x0046c088 */
 extern short nTargetLockMarkerAngle; /* 0x0046c068 */
 extern signed char cTargetDisplayObject; /* 0x0046c06c */
 extern int bTargetLockAcquired; /* 0x0046c074 */
@@ -181,7 +188,6 @@ extern short nTargetLockMode; /* 0x0046c078 */
 extern int bMissileCameraEnabled; /* 0x0046c07c */
 extern int bEngageAllowed; /* 0x0046c080 */
 extern short nAutoEngageTimer; /* 0x0046c084 */
-extern signed char cViableTargetCount; /* 0x0046c088 */
 extern MissionNavPoint aMissionNavPoints[MISSION_NAV_POINT_COUNT]; /* 0x0046c2f0 */
 extern MissionShipRecord
     aMissionShips[MISSION_SHIP_STORAGE_COUNT]; /* 0x0046c948 */
@@ -205,6 +211,7 @@ extern short nScreenHeight; /* 0x0046daa8 */
 extern ScreenViewportGeometry aScreenViewportGeometry[7]; /* 0x0046dab8 */
 extern int aiIntelligenceEvent[10]; /* 0x0046d368 */
 extern signed char *apDefenseManeuvers[5]; /* 0x0046d3d0 */
+extern short nTalkingHeadFace; /* 0x0046e584 */
 extern ManeuverChoice aRatedManeuverChoices[13][9][3]; /* 0x0046d3e8 */
 extern ManeuverChoice aKilrathiManeuverChoices[5][9][3]; /* 0x0046d808 */
 extern signed char acPilotAggression[24]; /* 0x0046d9a0 */
@@ -218,7 +225,6 @@ extern BriefingCharacterLayout aBriefingCharacters[10]; /* 0x0046e218 */
 extern const char *apszMedalNames[5]; /* 0x0046e2e0 */
 extern short nDebriefingPodiumX; /* 0x0046e57c */
 extern short nConversationCharacter; /* 0x0046e580 */
-extern short nTalkingHeadFace; /* 0x0046e584 */
 extern short nConversationBackdropFrame; /* 0x0046e588 */
 extern int bConversationConstellation; /* 0x0046e58c */
 extern int bConversationOverlay; /* 0x0046e590 */
@@ -244,6 +250,7 @@ extern RasterClip *pGifRasterTarget; /* 0x0046ff28 */
 extern unsigned char abRasterPaletteTranslation[256]; /* 0x0046ff2c */
 extern RLETransformVertex aRLETransformVertices[4]; /* 0x0047002c */
 extern int anRLESourceSteps[4]; /* 0x0047007c */
+extern unsigned char *pMissionCampaignInfo; /* 0x005988bc */
 extern const char *apszPilotRankNames[5]; /* 0x00470098 */
 extern CampaignState stInitialCampaignState; /* 0x004700b0 */
 extern int bPanRoomTransition; /* 0x00470510 */
@@ -253,7 +260,6 @@ extern int nUnusedFlightProfileTicksC; /* 0x00598890 */
 extern Viewport stRoomScreenViewport; /* 0x005988a0 */
 extern short nSavedRoomCtrlX; /* 0x005988b4 */
 extern unsigned char *pRecRoomRoster; /* 0x005988b8 */
-extern unsigned char *pMissionCampaignInfo; /* 0x005988bc */
 extern unsigned char *apRecRoomFigureShapes[3]; /* 0x005988c0 */
 extern PilotRecord aPilotEntriesList[9]; /* 0x005988d0 */
 extern ConstellationObjectDefinition
@@ -315,18 +321,18 @@ extern unsigned short wCurrentInputModifiers; /* 0x0059ab08 */
 extern MouseCursorState stMouseCursorState; /* 0x0059ab10 */
 extern void (*pCurrentEventManagerPump)(void); /* 0x0059ab2c */
 extern int nPacketDecompressResult; /* 0x0059ab30 */
+extern int nEventMousePointerDamageBottom; /* 0x0059ab48 */
 extern unsigned int nTickCount60Hz; /* 0x0059ab54 */
 extern volatile int bFrameTickPendingFlag; /* 0x0059ab3c */
 extern int bMouseCursorDamagePending; /* 0x0059ab40 */
+extern TextContext *pCurTextContext; /* 0x0059af8c */
 extern int nMouseCursorDamageRight; /* 0x0059ab44 */
-extern int nEventMousePointerDamageBottom; /* 0x0059ab48 */
 extern short nViewportOriginPositionY; /* 0x0059ab50 */
 extern short nViewportOriginPositionX; /* 0x0059ab52 */
 extern int nMouseCursorDamageLeft; /* 0x0059ab5c */
 extern int nMousePointerDamageTopValue; /* 0x0059ab60 */
 extern short nUnusedInputTimerFlag; /* 0x0059ab64 */
 extern int aiInputEventSlotUsedTable[0x100]; /* 0x0059ab70 */
-extern TextContext *pCurTextContext; /* 0x0059af8c */
 extern short bCurrentRunningFromHardDiskFlag; /* 0x0059ab34 */
 extern short nPacketDecompressPending; /* 0x0059ab36 */
 extern unsigned short wPacketDecompressInputSize; /* 0x0059ab38 */
@@ -343,13 +349,13 @@ extern short asObjDistancesTable[SPACE_OBJECT_COUNT]; /* 0x0059b4a0 */
 extern FixedVector aShipRightVector[64]; /* 0x0059b6e0 */
 extern FixedVector aShipUpVector[64]; /* 0x0059b9e0 */
 extern FixedVector aShipFwdVec[64]; /* 0x0059bce0 */
-extern HazardField *pActiveHazardField; /* 0x0059bfe0 */
 extern signed char acPlayerComponentDamageList[9]; /* 0x0059bff0 */
 extern unsigned int anShipAlertFlags[12]; /* 0x0059b430 */
 extern int anShipFuelsTable[12]; /* 0x0059b470 */
 extern enum ObjectType aeObjectTypeList[SPACE_OBJECT_COUNT]; /* 0x0059b560 */
 extern signed char abFlightPathList[MISSION_OBJECTIVE_COUNT]; /* 0x0059c000 */
 extern FixedVector aShipVelocity[SPACE_OBJECT_COUNT]; /* 0x0059c010 */
+extern HazardField *pActiveHazardField; /* 0x0059bfe0 */
 extern short anYawTarget[16]; /* 0x0059c310 */
 extern short asObjectCounterArray[SPACE_OBJECT_COUNT]; /* 0x0059c330 */
 extern short nTargetShip; /* 0x0059c3b0 */
@@ -366,6 +372,7 @@ extern short nShipMissionIndices[10]; /* 0x0059c830 */
 extern signed char acShipCommunicatorArray[16]; /* 0x0059c850 */
 extern signed char cCurrentNavPtIdx; /* 0x0059c86c */
 extern FixedVector vStarFieldMotion; /* 0x0059c860 */
+extern short nTgtRange; /* 0x0059ce10 */
 extern short asObjectFlipArray[SPACE_OBJECT_COUNT]; /* 0x0059c870 */
 extern signed char acPreviousAttackers[16]; /* 0x0059c910 */
 extern signed char acViableTargetList[16]; /* 0x0059c920 */
@@ -379,7 +386,6 @@ extern CampaignState stCampaignState; /* 0x0059ca50 */
 extern unsigned char aShipWeaponsTable[10][0x47]; /* 0x0059cab0 */
 extern signed char acShipRating[16]; /* 0x0059cd80 */
 extern short asObjScreenAngles[SPACE_OBJECT_COUNT]; /* 0x0059cd90 */
-extern short nTgtRange; /* 0x0059ce10 */
 extern unsigned int anVduModeCache[2]; /* 0x0059ce18 */
 extern signed char acObjOwnersTable[64]; /* 0x0059ce20 */
 extern signed char acShipTargetTable[16]; /* 0x0059ce60 */
@@ -408,14 +414,15 @@ extern unsigned char *apObjShapeArray[SPACE_OBJECT_COUNT]; /* 0x0059d2f0 */
 extern short nPitchInput; /* 0x0059d3f0 */
 extern short nYawInputValue; /* 0x0059d3f2 */
 extern short nCurrentRollInputValue; /* 0x0059d3f4 */
-extern short asShipWingLeaderArray[16]; /* 0x0059d400 */
 extern short aasShipArmor[10][4]; /* 0x0059d420 */
+extern short asShipWingLeaderArray[16]; /* 0x0059d400 */
 extern short asShipWpnEnergyList[10]; /* 0x0059d470 */
 extern signed char acFormationMemberLists[16]; /* 0x0059d490 */
 extern short anShipMissionShips[16]; /* 0x0059d4b0 */
 extern FixedVector vToTgt; /* 0x0059d4d0 */
 extern short asCannedCommands[16]; /* 0x0059d4e0 */
 extern unsigned short ausVduModeStack[16]; /* 0x0059d500 */
+extern short asObjectCollisionRadius[64]; /* 0x0059d710 */
 extern char acShipSequence[10]; /* 0x0059d520 */
 extern short nTargetFacingValue; /* 0x0059d52a */
 extern FixedVector aShipDestinationsArray[10]; /* 0x0059d530 */
@@ -430,7 +437,6 @@ extern signed char acShipAiCooldowns[16]; /* 0x0059d680 */
 extern FixedVector vCollisionDelta; /* 0x0059d690 */
 extern signed char acLastCollisionObjects[SPACE_OBJECT_COUNT]; /* 0x0059d6a0 */
 extern short aasShipMaximumShieldTable[10][2]; /* 0x0059d6e0 */
-extern short asObjectCollisionRadius[64]; /* 0x0059d710 */
 extern signed char acShipPointingModeList[16]; /* 0x0059d790 */
 extern short anPitchGoal[16]; /* 0x0059d7a0 */
 extern signed char abShipNavPtIdx[16]; /* 0x0059d7c0 */
@@ -452,6 +458,7 @@ extern ObjectResourceSlot aObjectResourceSlotsArray[4]; /* 0x0059ddf0 */
 extern signed char acShipDestroyedWeaponCountArray[16]; /* 0x0059de30 */
 extern unsigned short awObjectScales[SPACE_OBJECT_COUNT]; /* 0x0059de40 */
 extern short asShipAccumulatedDmg[SPACE_OBJECT_COUNT]; /* 0x0059dee0 */
+extern short nCurrentNavigationPoint; /* 0x0059df60 */
 extern signed char acShipIonDriveDmg[16]; /* 0x0059d4a0 */
 extern short asObjectAnimationDelay[SPACE_OBJECT_COUNT]; /* 0x0059b660 */
 extern short asObjectAnimIndexes[SPACE_OBJECT_COUNT]; /* 0x0059da30 */
@@ -460,7 +467,6 @@ extern short nEyeYawGoalValue; /* 0x0059c944 */
 extern short nEyePitchTargetValue; /* 0x0059d61c */
 extern signed char acVduModeStackDepth[16]; /* 0x0059dec0 */
 extern signed char acShipSpawnNavPt[16]; /* 0x0059ded0 */
-extern short nCurrentNavigationPoint; /* 0x0059df60 */
 /* Calibration bounds are used only by joycal.c. */
 #if !defined(WC1_FL_SOURCE) && !defined(WC1_VIEW_SOURCE)
 extern int nJoystickCalibrationMinimumY; /* 0x0059df64 */
@@ -553,6 +559,7 @@ extern int nDamageDisplayPhase; /* 0x005a77e4 */
 extern unsigned char *pLaunchDoorShape; /* 0x005a77e8 */
 extern unsigned int nCurrentFrameTimerIdValue; /* 0x005a77ec */
 extern unsigned char abPaletteTripletsArray[256][3]; /* 0x005a77f0 */
+extern Viewport stCurrentTrainSimTitleDisplayViewport; /* 0x005a7b90 */
 extern InputDeviceSample stPreviousFlightInput; /* 0x005a7af0 */
 extern short bMouseButtonEventQueuedFlag; /* 0x005a7afc */
 extern short bCurrentKeyboardEvtQueued; /* 0x005a7afe */
@@ -560,7 +567,6 @@ extern short bMouseMoveEvtQueued; /* 0x005a7b00 */
 extern char *pCurrentStartupArgumentsPtr[30]; /* 0x005a7b10 */
 extern short bJoystickEventQueued; /* 0x005a7b88 */
 extern short nMainArcadeStartupParameterValue; /* 0x005a7b8a */
-extern Viewport stCurrentTrainSimTitleDisplayViewport; /* 0x005a7b90 */
 extern Viewport stTrainSimulatorHighScoreBufView; /* 0x005a7bb0 */
 extern int nCurrentArcadeScore; /* 0x005a7bc4 */
 extern TextContext stTrainSimTxtContext; /* 0x005a7bd0 */
@@ -584,12 +590,13 @@ extern unsigned char *pLogicRearViewBackdropPtr; /* 0x005a7c94 */
 extern int bCurrentPlayerDestroyed; /* 0x005a7c98 */
 extern short nPlayerKillTotal; /* 0x005a7c9c */
 extern short asCollisionPartnerTable[10]; /* 0x005a7cc0 */
+extern volatile unsigned int dwOriginalFreeMem; /* 0x005a7cd8 */
 extern short asCollisionTimes[10]; /* 0x005a7ca0 */
 extern int nCurrentWingmanKilledThisMission; /* 0x005a7cb4 */
 extern short nWingmanKillCount; /* 0x005a7cb8 */
+extern HudMessageSlot aCockpitHudMessageSlotsTable[2]; /* 0x005a7dd0 */
 extern short nLogicLastFoundShipValue; /* 0x005a7cba */
 extern int nMemoryConfig; /* 0x005a7cd4 */
-extern volatile unsigned int dwOriginalFreeMem; /* 0x005a7cd8 */
 extern unsigned char *pMouseCursorResource; /* 0x005a7cdc */
 extern int nAvailableGameMemory; /* 0x005a7ce0 */
 extern int nSceneResourceBudgetValue; /* 0x005a7ce4 */
@@ -603,7 +610,6 @@ extern enum ObjectType eReleaseWpnDisplayType; /* 0x005a7dc0 */
 extern unsigned char bStickIndicatorFrameState; /* 0x005a7dc8 */
 extern short nCurrentNoticeTimer; /* 0x005a7dca */
 extern short nPendingCockpitDamageValue; /* 0x005a7dcc */
-extern HudMessageSlot aCockpitHudMessageSlotsTable[2]; /* 0x005a7dd0 */
 extern signed char cLastTargetObject; /* 0x005a7df2 */
 extern int nSavedMouseCursorY; /* 0x005a7df4 */
 extern int nStoredMouseCursorPosX; /* 0x005a7df8 */
@@ -619,6 +625,7 @@ extern short asScannerObjectPositionX[11]; /* 0x005a7ea0 */
 extern short asScannerBackgroundColour[10]; /* 0x005a7ed0 */
 extern int nCurrentDamageAlarmSfxHandle; /* 0x005a7ec0 */
 extern unsigned short nPendingHudMessageColour; /* 0x005a7f00 */
+extern short nNavigationMapMinimumCoordX; /* 0x005a812e */
 extern short nExternalViewAngle; /* 0x005a7f06 */
 extern int nViewAllocTotal; /* 0x005a7f0c */
 extern unsigned char *apViewportAllocations[128]; /* 0x005a7f10 */
@@ -631,7 +638,6 @@ extern int nNearHeapBase; /* 0x005a8120 */
 extern int nCurrentNearHeapFirstDescriptor; /* 0x005a8124 */
 extern void * volatile pCurrentNearHeapAlloc; /* 0x005a8128 */
 extern short nNavMapMaximumPositionX; /* 0x005a812c */
-extern short nNavigationMapMinimumCoordX; /* 0x005a812e */
 extern unsigned short awMapNavObjectiveLabelIndex[16]; /* 0x005a8130 */
 extern short nNavMapMaximumPosY; /* 0x005a8150 */
 extern short nNavMapCentreX; /* 0x005a8152 */
@@ -650,6 +656,7 @@ extern signed char cCapitalShipLogicalFile; /* 0x005a7da0 */
 extern signed char cCurrentObjResourceLogicalFile; /* 0x005a86b0 */
 extern CampaignDate *pCurrentCampaignDate; /* 0x005a86a8 */
 extern CampaignDate *pElapsedCampaignDatePtr; /* 0x005a86ac */
+extern ShortPoint aFuneralParticlesArray[7]; /* 0x005a86f0 */
 extern Viewport *pScrambleView; /* 0x005a86b4 */
 extern short nSceneScrambleCanopyFrameValue; /* 0x005a86b8 */
 extern unsigned char *pScrambleDetailShape; /* 0x005a86bc */
@@ -661,7 +668,6 @@ extern short nFuneralCasketPosY; /* 0x005a86ca */
 extern short nSceneScrambleShipDetailCountValue; /* 0x005a86cc */
 extern signed char acScrambleShipDetailSlots[24]; /* 0x005a86d0 */
 extern signed char cCutsceneScrambleWalkTime; /* 0x005a86e8 */
-extern ShortPoint aFuneralParticlesArray[7]; /* 0x005a86f0 */
 extern unsigned char *pSceneScrambleBgShapePtr; /* 0x005a870c */
 extern short nFuneralParticleDistance; /* 0x005a8710 */
 extern short nScrambleBackdropPositionY; /* 0x005a8712 */
@@ -766,7 +772,6 @@ extern int nJoystickDownScaleValue; /* 0x005a81d4 */
 extern int nJoystickCentreY; /* 0x005a81d8 */
 extern int nJoystickCentreX; /* 0x005a81dc */
 extern int nCurrentJoystickFailureValue; /* 0x005a81e0 */
-extern InputDeviceSample aInputDevSamples[2]; /* 0x005a81f0 */
 extern short nMenuInputRepeatDelay; /* 0x005a8208 */
 extern int nHostMouseMessageX; /* 0x005a8990 */
 extern int nHostMouseMessageY; /* 0x005a8994 */
@@ -779,6 +784,7 @@ extern ShortVector aChildOffsets[56]; /* 0x004682f0 */
 extern const ShortVector aSwcChildOffsets[63];
 #endif
 extern ShortPoint aWeaponDisplayPositions[32]; /* 0x00468440 */
+extern InputDeviceSample aInputDevSamples[2]; /* 0x005a81f0 */
 extern ShortPoint aWeaponDisplayOrigins[5]; /* 0x004684c0 */
 
 extern unsigned char bMessageSpeed; /* 0x0046af68 */

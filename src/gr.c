@@ -206,20 +206,24 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
                       unsigned char *bitmap, int width, int height,
                       int leftExtent, int topExtent)
 {
-    unsigned char *commands;
-    unsigned char *destination;
-    unsigned char code;
     unsigned char colour;
     unsigned short rowCode;
-    unsigned short runLength;
-    short maximumX;
-    short maximumY;
-    short sourceX;
-    short sourceY;
-    int frameOffset;
-    int x;
     int y;
+    short runCopyLength;
+    int runRight;
+    short rowCopyLength;
+    unsigned char *commands;
+    int rowRight;
+    int x;
+    int frameOffset;
+    short maximumY;
+    unsigned char code;
+    short maximumX;
+    short sourceX;
+    unsigned char *destination;
+    short sourceY;
     int skip;
+    unsigned short runLength;
 
     if (shape == 0 || frame < 0)
         return;
@@ -253,9 +257,6 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
         y = topExtent + sourceY;
         destination = bitmap + y * width + x;
         if ((rowCode & 1) != 0) {
-            short runCopyLength;
-            int runRight;
-
             rowCode >>= 1;
             while (rowCode != 0) {
                 code = *commands;
@@ -312,14 +313,10 @@ void DecodeShapeFrame(unsigned char *shape, short frame,
                 }
             }
         } else {
-            int rowRight;
-
             rowCode >>= 1;
             if (y >= 0 && y <= maximumY) {
                 rowRight = x + rowCode - 1;
                 if (x <= maximumX && rowRight >= 0) {
-                    short rowCopyLength;
-
                     skip = 0;
                     rowCopyLength = (short)rowCode;
                     if (x < 0) {
@@ -569,16 +566,16 @@ void DrawFontGlyph(char character, TextContext *context, int height,
                    int width, int y)
 {
     int row;
-    int column;
     unsigned int destinationOffset;
     unsigned char background;
     unsigned char *characterData;
     unsigned char *destination;
-    unsigned char fontColour;
     unsigned char fontBackground;
     unsigned char colour;
+    unsigned char fontColour;
     unsigned char *source;
     Viewport *viewport;
+    int column;
     unsigned char translated;
     unsigned short rowOffset;
     short characterIndex;

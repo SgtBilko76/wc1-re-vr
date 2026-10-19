@@ -783,8 +783,8 @@ void GetBunkInfo(BarracksAnimationState *state)
 void DrawBarracksBunks(Viewport *viewport, unsigned char *shape,
                        BarracksAnimationState *state)
 {
-    short bunk;
     short frame;
+    short bunk;
 
     DrawSpriteDefault(viewport, 0, 0, shape, 0);
     bunk = 0;

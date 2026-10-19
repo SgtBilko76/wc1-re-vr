@@ -40,18 +40,18 @@ void LoadJoystickCalibrationFile(short horizontalRange,
 {
     unsigned short storedCentreX;
     unsigned short storedCentreY;
-    unsigned short minimumX;
+    int centreX;
     unsigned short maximumX;
-    unsigned short maximumY;
+    int centreY;
+    int rangeY;
     unsigned short minimumY;
     short activeDevice;
     InputDeviceSample samples[2];
     int file;
     int failed;
-    int centreX;
-    int centreY;
+    unsigned short minimumX;
+    unsigned short maximumY;
     int rangeX;
-    int rangeY;
 
     activeDevice = -1;
     failed = 1;

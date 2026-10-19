@@ -2419,10 +2419,14 @@ Windows 95 DirectDraw and DirectSound behavior.
 
 ## Symbol-index costs and offset-independent shapes
 
-CL 4.20 breaks register and operand-order ties by symbol index (mod 32 for
-register choice, mod 17 for comparison and commutative operand order), so a
-function is judged by whether it is exact at some probe offset, and a unit by
-whether one offset makes all of its functions exact. A two-local tie probe
+CL 4.20 breaks register and operand-order ties by symbol index. Register
+choice depends on the index modulo 32. Comparison and commutative operand
+order repeat with period 257, with windows about 17 indices apart inside each
+period. A function is therefore judged by whether it is exact at some probe
+offset, and a unit by whether one offset makes all of its functions exact.
+Across the long sweeps of every unit, 196 constrained routines are exactly
+32-periodic, 80 are exactly 257-periodic, and 97 mix both, so a function is
+exact when both its mod-32 and its mod-257 conditions hold. A two-local tie probe
 (each local live across calls, used symmetrically) measures what a source
 fragment consumes, independent of the code it generates:
 
@@ -2509,4 +2513,28 @@ Shapes recovered with this method:
 - Tie windows are not periodic with period 544: `DIBupdate`'s exact offsets
   step by 17 but slip one extra every 257 offsets. A probe offset therefore
   cannot be converted into "hide N declarations" by modular arithmetic;
-  measure the actual configuration.
+  measure the actual configuration. Hiding declarations reaches combinations
+  of the two residues that probe offsets 0 to 543 never sample:
+  `IsPointInNavMapLabel` is exact with five fewer declarations although no
+  probe offset in that range makes it exact.
+- A redundant redeclaration costs only its named prototype parameters; a
+  repeated `extern` or an unnamed prototype costs nothing.
+- A global's common-subexpression temporary carries the global's own index,
+  so the order of the `extern` declarations in `include/globals.h` decides
+  ties between globals and locals in every unit. Probes inserted before the
+  deciding declaration make such a function exact; probes after it, or after
+  the includes, never do. The header therefore departs from address order
+  where code requires it. Moving `nTgtRange` makes `futurion_intelligence`,
+  `close_behind`, `FindEnemyAimingWithinRange`, `in_danger`,
+  `chase_location`, and `chase_speed` exact, and moving
+  `nEventMousePointerDamageBottom` fixes all three mouse-cursor routines.
+  Each accepted move was checked against every unit and costs no other
+  exact routine.
+- `DecodeShapeFrame` declares its four run-copy temporaries at function scope
+  among the other locals. With the recovered order, the run clipping keeps
+  the original registers and the routine regains its 16-byte alignment span.
+- `DrawFontGlyph`'s recovered local order gives the original 512-byte size;
+  its inner loops still differ in register choice.
+- `DrawBarracksBunks` declares `frame` before `bunk`; the routine is exact once
+  `barracks.c` reaches its original declaration count (probe offsets 17
+  to 26).
