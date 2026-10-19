@@ -2494,3 +2494,19 @@ Shapes recovered with this method:
 - Casts and unnamed prototype parameters consume no symbol indices; each named
   prototype parameter consumes one. A prototype's parameter names therefore
   shift every later declaration's index.
+- `UpdateDamageDisplay` declares `componentIndex` after the other locals; with
+  that order all three `damage.c` routines are exact at the current offset.
+- `dib.c` declares `nDIBFrameHeight` before the other frame statics. Its index
+  decides the operand order of `DIBslamReal`'s row-limit comparison; the
+  identifier-hash order keeps its storage at 0x00476650. With it, all 28
+  `dib.c` routines are exact together at offsets such as 27 and 61.
+- `cmpgn.c` defines the three mission disk-record structures just before
+  `LoadMissionData`, their only user, and drops the reconstruction's
+  compile-time size checks. Every exact `cmpgn.c` routine now shares one
+  offset window.
+- `InitializeCockpitResources` indexes the player's loadout slot directly in
+  its missile-background loop rather than through a slot pointer.
+- Tie windows are not periodic with period 544: `DIBupdate`'s exact offsets
+  step by 17 but slip one extra every 257 offsets. A probe offset therefore
+  cannot be converted into "hide N declarations" by modular arithmetic;
+  measure the actual configuration.

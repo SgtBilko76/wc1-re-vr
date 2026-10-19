@@ -104,11 +104,11 @@ void show_damage_disp(void)
 void UpdateDamageDisplay(void)
 {
     short previousComponentCount;
-    signed char componentIndex;
     signed char componentCount;
     signed char component;
     signed char attempts;
     signed char damage;
+    signed char componentIndex;
 
     previousComponentCount = cDamagedComponentCount;
     componentCount = 0;

@@ -65,13 +65,15 @@ const GUID IID_IDirectDrawClipper = {
 /* Frame buffers, DirectDraw window and palette state, and frame-rate text.
  * CL places these statics by identifier hash, so their spellings reproduce
  * the original order. The unused entries are unreferenced original storage;
- * the window handle is also read by the SDL event adapter. */
+ * the window handle is also read by the SDL event adapter. The frame height
+ * is declared first: its symbol index decides an operand-order tie in
+ * DIBslamReal, and the hash order keeps its storage at 0x00476650. */
+static unsigned int nDIBFrameHeight; /* 0x00476650 */
 static unsigned char szFrameRateLabel[32]; /* 0x00476620 */
 static unsigned int DAT_00476640; /* 0x00476640 */
 static unsigned int DAT_00476644; /* 0x00476644 */
 static unsigned char *pDIBImage; /* 0x00476648 */
 static unsigned int nDIBFrameWidth; /* 0x0047664c */
-static unsigned int nDIBFrameHeight; /* 0x00476650 */
 static unsigned char abDIBPixelBackup[0xfa00]; /* 0x00476658 */
 static int DAT_00486058; /* 0x00486058 */
 static int nUnusedDIBData; /* 0x0048605c */

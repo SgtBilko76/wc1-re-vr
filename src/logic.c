@@ -1673,7 +1673,6 @@ void init_vdus(void)
 /* Function start: 0x4245B0 */
 unsigned int InitializeCockpitResources(signed char mode)
 {
-    ShipWeaponSlot *weaponSlot;
     int backgroundSize;
     unsigned int result;
     short maximumSize;
@@ -1757,13 +1756,11 @@ unsigned int InitializeCockpitResources(signed char mode)
     for (weapon = 0;
          weapon < (signed char)aShipWeapons[0][0];
          weapon++) {
-        weaponSlot = &((ShipWeaponSlot *)
-            &aShipWeapons[0][1])[weapon];
-        if (aObjectTypeData[weaponSlot->type].objectClass ==
+        if (aObjectTypeData[((ShipWeaponSlot *)&aShipWeapons[0][1])[weapon].type].objectClass ==
                 OBJECT_CLASS_MISSILE) {
             backgroundSize = MeasureShapeFrameStorage(
                 pCockpitWeaponShape,
-                (short)(weaponSlot->type * 2 - 0x2f));
+                (short)(((ShipWeaponSlot *)&aShipWeapons[0][1])[weapon].type * 2 - 0x2f));
             maximumSize = MaxShort(maximumSize, (short)backgroundSize);
         }
     }

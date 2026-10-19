@@ -13,54 +13,6 @@ static short asMouthFramesByPhoneme[26] = {
     4, 2, 5, 6, 4, 4, 4, 3, 4, 6, 4, 4, 4
 }; /* 0x004655f0 */
 
-#pragma pack(push, 1)
-typedef struct MissionNavPointDisk {
-    char name[30];
-    signed char type;
-    FixedVector position;
-    unsigned short proximityRadius;
-    signed char triggers[4][2];
-    short preloadObjectTypes[2];
-    short missionShips[10];
-} MissionNavPointDisk;
-
-typedef struct MissionObjectiveDisk {
-    short type;
-    short index;
-    char description[60];
-} MissionObjectiveDisk;
-
-typedef struct MissionShipDisk {
-    short type;
-    short side;
-    signed char leader;
-    signed char field_5;
-    short missionType;
-    signed char navPoint;
-    FixedVector position;
-    short pitch;
-    short yaw;
-    short roll;
-    signed char formationSpot;
-    short speed;
-    short rating;
-    short pilot;
-    short field_2c;
-    short field_2e;
-    signed char state;
-    signed char leaderMissionIndex;
-    signed char formationIndex;
-    signed char targetMissionIndex;
-} MissionShipDisk;
-#pragma pack(pop)
-
-typedef char MissionNavPointDisk_size_must_be_0x4d[
-    sizeof(MissionNavPointDisk) == 0x4d ? 1 : -1];
-typedef char MissionObjectiveDisk_size_must_be_0x40[
-    sizeof(MissionObjectiveDisk) == 0x40 ? 1 : -1];
-typedef char MissionShipDisk_size_must_be_0x2a[
-    sizeof(MissionShipDisk) == 0x2a ? 1 : -1];
-
 /* Linker commons defined here; LINK orders them by identifier hash. */
 short nTalkingHeadFaceX; /* 0x005a8754 */
 short nTalkingHeadFaceY; /* 0x005a8756 */
@@ -584,6 +536,47 @@ unsigned int LoadBriefingData(short series, short mission)
         header->recRoomText1;
     return 0;
 }
+
+#pragma pack(push, 1)
+typedef struct MissionNavPointDisk {
+    char name[30];
+    signed char type;
+    FixedVector position;
+    unsigned short proximityRadius;
+    signed char triggers[4][2];
+    short preloadObjectTypes[2];
+    short missionShips[10];
+} MissionNavPointDisk;
+
+typedef struct MissionObjectiveDisk {
+    short type;
+    short index;
+    char description[60];
+} MissionObjectiveDisk;
+
+typedef struct MissionShipDisk {
+    short type;
+    short side;
+    signed char leader;
+    signed char field_5;
+    short missionType;
+    signed char navPoint;
+    FixedVector position;
+    short pitch;
+    short yaw;
+    short roll;
+    signed char formationSpot;
+    short speed;
+    short rating;
+    short pilot;
+    short field_2c;
+    short field_2e;
+    signed char state;
+    signed char leaderMissionIndex;
+    signed char formationIndex;
+    signed char targetMissionIndex;
+} MissionShipDisk;
+#pragma pack(pop)
 
 /* Function start: 0x4059B0 */
 unsigned int LoadMissionData(short series, short mission)
