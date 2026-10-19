@@ -551,7 +551,7 @@ void Msplit_right(short ship)
 }
 
 /* Function start: 0x406C70 */
-void Mgloat(short ship)
+void Mgloat(short ship, short target)
 {
     switch (acShipSequence[ship]) {
     case 0:
@@ -927,7 +927,6 @@ void perform_maneuver(short obj)
     short target = acShipTarget[obj];
     enum ShipManeuver previous = aeShipManeuver[obj];
     short range;
-    int maneuverWeight;
 
 #ifdef SDL_PORT
     /* The original performs this lookup before validating the maneuver.
@@ -953,12 +952,11 @@ void perform_maneuver(short obj)
     ship_vs_ship(obj, target);
     range = nTargetRange;
     if (nTargetFacing < 0)
-        maneuverWeight = asObjectCollisionRadius[target] +
-                         asObjectCollisionRadius[obj] * 4;
+        SetManeuverProximityRange((unsigned short)((asObjectCollisionRadius[target] +
+                                   asObjectCollisionRadius[obj] * 4) >> 1));
     else
-        maneuverWeight = asObjectCollisionRadius[target] +
-                         asObjectCollisionRadius[obj] * 6;
-    SetManeuverProximityRange((unsigned short)(maneuverWeight >> 1));
+        SetManeuverProximityRange((unsigned short)((asObjectCollisionRadius[target] +
+                                   asObjectCollisionRadius[obj] * 6) >> 1));
 
     if (unactive(target) != 0) {
         switch (aeShipManeuver[obj]) {
@@ -966,11 +964,7 @@ void perform_maneuver(short obj)
             Mveer_away(obj, target);
             break;
         case MANEUVER_GLOAT:
-#ifdef SDL_PORT
-            Mgloat(obj);
-#else
-            ((void (__cdecl *)(short, short))Mgloat)(obj, target);
-#endif
+            Mgloat(obj, target);
             break;
         case MANEUVER_LINE_UP_DROP:
             Mline_up_drop(obj, target);
@@ -1038,7 +1032,7 @@ void perform_maneuver(short obj)
             Mzig_zag(obj, (unsigned int)target);
             break;
         case MANEUVER_GLOAT:
-            Mgloat(obj);
+            Mgloat(obj, target);
             break;
         case MANEUVER_SAFE_BRAKE:
             Mzig_zag_pitch(obj, (unsigned int)target);

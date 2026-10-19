@@ -2476,3 +2476,21 @@ Shapes recovered with this method:
   `RemovePlayerReleaseWeapon` indexes the player's loadout through an inline
   slot cast; a named loadout pointer swapped the index and narrowed-weapon
   registers.
+- `MoveNewCampaign` adds each random day count directly to the campaign
+  date in its two branches. With the day local, CL kept the date pointer in
+  ECX instead of reloading it after the day word overwrote EAX.
+- `drop_player_mine` reads the loadout count through the array in its `for`
+  condition and declares `type` before `weapon`. The original compares the
+  count byte with the zero index register, a guard CL folds away when the
+  count is a separate local. `clean_up_cockpit` uses `nYourWingman` directly.
+  With these, all seven `targ.c` routines are exact at offsets that are
+  31 mod 32.
+- Every maneuver handler in the dispatch table takes `(short ship, short
+  target)`. `Mgloat` lacked the second parameter, so `perform_maneuver`'s
+  direct call needed a function-pointer cast, and CL ranked the ship
+  parameter below the target. `perform_maneuver` calls
+  `SetManeuverProximityRange` in each facing branch; CL merges the calls,
+  leaving the weight in ECX as the original does.
+- Casts and unnamed prototype parameters consume no symbol indices; each named
+  prototype parameter consumes one. A prototype's parameter names therefore
+  shift every later declaration's index.

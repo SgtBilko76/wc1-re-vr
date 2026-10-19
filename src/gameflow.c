@@ -216,17 +216,12 @@ unsigned int UpdateSeries(void)
 /* Function start: 0x40F3F0 */
 unsigned int MoveNewCampaign(void)
 {
-    short days;
-
     if (stCampaignState.currentMission != 0)
-        days = RandomInRange(0, 1);
+        pCurrentCampaignDate->day += RandomInRange(0, 1);
     else
-        days = (short)(RandomInRange(0, 1) + 5);
-    pCurrentCampaignDate->day =
-        (short)(pCurrentCampaignDate->day + days);
+        pCurrentCampaignDate->day += RandomInRange(0, 1) + 5;
     if (pCurrentCampaignDate->day >= 366) {
-        pCurrentCampaignDate->day =
-            (short)(pCurrentCampaignDate->day - 365);
+        pCurrentCampaignDate->day -= 365;
         pCurrentCampaignDate->year++;
     }
     return 0;

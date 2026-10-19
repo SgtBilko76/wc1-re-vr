@@ -149,7 +149,7 @@ void Mfish_hook(short ship, short target);                              /* 0x004
 void Mtry2tail(short ship, short target);                               /* 0x00406B60 */
 void Msplit_left(short ship);                                           /* 0x00406BD0 */
 void Msplit_right(short ship);                                          /* 0x00406C20 */
-void Mgloat(short ship);                                                /* 0x00406C70 */
+void Mgloat(short ship, short target);                                  /* 0x00406C70 */
 void Mtail_fire(short ship, short target);                              /* 0x00406D20 */
 void Mzip_past(short ship, short target);                               /* 0x00406D80 */
 void Mtarget_missile(short ship, short target);                         /* 0x00406E10 */

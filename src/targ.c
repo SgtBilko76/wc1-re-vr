@@ -91,25 +91,13 @@ unsigned int warp(short obj)
 /* Function start: 0x42ABD0 */
 int drop_player_mine(short obj)
 {
-    short weapon;
-    signed char weaponCount;
-    int loadoutOffset;
-    ShipWeaponSlot *weaponSlot;
     enum ObjectType type;
+    short weapon;
 
-    weapon = 0;
-    loadoutOffset = (int)obj * sizeof(aShipWeapons[0]);
-    weaponCount = *(signed char *)
-        ((unsigned char *)aShipWeapons + loadoutOffset);
-    for (; weaponCount > weapon; weapon++) {
-        weaponSlot = (ShipWeaponSlot *)
-            ((unsigned char *)aShipWeapons + loadoutOffset + 1) +
-            weapon;
-        type = weaponSlot->type;
-
-        if (aObjectTypeData[type].objectClass ==
-                OBJECT_CLASS_MINE &&
-            weaponSlot->disabled == 0)
+    for (weapon = 0; weapon < (signed char)aShipWeapons[obj][0]; weapon++) {
+        type = ((ShipWeaponSlot *)&aShipWeapons[obj][1])[weapon].type;
+        if (aObjectTypeData[type].objectClass == OBJECT_CLASS_MINE &&
+            ((ShipWeaponSlot *)&aShipWeapons[obj][1])[weapon].disabled == 0)
             return drop_mine(obj, (signed char)weapon, type, 20);
     }
     return -1;
@@ -135,14 +123,12 @@ unsigned int personality_killed(short personality)
 /* Function start: 0x42ACC0 */
 void clean_up_cockpit(void)
 {
-    short wingman = nYourWingman;
-
     acShipTarget[0] = -1;
     nTargetLockMode = 0;
-    if (wingman != -1) {
+    if (nYourWingman != -1) {
         nAutoEngageTimer = -1;
-        acShipTarget[wingman] = -1;
-        reset_objective(wingman, OBJECTIVE_HOLD_FORMATION);
+        acShipTarget[nYourWingman] = -1;
+        reset_objective(nYourWingman, OBJECTIVE_HOLD_FORMATION);
     }
     ClearHudGunReadouts();
 }
