@@ -471,38 +471,26 @@ unsigned int fix_velocity(short obj)
 /* Function start: 0x41E860 */
 unsigned int sort_viable_target_list(void)
 {
-    short nextOuter;
-    signed char target;
-    short outer;
     short count;
+    short distance;
     short inner;
+    short outer;
+    signed char target;
 
     if (cViableTargetCount > 1) {
-        count = (short)cViableTargetCount;
-        outer = 0;
-        if (count - 1 > 0) {
-            do {
-                inner = outer + 1;
-                nextOuter = inner;
-                if (inner < count) {
-                    for (; inner < count; inner++) {
-                        short distance =
-                            asViableTargetDistance[outer];
-                        if (asViableTargetDistance[inner] <
-                            distance) {
-                            asViableTargetDistance[outer] =
-                                asViableTargetDistance[inner];
-                            target = acViableTarget[outer];
-                            asViableTargetDistance[inner] =
-                                distance;
-                            acViableTarget[outer] =
-                                acViableTarget[inner];
-                            acViableTarget[inner] = target;
-                        }
-                    }
+        count = cViableTargetCount;
+        for (outer = 0; outer < count - 1; outer++) {
+            for (inner = outer + 1; inner < count; inner++) {
+                distance = asViableTargetDistance[outer];
+                if (distance > asViableTargetDistance[inner]) {
+                    target = acViableTarget[outer];
+                    asViableTargetDistance[outer] =
+                        asViableTargetDistance[inner];
+                    acViableTarget[outer] = acViableTarget[inner];
+                    asViableTargetDistance[inner] = distance;
+                    acViableTarget[inner] = target;
                 }
-                outer = nextOuter;
-            } while ((int)outer < count - 1);
+            }
         }
     }
     return 0;
@@ -1375,7 +1363,6 @@ int explosion_shock_wave(short obj, short blastDamage)
     short distance;
     short divisor;
     short damage;
-    short attacker;
 
     other = 0;
     for (; other < 10; other++) {
@@ -1407,8 +1394,7 @@ int explosion_shock_wave(short obj, short blastDamage)
                 NormalizeFixedVector(&delta);
                 ScaleFixedVector(&delta, (int)damage << 8, &force);
                 apply_force_to_objects_center(&force, other);
-                attacker = the_creator(obj);
-                inflict_damage(attacker, other,
+                inflict_damage(the_creator(obj), other,
                                MinShort(100, damage), &delta);
             }
         }

@@ -173,28 +173,18 @@ void SetMousePositionDuplicate(int x, int y)
 FontWorkspace **AllocateFontWorkspace(short fontIndex)
 {
     FontWorkspace **workspace;
-    int offset;
-    int dimension;
+    int index;
 
-    (void)fontIndex;
     workspace = (FontWorkspace **)malloc(sizeof(*workspace));
-    offset = 0;
-    dimension = 5;
     *workspace = malloc(sizeof(**workspace));
-    do {
-        offset += sizeof(FontWorkspace);
-        ((FontWorkspace *)((unsigned char *)*workspace + offset -
-                           sizeof(FontWorkspace)))->width = dimension;
-        ((FontWorkspace *)((unsigned char *)*workspace + offset -
-                           sizeof(FontWorkspace)))->height = dimension;
-        ((FontWorkspace *)((unsigned char *)*workspace + offset -
-                           sizeof(FontWorkspace)))->pixels =
-            malloc((*workspace)->width *
-                                    (*workspace)->height);
-        memset(((FontWorkspace *)((unsigned char *)*workspace + offset -
-                                  sizeof(FontWorkspace)))->pixels,
-               dimension, (*workspace)->width * (*workspace)->height);
-    } while (offset < (int)sizeof(FontWorkspace));
+    for (index = 0; index < 1; index++) {
+        (*workspace)[index].width = 5;
+        (*workspace)[index].height = 5;
+        (*workspace)[index].pixels =
+            malloc((*workspace)->width * (*workspace)->height);
+        memset((*workspace)[index].pixels, 5,
+               (*workspace)->width * (*workspace)->height);
+    }
     return workspace;
 }
 

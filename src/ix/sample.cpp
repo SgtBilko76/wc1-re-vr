@@ -341,14 +341,14 @@ long IxSample::ix_sample_convert_from_ieee_extended(unsigned char *bytes)
 
             source = bytes;
             exponent = ((source[0] & 0x7f) << 8) | (source[1] & 0xff);
-            highMantissa = ((unsigned long)source[2] << 24) |
-                           ((unsigned long)source[3] << 16) |
-                           ((unsigned long)source[4] << 8) |
-                           (unsigned long)source[5];
-            lowMantissa = ((unsigned long)source[6] << 24) |
-                          ((unsigned long)source[7] << 16) |
-                          ((unsigned long)source[8] << 8) |
-                          (unsigned long)source[9];
+            highMantissa = ((unsigned long)(source[2] & 0xFF) << 24) |
+                           ((unsigned long)(source[3] & 0xFF) << 16) |
+                           ((unsigned long)(source[4] & 0xFF) << 8) |
+                           ((unsigned long)(source[5] & 0xFF));
+            lowMantissa = ((unsigned long)(source[6] & 0xFF) << 24) |
+                          ((unsigned long)(source[7] & 0xFF) << 16) |
+                          ((unsigned long)(source[8] & 0xFF) << 8) |
+                          ((unsigned long)(source[9] & 0xFF));
             if (exponent == 0 && highMantissa == 0 && lowMantissa == 0) {
                 value = 0;
             } else if (exponent == 0x7fff) {

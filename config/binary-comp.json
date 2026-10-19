@@ -77,7 +77,6 @@
     "reviewed_layout_issues": {
       "full": {
         "SOURCE_ORDER_DECREASE:0x00486074": "Required by CL 4.20's static .bss order in src/dib.c: hDIBParentWindow and szDIBFailureString share the identifier-hash key 867, and CL places equal-key statics in reverse declaration order, so the lower-addressed handle must be declared after the failure string. verify-unit-data's dib-bss block checks both offsets and the complete 65,416-byte section.",
-        "REBUILT_LAYOUT_ADJACENT_SPLIT:0x005a7dbe": "False positive for fire_computer_graphic_missile's qualified short compound assignments in src/cockpt.c: the address-tail scanner treats the +=/-= operators as pointer arithmetic. Both original and rebuilt ADD/SUB instructions access only the two-byte nReleaseWeaponDisplayY object, with no displacement into the following eReleaseWeaponDisplayType. Their relative storage positions are not a dependency; the original and rebuilt global-span audits remain enabled.",
         "HEADER_EXTERN_NO_GLOBALS_C_DEF:0x0043d4bf": "anRLEQuarterCosine is defined in the assembled .text section of src/raster.asm; the C initializer is used only by the SDL build.",
         "HEADER_EXTERN_NO_GLOBALS_C_DEF:0x0043e778": "abIffBmhdChunkId is defined in the assembled .text section of src/raster.asm; the C initializer is used only by the SDL build.",
         "HEADER_EXTERN_NO_GLOBALS_C_DEF:0x0043e77c": "abIffCmapChunkId is defined in the assembled .text section of src/raster.asm; the C initializer is used only by the SDL build.",

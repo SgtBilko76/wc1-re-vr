@@ -466,11 +466,9 @@ redraw:
 void ReadRequiredPilotField(short x, short y, const char *label,
                             char *destination, short maximumLength)
 {
-    short cursorX;
-
-    cursorX = (short)(stTrainSimPanelViewport.left + x);
     stTrainSimTextContext.alignment = 0;
-    SetTextCursor((unsigned short)cursorX, (unsigned short)y);
+    SetTextCursor((unsigned short)(stTrainSimPanelViewport.left + x),
+                  (unsigned short)y);
     DrawFormattedText(label);
     do {
         DosStrcpy(destination, "");

@@ -515,7 +515,6 @@ short PromptForTextInput(short x, short y, const char *prompt,
     ModalTextPanel panel;
     ShortRect bounds;
     short result;
-    int widestCharacter;
 
     result = 0;
     bounds.top = y;
@@ -525,11 +524,9 @@ short PromptForTextInput(short x, short y, const char *prompt,
                              stModalTextBounds,
                              cBlackColour, cBlackColour,
                              cBlackColour);
-    widestCharacter = (int)MeasureTextPixelWidthClamped("M") *
-                      (int)maximumLength;
-    widestCharacter += (int)MeasureTextPixelWidthClamped(prompt);
-    widestCharacter *= 16;
-    bounds.right = (short)(x + widestCharacter / 15);
+    bounds.right = (short)(x +
+        ((int)MeasureTextPixelWidthClamped("M") * (int)maximumLength +
+         (int)MeasureTextPixelWidthClamped(prompt)) * 16 / 15);
     RestoreModalTextPanel(&panel);
     if (InitializeModalTextPanel(&panel, 0,
                                  bounds,
@@ -788,7 +785,6 @@ void DrawBarracksBunks(Viewport *viewport, unsigned char *shape,
 {
     short bunk;
     short frame;
-    short row;
 
     DrawSpriteDefault(viewport, 0, 0, shape, 0);
     bunk = 0;
@@ -801,10 +797,9 @@ void DrawBarracksBunks(Viewport *viewport, unsigned char *shape,
                 shape, (short)(bunk + 1));
             frame = 9;
         }
-        row = (short)(bunk / 2);
         DrawSpriteDefault(viewport,
                           (short)((bunk % 2) * 31 + 143),
-                          (short)(row * 5 + 167),
+                          (short)((bunk / 2) * 5 + 167),
                           shape, frame);
         bunk++;
     } while (bunk < 8);

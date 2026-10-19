@@ -91,8 +91,7 @@ static int bForceDamageDisplayRedraw = 0; /* 0x00469288 */
 static unsigned char abMouseCursorBackground[0x400];
 
 /* Linker commons defined here; LINK orders them by identifier hash. */
-short nReleaseWeaponDisplayX; /* 0x005a7dbc */
-short nReleaseWeaponDisplayY; /* 0x005a7dbe */
+ShortPoint stReleaseWeaponDisplayPosition; /* 0x005a7dbc */
 enum ObjectType eReleaseWeaponDisplayType; /* 0x005a7dc0 */
 unsigned char *pScannerMarkerBackground; /* 0x005a7dc4 */
 unsigned char bStickIndicatorFrame; /* 0x005a7dc8 */
@@ -1011,12 +1010,10 @@ int damage_your_component(char component, char amount, char maximum)
 /* Function start: 0x414CB0 */
 void RemovePlayerReleaseWeapon(signed char weapon)
 {
-    volatile ShipWeaponSlot *loadout;
     enum ObjectType preferredType;
     int hardpoint;
 
-    loadout = (ShipWeaponSlot *)&aShipWeapons[0][1];
-    preferredType = loadout[weapon].type;
+    preferredType = ((ShipWeaponSlot *)&aShipWeapons[0][1])[weapon].type;
 #ifdef SDL_PORT
     if (SdlSwcFlightActive()) {
         remove_weapon(0, weapon);
@@ -1028,11 +1025,11 @@ void RemovePlayerReleaseWeapon(signed char weapon)
     eReleaseWeaponDisplayType = preferredType;
     cReleaseWeaponDisplayFrame =
         (signed char)(preferredType * 2 - 0x2f);
-    hardpoint = loadout[weapon].hardpoint;
-    nReleaseWeaponDisplayX =
+    hardpoint = ((ShipWeaponSlot *)&aShipWeapons[0][1])[weapon].hardpoint;
+    stReleaseWeaponDisplayPosition.x =
         (short)(aWeaponDisplayPositions[hardpoint].x +
                 nWeaponDisplayOriginX);
-    nReleaseWeaponDisplayY =
+    stReleaseWeaponDisplayPosition.y =
         (short)(aWeaponDisplayPositions[hardpoint].y +
                 nWeaponDisplayOriginY);
     cReleaseWeaponDisplayTicks = 3;
@@ -1048,45 +1045,33 @@ void RemovePlayerReleaseWeapon(signed char weapon)
 void fire_computer_graphic_missile(void)
 {
     short visible;
-    signed char frame;
 
-    frame = cReleaseWeaponDisplayFrame;
-    if (frame == -1)
+    if (cReleaseWeaponDisplayFrame == -1)
         return;
     visible = nCameraViewMode == 0 && get_mode(0) == 1;
-    frame = cReleaseWeaponDisplayFrame;
-    if (cReleaseWeaponDisplayState != 0) {
-        RestoreSpriteBackground(
-            &stLeftVdu, pReleaseWeaponDisplayBackground,
-            (*(short volatile *)&nReleaseWeaponDisplayX),
-            (*(short volatile *)&nReleaseWeaponDisplayY),
-            pCockpitWeaponShape,
-            frame);
-    }
-    frame = cReleaseWeaponDisplayFrame;
-    if ((*(short volatile *)&nReleaseWeaponDisplayY) > stLeftVdu.top - 10 &&
-        (*(short volatile *)&nReleaseWeaponDisplayY) < stLeftVdu.bottom) {
-        if (eReleaseWeaponDisplayType ==
-            OBJECT_TYPE_SPACE_MINE)
-            (*(short volatile *)&nReleaseWeaponDisplayY) +=
-                (short)cReleaseWeaponDisplayTicks;
+    if (cReleaseWeaponDisplayState != 0)
+        RestoreSpriteBackground(&stLeftVdu, pReleaseWeaponDisplayBackground,
+                                stReleaseWeaponDisplayPosition.x,
+                                stReleaseWeaponDisplayPosition.y,
+                                pCockpitWeaponShape,
+                                cReleaseWeaponDisplayFrame);
+    if (stReleaseWeaponDisplayPosition.y > stLeftVdu.top - 10 &&
+        stReleaseWeaponDisplayPosition.y < stLeftVdu.bottom) {
+        if (eReleaseWeaponDisplayType == OBJECT_TYPE_SPACE_MINE)
+            stReleaseWeaponDisplayPosition.y += cReleaseWeaponDisplayTicks;
         else
-            (*(short volatile *)&nReleaseWeaponDisplayY) -=
-                (short)cReleaseWeaponDisplayTicks;
+            stReleaseWeaponDisplayPosition.y -= cReleaseWeaponDisplayTicks;
         cReleaseWeaponDisplayTicks++;
         if (visible != 0) {
-            CaptureSpriteBackground(
-                &stLeftVdu,
-                pReleaseWeaponDisplayBackground,
-                (*(short volatile *)&nReleaseWeaponDisplayX),
-                (*(short volatile *)&nReleaseWeaponDisplayY),
-                pCockpitWeaponShape,
-                frame);
-            DrawSpriteDefault(
-                &stLeftVdu, (*(short volatile *)&nReleaseWeaponDisplayX),
-                (*(short volatile *)&nReleaseWeaponDisplayY),
-                pCockpitWeaponShape,
-                cReleaseWeaponDisplayFrame);
+            CaptureSpriteBackground(&stLeftVdu,
+                                    pReleaseWeaponDisplayBackground,
+                                    stReleaseWeaponDisplayPosition.x,
+                                    stReleaseWeaponDisplayPosition.y,
+                                    pCockpitWeaponShape,
+                                    cReleaseWeaponDisplayFrame);
+            DrawSpriteDefault(&stLeftVdu, stReleaseWeaponDisplayPosition.x,
+                              stReleaseWeaponDisplayPosition.y, pCockpitWeaponShape,
+                              cReleaseWeaponDisplayFrame);
         }
         cReleaseWeaponDisplayState = (signed char)visible;
     } else {

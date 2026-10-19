@@ -2416,3 +2416,63 @@ Windows 95 DirectDraw and DirectSound behavior.
   through the existing descriptor variable adds one body byte to each and
   leaves seven and nine body differences respectively. Each probe was
   restored and force-rebuilt to the preceding checkpoint's executable hash.
+
+## Symbol-index costs and offset-independent shapes
+
+CL 4.20 breaks register and operand-order ties by symbol index (mod 32 for
+register choice, mod 17 for comparison and commutative operand order), so a
+function is judged by whether it is exact at some probe offset, and a unit by
+whether one offset makes all of its functions exact. A two-local tie probe
+(each local live across calls, used symmetrically) measures what a source
+fragment consumes, independent of the code it generates:
+
+| Construct | Indices |
+| --- | ---: |
+| function definition | 2 |
+| parameter, local, prototype, extern, typedef | 1 each |
+| static local | 2 |
+| string literal, user label, implicit function declaration | 1 each |
+| `if` | 1 |
+| `else` | +1 |
+| `for`, `while`, `do` | 3 |
+| `\|\|` in a branch condition | 1 per condition (0 as a value) |
+| `&&`, `!`, `?:`, casts, `return`, `break`, `continue`, calls to declared functions, bare blocks | 0 |
+| `switch` | 4 + 1 per `case` or `default` |
+
+Consequences: an `else` after a returning branch, a temporary local, or a
+`||` condition shifts every later function in the unit even when the code is
+unchanged, and the order of a function's local declarations moves its own
+period-17 windows without moving any other function.
+
+Shapes recovered with this method:
+
+- `sort_viable_target_list` is the natural selection sort: nested `for`
+  loops over `outer`/`inner`, the distance read into a local before the
+  comparison, and the target byte saved before the four stores. CL then
+  spills the `outer + 1` common subexpression and the `count - 1` bound,
+  restoring the original eight-byte frame and 160-byte span; the explicit
+  next-index variable and guarded inner loop of the earlier reconstruction
+  made CL cache the outer distance address instead.
+- `explosion_shock_wave` passes `the_creator(obj)` directly as
+  `inflict_damage`'s first argument. Without the attacker local, CL keeps the
+  ship-class constant in EBX as the original does.
+- `DrawBarracksBunks`, `PromptForTextInput`, and `ReadRequiredPilotField`
+  compute their row, width, and cursor arguments inline; the named
+  temporaries of the earlier reconstruction changed scheduling or kept the
+  sum in the wrong register.
+- `AllocateFontWorkspace` is a one-entry `for` loop over the workspace array;
+  CL strength-reduces the index into the 12-byte stride the original uses.
+- `FreeNearHeapBlock` declares `descriptorAddress`, `block`, `address` in that
+  order; the descriptor comparison's operand order is a period-17 tie between
+  those locals.
+- `ix_sample_convert_from_ieee_extended` keeps Apple's
+  `(unsigned long)(bytes[i] & 0xFF) << n` mantissa terms. CL 4.20 orders the
+  four OR operands by a period-17 key, and the masked terms reproduce the
+  original order at offsets 16 and 33.
+- The release-weapon display position is one `ShortPoint` common at
+  0x005A7DBC. CL 4.20 does not enregister fields of a global structure, so
+  `fire_computer_graphic_missile` reads and updates the position in memory
+  exactly as the original does, with no volatile casts.
+  `RemovePlayerReleaseWeapon` indexes the player's loadout through an inline
+  slot cast; a named loadout pointer swapped the index and narrowed-weapon
+  registers.

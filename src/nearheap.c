@@ -333,9 +333,9 @@ void *AllocateNearHeapBlockByFlags(int size, unsigned short flags)
    block that contains the given pointer. */
 void FreeNearHeapBlock(void *pointer)
 {
+    int descriptorAddress;
     NearHeapBlock *block;
     int address;
-    int descriptorAddress;
 
     address = DosFarPtrToNear(pointer);
     descriptorAddress =

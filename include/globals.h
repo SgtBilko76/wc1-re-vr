@@ -600,8 +600,7 @@ extern unsigned char *pScannerMarkerBackground; /* 0x005a7dc4 */
 extern int bAfterburnerSfxActive; /* 0x005a7cec */
 extern int bPointerMovedByKeyboard; /* 0x005a7d54 */
 extern FixedVector vNormalizedToTarget; /* 0x005a7db0 */
-extern short nReleaseWeaponDisplayX; /* 0x005a7dbc */
-extern short nReleaseWeaponDisplayY; /* 0x005a7dbe */
+extern ShortPoint stReleaseWeaponDisplayPosition; /* 0x005a7dbc */
 extern enum ObjectType eReleaseWeaponDisplayType; /* 0x005a7dc0 */
 extern unsigned char bStickIndicatorFrame; /* 0x005a7dc8 */
 extern short nMessageTimer; /* 0x005a7dca */
