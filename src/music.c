@@ -81,10 +81,22 @@ static
 #endif
 char szSfxWavePath[0xc8]; /* 0x00476558 */
 
+
 /* Linker commons defined here; LINK orders them by identifier hash. */
-int aiSoundEffectSourceActive[0x40]; /* 0x005a66f0 */
-unsigned char abSoundPlaybackSlots[0xf8]; /* 0x005a67f0 */
-int nPassingShipSoundCooldown; /* 0x005a68e8 */
+unsigned short awObjectScales[SPACE_OBJECT_COUNT]; /* 0x0059de40 */
+signed char acVduModeStackDepth[16]; /* 0x0059dec0 */
+signed char acShipSpawnNavPt[16]; /* 0x0059ded0 */
+short asShipAccumulatedDmg[SPACE_OBJECT_COUNT]; /* 0x0059dee0 */
+short nCurrentNavigationPoint; /* 0x0059df60 */
+int nJoystickCalibrationMinimumY; /* 0x0059df64 */
+int nJoystickCalibrationMinimumX; /* 0x0059df68 */
+int nJoystickCalibrationMaximumX; /* 0x0059df6c */
+int nJoystickCalibrationMaxY; /* 0x0059df70 */
+unsigned short awPalEntryAllocation[256]; /* 0x0059df80 */
+unsigned char *apCommunicationPortraitShapesTable[16]; /* 0x0059e180 */
+char szHudMessageBuf[0x60]; /* 0x0059e1c0 */
+char *aapszPilotSpeeches[14][11]; /* 0x0059e220 */
+signed char abCommMenuChoiceCommands[7]; /* 0x0059e488 */
 
 /* Function start: 0x42E320 */
 void FadeMusic(void)
@@ -431,7 +443,7 @@ void wait_for_end_of_music(void)
         do {
             if (nMusicTrackComplete != 0)
                 return;
-        } while (bEscapePressed == 0 && CheckEscaped() == 0);
+        } while (bEscapePressedFlag == 0 && CheckEscaped() == 0);
         StopMusic(0);
     }
 }
@@ -447,7 +459,7 @@ void WaitForMusicOrInput(void)
         for (;;) {
             if (nMusicWaitForInput == 0 && nMusicTrackComplete == 0)
                 return;
-            if (bEscapePressed != 0 || CheckEscaped() != 0)
+            if (bEscapePressedFlag != 0 || CheckEscaped() != 0)
                 break;
         }
         StopMusic(0);
@@ -487,7 +499,7 @@ void new_space_music_changes(short attacker, short victim)
                      aeShipMissionType[0] ==
                          MISSION_TYPE_ESCORT) &&
                     nShipMissionIndices[victim] ==
-                        anShipMissionShip[0]) {
+                        anShipMissionShips[0]) {
                     spacetrack(11, 3, 0);
                     return;
                 }
@@ -517,7 +529,7 @@ int changetrack(void)
         track = 15;
         break;
     }
-    if (aMissionObjectives[
+    if (aMissionObjectivesArray[
             cCurrentObjective].type == OBJECTIVE_HOME_BASE) {
         if (triumph(0) != 0) {
             if (aeShipMissionType[0] == MISSION_TYPE_PATROL)
@@ -546,7 +558,7 @@ void gametrack(void)
             return;
         }
         if (nCombatMusicActive != 0) {
-            if ((nSpaceFrame & 0xf) == 0 ||
+            if ((nCurrentSpaceFrameValue & 0xf) == 0 ||
                 nMusicTrackComplete != 0) {
                 if (nInitialFlightMusicPending != 0)
                     nInitialFlightMusicPending = 0;
@@ -566,7 +578,7 @@ void gametrack(void)
                 if (report_kilrathi_rout(1) == 0)
                     nCombatMusicActive = 0;
             }
-        } else if ((nSpaceFrame & 0xf) == 0 ||
+        } else if ((nCurrentSpaceFrameValue & 0xf) == 0 ||
                    nMusicTrackComplete != 0) {
             track = changetrack();
             if (report_kilrathi_rout(2) != 0)
@@ -595,38 +607,38 @@ void servicetrack(void)
             }
             if (aeObjectClass[object] ==
                     OBJECT_CLASS_ASTEROID) {
-                if (asObjectDistance[object] == 0 &&
+                if (asObjDistancesTable[object] == 0 &&
                     (unsigned short)
                         asPreviousObjectDistance[object] < 50 &&
-                    aiSoundEffectSourceActive[object] == 0)
+                    aiSoundEffectSourceActiveArray[object] == 0)
                     PlaySfxWaveFileByNumber(6, object, 0);
             } else if (aeObjectClass[object] >=
                            OBJECT_CLASS_SHIP &&
                        aeObjectClass[object] <=
                            OBJECT_CLASS_CAPITAL_SHIP &&
-                       asObjectScreenX[object] !=
+                       asObjectScreenXList[object] !=
                            (short)0x8001 &&
                        (unsigned short)
-                           asObjectDistance[object] < 0x55a) {
+                           asObjDistancesTable[object] < 0x55a) {
                 if (nPassingShipSoundObject == -1) {
                     ScaleFixedVector(&aShipVelocity[object],
                                      0x1400, &travel);
-                    AddFixedVectors(&aShipPosition[object],
+                    AddFixedVectors(&aShipPositionsArray[object],
                                     &travel, &futurePosition);
                     ComputeVectorDelta(
-                        &aShipPosition[EYE_OBJECT],
+                        &aShipPositionsArray[EYE_OBJECT],
                         &futurePosition, &travel);
                     ComputeVectorDelta(
-                        &aShipPosition[EYE_OBJECT],
-                        &aShipPosition[object],
+                        &aShipPositionsArray[EYE_OBJECT],
+                        &aShipPositionsArray[object],
                         &futurePosition);
                     if (dot_product(&travel, &futurePosition) < 0xdd) {
                         nPassingShipSoundCountdown = 10;
                         nPassingShipSoundObject = object;
-                        if (nPassingShipSoundCooldown <
-                            nSpaceFrame) {
-                            nPassingShipSoundCooldown =
-                                nSpaceFrame + 6;
+                        if (nPassingShipAudioCooldown <
+                            nCurrentSpaceFrameValue) {
+                            nPassingShipAudioCooldown =
+                                nCurrentSpaceFrameValue + 6;
                             PlaySfxWaveFileByNumber(2, object, 0);
                         }
                     }
@@ -645,8 +657,8 @@ void servicetrack(void)
 void ResetSoundState(void)
 {
     FlushSoundEffects();
-    bAfterburnerSfxActive = 0;
-    nDamageAlarmSfxHandle = 0;
+    bAfterburnerSfxEnabled = 0;
+    nCurrentDamageAlarmSfxHandle = 0;
 }
 
 /* Function start: 0x42EEA0 */
@@ -725,8 +737,8 @@ void PlaySfxWaveFileByNumber(int soundNumber, int sourceObject, int looping)
                 sourceObject >= SPACE_OBJECT_COUNT)
                 return;
             ComputeVectorDelta(
-                &aShipPosition[EYE_OBJECT],
-                &aShipPosition[sourceObject], &delta);
+                &aShipPositionsArray[EYE_OBJECT],
+                &aShipPositionsArray[sourceObject], &delta);
             distance = (int)((Vector_magnitude(&delta) / 500L) >> 8);
             volume -= distance;
             if (volume < 0)
@@ -734,9 +746,9 @@ void PlaySfxWaveFileByNumber(int soundNumber, int sourceObject, int looping)
         }
         if (volume >= 10 && SdlPlayDosSoundEffect(
                 soundNumber, volume, 64, sourceObject, looping)) {
-            aiSoundEffectSourceActive[sourceObject] = 1;
+            aiSoundEffectSourceActiveArray[sourceObject] = 1;
             if (sourceObject == -1)
-                bAfterburnerSfxActive = soundNumber == 12;
+                bAfterburnerSfxEnabled = soundNumber == 12;
         }
         return;
     }
@@ -745,8 +757,8 @@ void PlaySfxWaveFileByNumber(int soundNumber, int sourceObject, int looping)
     if (sourceObject != -1) {
         long magnitude;
 
-        ComputeVectorDelta(&aShipPosition[EYE_OBJECT],
-                           &aShipPosition[sourceObject],
+        ComputeVectorDelta(&aShipPositionsArray[EYE_OBJECT],
+                           &aShipPositionsArray[sourceObject],
                            &delta);
         magnitude = Vector_magnitude(&delta);
         distance = magnitude;
@@ -756,7 +768,7 @@ void PlaySfxWaveFileByNumber(int soundNumber, int sourceObject, int looping)
         distance = 32000;
     }
     if (distance >= 10) {
-        aiSoundEffectSourceActive[sourceObject] = 1;
+        aiSoundEffectSourceActiveArray[sourceObject] = 1;
         sprintf(szSfxWavePath, "sfx%02i.wav",
                 soundNumber - 1);
         playWAVE(szSfxWavePath, looping, distance);

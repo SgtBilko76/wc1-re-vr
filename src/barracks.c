@@ -66,22 +66,22 @@ short InitializeModalTextPanel(ModalTextPanel *panel, short fontIndex,
                                short borderColour)
 {
     *(ShortRect *)&panel->left = bounds;
-    panel->previousContext = pCurrentTextContext;
-    pCurrentTextContext = &panel->context;
-    panel->context = stDefaultTextContext;
+    panel->previousContext = pCurTextContext;
+    pCurTextContext = &panel->context;
+    panel->context = stDefaultTxtContext;
     if (fontIndex == -1)
         fontIndex = 1;
     InitializeTextContextFromFont(&panel->context, fontIndex,
                                   (unsigned char)clearColour,
                                   (signed char)backgroundColour);
-    panel->viewport = stModalSourceViewport;
+    panel->viewport = stModalSrcViewport;
     *(ShortRect *)&panel->viewport.left =
         *(ShortRect *)&panel->savedBackground.left =
         *(ShortRect *)&panel->left;
     if (AllocateViewport(&panel->savedBackground, clearColour, 0) == 0)
         return 0;
     CopyViewportContents(&panel->viewport, &panel->savedBackground);
-    panel->context.text = szTextScratchBuffer;
+    panel->context.text = szTxtWorkspaceBuffer;
     panel->context.viewport = &panel->viewport;
     ResetStringBuilder(&panel->context);
     EraseTextContextBackground(&panel->context);
@@ -118,7 +118,7 @@ void RestoreModalTextPanel(ModalTextPanel *panel)
 {
     CopyViewportContents(&panel->savedBackground, &panel->viewport);
     free_viewport(&panel->savedBackground);
-    pCurrentTextContext = panel->previousContext;
+    pCurTextContext = panel->previousContext;
 }
 
 /* Function start: 0x41AB90 */
@@ -377,14 +377,14 @@ void SetAwakenBarracksMenuLabel(char **label, short series, short mission,
     FreeBarracksMenuLabel(label);
 #ifdef SDL_PORT
     /* MSVC 4.20 accepts %Fs as its legacy far-string conversion. */
-    sprintf(szTextScratchBuffer, "Awaken %s.", description);
+    sprintf(szTxtWorkspaceBuffer, "Awaken %s.", description);
 #else
-    sprintf(szTextScratchBuffer, "Awaken %Fs.", description);
+    sprintf(szTxtWorkspaceBuffer, "Awaken %Fs.", description);
 #endif
     *label = AllocateTaggedMemory(
-        strlen(szTextScratchBuffer) + 2, 0);
-    DosMemcpy(*label, szTextScratchBuffer,
-              strlen(szTextScratchBuffer) + 2);
+        strlen(szTxtWorkspaceBuffer) + 2, 0);
+    DosMemcpy(*label, szTxtWorkspaceBuffer,
+              strlen(szTxtWorkspaceBuffer) + 2);
 }
 
 /* Function start: 0x41B180 */
@@ -407,7 +407,7 @@ void FreeBarracksMenuLabels(void)
         }
         bunk++;
     } while (bunk < 8);
-    stRoomMenu.currentLabel = 0;
+    stCurrentRoomMenu.currentLabel = 0;
 }
 
 /* Function start: 0x41B1E0 */
@@ -715,14 +715,14 @@ void LoadGameFromSlot(short slot, CampaignState *campaign,
             memcpy(campaign, &gameRecord.campaign,
                    sizeof(gameRecord.campaign));
             nCampaignDataSet = campaign->campaignIndex;
-            nPendingCampaignIndex = nCampaignDataSet;
+            nQueuedCampaignIndex = nCampaignDataSet;
             LoadPacketIntoBuffer(
                 asCampaignPilotFiles[nCampaignDataSet], 0,
-                pConstellationDefinitions);
+                pConstellationDefinitionsPtr);
             LoadPacketIntoBuffer(
                 asCampaignPilotFiles[
                     nCampaignDataSet],
-                1, pMissionCampaignData);
+                1, pMissionCampaignInfo);
             DosMemcpy(objectives, gameRecord.objectives, 0x1f0);
             CorrectPointers();
             bCampaignActive = 1;
@@ -900,8 +900,8 @@ void AnimateBarracks(Viewport *viewport, unsigned char *shape,
     else
         DrawSpriteDefault(viewport, 45, 0, shape, 26);
     CheckCursor();
-    if (state->menuLabel != stRoomMenu.currentLabel) {
-        state->menuLabel = stRoomMenu.currentLabel;
+    if (state->menuLabel != stCurrentRoomMenu.currentLabel) {
+        state->menuLabel = stCurrentRoomMenu.currentLabel;
         DrawSpriteDefault(viewport, 319, 199, shape, 50);
     }
 }
@@ -981,8 +981,8 @@ void HandleBarracksBunkSelection(Viewport *viewport,
             if (ConfirmAwakenAfterBadData(slot) != 0) {
                 LoadGameFromSlot(
                     slot, &stCampaignState,
-                    aPilotRecords,
-                    aMissionObjectives);
+                    aPilotEntriesList,
+                    aMissionObjectivesArray);
             }
             goto refresh;
         }
@@ -990,8 +990,8 @@ void HandleBarracksBunkSelection(Viewport *viewport,
             goto refresh;
     }
     SaveGameWithNamePrompt(slot, &stCampaignState,
-                           aPilotRecords,
-                           aMissionObjectives);
+                           aPilotEntriesList,
+                           aMissionObjectivesArray);
 
 refresh:
     GetBunkInfo(state);
@@ -1029,7 +1029,7 @@ short BarracksScreen(void)
     InitializeRoomMenu(aBarracksMenuRegions,
                        apszBarracksMenuLabels,
                        &stRoomScreenViewport,
-                       szDefaultTextBuffer, 2);
+                       szDefaultTxtBuf, 2);
     EnsureSaveGameFile();
     InitializeBarracksAnimation(&animation);
     GetBunkInfo(&animation);
@@ -1039,9 +1039,9 @@ short BarracksScreen(void)
     EnterAllocationScope();
     SetFrameTimerPeriodDirect(0);
     FlushInputEvents();
-    bInputMode = 1;
+    bInputModeState = 1;
     nMenuPointerSpeed = 1;
-    nSavedRoomControllerX =
+    nSavedRoomCtrlX =
         nMenuInputRepeatDelay;
     nMenuInputRepeatDelay = 2;
 
@@ -1121,14 +1121,14 @@ activateRegion:
                             ClearViewport(&stRoomScreenViewport,
                                           cBlackColour);
                             stSceneBuffer.bottom = 127;
-                            stScreen.top = 24;
-                            stScreen.bottom = 151;
+                            stScreenView.top = 24;
+                            stScreenView.bottom = 151;
                             ViewMedals();
                             lastMedalsTick = (int)nTickCount60Hz;
                             ClearViewport(&stRoomScreenViewport,
                                           cBlackColour);
-                            stScreen.top = 0;
-                            stScreen.bottom = 199;
+                            stScreenView.top = 0;
+                            stScreenView.bottom = 199;
                             stSceneBuffer.bottom = 199;
                             DrawBarracksBunks(&stSceneBuffer, background,
                                               &animation);
@@ -1151,7 +1151,7 @@ redraw:
     LeaveAllocationScope();
     nMenuPointerSpeed = 2;
     nMenuInputRepeatDelay =
-        nSavedRoomControllerX;
+        nSavedRoomCtrlX;
     EventManagerHook(0);
     FreeBarracksMenuLabels();
     ReleasePacketHandle(background);

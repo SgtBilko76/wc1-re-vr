@@ -239,8 +239,8 @@ int SdlPlayGameSoundEffect(int soundNumber, int sourceObject, int looping)
         if (sourceObject < 0 || sourceObject >= SPACE_OBJECT_COUNT)
             return 0;
         ComputeVectorDelta(
-            &aShipPosition[EYE_OBJECT],
-            &aShipPosition[sourceObject], &delta);
+            &aShipPositionsArray[EYE_OBJECT],
+            &aShipPositionsArray[sourceObject], &delta);
         magnitude = Vector_magnitude(&delta);
         NormalizeFixedVector(&delta);
         stereoOffset = dot_product(
@@ -270,9 +270,9 @@ int SdlPlayGameSoundEffect(int soundNumber, int sourceObject, int looping)
         if (!SdlPlayDosSoundEffect(
                 soundNumber, volume, pan, sourceObject, looping))
             return 0;
-        aiSoundEffectSourceActive[sourceObject] = 1;
+        aiSoundEffectSourceActiveArray[sourceObject] = 1;
         if (sourceObject == -1)
-            bAfterburnerSfxActive = soundNumber == 12;
+            bAfterburnerSfxEnabled = soundNumber == 12;
         return 1;
     }
 
@@ -283,7 +283,7 @@ int SdlPlayGameSoundEffect(int soundNumber, int sourceObject, int looping)
     }
     if (distance < 10)
         return 0;
-    aiSoundEffectSourceActive[sourceObject] = 1;
+    aiSoundEffectSourceActiveArray[sourceObject] = 1;
     sprintf(szSfxWavePath, "sfx%02i.wav", soundNumber - 1);
     SdlPlayWaveWithPan(szSfxWavePath, looping, distance, pan);
     return 1;
@@ -291,7 +291,7 @@ int SdlPlayGameSoundEffect(int soundNumber, int sourceObject, int looping)
 
 void SdlStopDosSoundEffects(void)
 {
-    bAfterburnerSfxActive = 0;
+    bAfterburnerSfxEnabled = 0;
     if (g_pSdlDosMusicMutex == 0 ||
         g_pSdlOriginFxSoundPlayer == 0)
         return;

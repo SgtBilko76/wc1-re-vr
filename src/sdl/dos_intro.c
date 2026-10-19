@@ -73,7 +73,7 @@ static int SdlPresentDosIntroFrame(Viewport *viewport)
 
     /* WC.EXE 13be:064b gives the DOS intro a 320x128 buffer and clips the
      * displayed viewport to screen rows 24-151. */
-    destination = stScreen;
+    destination = stScreenView;
     destination.top = 24;
     destination.bottom = 151;
     CopyViewportContents(viewport, &destination);
@@ -282,7 +282,7 @@ void SdlPlayDosStartupIntro(void)
     }
     planetShape = FetchDiskPacketRetrying(9, 3, 0);
 
-    DrawFilledViewportRect(&stScreen, 0, 0, 319, 199,
+    DrawFilledViewportRect(&stScreenView, 0, 0, 319, 199,
                            (short)cBlackColour);
     ClearInputKeyStatePreservingModifiers();
     FlushInputEvents();
@@ -465,7 +465,7 @@ void SdlPlayDosStartupIntro(void)
         nCurrentMusicTrack = previousMusicTrack;
         SdlServiceOriginFxMusic();
     }
-    ClearViewport(&stScreen, (unsigned char)cBlackColour);
+    ClearViewport(&stScreenView, (unsigned char)cBlackColour);
     free_viewport(&introViewport);
     ReleasePacketHandle(planetShape);
     sectionIndex = SDL_PORT_DOS_INTRO_TITLE_SECTION_COUNT;

@@ -11,6 +11,11 @@
 
 static short nAutopilotFormationShipCount = 0; /* 0x00465544 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned int nSystemKeyDown; /* 0x005a8964 */
+JOYINFO aJoystickInfos[2]; /* 0x005a8970 */
+int nHostMouseMessageX; /* 0x005a8990 */
+
 /* Function start: 0x403E50 */
 void visit_the_cinema(int view, int obj, short frames)
 {
@@ -49,7 +54,7 @@ void visit_the_cinema(int view, int obj, short frames)
 /* Function start: 0x403EE0 */
 unsigned int player_wingman(short obj)
 {
-    if (obj != -1 && asShipWingLeader[obj] == 0)
+    if (obj != -1 && asShipWingLeaderArray[obj] == 0)
         return 1;
     return 0;
 }
@@ -70,10 +75,10 @@ void auto_position(short obj, short *formationSlot)
     short forward;
 
     if (player_wingman(ship) != 0) {
-        position_relative_ijk(&aShipPosition[ship], 0,
-                              aShipFormationOffset[ship].x,
-                              aShipFormationOffset[ship].y,
-                              aShipFormationOffset[ship].z);
+        position_relative_ijk(&aShipPositionsArray[ship], 0,
+                              aShipFormationDeltaList[ship].x,
+                              aShipFormationDeltaList[ship].y,
+                              aShipFormationDeltaList[ship].z);
         return;
     }
 
@@ -91,12 +96,12 @@ void auto_position(short obj, short *formationSlot)
         radii = asObjectCollisionRadius[ship] +
                 asObjectCollisionRadius[nYourWingman];
         separation = abs(
-            aShipFormationOffset[nYourWingman].z -
+            aShipFormationDeltaList[nYourWingman].z -
             forward);
         if (radii > separation)
             vertical = 500;
     }
-    position_relative_ijk(&aShipPosition[ship], 0,
+    position_relative_ijk(&aShipPositionsArray[ship], 0,
                           lateral, vertical, forward);
 }
 
@@ -120,19 +125,19 @@ void auto_pilot_sequence(void)
 #endif
 
     savedCannedSceneMode = (short)nCannedSceneMode;
-    destination = aMissionObjectives[
-        abFlightPath[cCurrentNavPointIndex]].position;
+    destination = aMissionObjectivesArray[
+        abFlightPathList[cCurrentNavPtIdx]].position;
     formationSlot = 0;
     leaveCurrentNavPoint = 1;
 
     if (auto_pilot_valid(1) != 0) {
         if (distance_between_points(
-                &aMissionObjectives[
+                &aMissionObjectivesArray[
                     cCurrentObjective].position,
                 &aMissionNavPoints[
-                    nCurrentNavPoint].position) <
+                    nCurrentNavigationPoint].position) <
             aMissionNavPoints[
-                nCurrentNavPoint].proximityRadius + 25)
+                nCurrentNavigationPoint].proximityRadius + 25)
             leaveCurrentNavPoint = 0;
 
         clean_up_cockpit();
@@ -144,25 +149,25 @@ void auto_pilot_sequence(void)
             anShipSpeed[ship] = 0;
             zero_vector(&aShipVelocity[ship]);
             if (aeObjectClass[ship] >= OBJECT_CLASS_SHIP &&
-                aeSpecialManeuver[ship] !=
+                aeSpecialManeuvers[ship] !=
                     SPECIAL_MANEUVER_UNKNOWN_9 &&
                 aeShipSide[ship] == SIDE_IMPERIAL) {
                 if (is_team_member(
                         nShipMissionIndices[ship]) != 0) {
                     if (kilrathi_near(ship, 10000) == 0) {
                         travelMode[ship] = -1;
-                        aeSpecialManeuver[ship] =
+                        aeSpecialManeuvers[ship] =
                             SPECIAL_MANEUVER_NONE;
                         anRollGoal[ship] = 0;
-                        anObjectRollRotation[ship] = 0;
+                        anObjectRollRotationList[ship] = 0;
                         anPitchGoal[ship] = 0;
-                        anObjectPitchRotation[ship] = 0;
-                        anYawGoal[ship] = 0;
+                        anObjPitchRot[ship] = 0;
+                        anYawTarget[ship] = 0;
                         anObjectYawRotation[ship] = 0;
 #ifdef SDL_PORT
                         /* CODE_14 +0x03a8: release the player's gun timer. */
                         if (SdlSwcFlightActive() && ship == 0)
-                            asObjectCounter[0] = -1;
+                            asObjectCounterArray[0] = -1;
 #endif
                         if (ship != 0 &&
                             ship != nYourWingman)
@@ -186,14 +191,14 @@ void auto_pilot_sequence(void)
                     if (player_wingman(ship) != 0)
                         travelMode[ship] = 1;
                     else if (equ_vector(
-                                 &aShipDestination[ship],
+                                 &aShipDestinationsArray[ship],
                                  &destination) != 0)
                         travelMode[ship] = 2;
                     else
                         travelMode[ship] = 3;
                 } else {
                     if (player_wingman(ship) != 0 ||
-                        equ_vector(&aShipDestination[ship],
+                        equ_vector(&aShipDestinationsArray[ship],
                                    &destination) != 0)
                         travelMode[ship] = 1;
                     else
@@ -201,7 +206,7 @@ void auto_pilot_sequence(void)
                 }
                 if (travelMode[ship] == 1) {
                     auto_position(ship, &formationSlot);
-                    ScaleFixedVector(&aShipForwardVector[0],
+                    ScaleFixedVector(&aShipFwdVec[0],
                                      0x3c00,
                                      &aShipVelocity[ship]);
                     copy_frame(0, ship);
@@ -222,12 +227,12 @@ void auto_pilot_sequence(void)
         }
 #endif
         while (nCannedSceneMode == 4) {
-            ComputeVectorDelta(&aShipPosition[0],
+            ComputeVectorDelta(&aShipPositionsArray[0],
                                &destination, &travelStep);
             NormalizeFixedVector(&travelStep);
             ScaleFixedVector(&travelStep, 0x19000, &travelStep);
-            AddFixedVectors(&aShipPosition[0], &travelStep,
-                            &aShipPosition[0]);
+            AddFixedVectors(&aShipPositionsArray[0], &travelStep,
+                            &aShipPositionsArray[0]);
             ReleaseStaleNavTarget();
             check_hazards();
 
@@ -248,23 +253,23 @@ void auto_pilot_sequence(void)
         }
 
 #ifdef SDL_PORT
-        previousPosition = aShipPosition[0];
+        previousPosition = aShipPositionsArray[0];
 #endif
-        SubtractFixedVectors(&aShipPosition[0], &travelStep,
-                             &aShipPosition[0]);
+        SubtractFixedVectors(&aShipPositionsArray[0], &travelStep,
+                             &aShipPositionsArray[0]);
 #ifdef SDL_PORT
         /* CODE_14 +0x0648: retain the arrival position when reversing the
            last step would disagree with the active navigation sphere. */
-        if (SdlSwcFlightActive() && FindNearestNavPoint(0) != nCurrentNavPoint)
-            aShipPosition[0] = previousPosition;
+        if (SdlSwcFlightActive() && FindNearestNavPoint(0) != nCurrentNavigationPoint)
+            aShipPositionsArray[0] = previousPosition;
 #endif
-        cruiseSpeed = asShipMaximumSpeed[0];
+        cruiseSpeed = asShipMaximumSpeedArray[0];
         for (ship = 0; ship < 10; ship++) {
             if (travelMode[ship] != 0) {
                 short shipCruiseSpeed;
 
                 shipCruiseSpeed = aObjectTypeData[
-                    aeObjectType[ship]].cruiseVelocity;
+                    aeObjectTypeList[ship]].cruiseVelocity;
                 if (shipCruiseSpeed < cruiseSpeed)
                     cruiseSpeed = shipCruiseSpeed;
             }
@@ -283,10 +288,10 @@ void auto_pilot_sequence(void)
                     case 3:
                         if (distance_from_point(
                                 ship,
-                                &aShipDestination[ship]) <
+                                &aShipDestinationsArray[ship]) <
                             initialDistance)
-                            aShipPosition[ship] =
-                                aShipDestination[ship];
+                            aShipPositionsArray[ship] =
+                                aShipDestinationsArray[ship];
                         break;
                     }
                 }
@@ -304,11 +309,11 @@ void auto_pilot_sequence(void)
         if (bCockpitlessView == 0) {
             force_view(0, 0);
             SetMousePosition(
-                (stSpaceBuffer.right - stSpaceBuffer.left) / 2 + 1,
-                (stSpaceBuffer.bottom - stSpaceBuffer.top) / 2);
+                (stSpaceBufferViewport.right - stSpaceBufferViewport.left) / 2 + 1,
+                (stSpaceBufferViewport.bottom - stSpaceBufferViewport.top) / 2);
         } else {
             GetScreenUpdateFlag();
-            SetViewportRect(&stSpaceBuffer, 0, 0,
+            SetViewportRect(&stSpaceBufferViewport, 0, 0,
                             (unsigned short)(nScreenWidth - 1),
                             (unsigned short)(nScreenHeight - 1));
             initialize_view_buffer();
@@ -316,11 +321,11 @@ void auto_pilot_sequence(void)
             force_view(0, 0);
             bCockpitlessView = 1;
             GetScreenUpdateFlag();
-            SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
+            SetViewportRect(&stSpaceBufferViewport, 0, 0, 319, 199);
             initialize_view_buffer();
             SetMousePosition(
-                (stSpaceBuffer.right - stSpaceBuffer.left) / 2,
-                nViewCenterY);
+                (stSpaceBufferViewport.right - stSpaceBufferViewport.left) / 2,
+                nCurrentViewCenterPosY);
         }
     }
 }

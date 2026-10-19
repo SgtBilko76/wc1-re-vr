@@ -152,43 +152,26 @@ static short asFuneralSceneBySeries[13] = {
 };
 static int bFuneralShowTheEnd = 0; /* 0x00465b54 */
 
-/* Linker commons defined here; LINK orders them by identifier hash. */
-Viewport *pScrambleViewport; /* 0x005a86b4 */
-short nScrambleCanopyFrame; /* 0x005a86b8 */
-unsigned char *pScrambleDetailShape; /* 0x005a86bc */
-short nScrambleCockpitScale; /* 0x005a86c0 */
-ShortPoint stScrambleCockpitDetail; /* 0x005a86c4 */
-short nFuneralCasketX; /* 0x005a86c8 */
-short nFuneralCasketY; /* 0x005a86ca */
-short nScrambleShipDetailCount; /* 0x005a86cc */
-signed char acScrambleShipDetailIndices[24]; /* 0x005a86d0 */
-signed char cScrambleWalkTicks; /* 0x005a86e8 */
-unsigned char *pConversationSpecialShape; /* 0x005a86ec */
-ShortPoint aFuneralParticles[7]; /* 0x005a86f0 */
-unsigned char *pScrambleBackgroundShape; /* 0x005a870c */
+short nSceneScrambleShipDetailCountValue; /* 0x005a86cc */
+signed char acScrambleShipDetailSlots[24]; /* 0x005a86d0 */
+signed char cCutsceneScrambleWalkTime; /* 0x005a86e8 */
+unsigned char *pCurrentConversationSpecialShape; /* 0x005a86ec */
+ShortPoint aFuneralParticlesArray[7]; /* 0x005a86f0 */
+unsigned char *pSceneScrambleBgShapePtr; /* 0x005a870c */
 short nFuneralParticleDistance; /* 0x005a8710 */
-short nScrambleBackgroundY; /* 0x005a8712 */
-short nScrambleBackgroundRightX; /* 0x005a8714 */
-ShortPoint stFuneralForeground; /* 0x005a8718 */
-short nFuneralMainScale; /* 0x005a871c */
+short nScrambleBackdropPositionY; /* 0x005a8712 */
+short nScrambleBackgroundRightCoordX; /* 0x005a8714 */
+ShortPoint stCutsceneFuneralForeground; /* 0x005a8718 */
+short nSceneFuneralMainScale; /* 0x005a871c */
 short nFuneralRifleFrame; /* 0x005a871e */
-short nFuneralBaseX; /* 0x005a8720 */
-short nFuneralBaseY; /* 0x005a8722 */
-short nScrambleShipX; /* 0x005a8724 */
+short nCutsceneFuneralBaseX; /* 0x005a8720 */
+short nCutsceneFuneralBasePosY; /* 0x005a8722 */
+short nCurrentScrambleShipPositionX; /* 0x005a8724 */
 short nScrambleShipY; /* 0x005a8726 */
 short nFuneralParticleScale; /* 0x005a8728 */
-unsigned char *pScrambleHangarShape; /* 0x005a872c */
-unsigned char *pScrambleCockpitShape; /* 0x005a8730 */
-short nScrambleWalkerY; /* 0x005a8734 */
-short nScrambleCanopyOffset; /* 0x005a8736 */
-short nFuneralMainDistance; /* 0x005a8738 */
-signed char bScrambleCanopyClosed; /* 0x005a873a */
-short nFuneralGuardFrame; /* 0x005a873c */
-ShortPoint stScrambleOverlay; /* 0x005a8740 */
-unsigned char *pScrambleOverlayShape; /* 0x005a8744 */
-signed char cScrambleWalkerPair; /* 0x005a8748 */
-unsigned char *pScrambleCanopyShape; /* 0x005a874c */
-unsigned char *pScrambleShipShape; /* 0x005a8750 */
+unsigned char *pCurrentScrambleHangarShape; /* 0x005a872c */
+unsigned char *pScrambleCockpitShapePtr; /* 0x005a8730 */
+short nSceneScrambleWalkerPositionY; /* 0x005a8734 */
 
 /* Function start: 0x407710 */
 short __stdcall GetShapeFrameExtent(short x, short y,
@@ -213,54 +196,54 @@ unsigned int AnimateScrambleWalk(short ticks)
         do {
             PumpWindowMessages();
             nFrameSkipCounter--;
-            escapePressed = bEscapePressed;
+            escapePressed = bEscapePressedFlag;
             if (nFrameSkipCounter < 1) {
                 nFrameSkipCounter = nFrameSkip;
                 DrawSpriteDefault(&stSceneBuffer,
                                   nScrambleBackgroundX, 0,
-                                  pScrambleHangarShape, 0);
+                                  pCurrentScrambleHangarShape, 0);
                 DrawSpriteDefault(&stSceneBuffer,
                                   (short)(nScrambleBackgroundX +
                                           320),
-                                  0, pScrambleHangarShape, 1);
+                                  0, pCurrentScrambleHangarShape, 1);
                 DrawSpriteDefault(&stSceneBuffer,
                                   (short)(nScrambleBackgroundX +
                                           640),
-                                  0, pScrambleHangarShape, 0);
+                                  0, pCurrentScrambleHangarShape, 0);
                 DrawSpriteDefault(&stSceneBuffer,
                                   (short)(nScrambleBackgroundX +
                                           960),
-                                  0, pScrambleHangarShape, 1);
+                                  0, pCurrentScrambleHangarShape, 1);
 
-                nScrambleWalkerY =
+                nSceneScrambleWalkerPositionY =
                     127 - GetShapeFrameExtent(
-                        0, 0, pScrambleHangarShape,
+                        0, 0, pCurrentScrambleHangarShape,
                         cScrambleLeftWalkerFrame, 3);
                 DrawSpriteDefault(&stSceneBuffer,
                                   nScrambleLeftWalkerX,
-                                  nScrambleWalkerY,
-                                  pScrambleHangarShape,
+                                  nSceneScrambleWalkerPositionY,
+                                  pCurrentScrambleHangarShape,
                                   cScrambleLeftWalkerFrame);
                 DrawSpriteDefault(
                     &stSceneBuffer, nScrambleLeftWalkerX,
-                    nScrambleWalkerY,
-                    pScrambleHangarShape,
+                    nSceneScrambleWalkerPositionY,
+                    pCurrentScrambleHangarShape,
                     acScrambleWalkerOverlayFrames[
                         cScrambleWalkerPair * 2]);
 
-                nScrambleWalkerY =
+                nSceneScrambleWalkerPositionY =
                     137 - GetShapeFrameExtent(
-                        0, 0, pScrambleHangarShape,
+                        0, 0, pCurrentScrambleHangarShape,
                         cScrambleRightWalkerFrame, 3);
                 DrawSpriteDefault(&stSceneBuffer,
                                   nScrambleRightWalkerX,
-                                  nScrambleWalkerY,
-                                  pScrambleHangarShape,
+                                  nSceneScrambleWalkerPositionY,
+                                  pCurrentScrambleHangarShape,
                                   cScrambleRightWalkerFrame);
                 DrawSpriteDefault(
                     &stSceneBuffer, nScrambleRightWalkerX,
-                    nScrambleWalkerY,
-                    pScrambleHangarShape,
+                    nSceneScrambleWalkerPositionY,
+                    pCurrentScrambleHangarShape,
                     acScrambleWalkerOverlayFrames[
                         cScrambleWalkerPair * 2 + 1]);
                 RefreshMemoryStatusOverlay();
@@ -268,7 +251,7 @@ unsigned int AnimateScrambleWalk(short ticks)
                 DIBslamReal();
 
                 cScrambleLeftWalkerFrame++;
-                escapePressed = bEscapePressed;
+                escapePressed = bEscapePressedFlag;
                 if (cScrambleLeftWalkerFrame > 19)
                     cScrambleLeftWalkerFrame = 7;
                 cScrambleRightWalkerFrame++;
@@ -297,7 +280,7 @@ unsigned int PlayScrambleHangarScene(void)
 #ifdef SDL_PORT
     soundHandle = 0;
 #endif
-    if (nMemoryConfiguration == 1)
+    if (nMemoryConfig == 1)
         SceneLeaveHook(0x1b);
     else
         PreloadMusicTrackHook(0x1b);
@@ -309,48 +292,48 @@ unsigned int PlayScrambleHangarScene(void)
     cScrambleRightWalkerFrame = 10;
     nScrambleLeftWalkerX = 70;
     nScrambleRightWalkerX = 170;
-    pScrambleHangarShape =
+    pCurrentScrambleHangarShape =
         FetchDiskPacketRetrying(1, 0, 0);
     cScrambleWalkerPair =
         (signed char)((RandomWord() + 3) % 4);
     PlaySfxWaveFileByNumber(14, -1, 0);
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
 
     AnimateScrambleWalk(24);
-    if (bEscapePressed != 1) {
+    if (bEscapePressedFlag != 1) {
         cScrambleLeftWalkerFrame = 21;
         cScrambleRightWalkerFrame = 24;
         nScrambleLeftWalkerX = 90;
         nScrambleRightWalkerX = 200;
-        nScrambleWalkerY = -14;
+        nSceneScrambleWalkerPositionY = -14;
         nFrameSkipCounter = 1;
-        for (cScrambleWalkTicks = 0;
-             cScrambleWalkTicks < 24;
-             cScrambleWalkTicks++) {
+        for (cCutsceneScrambleWalkTime = 0;
+             cCutsceneScrambleWalkTime < 24;
+             cCutsceneScrambleWalkTime++) {
             PumpWindowMessages();
             nFrameSkipCounter--;
             if (nFrameSkipCounter < 1) {
                 nFrameSkipCounter = nFrameSkip;
                 DrawSpriteDefault(&stSceneBuffer,
                                   nScrambleBackgroundX, 0,
-                                  pScrambleHangarShape, 2);
+                                  pCurrentScrambleHangarShape, 2);
                 DrawSpriteDefault(&stSceneBuffer,
                                   (short)(nScrambleBackgroundX +
                                           320),
-                                  0, pScrambleHangarShape, 2);
+                                  0, pCurrentScrambleHangarShape, 2);
                 DrawSpriteDefault(&stSceneBuffer,
                                   (short)(nScrambleBackgroundX +
                                           640),
-                                  0, pScrambleHangarShape, 2);
+                                  0, pCurrentScrambleHangarShape, 2);
                 DrawSpriteDefault(&stSceneBuffer,
                                   nScrambleLeftWalkerX,
-                                  nScrambleWalkerY,
-                                  pScrambleHangarShape,
+                                  nSceneScrambleWalkerPositionY,
+                                  pCurrentScrambleHangarShape,
                                   cScrambleLeftWalkerFrame);
                 DrawSpriteDefault(&stSceneBuffer,
                                   nScrambleRightWalkerX,
-                                  nScrambleWalkerY,
-                                  pScrambleHangarShape,
+                                  nSceneScrambleWalkerPositionY,
+                                  pCurrentScrambleHangarShape,
                                   cScrambleRightWalkerFrame);
                 RefreshMemoryStatusOverlay();
                 DIBslam();
@@ -369,11 +352,11 @@ unsigned int PlayScrambleHangarScene(void)
                 (short)(nScrambleLeftWalkerX + 2);
             nScrambleRightWalkerX =
                 (short)(nScrambleRightWalkerX + 3);
-            if (bEscapePressed == 1)
+            if (bEscapePressedFlag == 1)
                 break;
         }
 
-        if (bEscapePressed != 1) {
+        if (bEscapePressedFlag != 1) {
             cScrambleLeftWalkerFrame = 7;
             cScrambleRightWalkerFrame = 10;
             AnimateScrambleWalk(24);
@@ -381,7 +364,7 @@ unsigned int PlayScrambleHangarScene(void)
     }
 
     FlushSoundEffectsAndLog(soundHandle, 10);
-    ReleasePacketHandle(pScrambleHangarShape);
+    ReleasePacketHandle(pCurrentScrambleHangarShape);
     ResetScreenClipToFullHeight();
     return 0;
 }
@@ -427,14 +410,14 @@ unsigned int DrawScrambleActor(short actorIndex)
     }
 
     frame += aScrambleAnimationActors[actorIndex].baseFrame;
-    x = nScrambleBackgroundRightX +
+    x = nScrambleBackgroundRightCoordX +
         (aScrambleAnimationActors[actorIndex].x +=
          aScrambleAnimationActors[actorIndex].deltaX);
-    y = nScrambleBackgroundY +
+    y = nScrambleBackdropPositionY +
         (aScrambleAnimationActors[actorIndex].y +=
          aScrambleAnimationActors[actorIndex].deltaY);
     DrawSpriteScaled(
-        pScrambleViewport,
+        pScrambleView,
         x,
         y,
         aScrambleAnimationActors[actorIndex].shape,
@@ -477,13 +460,13 @@ unsigned int DrawScrambleFrame(void)
     nFrameSkipCounter = nFrameSkip;
 
     DrawSpriteDefault(&stSceneBuffer,
-                      (short)(nScrambleBackgroundRightX - 1),
-                      nScrambleBackgroundY,
-                      pScrambleBackgroundShape, 0);
+                      (short)(nScrambleBackgroundRightCoordX - 1),
+                      nScrambleBackdropPositionY,
+                      pSceneScrambleBgShapePtr, 0);
     DrawSpriteDefault(&stSceneBuffer,
-                      nScrambleBackgroundRightX,
-                      nScrambleBackgroundY,
-                      pScrambleBackgroundShape, 1);
+                      nScrambleBackgroundRightCoordX,
+                      nScrambleBackdropPositionY,
+                      pSceneScrambleBgShapePtr, 1);
     DrawScrambleActor(0);
     DrawScrambleActor(3);
     DrawScrambleActor(4);
@@ -491,7 +474,7 @@ unsigned int DrawScrambleFrame(void)
 
     if (bScrambleCanopyClosed == 0) {
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nScrambleShipX + 40),
+                          (short)(nCurrentScrambleShipPositionX + 40),
                           (short)(nScrambleShipY - 40),
                           pScrambleCanopyShape,
                           nScrambleCanopyOffset);
@@ -500,83 +483,83 @@ unsigned int DrawScrambleFrame(void)
     switch (stCampaignState.playerShipType) {
     case OBJECT_TYPE_HORNET:
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nScrambleShipX + 10),
+                          (short)(nCurrentScrambleShipPositionX + 10),
                           (short)(nScrambleShipY - 25),
                           pScrambleShipShape,
-                          nScrambleCanopyFrame);
-        DrawSpriteDefault(&stSceneBuffer, nScrambleShipX,
+                          nSceneScrambleCanopyFrameValue);
+        DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
                           nScrambleShipY,
-                          pScrambleCockpitShape, 0);
+                          pScrambleCockpitShapePtr, 0);
         DrawSpriteScaled(&stSceneBuffer,
                          stScrambleCockpitDetail.x,
                          stScrambleCockpitDetail.y,
-                         pScrambleCockpitShape, 1, 0,
+                         pScrambleCockpitShapePtr, 1, 0,
                          nScrambleCockpitScale, 0);
         break;
     case OBJECT_TYPE_RAPIER:
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nScrambleShipX + 10),
+                          (short)(nCurrentScrambleShipPositionX + 10),
                           (short)(nScrambleShipY - 16),
                           pScrambleShipShape,
-                          nScrambleCanopyFrame);
-        DrawSpriteDefault(&stSceneBuffer, nScrambleShipX,
+                          nSceneScrambleCanopyFrameValue);
+        DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
                           nScrambleShipY,
-                          pScrambleCockpitShape, 0);
+                          pScrambleCockpitShapePtr, 0);
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nScrambleShipX + 153),
+                          (short)(nCurrentScrambleShipPositionX + 153),
                           (short)(nScrambleShipY + 5),
-                          pScrambleCockpitShape, 2);
+                          pScrambleCockpitShapePtr, 2);
         DrawSpriteDefault(&stSceneBuffer,
                           stScrambleCockpitDetail.x,
                           stScrambleCockpitDetail.y,
-                          pScrambleCockpitShape, 1);
+                          pScrambleCockpitShapePtr, 1);
         break;
     case OBJECT_TYPE_SCIMITAR:
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nScrambleShipX + 10),
+                          (short)(nCurrentScrambleShipPositionX + 10),
                           (short)(nScrambleShipY - 15),
                           pScrambleShipShape,
-                          nScrambleCanopyFrame);
-        DrawSpriteDefault(&stSceneBuffer, nScrambleShipX,
+                          nSceneScrambleCanopyFrameValue);
+        DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
                           nScrambleShipY,
-                          pScrambleCockpitShape, 0);
+                          pScrambleCockpitShapePtr, 0);
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nScrambleShipX + 148),
+                          (short)(nCurrentScrambleShipPositionX + 148),
                           nScrambleShipY,
-                          pScrambleCockpitShape, 2);
+                          pScrambleCockpitShapePtr, 2);
         DrawSpriteDefault(&stSceneBuffer,
                           stScrambleCockpitDetail.x,
                           stScrambleCockpitDetail.y,
-                          pScrambleCockpitShape, 1);
+                          pScrambleCockpitShapePtr, 1);
         break;
     case OBJECT_TYPE_RAPTOR:
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nScrambleShipX + 10),
+                          (short)(nCurrentScrambleShipPositionX + 10),
                           (short)(nScrambleShipY - 11),
                           pScrambleShipShape,
-                          nScrambleCanopyFrame);
-        DrawSpriteDefault(&stSceneBuffer, nScrambleShipX,
+                          nSceneScrambleCanopyFrameValue);
+        DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
                           nScrambleShipY,
-                          pScrambleCockpitShape, 0);
+                          pScrambleCockpitShapePtr, 0);
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nScrambleShipX + 158),
+                          (short)(nCurrentScrambleShipPositionX + 158),
                           (short)(nScrambleShipY + 6),
-                          pScrambleCockpitShape, 2);
+                          pScrambleCockpitShapePtr, 2);
         DrawSpriteDefault(&stSceneBuffer,
                           stScrambleCockpitDetail.x,
                           stScrambleCockpitDetail.y,
-                          pScrambleCockpitShape, 1);
+                          pScrambleCockpitShapePtr, 1);
         break;
     }
 
     for (detailIndex = 0;
-         detailIndex < nScrambleShipDetailCount;
+         detailIndex < nSceneScrambleShipDetailCountValue;
          detailIndex++) {
-        detailSlot = acScrambleShipDetailIndices[detailIndex];
+        detailSlot = acScrambleShipDetailSlots[detailIndex];
         detail = &aaScrambleShipDetails[
             stCampaignState.playerShipType][detailSlot];
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nScrambleShipX + detail->x),
+                          (short)(nCurrentScrambleShipPositionX + detail->x),
                           (short)(nScrambleShipY + detail->y),
                           pScrambleDetailShape,
                           detail->frame);
@@ -611,15 +594,15 @@ unsigned int scramble(void)
 #endif
     nScrambleCanopyOffset = 0;
     stScrambleOverlay.x = -1000;
-    nScrambleCanopyFrame = 0;
-    nScrambleShipDetailCount = 0;
-    if (bEscapePressed == 0) {
+    nSceneScrambleCanopyFrameValue = 0;
+    nSceneScrambleShipDetailCountValue = 0;
+    if (bEscapePressedFlag == 0) {
         InitializeConversationViewport();
         cCockpitLogicalFile =
             (signed char)(stCampaignState.playerShipType + 17);
-        pScrambleCockpitShape = FetchDiskPacketRetrying(
+        pScrambleCockpitShapePtr = FetchDiskPacketRetrying(
             cCockpitLogicalFile, 8, 0);
-        pScrambleBackgroundShape =
+        pSceneScrambleBgShapePtr =
             FetchDiskPacketRetrying(1, 1, 0);
         bScrambleCanopyClosed = 0;
         pScrambleCanopyShape =
@@ -627,9 +610,9 @@ unsigned int scramble(void)
         pScrambleShipShape =
             FetchDiskPacketRetrying(1, 3, 0);
         actorShape = FetchDiskPacketRetrying(1, 4, 0);
-        nScrambleBackgroundY = 0;
-        pScrambleViewport = &stSceneBuffer;
-        nScrambleBackgroundRightX = 64;
+        nScrambleBackdropPositionY = 0;
+        pScrambleView = &stSceneBuffer;
+        nScrambleBackgroundRightCoordX = 64;
 
         ConfigureScrambleActor(130, 94, 1, 0, actorShape,
                                0x100, 0, 0, 0);
@@ -640,30 +623,30 @@ unsigned int scramble(void)
         ConfigureScrambleActor(260, 100, -3, 0, actorShape,
                                0xff, 0, 0x10, 4);
         PlaySfxWaveFileByNumber(17, -1, 0);
-        bEscapePressed = 0;
+        bEscapePressedFlag = 0;
 
         switch (stCampaignState.playerShipType) {
         case OBJECT_TYPE_HORNET:
-            nScrambleShipX = -40;
+            nCurrentScrambleShipPositionX = -40;
             nScrambleShipY = 96;
             stScrambleCockpitDetail.x = -95;
             stScrambleCockpitDetail.y = 71;
             nScrambleCockpitScale = 316;
             break;
         case OBJECT_TYPE_RAPIER:
-            nScrambleShipX = -30;
+            nCurrentScrambleShipPositionX = -30;
             nScrambleShipY = 80;
             stScrambleCockpitDetail.x = -15;
             stScrambleCockpitDetail.y = 76;
             break;
         case OBJECT_TYPE_SCIMITAR:
-            nScrambleShipX = -40;
+            nCurrentScrambleShipPositionX = -40;
             nScrambleShipY = 86;
             stScrambleCockpitDetail.x = 4;
             stScrambleCockpitDetail.y = 83;
             break;
         case OBJECT_TYPE_RAPTOR:
-            nScrambleShipX = -40;
+            nCurrentScrambleShipPositionX = -40;
             nScrambleShipY = 80;
             stScrambleCockpitDetail.x = -22;
             stScrambleCockpitDetail.y = 67;
@@ -674,38 +657,38 @@ unsigned int scramble(void)
         for (frame = 0; frame < 10; frame++) {
             PumpWindowMessages();
             DrawScrambleFrame();
-            nScrambleBackgroundRightX--;
+            nScrambleBackgroundRightCoordX--;
             nScrambleShipY =
                 (short)(nScrambleShipY - 2);
             stScrambleCockpitDetail.y =
                 (short)(stScrambleCockpitDetail.y - 2);
-            nScrambleShipX =
-                (short)(nScrambleShipX + 4);
+            nCurrentScrambleShipPositionX =
+                (short)(nCurrentScrambleShipPositionX + 4);
             stScrambleCockpitDetail.x =
                 (short)(stScrambleCockpitDetail.x + 4);
-            if (bEscapePressed == 1)
+            if (bEscapePressedFlag == 1)
                 break;
         }
 
-        if (bEscapePressed != 1) {
+        if (bEscapePressedFlag != 1) {
             nFrameSkipCounter = 1;
             for (frame = 0; frame < 27; frame++) {
                 PumpWindowMessages();
                 DrawScrambleFrame();
                 nScrambleCanopyOffset++;
-                nScrambleShipX =
-                    (short)(nScrambleShipX + 4);
+                nCurrentScrambleShipPositionX =
+                    (short)(nCurrentScrambleShipPositionX + 4);
                 stScrambleCockpitDetail.x =
                     (short)(stScrambleCockpitDetail.x + 4);
-                nScrambleBackgroundRightX--;
-                if (nScrambleCanopyFrame < 25)
-                    nScrambleCanopyFrame++;
-                if (bEscapePressed == 1)
+                nScrambleBackgroundRightCoordX--;
+                if (nSceneScrambleCanopyFrameValue < 25)
+                    nSceneScrambleCanopyFrameValue++;
+                if (bEscapePressedFlag == 1)
                     break;
             }
         }
 
-        if (bEscapePressed != 1) {
+        if (bEscapePressedFlag != 1) {
             FlushSoundEffectsAndLog(soundHandle, 0);
             nScrambleCanopyOffset--;
             PlaySfxWaveFileByNumber(15, -1, 0);
@@ -733,21 +716,21 @@ unsigned int scramble(void)
                             (short)(stScrambleCockpitDetail.x - 2);
                     break;
                 }
-                if (nScrambleCanopyFrame < 35)
-                    nScrambleCanopyFrame++;
-                if (bEscapePressed == 1)
+                if (nSceneScrambleCanopyFrameValue < 35)
+                    nSceneScrambleCanopyFrameValue++;
+                if (bEscapePressedFlag == 1)
                     break;
             }
 
             FlushSoundEffectsAndLog(soundHandle, 0);
             PlaySfxWaveFileByNumber(16, -1, 0);
-            if (bEscapePressed != 1)
+            if (bEscapePressedFlag != 1)
                 WaitForSceneAdvance(60, 0);
         }
 
-        bEscapePressed = 0;
-        ReleasePacketHandle(pScrambleCockpitShape);
-        ReleasePacketHandle(pScrambleBackgroundShape);
+        bEscapePressedFlag = 0;
+        ReleasePacketHandle(pScrambleCockpitShapePtr);
+        ReleasePacketHandle(pSceneScrambleBgShapePtr);
         ReleasePacketHandle(pScrambleCanopyShape);
         ReleasePacketHandle(pScrambleShipShape);
         ReleasePacketHandle(actorShape);
@@ -755,7 +738,7 @@ unsigned int scramble(void)
         ResetScreenClipToFullHeight();
     }
 
-    if (nMemoryConfiguration == 0) {
+    if (nMemoryConfig == 0) {
         StopMusicUnlessSuppressed();
         ReleaseMusicTrackHook(0x1b);
     }
@@ -777,28 +760,28 @@ unsigned int landing(signed char damageLevel)
     SetEventManagerPump(PollJoystickButtonEvents);
     InitializeConversationViewport();
     damageOffset = damageLevel * 4;
-    nScrambleShipDetailCount =
+    nSceneScrambleShipDetailCountValue =
         anLandingDamageDetailCounts[damageLevel];
     for (frame = 0;
-         frame < nScrambleShipDetailCount;
+         frame < nSceneScrambleShipDetailCountValue;
          frame++) {
         do {
             detail = RandomInRange(0, 31);
             for (prior = 0; prior < frame; prior++) {
-                if (acScrambleShipDetailIndices[prior] ==
+                if (acScrambleShipDetailSlots[prior] ==
                     detail)
                     break;
             }
         } while (prior < frame);
-        acScrambleShipDetailIndices[frame] = detail;
+        acScrambleShipDetailSlots[frame] = detail;
     }
 
     cCockpitLogicalFile =
         (signed char)(stCampaignState.playerShipType + 17);
-    pScrambleCockpitShape =
+    pScrambleCockpitShapePtr =
         FetchDiskPacketRetrying(
             cCockpitLogicalFile, 8, 0);
-    pScrambleBackgroundShape =
+    pSceneScrambleBgShapePtr =
         FetchDiskPacketRetrying(1, 1, 0);
     pScrambleShipShape =
         FetchDiskPacketRetrying(1, 3, 0);
@@ -811,9 +794,9 @@ unsigned int landing(signed char damageLevel)
     pScrambleCanopyShape =
         FetchDiskPacketRetrying(1, 6, 0);
     InitializeConversationText();
-    nScrambleBackgroundY = 0;
-    pScrambleViewport = &stSceneBuffer;
-    nScrambleBackgroundRightX = 32;
+    nScrambleBackdropPositionY = 0;
+    pScrambleView = &stSceneBuffer;
+    nScrambleBackgroundRightCoordX = 32;
     ConfigureScrambleActor(140, 88, 2, 0, actorShape,
                            0x80, 0, 0, 3);
     ConfigureScrambleActor(139, 88, 2, 0, actorShape,
@@ -823,19 +806,19 @@ unsigned int landing(signed char damageLevel)
     ConfigureScrambleActor(160, 120, 0, 0, actorShape,
                            0x100, 0, 0, 2);
     nScrambleCanopyOffset = 0;
-    nScrambleCanopyFrame = 34;
+    nSceneScrambleCanopyFrameValue = 34;
     stScrambleOverlay.x = -1000;
 
     switch (stCampaignState.playerShipType) {
     case OBJECT_TYPE_HORNET:
-        nScrambleShipX = 124;
+        nCurrentScrambleShipPositionX = 124;
         nScrambleShipY = 140;
         stScrambleCockpitDetail.x = 69;
         stScrambleCockpitDetail.y = 115;
         nScrambleCockpitScale = 360;
         break;
     case OBJECT_TYPE_RAPIER:
-        nScrambleShipX = 124;
+        nCurrentScrambleShipPositionX = 124;
         nScrambleShipY = 130;
         stScrambleCockpitDetail.x = 94;
         stScrambleCockpitDetail.y = 125;
@@ -843,11 +826,11 @@ unsigned int landing(signed char damageLevel)
     case OBJECT_TYPE_SCIMITAR:
         nScrambleShipY = 134;
         stScrambleCockpitDetail.y = 132;
-        nScrambleShipX = 124;
+        nCurrentScrambleShipPositionX = 124;
         stScrambleCockpitDetail.x = 124;
         break;
     case OBJECT_TYPE_RAPTOR:
-        nScrambleShipX = 124;
+        nCurrentScrambleShipPositionX = 124;
         nScrambleShipY = 126;
         stScrambleCockpitDetail.x = 96;
         stScrambleCockpitDetail.y = 113;
@@ -855,7 +838,7 @@ unsigned int landing(signed char damageLevel)
     }
 
     frame = 0;
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     PlaySfxWaveFileByNumber(17, -1, 0);
     nFrameSkipCounter = 1;
     for (; frame < 30; frame++) {
@@ -865,17 +848,17 @@ unsigned int landing(signed char damageLevel)
             (short)(nScrambleShipY - 2);
         stScrambleCockpitDetail.y =
             (short)(stScrambleCockpitDetail.y - 2);
-        if (bEscapePressed == 1)
+        if (bEscapePressedFlag == 1)
             break;
     }
 
     FlushSoundEffectsAndLog(damageOffset, 0);
-    if (bEscapePressed != 1) {
+    if (bEscapePressedFlag != 1) {
         short canopyFrame;
         const signed char *canopyFrames;
 
         stScrambleOverlay.x =
-            (short)(nScrambleShipX + 180);
+            (short)(nCurrentScrambleShipPositionX + 180);
 #ifdef SDL_PORT
         canopyFrames = apLandingCanopyFrames[damageLevel];
 #else
@@ -917,13 +900,13 @@ unsigned int landing(signed char damageLevel)
                 nScrambleCanopyOffset = *canopyFrames;
                 canopyFrames++;
             }
-            if (bEscapePressed == 1)
+            if (bEscapePressedFlag == 1)
                 break;
         }
 
         FlushSoundEffectsAndLog(damageOffset, 0);
-        if (bEscapePressed != 1) {
-            ClearViewport(&stConversationTextViewport,
+        if (bEscapePressedFlag != 1) {
+            ClearViewport(&stCurrentConvTextViewport,
                           cBlackColour);
             FormatTextBufferFromStart(
                 "%X%Y%F%s%P", 0, 160,
@@ -942,16 +925,16 @@ unsigned int landing(signed char damageLevel)
         }
     }
 
-    bEscapePressed = 0;
-    ReleasePacketHandle(pScrambleCockpitShape);
-    ReleasePacketHandle(pScrambleBackgroundShape);
+    bEscapePressedFlag = 0;
+    ReleasePacketHandle(pScrambleCockpitShapePtr);
+    ReleasePacketHandle(pSceneScrambleBgShapePtr);
     ReleasePacketHandle(pScrambleShipShape);
     ReleasePacketHandle(actorShape);
     ReleasePacketHandle(pScrambleDetailShape);
     ReleasePacketHandle(pScrambleOverlayShape);
     ReleasePacketHandle(pScrambleCanopyShape);
     ResetScreenClipToFullHeight();
-    ClearViewport(&stConversationTextViewport,
+    ClearViewport(&stCurrentConvTextViewport,
                   cBlackColour);
     StopMusicUnlessSuppressed();
     ReleaseMusicTrackHook(0x1d);
@@ -967,58 +950,58 @@ unsigned int funeral_player(void)
     if (nFrameSkipCounter < 1) {
         nFrameSkipCounter = nFrameSkip;
         DrawConstellationField();
-        nFuneralMainScale =
-            (short)(0x7000L / nFuneralMainDistance);
+        nSceneFuneralMainScale =
+            (short)(0x7000L / nFuneralMainDist);
         DrawSpriteDefault(&stSceneBuffer,
-                          nFuneralBaseX,
-                          nFuneralBaseY,
-                          pConversationSpecialShape, 0);
+                          nCutsceneFuneralBaseX,
+                          nCutsceneFuneralBasePosY,
+                          pCurrentConversationSpecialShape, 0);
         DrawSpriteScaled(&stSceneBuffer,
-                         nFuneralCasketX,
-                         nFuneralCasketY,
-                         pConversationSpecialShape,
-                         8, 0, nFuneralMainScale, 0);
+                         nFuneralCasketPositionX,
+                         nFuneralCasketPosY,
+                         pCurrentConversationSpecialShape,
+                         8, 0, nSceneFuneralMainScale, 0);
         DrawSpriteDefault(&stSceneBuffer,
-                          nFuneralBaseX,
-                          nFuneralBaseY,
-                          pConversationSpecialShape, 1);
+                          nCutsceneFuneralBaseX,
+                          nCutsceneFuneralBasePosY,
+                          pCurrentConversationSpecialShape, 1);
         DrawSpriteDefault(&stSceneBuffer,
-                          nFuneralBaseX,
-                          nFuneralBaseY,
-                          pConversationSpecialShape,
-                          nFuneralGuardFrame);
+                          nCutsceneFuneralBaseX,
+                          nCutsceneFuneralBasePosY,
+                          pCurrentConversationSpecialShape,
+                          nCutsceneFuneralGuardFrame);
         DrawSpriteDefault(&stSceneBuffer,
-                          nFuneralBaseX,
-                          nFuneralBaseY,
-                          pConversationSpecialShape,
+                          nCutsceneFuneralBaseX,
+                          nCutsceneFuneralBasePosY,
+                          pCurrentConversationSpecialShape,
                           nFuneralRifleFrame);
 
         nFuneralParticleScale =
             (short)(0x1000L / nFuneralParticleDistance);
         for (index = 0; index < 7; index++) {
-            if (aFuneralParticles[index].x != 0) {
+            if (aFuneralParticlesArray[index].x != 0) {
                 DrawSpriteScaled(
                     &stSceneBuffer,
-                    aFuneralParticles[index].x,
-                    aFuneralParticles[index].y,
-                    pConversationSpecialShape, 9, 0,
+                    aFuneralParticlesArray[index].x,
+                    aFuneralParticlesArray[index].y,
+                    pCurrentConversationSpecialShape, 9, 0,
                     nFuneralParticleScale, 0);
-                aFuneralParticles[index].x -= 6;
-                aFuneralParticles[index].y -= 6;
+                aFuneralParticlesArray[index].x -= 6;
+                aFuneralParticlesArray[index].y -= 6;
                 if (stSceneBuffer.top >
-                    aFuneralParticles[index].y)
-                    aFuneralParticles[index].x = 0;
+                    aFuneralParticlesArray[index].y)
+                    aFuneralParticlesArray[index].x = 0;
             }
         }
 
         DrawSpriteDefault(&stSceneBuffer,
-                          stFuneralForeground.x,
-                          stFuneralForeground.y,
-                          pConversationSpecialShape, 7);
+                          stCutsceneFuneralForeground.x,
+                          stCutsceneFuneralForeground.y,
+                          pCurrentConversationSpecialShape, 7);
         DrawSpriteDefault(&stSceneBuffer,
-                          (short)(stFuneralForeground.x + 180),
-                          stFuneralForeground.y,
-                          pConversationSpecialShape, 6);
+                          (short)(stCutsceneFuneralForeground.x + 180),
+                          stCutsceneFuneralForeground.y,
+                          pCurrentConversationSpecialShape, 6);
         if (bFuneralShowTheEnd != 0)
             print_subtitle(&stSceneBuffer, 56,
                            "THE END");
@@ -1033,18 +1016,18 @@ unsigned int funeral_player(void)
 unsigned int funeral_wingman(char *text, short duration)
 {
     AddPCName(text);
-    ClearViewport(&stConversationTextViewport,
+    ClearViewport(&stCurrentConvTextViewport,
                   cBlackColour);
     FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
-                              nConversationTextColour,
-                              szTextScratchBuffer);
+                              nConvTextColorValue,
+                              szTxtWorkspaceBuffer);
     nFrameSkipCounter = 1;
     SetFrameTimerPeriodDirect(duration);
     while ((short)IsFrameTickElapsed() == 0) {
         PumpWindowMessages();
         funeral_player();
-        if (bEscapePressed == 1)
+        if (bEscapePressedFlag == 1)
             break;
         if (CheckEscaped() != 0)
             break;
@@ -1099,44 +1082,44 @@ unsigned int funeral_sequence(int playerFuneral)
     }
 
     InitializeConversationViewport();
-    nFuneralCasketX = 180;
-    nFuneralCasketY = 70;
-    stFuneralForeground.x = 30;
-    nFuneralMainDistance = 112;
+    nFuneralCasketPositionX = 180;
+    nFuneralCasketPosY = 70;
+    stCutsceneFuneralForeground.x = 30;
+    nFuneralMainDist = 112;
     nFuneralParticleDistance = 16;
-    nFuneralGuardFrame = 2;
+    nCutsceneFuneralGuardFrame = 2;
     nFuneralRifleFrame = 4;
-    nFuneralBaseY = 0;
-    nFuneralBaseX = 0;
-    stFuneralForeground.y = 0;
+    nCutsceneFuneralBasePosY = 0;
+    nCutsceneFuneralBaseX = 0;
+    stCutsceneFuneralForeground.y = 0;
     for (particle = 0; particle < 7; particle++) {
-        aFuneralParticles[particle].x = 0;
+        aFuneralParticlesArray[particle].x = 0;
     }
 
     frame = 0;
     InitializeConversationText();
     init_constellation(0);
-    pConversationSpecialShape =
+    pCurrentConversationSpecialShape =
         FetchDiskPacketRetrying(4, 9, 0);
     ClearViewport(&stSceneBuffer, cPrimaryViewBufferColour);
     InitializeConstellationField(&stSceneBuffer, -1, 16);
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     PumpWindowMessages();
     SceneDirector(3, sceneData, textData);
 
-    if (bEscapePressed != 1) {
+    if (bEscapePressedFlag != 1) {
         ClearViewport(&stSceneBuffer, cPrimaryViewBufferColour);
-        ClearViewport(&stConversationTextViewport,
+        ClearViewport(&stCurrentConvTextViewport,
                       cBlackColour);
         nFrameSkipCounter = 1;
         for (; frame < 10; frame++) {
             PumpWindowMessages();
             funeral_player();
-            if (bEscapePressed == 1)
+            if (bEscapePressedFlag == 1)
                 break;
         }
 
-        if (bEscapePressed != 1) {
+        if (bEscapePressedFlag != 1) {
             FormatTextBufferFromStart(
                 "%X%Y%FCompany...%P", 0, 160,
                 cBlueColour);
@@ -1144,13 +1127,13 @@ unsigned int funeral_sequence(int playerFuneral)
             for (frame = 0; frame < 15; frame++) {
                 PumpWindowMessages();
                 funeral_player();
-                if (bEscapePressed == 1)
+                if (bEscapePressedFlag == 1)
                     break;
             }
-            ClearViewport(&stConversationTextViewport,
+            ClearViewport(&stCurrentConvTextViewport,
                           cBlackColour);
 
-            if (bEscapePressed != 1) {
+            if (bEscapePressedFlag != 1) {
                 frame = 0;
                 nFrameSkipCounter = 1;
                 FormatTextBufferFromStart(
@@ -1160,24 +1143,24 @@ unsigned int funeral_sequence(int playerFuneral)
                     funeral_player();
                     if (frame == 0)
                         PlaySfxWaveFileByNumber(0x24, -1, 0);
-                    if (bEscapePressed == 1)
+                    if (bEscapePressedFlag == 1)
                         break;
                 }
 
-                if (bEscapePressed != 1) {
-                    nFuneralGuardFrame = 3;
+                if (bEscapePressedFlag != 1) {
+                    nCutsceneFuneralGuardFrame = 3;
                     frame = 0;
                     nFrameSkipCounter = 1;
                     for (; frame < 10; frame++) {
                         PumpWindowMessages();
                         funeral_player();
-                        if (bEscapePressed == 1)
+                        if (bEscapePressedFlag == 1)
                             break;
                     }
 
-                    if (bEscapePressed != 1) {
+                    if (bEscapePressedFlag != 1) {
                         ClearViewport(
-                            &stConversationTextViewport,
+                            &stCurrentConvTextViewport,
                             cBlackColour);
                         nFrameSkipCounter = 1;
                         FormatTextBufferFromStart(
@@ -1196,20 +1179,20 @@ unsigned int funeral_sequence(int playerFuneral)
                             funeral_player();
                             if (frame == 0)
                                 PlaySfxWaveFileByNumber(0x1f, -1, 0);
-                            if (bEscapePressed == 1)
+                            if (bEscapePressedFlag == 1)
                                 break;
                         }
 
-                        if (bEscapePressed != 1) {
+                        if (bEscapePressedFlag != 1) {
                             SceneDirector(3, followupSceneData,
                                           followupTextData);
                             ClearViewport(&stSceneBuffer,
                                           cPrimaryViewBufferColour);
 
-                            if (bEscapePressed != 1) {
+                            if (bEscapePressedFlag != 1) {
                                 for (volley = 0; volley < 3; volley++) {
                                     ClearViewport(
-                                        &stConversationTextViewport,
+                                        &stCurrentConvTextViewport,
                                         cBlackColour);
                                     FormatTextBufferFromStart(
                                         "%X%Y%FFire!%P",
@@ -1224,42 +1207,42 @@ unsigned int funeral_sequence(int playerFuneral)
                                         PumpWindowMessages();
                                         funeral_player();
                                         if (volley > 0) {
-                                            nFuneralCasketX--;
-                                            if (nFuneralCasketX %
+                                            nFuneralCasketPositionX--;
+                                            if (nFuneralCasketPositionX %
                                                     2 == 0)
-                                                nFuneralCasketY--;
-                                            nFuneralMainDistance++;
-                                            if (nFuneralCasketX <
+                                                nFuneralCasketPosY--;
+                                            nFuneralMainDist++;
+                                            if (nFuneralCasketPositionX <
                                                 160) {
-                                                stFuneralForeground.x +=
+                                                stCutsceneFuneralForeground.x +=
                                                     2;
-                                                nFuneralBaseX++;
+                                                nCutsceneFuneralBaseX++;
                                             }
                                         }
-                                        if (bEscapePressed == 1)
+                                        if (bEscapePressedFlag == 1)
                                             break;
                                     }
 
                                     ClearViewport(
-                                        &stConversationTextViewport,
+                                        &stCurrentConvTextViewport,
                                         cBlackColour);
-                                    if (bEscapePressed == 1)
+                                    if (bEscapePressedFlag == 1)
                                         break;
 
                                     nFuneralParticleDistance = 16;
                                     for (particle = 0;
                                          particle < 7;
                                          particle++) {
-                                        aFuneralParticles[particle].x =
+                                        aFuneralParticlesArray[particle].x =
                                             (short)(
                                                 aFuneralParticleOrigins[
                                                     particle].x +
-                                                nFuneralBaseX);
-                                        aFuneralParticles[particle].y =
+                                                nCutsceneFuneralBaseX);
+                                        aFuneralParticlesArray[particle].y =
                                             (short)(
                                                 aFuneralParticleOrigins[
                                                     particle].y +
-                                                nFuneralBaseY);
+                                                nCutsceneFuneralBasePosY);
                                     }
 
                                     frame = 0;
@@ -1269,42 +1252,42 @@ unsigned int funeral_sequence(int playerFuneral)
                                         PumpWindowMessages();
                                         funeral_player();
                                         if (volley > 0) {
-                                            nFuneralCasketX--;
-                                            if (nFuneralCasketX %
+                                            nFuneralCasketPositionX--;
+                                            if (nFuneralCasketPositionX %
                                                     2 == 0)
-                                                nFuneralCasketY--;
-                                            nFuneralMainDistance++;
-                                            if (nFuneralCasketX <
+                                                nFuneralCasketPosY--;
+                                            nFuneralMainDist++;
+                                            if (nFuneralCasketPositionX <
                                                 160) {
-                                                stFuneralForeground.x +=
+                                                stCutsceneFuneralForeground.x +=
                                                     2;
-                                                nFuneralBaseX++;
+                                                nCutsceneFuneralBaseX++;
                                             }
                                         }
                                         nFuneralParticleDistance++;
-                                        if (bEscapePressed == 1)
+                                        if (bEscapePressedFlag == 1)
                                             break;
                                     }
 
-                                    if (bEscapePressed == 1)
+                                    if (bEscapePressedFlag == 1)
                                         break;
                                 }
 
-                                if (bEscapePressed != 1) {
+                                if (bEscapePressedFlag != 1) {
                                     frame = 0;
                                     nFrameSkipCounter = 1;
                                     SetMusBreakpt(0, 0);
-                                    while (bEscapePressed == 0) {
+                                    while (bEscapePressedFlag == 0) {
                                         PumpWindowMessages();
                                         funeral_player();
-                                        nFuneralCasketX--;
-                                        if (nFuneralCasketX % 2 ==
+                                        nFuneralCasketPositionX--;
+                                        if (nFuneralCasketPositionX % 2 ==
                                             0)
-                                            nFuneralCasketY--;
+                                            nFuneralCasketPosY--;
                                         frame++;
-                                        nFuneralMainDistance++;
-                                        nFuneralBaseX++;
-                                        stFuneralForeground.x += 2;
+                                        nFuneralMainDist++;
+                                        nCutsceneFuneralBaseX++;
+                                        stCutsceneFuneralForeground.x += 2;
                                         nFuneralParticleDistance++;
                                         if (frame == 110 &&
                                             playerFuneral != 0)
@@ -1331,14 +1314,14 @@ unsigned int funeral_sequence(int playerFuneral)
     if (playerFuneral != 0)
         FreePacketAndClear(&pIntroFont, 0);
     ReleasePacketHandle(packet);
-    ReleasePacketHandle(pConversationSpecialShape);
+    ReleasePacketHandle(pCurrentConversationSpecialShape);
     free_constellation();
     ReleaseTextFont(0);
     ResetScreenClipToFullHeight();
-    FadeViewportPaletteToColour(&stScreen, cBlackColour, 1);
-    ClearViewport(&stScreen, cBlackColour);
+    FadeViewportPaletteToColour(&stScreenView, cBlackColour, 1);
+    ClearViewport(&stScreenView, cBlackColour);
     RestoreGamePalette();
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     ClearInputKeyStatePreservingModifiers();
     FlushInputEvents();
     nFuneralSequenceActive = 0;
@@ -1400,7 +1383,7 @@ unsigned int RunAnimationDemoLoop(signed char animation)
         funeral_sequence(1);
         break;
     case 12:
-        AwardCampaignMedal(nConversationMedalIndex);
+        AwardCampaignMedal(nCurrentConversationMedalIndex);
         break;
     case 13:
         BarracksScreen();

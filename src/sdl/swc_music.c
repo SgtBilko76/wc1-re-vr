@@ -268,28 +268,28 @@ void SdlUpdateSwcFlightMusic(void)
     int objective;
     enum ObjectType type;
 
-    if (swcSynth == NULL || nCurrentNavPoint < 0 ||
-        nCurrentNavPoint >= ACTIVE_MISSION_NAV_POINT_COUNT)
+    if (swcSynth == NULL || nCurrentNavigationPoint < 0 ||
+        nCurrentNavigationPoint >= ACTIVE_MISSION_NAV_POINT_COUNT)
         return;
     if (swcMusicNav == -1) {
         swcFlightTrack = aeShipMissionType[0] == MISSION_TYPE_STRIKE ? 1 :
             (aeShipMissionType[0] == MISSION_TYPE_DEFEND ||
              aeShipMissionType[0] == MISSION_TYPE_RENDEZVOUS) ? 2 : 0;
-    } else if (swcMusicNav != nCurrentNavPoint) {
+    } else if (swcMusicNav != nCurrentNavigationPoint) {
         swcFlightTrack = 0;
-        if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCount &&
-            aMissionObjectives[(int)cCurrentObjective].type == OBJECTIVE_HOME_BASE) {
+        if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCountValue &&
+            aMissionObjectivesArray[(int)cCurrentObjective].type == OBJECTIVE_HOME_BASE) {
             if (aeShipMissionType[0] == MISSION_TYPE_PATROL) {
                 /* CODE_05 triumph +0x69a2..+0x69ce returns zero at the
                  * first unvisited objective; WC1's patrol branch differs. */
                 complete = 0;
-                for (part = 0; part < (int)SDL_arraysize(abFlightPath); part++) {
-                    objective = abFlightPath[part];
+                for (part = 0; part < (int)SDL_arraysize(abFlightPathList); part++) {
+                    objective = abFlightPathList[part];
                     if (objective == -1) {
                         complete = 1;
                         break;
                     }
-                    if (objective < 0 || objective >= cMissionObjectiveCount || !visited((short)objective))
+                    if (objective < 0 || objective >= cMissionObjectiveCountValue || !visited((short)objective))
                         break;
                 }
             } else {
@@ -299,18 +299,18 @@ void SdlUpdateSwcFlightMusic(void)
                 aeShipMissionType[0] == MISSION_TYPE_PATROL ? 7 : 8;
         } else {
             for (part = 0; part < 2; part++) {
-                type = aMissionNavPoints[nCurrentNavPoint].preloadObjectTypes[part];
+                type = aMissionNavPoints[nCurrentNavigationPoint].preloadObjectTypes[part];
                 if (type == OBJECT_TYPE_ASTEROID_FIELD || type == OBJECT_TYPE_MINE_FIELD) {
                     /* Random3DO(5,6) uses an exclusive upper bound. */
                     swcFlightTrack = 5;
                     break;
                 }
             }
-            if (swcFlightTrack == 0 && hostile_sphere(0, nCurrentNavPoint))
+            if (swcFlightTrack == 0 && hostile_sphere(0, nCurrentNavigationPoint))
                 swcFlightTrack = 2 + RandomBelowOrEqual(1);
         }
     }
-    swcMusicNav = nCurrentNavPoint;
+    swcMusicNav = nCurrentNavigationPoint;
     /* GameFlow +0x1d3a: ChangeMusicVolume(25) before FlyingLoop. */
     SdlPlaySwcMusic(names[swcFlightTrack], 25);
 }

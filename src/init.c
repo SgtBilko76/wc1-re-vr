@@ -46,11 +46,13 @@ int anExpandedMemoryReservationByVideoMode[3] = {
     258000, 238000, 258000
 }; /* 0x00469ab0 */
 
+
 /* Linker commons defined here; LINK orders them by identifier hash. */
-volatile unsigned int dwOriginalFreeMemory; /* 0x005a7cd8 */
-unsigned char *pMouseCursorResource; /* 0x005a7cdc */
-int nAvailableGameMemory; /* 0x005a7ce0 */
-int nSceneResourceBudget; /* 0x005a7ce4 */
+short asCollisionTimes[10]; /* 0x005a7ca0 */
+int nCurrentWingmanKilledThisMission; /* 0x005a7cb4 */
+short nWingmanKillCount; /* 0x005a7cb8 */
+short nLogicLastFoundShipValue; /* 0x005a7cba */
+short asCollisionPartnerTable[10]; /* 0x005a7cc0 */
 
 /* Function start: 0x4219C0 */
 unsigned int LoadGamePaletteFile(void)
@@ -96,11 +98,11 @@ unsigned short InitializeEventManagerResources(void)
 {
     DAT_0059a9f0 = 20;
     nInputTickScale = 20;
-    DAT_0059ab64 = 1;
+    nUnusedInputTimerFlag = 1;
     *(unsigned char *volatile *)&stMouseCursorState.shape = pMouseCursorResource =
         FetchDiskPacketRetrying(14, 0, 0x10);
     *(unsigned short volatile *)&stMouseCursorState.frame = 0;
-    *(Viewport *volatile *)&stMouseCursorState.viewport = &stScreen;
+    *(Viewport *volatile *)&stMouseCursorState.viewport = &stScreenView;
     return 0;
 }
 
@@ -127,7 +129,7 @@ unsigned int LoadOriginFxDrivers(void)
     chdir("gamedat");
     nNearHeapMaxDescriptors = 0x80;
     IsSoundHardwarePresent(8);
-    if (bExpandedMemoryAvailable == 0)
+    if (bCurrentExpandedMemoryAvail == 0)
         SystemDebugPrintf("No ");
     SystemDebugPrintf("Expanded Memory Detected.\n");
     bGraphicsActive = 0;
@@ -139,35 +141,35 @@ unsigned int LoadOriginFxDrivers(void)
     nInputDoubleClickInterval = 2;
     EMStartUp();
     GetFxDriverInitResult();
-    dwOriginalFreeMemory = GetFixedOneMillionThunkAlt(0);
+    dwOriginalFreeMem = GetFixedOneMillionThunkAlt(0);
     if (nMusicPlaybackMode != 0 && nMusicPlaybackMode != 3)
         memoryThreshold = 210000;
     SetFrameTimerPeriodDirect(0x78);
     if ((int)GetFixedOneMillionThunk(4) > memoryThreshold) {
         nAvailableGameMemory =
-            (int)dwOriginalFreeMemory -
+            (int)dwOriginalFreeMem -
             anExpandedMemoryReservationByVideoMode[
                 bSlowSceneAnimation];
         if (nAvailableGameMemory < 0)
             exit_squadron(szInsufficientMemory);
-        nMemoryConfiguration = 2;
+        nMemoryConfig = 2;
         SystemDebugPrintf("Expanded Memory fully used.\n");
     } else {
         nAvailableGameMemory =
-            (int)dwOriginalFreeMemory -
+            (int)dwOriginalFreeMem -
             anBaseMemoryReservationByVideoMode[
                 bSlowSceneAnimation];
         if (nAvailableGameMemory < 0)
             exit_squadron(szInsufficientMemory);
-        nMemoryConfiguration = 0;
+        nMemoryConfig = 0;
         if (nMusicPlaybackMode == 1 || nMusicPlaybackMode == 2) {
             videoModeMemory =
                 anFullMusicMemoryReservationByVideoMode[
                     bSlowSceneAnimation];
-            if ((int)dwOriginalFreeMemory > videoModeMemory) {
-                nMemoryConfiguration = 1;
+            if ((int)dwOriginalFreeMem > videoModeMemory) {
+                nMemoryConfig = 1;
                 nAvailableGameMemory =
-                    (int)dwOriginalFreeMemory - videoModeMemory;
+                    (int)dwOriginalFreeMem - videoModeMemory;
                 SystemDebugPrintf("Full");
             } else {
                 SystemDebugPrintf("Limited");
@@ -194,9 +196,9 @@ unsigned int LoadOriginFxDrivers(void)
     if (nMusicPlaybackMode != 0 && nMusicPlaybackMode != 3)
         GetFxDriverStatus();
     initialize_direction_view_frames();
-    pConstellationDefinitions =
+    pConstellationDefinitionsPtr =
         LoadPacketAllocated(0x3a, 0);
-    pMissionCampaignData = LoadPacketAllocated(0x3a, 1);
+    pMissionCampaignInfo = LoadPacketAllocated(0x3a, 1);
     SystemDebugPrintf("\n[SYSTEM] : Exiting initialize()\n");
     return 0;
 }
@@ -204,20 +206,20 @@ unsigned int LoadOriginFxDrivers(void)
 /* Function start: 0x421D80 */
 unsigned int InitializeGameTextContexts(void)
 {
-    InitializeDIBScreenViewport(&stScreen,
+    InitializeDIBScreenViewport(&stScreenView,
                                 (unsigned char)cBlackColour);
-    stModalSourceViewport = stScreen;
-    stDefaultTextContext.viewport =
-        &stModalSourceViewport;
-    stDefaultTextContext.text =
-        szDefaultTextBuffer;
-    InitializeTextContextFromFont(&stDefaultTextContext, 1,
+    stModalSrcViewport = stScreenView;
+    stDefaultTxtContext.viewport =
+        &stModalSrcViewport;
+    stDefaultTxtContext.text =
+        szDefaultTxtBuf;
+    InitializeTextContextFromFont(&stDefaultTxtContext, 1,
                                   (unsigned char)cPrimaryTextColour,
                                   cBlackColour);
-    SetTextContext(&stDefaultTextContext);
+    SetTextContext(&stDefaultTxtContext);
 
-    stHudMessageTextContext.viewport = &stSpaceBuffer;
-    stHudMessageTextContext.text = szDefaultTextBuffer;
+    stHudMessageTextContext.viewport = &stSpaceBufferViewport;
+    stHudMessageTextContext.text = szDefaultTxtBuf;
     stHudMessageTextContext.alignment = 2;
     InitializeTextContextFromFont(&stHudMessageTextContext, 1,
                                   (unsigned char)cRedColour, -1);
@@ -237,7 +239,7 @@ unsigned int initialize_direction_view_frame(short yaw, short pitch,
     rotate_about_i(pitch, &up, &forward);
     index = (short)frame;
     aDirectionViewRightVector[index] = right;
-    aDirectionViewUpVector[index] = up;
+    aDirectionViewUpVectorArray[index] = up;
     aDirectionViewForwardVector[index] = forward;
     return 0;
 }
@@ -271,7 +273,7 @@ unsigned int LoadSpaceflightResources(void)
 {
     unsigned char *debrisShapeSet;
 
-    if (bExpandedMemoryAvailable == 0)
+    if (bCurrentExpandedMemoryAvail == 0)
         return 0;
     if (LoadShapeSet(aCommon3SpaceResources, 4, -1) == 0)
         return 0;
@@ -289,11 +291,11 @@ unsigned int LoadSpaceflightResources(void)
     aObjectTypeData[OBJECT_TYPE_DEBRIS_SHIP_GIRDER_CHUNK].shapeSet =
         debrisShapeSet;
     LoadShapeSet(aCockpitResourceDescriptors, 4, -1);
-    apCommPortraitShapes[8] = 0;
-    apCommPortraitShapes[9] = 0;
-    apCommPortraitShapes[10] = 0;
-    apCommPortraitShapes[11] = 0;
-    apCommPortraitShapes[13] = 0;
+    apCommunicationPortraitShapesTable[8] = 0;
+    apCommunicationPortraitShapesTable[9] = 0;
+    apCommunicationPortraitShapesTable[10] = 0;
+    apCommunicationPortraitShapesTable[11] = 0;
+    apCommunicationPortraitShapesTable[13] = 0;
     return 0;
 }
 

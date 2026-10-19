@@ -300,7 +300,7 @@ int main(int argumentCount, char **arguments)
     InitGameClockEpoch();
     CreateDebugOverlayConsole(0, (HWND)window, 60, 20);
     nSessionStartTime = (unsigned int)time(0);
-    pEventManagerPump = 0;
+    pCurrentEventManagerPump = 0;
     SDL_ShowCursor(SDL_DISABLE);
     gameResult = GameMain((short)(argumentCount - 1), arguments);
     SdlSetMouseGrab(0);

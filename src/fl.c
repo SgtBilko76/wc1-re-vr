@@ -67,6 +67,14 @@ static ShipManeuverHandler apShipAiManeuverHandlers[47] = {
 static short nManeuverProximityRange; /* 0x00475e78 */
 static unsigned char bCurrentManeuverReroll; /* 0x00475e7c */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+short nScrambleCanopyOffset; /* 0x005a8736 */
+short nFuneralMainDist; /* 0x005a8738 */
+signed char bScrambleCanopyClosed; /* 0x005a873a */
+short nCutsceneFuneralGuardFrame; /* 0x005a873c */
+ShortPoint stScrambleOverlay; /* 0x005a8740 */
+unsigned char *pScrambleOverlayShape; /* 0x005a8744 */
+
 /* Function start: 0x4060A0 */
 void SetManeuverProximityRange(unsigned short v)
 {
@@ -85,13 +93,13 @@ void Mline_up_drop(short ship, short target)
 {
     /* The shipped comparison normalizes this test to 0/1, then compares it
        with 9.  We therefore believe this completion path is unreachable. */
-    if ((aeSpecialManeuver[target] ==
+    if ((aeSpecialManeuvers[target] ==
          SPECIAL_MANEUVER_NORMAL) == 9) {
         maneuver_complete(ship);
         return;
     }
     if (no_goal(ship) != 0) {
-        point_ship_at_point(ship, &aShipPosition[target]);
+        point_ship_at_point(ship, &aShipPositionsArray[target]);
         anRollGoal[ship] = 360;
     }
 }
@@ -101,8 +109,8 @@ void Mwabble(short ship)
 {
     short choice;
 
-    asShipCount[ship]++;
-    if (asShipCount[ship] > 20) {
+    asShipTotal[ship]++;
+    if (asShipTotal[ship] > 20) {
         maneuver_complete(ship);
         return;
     }
@@ -112,7 +120,7 @@ void Mwabble(short ship)
         choice = RandomBelowOrEqual(2);
         switch (choice) {
         case 0:
-            anYawGoal[ship] = signed_random(6) * 5;
+            anYawTarget[ship] = signed_random(6) * 5;
             break;
         case 1:
             anPitchGoal[ship] = signed_random(6) * 5;
@@ -127,7 +135,7 @@ void Mwabble(short ship)
 /* Function start: 0x4061E0 */
 void advance(short ship)
 {
-    if (aeShipManeuver[ship] != MANEUVER_NONE)
+    if (aeShipManeuversTable[ship] != MANEUVER_NONE)
         acShipSequence[ship] = acShipSequence[ship] + 1;
 }
 
@@ -138,10 +146,10 @@ void ShipAiState35(short ship, short target)
 
     switch (acShipSequence[ship]) {
     case 0:
-        if (nTargetRange < 750 ||
-            ++asShipCount[ship] > 10) {
+        if (nTgtRange < 750 ||
+            ++asShipTotal[ship] > 10) {
             advance(ship);
-            asShipCount[ship] = 0;
+            asShipTotal[ship] = 0;
         }
         break;
     case 1:
@@ -149,20 +157,20 @@ void ShipAiState35(short ship, short target)
         advance(ship);
         break;
     case 2:
-        if (++asShipCount[ship] > 5) {
+        if (++asShipTotal[ship] > 5) {
             acShipSequence[ship] = 0;
-            asShipCount[ship] = 0;
+            asShipTotal[ship] = 0;
         }
-        if (nTargetFacing < 75)
+        if (nTargetFacingValue < 75)
             advance(ship);
         break;
     case 3:
-        point_ship(ship, 0, &vToTarget);
+        point_ship(ship, 0, &vToTgt);
         approach_speed(ship, 0x500);
-        if (nFacingToTarget > 10)
+        if (nFacingToTargetValue > 10)
             reset_maneuver(ship, MANEUVER_TAIL_FIRE);
-        if (nTargetRange > 1500 ||
-            nTargetFacing > 80)
+        if (nTgtRange > 1500 ||
+            nTargetFacingValue > 80)
             maneuver_complete(ship);
         break;
     }
@@ -174,8 +182,8 @@ void Mfull_ahead(short ship)
     short count;
 
     approach_full_speed(ship);
-    count = asShipCount[ship];
-    asShipCount[ship] = count - 1;
+    count = asShipTotal[ship];
+    asShipTotal[ship] = count - 1;
     if (count < 1)
         maneuver_complete(ship);
 }
@@ -197,7 +205,7 @@ void Mdrop_a_mine(short ship)
     short weapon;
 
     weapon = -1;
-    if (nTargetRange > 1500)
+    if (nTgtRange > 1500)
         weapon = mine_available(ship);
     if (weapon != -1)
         fire_weapon(ship, weapon);
@@ -209,9 +217,9 @@ void Mdrop_a_mine(short ship)
 void Mthink(short ship)
 {
     approach_cruise_speed(ship);
-    if (asShipCount[ship] == 0)
-        asShipCount[ship] = 2;
-    if (--asShipCount[ship] <= 1)
+    if (asShipTotal[ship] == 0)
+        asShipTotal[ship] = 2;
+    if (--asShipTotal[ship] <= 1)
         maneuver_complete(ship);
 }
 
@@ -254,15 +262,15 @@ void Mhard_break(short ship)
         set_special(ship, SPECIAL_MANEUVER_KILL_ENGINES);
         break;
     case 1:
-        advanceSequence = ++asShipCount[ship] > 3;
+        advanceSequence = ++asShipTotal[ship] > 3;
         if (advanceSequence != 0)
-            asShipCount[ship] = 0;
+            asShipTotal[ship] = 0;
         break;
     case 2:
         fire_super_brake(ship);
         break;
     case 3:
-        advanceSequence = ++asShipCount[ship] > 3;
+        advanceSequence = ++asShipTotal[ship] > 3;
         if (advanceSequence != 0)
             maneuver_complete(ship);
         break;
@@ -280,16 +288,16 @@ void Msit_n_spin(short ship, short target)
     advanceSequence = 1;
     switch (acShipSequence[ship]) {
     case 0:
-        if (++asShipCount[ship] < 4) {
+        if (++asShipTotal[ship] < 4) {
             approach_speed(ship, anShipSpeed[target]);
-            ScaleFixedVector(&aShipForwardVector[target],
-                             nTargetRange * 2, &destination);
-            AddFixedVectors(&aShipPosition[target],
+            ScaleFixedVector(&aShipFwdVec[target],
+                             nTgtRange * 2, &destination);
+            AddFixedVectors(&aShipPositionsArray[target],
                             &destination, &destination);
             advanceSequence = 0;
             point_ship_at_point(ship, &destination);
         } else {
-            asShipCount[ship] = 0;
+            asShipTotal[ship] = 0;
         }
         break;
     case 1:
@@ -320,9 +328,9 @@ void Msit_n_spin(short ship, short target)
         advanceSequence = no_goal(ship);
         break;
     case 7:
-        if (nFacingToTarget > 85)
+        if (nFacingToTargetValue > 85)
             fire(ship, target);
-        if (++asShipCount[ship] < 6)
+        if (++asShipTotal[ship] < 6)
             advanceSequence = 0;
         break;
     case 8:
@@ -351,10 +359,10 @@ void Mturn_n_spin(short ship, short target)
         veer_random(ship, 90);
         break;
     case 1:
-        advanceSequence = ++asShipCount[ship] > 2;
+        advanceSequence = ++asShipTotal[ship] > 2;
         break;
     case 2:
-        advanceSequence = nTargetFacing <= 80;
+        advanceSequence = nTargetFacingValue <= 80;
         if (advanceSequence != 0) {
             set_special(ship, SPECIAL_MANEUVER_KILL_ENGINES);
             point_ship_at_object(ship, target);
@@ -382,8 +390,8 @@ void Mburnout(short ship, short target)
         advance(ship);
         break;
     case 1:
-        if (aeSpecialManeuver[ship] == SPECIAL_MANEUVER_NONE) {
-            anYawGoal[ship] = 180;
+        if (aeSpecialManeuvers[ship] == SPECIAL_MANEUVER_NONE) {
+            anYawTarget[ship] = 180;
             advance(ship);
         }
         break;
@@ -403,7 +411,7 @@ void Mkickit(short ship)
         advance(ship);
         break;
     default:
-        if (aeSpecialManeuver[ship] ==
+        if (aeSpecialManeuvers[ship] ==
             SPECIAL_MANEUVER_NONE)
             maneuver_complete(ship);
         break;
@@ -427,7 +435,7 @@ void Mturn_n_kick(short ship)
         }
         break;
     case 2:
-        if (aeSpecialManeuver[ship] == SPECIAL_MANEUVER_NONE)
+        if (aeSpecialManeuvers[ship] == SPECIAL_MANEUVER_NONE)
             maneuver_complete(ship);
         break;
     }
@@ -453,7 +461,7 @@ void Mhard_turn(short ship)
     approach_full_speed(ship);
     switch (acShipSequence[ship]) {
     case 0:
-        anYawGoal[ship] =
+        anYawTarget[ship] =
             RandomBelowOrEqual(2) * 360 - 180;
         advance(ship);
         break;
@@ -472,7 +480,7 @@ void Mfish_hook(short ship, short target)
     (void)target;
     switch (acShipSequence[ship]) {
     case 0:
-        anYawGoal[ship] =
+        anYawTarget[ship] =
             RandomBelowOrEqual(2) * 240 - 120;
         fire_afterburner(ship, 5);
         break;
@@ -482,13 +490,13 @@ void Mfish_hook(short ship, short target)
         break;
     case 2:
         fire_super_brake(ship);
-        anYawGoal[ship] =
+        anYawTarget[ship] =
             RandomBelowOrEqual(2) * 90 - 45;
         break;
     case 3:
         advanceSequence =
             aObjectTypeData[
-                aeObjectType[ship]].cruiseVelocity >=
+                aeObjectTypeList[ship]].cruiseVelocity >=
             real_velocity(ship);
         break;
     case 4:
@@ -525,7 +533,7 @@ void Msplit_left(short ship)
 {
     switch (acShipSequence[ship]) {
     case 0:
-        anYawGoal[ship] = 90;
+        anYawTarget[ship] = 90;
         advance(ship);
         break;
     default:
@@ -540,7 +548,7 @@ void Msplit_right(short ship)
 {
     switch (acShipSequence[ship]) {
     case 0:
-        anYawGoal[ship] = -90;
+        anYawTarget[ship] = -90;
         advance(ship);
         break;
     default:
@@ -566,7 +574,7 @@ void Mgloat(short ship, short target)
     default:
         anPitchGoal[ship] = -30;
         if (RandomBelow(100) < 50) {
-            if (++asShipCount[ship] < 10)
+            if (++asShipTotal[ship] < 10)
                 acShipSequence[ship] = 1;
             else
                 maneuver_complete(ship);
@@ -597,7 +605,7 @@ void Mzip_past(short ship, short target)
         }
         approach_full_speed(ship);
         if (no_goal(ship) != 0) {
-            if (nTargetFacing > 80)
+            if (nTargetFacingValue > 80)
                 point_ship_below_object(ship, target);
             else
                 point_ship_behind_object(ship, target);
@@ -620,7 +628,7 @@ void Mtarget_missile(short ship, short target)
     object = 0;
     while (object < 10) {
         objectIndex = object;
-        if (acObjectOwner[objectIndex] == ship &&
+        if (acObjOwnersTable[objectIndex] == ship &&
             aeObjectClass[objectIndex] == OBJECT_CLASS_MISSILE) {
             reset_maneuver(ship, MANEUVER_STRAFE_ENEMY);
             return;
@@ -628,10 +636,10 @@ void Mtarget_missile(short ship, short target)
         object++;
     }
 
-    if (nFacingToTarget > 85 &&
-        nTargetRange < 6000 &&
-        (nTargetFacing > 80 ||
-         nTargetFacing < -80) &&
+    if (nFacingToTargetValue > 85 &&
+        nTgtRange < 6000 &&
+        (nTargetFacingValue > 80 ||
+         nTargetFacingValue < -80) &&
         RandomBelowOrEqual(5) == 0) {
         fire_missile(ship);
         maneuver_complete(ship);
@@ -644,8 +652,8 @@ void Mram_missile(short ship, short target)
     approach_full_speed(ship);
     if (no_goal(ship) != 0)
         point_ship_at_object(ship, target);
-    if (nFacingToTarget > 75 &&
-        nTargetRange < 6000) {
+    if (nFacingToTargetValue > 75 &&
+        nTgtRange < 6000) {
         fire_missile(ship);
         maneuver_complete(ship);
     }
@@ -668,10 +676,10 @@ void Mbuzz_debris(short ship)
         }
         break;
     default:
-        if (aeSpecialManeuver[ship] ==
+        if (aeSpecialManeuvers[ship] ==
             SPECIAL_MANEUVER_NONE) {
             maneuver_complete(ship);
-        } else if (nFacingToTarget > 95) {
+        } else if (nFacingToTargetValue > 95) {
             veer_random(ship, 10);
         }
         break;
@@ -685,7 +693,7 @@ void Mstrafe_enemy(short ship, short target)
 
     approach_cruise_speed(ship);
     if (abs(anPitchGoal[ship]) != 0 ||
-        abs(anYawGoal[ship]) != 0)
+        abs(anYawTarget[ship]) != 0)
         aimed = 0;
     else
         aimed = 1;
@@ -699,7 +707,7 @@ void Mstrafe_enemy(short ship, short target)
 /* Function start: 0x407030 */
 void Mbest_strafe(short ship, short target)
 {
-    if (nTargetFacing < 0x50) {
+    if (nTargetFacingValue < 0x50) {
         Mstrafe_enemy(ship, target);
         return;
     }
@@ -715,7 +723,7 @@ void Msit_n_fire(short ship, short target)
     }
     if (no_goal(ship) != 0)
         point_ship_at_object(ship, target);
-    if (nTargetRange > 3000)
+    if (nTgtRange > 3000)
         approach_cruise_speed(ship);
     else
         approach_zero_speed(ship);
@@ -725,7 +733,7 @@ void Msit_n_fire(short ship, short target)
 /* Function start: 0x4070D0 */
 void Mstrafe_n_roll(short ship, short target)
 {
-    if (0 < asObjectCounter[ship]) {
+    if (0 < asObjectCounterArray[ship]) {
         anRollGoal[ship] = 0x2d;
         return;
     }
@@ -740,19 +748,19 @@ void Mkill_missile(short ship, short target)
         return;
     }
     ship_vs_ship(ship, nTargetShip);
-    if (nFacingToTarget < 0) {
+    if (nFacingToTargetValue < 0) {
         reset_maneuver(ship, MANEUVER_FISH_HOOK);
         Mfish_hook(ship, target);
         return;
     }
-    if (nFacingToTarget < 80) {
+    if (nFacingToTargetValue < 80) {
         reset_maneuver(ship, MANEUVER_BURNOUT);
         Mburnout(ship, target);
         return;
     }
     point_ship_at_object(ship, nTargetShip);
-    if (nTargetRange < 8000)
-        fire(ship, acShipTarget[ship]);
+    if (nTgtRange < 8000)
+        fire(ship, acShipTargetTable[ship]);
 }
 
 /* Function start: 0x4071B0 */
@@ -768,16 +776,16 @@ void Mget_distance(short ship, short target)
 {
     short amount;
 
-    if (nTargetRange > 2000) {
+    if (nTgtRange > 2000) {
         maneuver_complete(ship);
         return;
     }
-    if (nTargetRange < 700 && normal_speed(ship) != 0)
+    if (nTgtRange < 700 && normal_speed(ship) != 0)
         fire_afterburner(ship, 10);
     else
         approach_full_speed(ship);
-    if (nFacingToTarget > 0 && no_goal(ship) != 0) {
-        amount = MinShort(20, nFacingToTarget);
+    if (nFacingToTargetValue > 0 && no_goal(ship) != 0) {
+        amount = MinShort(20, nFacingToTargetValue);
         steer_away_from_object(ship, target, amount);
     }
 }
@@ -791,21 +799,21 @@ void general_zig(short ship, unsigned int target, short pitch)
     approach_full_speed(ship);
     switch (acShipSequence[ship] % 6) {
     case 0:
-        anYawGoal[ship] = -35;
+        anYawTarget[ship] = -35;
         anPitchGoal[ship] = pitch;
         break;
     case 1:
     case 4:
         complete = no_goal(ship);
-        asShipCount[ship] = 0;
+        asShipTotal[ship] = 0;
         break;
     case 2:
     case 5:
-        complete = ++asShipCount[ship] >= 4;
+        complete = ++asShipTotal[ship] >= 4;
         break;
     case 3:
         pitch = -pitch;
-        anYawGoal[ship] = 35;
+        anYawTarget[ship] = 35;
         anPitchGoal[ship] = pitch;
         break;
     }
@@ -832,20 +840,20 @@ void Mcorkscrew(short ship)
 {
     approach_full_speed(ship);
     if (no_goal(ship) != 0) {
-        if (--asShipCount[ship] <= 0) {
+        if (--asShipTotal[ship] <= 0) {
             switch (acShipSequence[ship] % 4) {
             case 0:
-                anYawGoal[ship] = -20;
+                anYawTarget[ship] = -20;
                 break;
             case 1:
             case 3:
                 anRollGoal[ship] = 20;
                 break;
             case 2:
-                anYawGoal[ship] = 20;
+                anYawTarget[ship] = 20;
                 break;
             }
-            asShipCount[ship] = 4;
+            asShipTotal[ship] = 4;
             advance(ship);
         }
     }
@@ -858,7 +866,7 @@ void Mveer_away(short ship, short target)
 {
     switch (acShipSequence[ship]) {
     case 0:
-        if (nFacingToTarget > 80)
+        if (nFacingToTargetValue > 80)
             steer_away_from_object(ship, target, 40);
         else
             steer_away_from_object(ship, target, 10);
@@ -868,20 +876,20 @@ void Mveer_away(short ship, short target)
         break;
     }
     if (asObjectCollisionRadius[target] * 3 <
-        nTargetRange) {
+        nTgtRange) {
         veer_random(ship, 8);
         maneuver_complete(ship);
         return;
     }
     if (no_goal(ship) != 0) {
-        if (nFacingToTarget > 80) {
+        if (nFacingToTargetValue > 80) {
             steer_away_from_object(ship, target, 40);
-        } else if (nFacingToTarget < -65 ||
+        } else if (nFacingToTargetValue < -65 ||
                    RandomBelowOrEqual(100) < 4) {
             veer_random(ship, 16);
         }
     }
-    if ((nManeuverProximityRange >= nTargetRange ||
+    if ((nManeuverProximityRange >= nTgtRange ||
          RandomBelowOrEqual(100) < 10) &&
         normal_speed(ship) != 0) {
         fire_afterburner(ship, 10);
@@ -893,7 +901,7 @@ void Mveer_away(short ship, short target)
 /* Function start: 0x407560 */
 void ShipAiState44(short ship)
 {
-    acShipStress[ship] = 0;
+    acShipStressList[ship] = 0;
     maneuver_complete(ship);
 }
 
@@ -924,8 +932,8 @@ void Mreset(short ship)
 /* Function start: 0x4075D0 */
 void perform_maneuver(short obj)
 {
-    short target = acShipTarget[obj];
-    enum ShipManeuver previous = aeShipManeuver[obj];
+    short target = acShipTargetTable[obj];
+    enum ShipManeuver previous = aeShipManeuversTable[obj];
     short range;
 
 #ifdef SDL_PORT
@@ -950,8 +958,8 @@ void perform_maneuver(short obj)
     }
 #endif
     ship_vs_ship(obj, target);
-    range = nTargetRange;
-    if (nTargetFacing < 0)
+    range = nTgtRange;
+    if (nTargetFacingValue < 0)
         SetManeuverProximityRange((unsigned short)((asObjectCollisionRadius[target] +
                                    asObjectCollisionRadius[obj] * 4) >> 1));
     else
@@ -959,7 +967,7 @@ void perform_maneuver(short obj)
                                    asObjectCollisionRadius[obj] * 6) >> 1));
 
     if (unactive(target) != 0) {
-        switch (aeShipManeuver[obj]) {
+        switch (aeShipManeuversTable[obj]) {
         case MANEUVER_VEER_AWAY:
             Mveer_away(obj, target);
             break;
@@ -973,13 +981,13 @@ void perform_maneuver(short obj)
             maneuver_complete(obj);
             break;
         }
-    } else if (aeShipManeuver[obj] >= 0 &&
-               aeShipManeuver[obj] < 47) {
+    } else if (aeShipManeuversTable[obj] >= 0 &&
+               aeShipManeuversTable[obj] < 47) {
 #ifdef SDL_PORT
         /* The original x86 dispatcher pushes both values for every handler.
            Several handlers consume only the ship, and two consume an unsigned
            target.  Call those through their real C types in the native port. */
-        switch (aeShipManeuver[obj]) {
+        switch (aeShipManeuversTable[obj]) {
         case MANEUVER_WARPING_IN:
         case MANEUVER_WARPING_OUT:
             Mnone();
@@ -1048,12 +1056,12 @@ void perform_maneuver(short obj)
             break;
         default:
             apShipAiManeuverHandlers[
-                aeShipManeuver[obj]](obj, target);
+                aeShipManeuversTable[obj]](obj, target);
             break;
         }
 #else
         apShipAiManeuverHandlers[
-            aeShipManeuver[obj]](obj, target);
+            aeShipManeuversTable[obj]](obj, target);
 #endif
     } else {
         maneuver_complete(obj);
@@ -1061,7 +1069,7 @@ void perform_maneuver(short obj)
 
     if (nManeuverProximityRange > range) {
         try2reset_maneuver(obj, 2);
-    } else if (aeShipManeuver[obj] == previous &&
+    } else if (aeShipManeuversTable[obj] == previous &&
                RandomBelowOrEqual(100) <
                    bCurrentManeuverReroll) {
         maneuver_complete(obj);

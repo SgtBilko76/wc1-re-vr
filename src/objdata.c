@@ -589,3 +589,7 @@ ShortPoint aWeaponDisplayPositions[32] = {
 ShortPoint aWeaponDisplayOrigins[5] = {
     {0, 16}, {0, 16}, {0, 16}, {0, 16}, {0, 16}
 };
+/* Linker commons defined here; LINK orders them by identifier hash. */
+short nMenuInputRepeatDelay; /* 0x005a8208 */
+unsigned char abMissionAuxData[0x28]; /* 0x005a8210 */
+

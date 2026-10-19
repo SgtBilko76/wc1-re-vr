@@ -233,3 +233,21 @@ short DAT_0046e138[10] = {
     -400, -400, -400, -400, -400,
     -400, -400, -400, -400, -400
 };
+/* Linker commons defined here; LINK orders them by identifier hash. */
+short nUnusedInputTimerFlag; /* 0x0059ab64 */
+int aiInputEventSlotUsedTable[0x100]; /* 0x0059ab70 */
+MouseCursorState stHostMouseState; /* 0x0059af70 */
+TextContext *pCurTextContext; /* 0x0059af8c */
+int nInputTickScale; /* 0x0059af90 */
+FixedVector aObjectViewPositionsList[SPACE_OBJECT_COUNT]; /* 0x0059afa0 */
+short anObjPitchRot[SPACE_OBJECT_COUNT]; /* 0x0059b2a0 */
+int anShipSpeed[64]; /* 0x0059b320 */
+short nCurrentSpaceFrameValue; /* 0x0059b420 */
+unsigned int anShipAlertFlags[12]; /* 0x0059b430 */
+FixedVector vPlayerAccel; /* 0x0059b460 */
+int anShipFuelsTable[12]; /* 0x0059b470 */
+short asObjDistancesTable[SPACE_OBJECT_COUNT]; /* 0x0059b4a0 */
+ShortVector aShipFormationDeltaList[10]; /* 0x0059b520 */
+enum ObjectType aeObjectTypeList[SPACE_OBJECT_COUNT]; /* 0x0059b560 */
+short asObjectAnimationDelay[SPACE_OBJECT_COUNT]; /* 0x0059b660 */
+

@@ -125,9 +125,17 @@ static int bStreamerAudioRunning; /* 0x00597748 */
 static char szStreamerPathBuffer[128]; /* 0x00597750 */
 
 /* Linker commons defined here; LINK orders them by identifier hash. */
-int DAT_00598888;
-int DAT_0059888c;
-int DAT_00598890;
+int nUnusedFlightProfileTicksA; /* 0x00598888 */
+int nUnusedFlightProfileTicksB; /* 0x0059888c */
+int nUnusedFlightProfileTicksC; /* 0x00598890 */
+Viewport stRoomScreenViewport; /* 0x005988a0 */
+short nSavedRoomCtrlX; /* 0x005988b4 */
+unsigned char *pRecRoomRoster; /* 0x005988b8 */
+unsigned char *pMissionCampaignInfo; /* 0x005988bc */
+unsigned char *apRecRoomFigureShapes[3]; /* 0x005988c0 */
+PilotRecord aPilotEntriesList[9]; /* 0x005988d0 */
+ConstellationObjectDefinition *pConstellationDefinitionsPtr; /* 0x00598a28 */
+PilotRecord *apWingmanPilotsList[8]; /* 0x00598a30 */
 
 /* Function start: 0x4408A0 */
 void CheckHeapBlockSignature(unsigned char *shape)
@@ -352,18 +360,18 @@ void ValidateViewportBounds(Viewport *viewport, RasterSurface *surface,
     int nextOffset;
     int rowStrideOffset;
 
-    if (viewport->pixels != stScreen.pixels) {
+    if (viewport->pixels != stScreenView.pixels) {
         allocation = 0;
-        while (allocation < nViewportAllocationCount) {
+        while (allocation < nViewAllocTotal) {
             if (apViewportAllocations[allocation] ==
                 viewport->pixels)
                 break;
             allocation++;
         }
-        if (allocation >= nViewportAllocationCount)
+        if (allocation >= nViewAllocTotal)
             exit_squadron("bad vport");
     }
-    if (viewport->pixels == stScreen.pixels)
+    if (viewport->pixels == stScreenView.pixels)
         DIBslam();
     topOffset = SignExtendClipCoord(viewport->rowOffsets[viewport->top]);
     nextOffset = SignExtendClipCoord(
@@ -968,7 +976,7 @@ void RestoreSpriteBackground(Viewport *viewport, unsigned char *background,
         commands += 2;
     }
 refreshScreen:
-    if (viewport->pixels == stScreen.pixels)
+    if (viewport->pixels == stScreenView.pixels)
         DIBslam();
 }
 
@@ -1004,7 +1012,7 @@ void ClearViewport(Viewport *viewport, short colour)
         ClipViewportToScreen(viewport);
         FillRasterClip(&stRasterClip, colour);
     }
-    if (viewport == &stScreen) {
+    if (viewport == &stScreenView) {
         DIBslam();
         DIBslamReal();
     }
@@ -1054,7 +1062,7 @@ void DrawViewportPolygonHook(Viewport *viewport, const ShortPoint *points,
 void triangle(Viewport *viewport, const ShortPoint *points, int colour)
 {
     DrawViewportPolygonHook(viewport, points, 3, colour);
-    if (viewport->pixels == stScreen.pixels)
+    if (viewport->pixels == stScreenView.pixels)
         DIBslam();
     RasterLineHook("triangle");
 }
@@ -1062,7 +1070,7 @@ void triangle(Viewport *viewport, const ShortPoint *points, int colour)
 /* Function start: 0x441C40 */
 void shaded_triangle(Viewport *viewport)
 {
-    if (viewport->pixels == stScreen.pixels)
+    if (viewport->pixels == stScreenView.pixels)
         DIBslam();
     RasterLineHook("shaded_triangle");
 }
@@ -1117,7 +1125,7 @@ void DrawViewportEllipse(Viewport *viewport, short x, short y,
     ClipViewportToScreen(viewport);
     DrawRasterEllipse(&stRasterClip, x, y,
                       horizontalRadius, verticalRadius, colour);
-    if (viewport->pixels == stScreen.pixels)
+    if (viewport->pixels == stScreenView.pixels)
         DIBslam();
 }
 
@@ -1129,7 +1137,7 @@ void FillViewportEllipse(Viewport *viewport, short x, short y,
     ClipViewportToScreen(viewport);
     FillRasterEllipse(&stRasterClip, x, y,
                       horizontalRadius, verticalRadius, colour);
-    if (viewport->pixels == stScreen.pixels)
+    if (viewport->pixels == stScreenView.pixels)
         DIBslam();
 }
 
@@ -1141,14 +1149,14 @@ void DrawViewportEllipseShadow(Viewport *viewport, short x, short y,
     ClipViewportToScreen(viewport);
     DrawRasterEllipse(&stRasterClip, x, y,
                       horizontalRadius, verticalRadius, colour);
-    if (viewport->pixels == stScreen.pixels)
+    if (viewport->pixels == stScreenView.pixels)
         DIBslam();
 }
 
 /* Function start: 0x441EC0 */
 void shadow_draw(Viewport *viewport)
 {
-    if (viewport->pixels == stScreen.pixels)
+    if (viewport->pixels == stScreenView.pixels)
         DIBslam();
     RasterLineHook("shadow_draw");
 }
@@ -1344,7 +1352,7 @@ void BlitViewportScanlineRuns(Viewport *source, Viewport *destination,
                 destinationX = *run++;
             } while (destinationX != -1);
         }
-        if (destination->pixels == stScreen.pixels)
+        if (destination->pixels == stScreenView.pixels)
             DIBslam();
     }
 }
@@ -1352,7 +1360,7 @@ void BlitViewportScanlineRuns(Viewport *source, Viewport *destination,
 /* Function start: 0x4422D0 */
 void fizzle_fade(Viewport *source, Viewport *destination)
 {
-    if (destination->pixels == stScreen.pixels)
+    if (destination->pixels == stScreenView.pixels)
         DIBslam();
     RasterLineHook("fizzle_fade");
     (void)source;
@@ -1371,7 +1379,7 @@ void snow_viewport(Viewport *viewport, int effect, unsigned short colour)
     (void)effect;
     (void)colour;
 #endif
-    if (viewport->pixels == stScreen.pixels)
+    if (viewport->pixels == stScreenView.pixels)
         DIBslam();
     RasterLineHook("snow_viewport");
 }

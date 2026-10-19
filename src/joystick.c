@@ -22,13 +22,13 @@ void CalibrateJoystickInteractive()
     int downScale;
 
     fontLoaded = 0;
-    if (nActiveInputDevice == -1)
+    if (nCurrentActiveInputDevice == -1)
         return;
-    stDefaultTextContext.alignment = 2;
+    stDefaultTxtContext.alignment = 2;
     if (apTextFonts[1] != 0)
         fontLoaded = 1;
 
-    InitializeTextContextFromFont(&stDefaultTextContext, 1,
+    InitializeTextContextFromFont(&stDefaultTxtContext, 1,
         cViewportClearColour, (signed char)cBlackColour);
     shown = ShowModalTextPanel(1,
         "Turn AUTO FIRE off if present, press a button");
@@ -44,11 +44,11 @@ void CalibrateJoystickInteractive()
     if (shown != 0) {
         DIBslamReal();
         WaitForJoystickButtonPress();
-        SampleJoystickDevice(samples, nActiveInputDevice, 0x7fff);
-        calibration[0] = (short)(nJoystickMinimumX =
-            samples[nActiveInputDevice].x);
-        calibration[1] = (short)(nJoystickMinimumY =
-            samples[nActiveInputDevice].y);
+        SampleJoystickDevice(samples, nCurrentActiveInputDevice, 0x7fff);
+        calibration[0] = (short)(nStickMinimumPositionX =
+            samples[nCurrentActiveInputDevice].x);
+        calibration[1] = (short)(nStickMinimumPositionY =
+            samples[nCurrentActiveInputDevice].y);
         WaitForJoystickButtonRelease();
         ReleaseModalTextPanel();
     }
@@ -58,11 +58,11 @@ void CalibrateJoystickInteractive()
     if (shown != 0) {
         DIBslamReal();
         WaitForJoystickButtonPress();
-        SampleJoystickDevice(samples, nActiveInputDevice, 0x7fff);
-        calibration[2] = (short)(nJoystickMaximumX =
-            samples[nActiveInputDevice].x);
-        calibration[3] = (short)(nJoystickMaximumY =
-            samples[nActiveInputDevice].y);
+        SampleJoystickDevice(samples, nCurrentActiveInputDevice, 0x7fff);
+        calibration[2] = (short)(nStickMaxX =
+            samples[nCurrentActiveInputDevice].x);
+        calibration[3] = (short)(nStickMaxY =
+            samples[nCurrentActiveInputDevice].y);
         WaitForJoystickButtonRelease();
         ReleaseModalTextPanel();
     }
@@ -72,11 +72,11 @@ void CalibrateJoystickInteractive()
     if (shown != 0) {
         DIBslamReal();
         WaitForJoystickButtonPress();
-        SampleJoystickDevice(samples, nActiveInputDevice, 0x7fff);
+        SampleJoystickDevice(samples, nCurrentActiveInputDevice, 0x7fff);
         calibration[4] = (short)(nJoystickCentreX =
-            samples[nActiveInputDevice].x);
+            samples[nCurrentActiveInputDevice].x);
         calibration[5] = (short)(nJoystickCentreY =
-            samples[nActiveInputDevice].y);
+            samples[nCurrentActiveInputDevice].y);
         WaitForJoystickButtonRelease();
         ReleaseModalTextPanel();
     }
@@ -84,23 +84,23 @@ void CalibrateJoystickInteractive()
     if (fontLoaded == 0)
         ReleaseTextFont(1);
 
-    horizontalRange = nJoystickHorizontalRange;
+    horizontalRange = nJoystickHorizontalRangeValue;
     if (horizontalRange == 0)
         horizontalRange = 9;
     verticalRange = nJoystickVerticalRange;
     if (verticalRange == 0)
         verticalRange = 9;
     leftScale =
-        (nJoystickCentreX - nJoystickMinimumX) /
+        (nJoystickCentreX - nStickMinimumPositionX) /
         horizontalRange;
     rightScale =
-        (nJoystickMaximumX - nJoystickCentreX) /
+        (nStickMaxX - nJoystickCentreX) /
         horizontalRange;
     upScale =
-        (nJoystickCentreY - nJoystickMinimumY) /
+        (nJoystickCentreY - nStickMinimumPositionY) /
         verticalRange;
     downScale =
-        (nJoystickMaximumY - nJoystickCentreY) /
+        (nStickMaxY - nJoystickCentreY) /
         verticalRange;
     if (leftScale == 0)
         leftScale++;
@@ -110,25 +110,25 @@ void CalibrateJoystickInteractive()
         rightScale++;
     if (downScale == 0)
         downScale++;
-    nJoystickLeftScale = leftScale;
+    nCurrentJoystickLeftScale = leftScale;
     nJoystickUpScale = upScale;
     nJoystickRightScale = rightScale;
-    nJoystickDownScale = downScale;
-    nJoystickHorizontalRange = horizontalRange;
+    nJoystickDownScaleValue = downScale;
+    nJoystickHorizontalRangeValue = horizontalRange;
     nJoystickVerticalRange = verticalRange;
 
-    nJoystickMinimumX = nJoystickCentreX -
+    nStickMinimumPositionX = nJoystickCentreX -
         leftScale * horizontalRange;
-    nJoystickMinimumY = nJoystickCentreY -
+    nStickMinimumPositionY = nJoystickCentreY -
         upScale * verticalRange;
-    nJoystickMaximumX = nJoystickCentreX +
+    nStickMaxX = nJoystickCentreX +
         rightScale * horizontalRange;
-    nJoystickMaximumY = nJoystickCentreY +
+    nStickMaxY = nJoystickCentreY +
         downScale * verticalRange;
-    nJoystickFailureValue = nJoystickMaximumX * 2;
+    nCurrentJoystickFailureValue = nStickMaxX * 2;
 
-    if (nJoystickMaximumX <= nJoystickMinimumX ||
-        nJoystickMaximumY <= nJoystickMinimumY) {
+    if (nStickMaxX <= nStickMinimumPositionX ||
+        nStickMaxY <= nStickMinimumPositionY) {
         shown = ShowModalTextPanel(1,
             "FAILED! Center Joystick, press a button");
         if (shown != 0) {
@@ -145,7 +145,7 @@ void CalibrateJoystickInteractive()
     file = _open("j.cal", 0x8301, 0x180);
     if (file == -1)
         return;
-    failed = _write(file, &nActiveInputDevice, 2) == -1;
+    failed = _write(file, &nCurrentActiveInputDevice, 2) == -1;
     if (failed == 0)
         failed = _write(file, &calibration[0], 2) == -1;
     if (failed == 0)
@@ -168,11 +168,11 @@ void WaitForJoystickButtonRelease(void)
 {
     do {
         SampleJoystickDevice(
-            &aInputDeviceSamples[
-                nActiveInputDevice],
-            nActiveInputDevice, 0);
-    } while (aInputDeviceSamples[
-                 nActiveInputDevice].buttons != 0);
+            &aInputDevSamples[
+                nCurrentActiveInputDevice],
+            nCurrentActiveInputDevice, 0);
+    } while (aInputDevSamples[
+                 nCurrentActiveInputDevice].buttons != 0);
 }
 
 /* Function start: 0x410700 */
@@ -180,9 +180,9 @@ void WaitForJoystickButtonPress(void)
 {
     do {
         SampleJoystickDevice(
-            &aInputDeviceSamples[
-                nActiveInputDevice],
-            nActiveInputDevice, 0);
-    } while (aInputDeviceSamples[
-                 nActiveInputDevice].buttons == 0);
+            &aInputDevSamples[
+                nCurrentActiveInputDevice],
+            nCurrentActiveInputDevice, 0);
+    } while (aInputDevSamples[
+                 nCurrentActiveInputDevice].buttons == 0);
 }

@@ -21,9 +21,11 @@ static unsigned char abUnusedMonoBuffer[0x50]; /* 0x00475e20 */
 static int bMonoDebugAvailable; /* 0x00475e70 */
 static HANDLE hMonoDebugDriver; /* 0x00475e74 */
 
+
 /* Linker commons defined here; LINK orders them by identifier hash. */
-char szSoundDebugMessage[512]; /* 0x005a8760 */
-unsigned char *pIntroFont; /* 0x005a8960 */
+int nHostMouseMessageY; /* 0x005a8994 */
+int bHostPrimaryMouseButton; /* 0x005a8998 */
+int bHostSecondaryMouseButton; /* 0x005a899c */
 
 /* Function start: 0x403500 */
 void __stdcall CloseDataFile(unsigned short fd)
@@ -110,7 +112,7 @@ int MeasureScaledIntroTextWidth(const char *text, short scale)
         if (c >= 'A' && c <= 'z') {
             c -= 'A';
 
-            GetTransformedShapeBounds(&stSpaceBuffer, 0, 0,
+            GetTransformedShapeBounds(&stSpaceBufferViewport, 0, 0,
                                       pIntroFont, (short)c, 0,
                                       scale, 0, bounds);
             width = (short)(width + bounds[2] + 1);
@@ -144,10 +146,10 @@ int DrawCenteredScaledIntroText(const char *text, short centreX,
         if (c >= 'A' && c <= 'z') {
             c -= 'A';
 
-            DrawSpriteScaled(&stSpaceBuffer, x, y,
+            DrawSpriteScaled(&stSpaceBufferViewport, x, y,
                              pIntroFont, (short)c, 0,
                              scale, 0);
-            GetTransformedShapeBounds(&stSpaceBuffer, 0, 0,
+            GetTransformedShapeBounds(&stSpaceBufferViewport, 0, 0,
                                       pIntroFont, (short)c, 0,
                                       scale, 0, bounds);
             x = (short)(x + bounds[2] + 1);
@@ -237,7 +239,7 @@ int print_subtitle(Viewport *viewport, short colour, const char *text)
             x = (short)((320 - GetLineLength(scan)) >> 1);
         }
     }
-    if (viewport->pixels == stScreen.pixels)
+    if (viewport->pixels == stScreenView.pixels)
         DIBslam();
     return 0;
 }
@@ -247,14 +249,14 @@ int advance_canned_sequence(short obj)
 {
     const short *command;
 
-    command = apCannedSequence[obj];
-    asCannedCommand[obj] = *command++;
-    switch (asCannedCommand[obj]) {
+    command = apCannedSequenceList[obj];
+    asCannedCommands[obj] = *command++;
+    switch (asCannedCommands[obj]) {
     case 0:
-        asActionCount[obj] = *command++;
+        asActionCounts[obj] = *command++;
         break;
     case 1:
-        anYawGoal[obj] = *command++;
+        anYawTarget[obj] = *command++;
         anPitchGoal[obj] = *command++;
         anRollGoal[obj] = *command++;
         anShipSpeed[obj] = (int)*command++ << 8;
@@ -266,25 +268,25 @@ int advance_canned_sequence(short obj)
         fire_fixed_projectile_weapon(obj);
         break;
     case 4:
-        aeSpecialManeuver[obj] =
+        aeSpecialManeuvers[obj] =
             SPECIAL_MANEUVER_AFTERBURNER;
         break;
     }
-    apCannedSequence[obj] = command;
+    apCannedSequenceList[obj] = command;
     return 0;
 }
 
 /* Function start: 0x403B70 */
 unsigned int update_canned_sequence(short obj)
 {
-    switch (asCannedCommand[obj]) {
+    switch (asCannedCommands[obj]) {
     case 0:
-        asActionCount[obj]--;
-        if (asActionCount[obj] == 0)
+        asActionCounts[obj]--;
+        if (asActionCounts[obj] == 0)
             advance_canned_sequence(obj);
         break;
     case 1:
-        if (anYawGoal[obj] == 0 &&
+        if (anYawTarget[obj] == 0 &&
             anPitchGoal[obj] == 0 &&
             anRollGoal[obj] == 0) {
             /* A chained comparison: the speed window test compares the
@@ -375,12 +377,12 @@ void SoundDebugPrintf(const char *fmt, ...)
     va_list arguments;
 
     va_start(arguments, fmt);
-    vsprintf(szSoundDebugMessage, fmt, arguments);
+    vsprintf(szSoundDebugMsg, fmt, arguments);
     va_end(arguments);
 #else
-    vsprintf(szSoundDebugMessage, fmt, (char *)(&fmt + 1));
+    vsprintf(szSoundDebugMsg, fmt, (char *)(&fmt + 1));
 #endif
-    MonoDebug_print(szSoundDebugMessage);
+    MonoDebug_print(szSoundDebugMsg);
 }
 
 /* Function start: 0x403DE0 */

@@ -26,52 +26,17 @@ static ShortRect aTargetArmorClipRects[4] = { /* 0x0046a928 */
     { -29, -20, -12, 20 }
 };
 
+
 /* Linker commons defined here; LINK orders them by identifier hash. */
-int nAllocateViewportCalls; /* 0x005a68ec */
-void *pLastPacketAllocation; /* 0x005a68f0 */
-FireworkState aFireworks[30]; /* 0x005a6900 */
-unsigned char *pFireworkShape; /* 0x005a6a68 */
-ConstellationStar aConstellationStars[10]; /* 0x005a6a70 */
-Viewport *pConstellationViewport; /* 0x005a6aac */
-short nConstellationStarCount; /* 0x005a6ab0 */
-ConstellationParticle aConstellationParticles[16]; /* 0x005a6ac0 */
-Viewport stConstellationViewport; /* 0x005a6b40 */
-short nConstellationParticleCount; /* 0x005a6b54 */
-const short *pViewScript; /* 0x005a6b58 */
-short nExternalViewDistance; /* 0x005a6b5c */
-Viewport stPilotHand; /* 0x005a6b60 */
-Viewport stLeftVdu; /* 0x005a6b80 */
-ScreenViewportPacket *pScreenViewportPacket; /* 0x005a6b94 */
-Viewport stScreen; /* 0x005a6ba0 */
-TextContext stHudMessageTextContext; /* 0x005a6bc0 */
-Viewport stCockpitBar; /* 0x005a6be0 */
-unsigned char *pTargetLockShape; /* 0x005a6bf4 */
-unsigned char *apTextFonts[4]; /* 0x005a6c00 */
-FontWorkspace **apFontWorkspaces[4]; /* 0x005a6c10 */
-FixedVector aDirectionViewRightVector[DIRECTION_VIEW_COUNT]; /* 0x005a6c20 */
-FixedVector aDirectionViewUpVector[DIRECTION_VIEW_COUNT]; /* 0x005a6f10 */
-FixedVector aDirectionViewForwardVector[DIRECTION_VIEW_COUNT]; /* 0x005a7200 */
-TextContext stLeftVduTextContext; /* 0x005a74f0 */
-Viewport stSpaceBuffer; /* 0x005a7510 */
-Viewport stRightVdu; /* 0x005a7530 */
-Viewport stPilotHandBackdrop; /* 0x005a7550 */
-unsigned char *pCockpitWeaponShape; /* 0x005a7564 */
-Viewport stConversationTextViewport; /* 0x005a7570 */
-char szDefaultTextBuffer[0xc8]; /* 0x005a7590 */
-unsigned char *pCockpitIndicatorShape; /* 0x005a7658 */
-unsigned char *pConstellationShape; /* 0x005a765c */
-unsigned char *pCommMenuCursorShape; /* 0x005a7660 */
-Viewport stModalSourceViewport; /* 0x005a7670 */
-unsigned char *pPilotHandShape; /* 0x005a7684 */
-Viewport stPilotHandComposite; /* 0x005a7690 */
-Viewport stSceneBuffer; /* 0x005a76b0 */
-short aPaletteFadeEntries[6][3]; /* 0x005a76d0 */
-unsigned char *pCockpitDamageShape; /* 0x005a76f4 */
-TextContext stRightVduTextContext; /* 0x005a7700 */
-TextContext stCockpitReadoutTextContext; /* 0x005a7720 */
-TextContext stDefaultTextContext; /* 0x005a7740 */
-TextContext stConversationTextContext; /* 0x005a7760 */
-short asDamageFlashColour[3]; /* 0x005a7780 */
+const char *pszCommMenuHeading; /* 0x0059e490 */
+char szCommMenuHeadingBuf[0x40]; /* 0x0059e4a0 */
+const char *apszCommMenuChoiceTextTable[7]; /* 0x0059e4e0 */
+int anInputButton2PressTime[2]; /* 0x0059e500 */
+short asInputButton1DoubleClicksList[2]; /* 0x0059e508 */
+short asInputBtn1ChangedTable[2]; /* 0x0059e50c */
+short asInputButton2ChangedTable[2]; /* 0x0059e510 */
+short asPreviousInputButtons[2]; /* 0x0059e514 */
+int anInputButton1PressTimes[2]; /* 0x0059e518 */
 
 /* Function start: 0x42CDB0 */
 unsigned int parse_view_script(void)
@@ -80,10 +45,10 @@ unsigned int parse_view_script(void)
     short obj;
     short command;
 
-    if (*pViewScript == 13)
+    if (*pCurrentViewScriptPtr == 13)
         return 0;
-    while (*pViewScript != 14) {
-        command = *pViewScript++;
+    while (*pCurrentViewScriptPtr != 14) {
+        command = *pCurrentViewScriptPtr++;
         if (command == -1) {
             bScriptedView = 0;
             nScriptedViewObject = -1;
@@ -92,75 +57,75 @@ unsigned int parse_view_script(void)
         switch (command) {
         case 0:
 #ifdef SDL_PORT
-            aShipPosition[61].x =
-                (int)*pViewScript++ * 0x100;
-            aShipPosition[61].y =
-                (int)*pViewScript++ * 0x100;
-            aShipPosition[61].z =
-                (int)*pViewScript++ * 0x100;
+            aShipPositionsArray[61].x =
+                (int)*pCurrentViewScriptPtr++ * 0x100;
+            aShipPositionsArray[61].y =
+                (int)*pCurrentViewScriptPtr++ * 0x100;
+            aShipPositionsArray[61].z =
+                (int)*pCurrentViewScriptPtr++ * 0x100;
 #else
-            aShipPosition[61].x =
-                (int)*pViewScript++ << 8;
-            aShipPosition[61].y =
-                (int)*pViewScript++ << 8;
-            aShipPosition[61].z =
-                (int)*pViewScript++ << 8;
+            aShipPositionsArray[61].x =
+                (int)*pCurrentViewScriptPtr++ << 8;
+            aShipPositionsArray[61].y =
+                (int)*pCurrentViewScriptPtr++ << 8;
+            aShipPositionsArray[61].z =
+                (int)*pCurrentViewScriptPtr++ << 8;
 #endif
             break;
         case 1:
-            alter_yaw(*pViewScript++, 61);
-            alter_pitch(*pViewScript++, 61);
-            alter_roll(*pViewScript++, 61);
+            alter_yaw(*pCurrentViewScriptPtr++, 61);
+            alter_pitch(*pCurrentViewScriptPtr++, 61);
+            alter_roll(*pCurrentViewScriptPtr++, 61);
             break;
         case 2:
 #ifdef SDL_PORT
-            ScaleFixedVector(&aShipForwardVector[61],
-                             (int)*pViewScript++ * 0x100,
+            ScaleFixedVector(&aShipFwdVec[61],
+                             (int)*pCurrentViewScriptPtr++ * 0x100,
                              &aShipVelocity[61]);
 #else
-            ScaleFixedVector(&aShipForwardVector[61],
-                             (int)*pViewScript++ << 8,
+            ScaleFixedVector(&aShipFwdVec[61],
+                             (int)*pCurrentViewScriptPtr++ << 8,
                              &aShipVelocity[61]);
 #endif
             break;
         case 3:
-            force_view(*pViewScript++,
+            force_view(*pCurrentViewScriptPtr++,
                        nScriptedViewObject);
             break;
         case 4:
-            nEyePitchGoal =
-                (short)-*pViewScript++;
-            nEyePitchRate = *pViewScript++;
+            nEyePitchTargetValue =
+                (short)-*pCurrentViewScriptPtr++;
+            nEyePitchRate = *pCurrentViewScriptPtr++;
             break;
         case 5:
-            nEyePitchGoal = *pViewScript++;
-            nEyePitchRate = *pViewScript++;
+            nEyePitchTargetValue = *pCurrentViewScriptPtr++;
+            nEyePitchRate = *pCurrentViewScriptPtr++;
             break;
         case 6:
-            nEyeYawGoal = *pViewScript++;
-            nEyeYawRate = *pViewScript++;
+            nEyeYawGoalValue = *pCurrentViewScriptPtr++;
+            nEyeYawRate = *pCurrentViewScriptPtr++;
             break;
         case 7:
-            nEyeYawGoal =
-                (short)-*pViewScript++;
-            nEyeYawRate = *pViewScript++;
+            nEyeYawGoalValue =
+                (short)-*pCurrentViewScriptPtr++;
+            nEyeYawRate = *pCurrentViewScriptPtr++;
             break;
         case 8:
-            nEyeRollGoal = *pViewScript++;
-            nEyeRollRate = *pViewScript++;
+            nEyeRollTargetValue = *pCurrentViewScriptPtr++;
+            nEyeRollRate = *pCurrentViewScriptPtr++;
             break;
         case 9:
             copy_frame(61, 63);
-            alter_yaw(*pViewScript++, 63);
-            alter_pitch(*pViewScript++, 63);
-            alter_roll(*pViewScript++, 63);
+            alter_yaw(*pCurrentViewScriptPtr++, 63);
+            alter_pitch(*pCurrentViewScriptPtr++, 63);
+            alter_roll(*pCurrentViewScriptPtr++, 63);
 #ifdef SDL_PORT
-            ScaleFixedVector(&aShipForwardVector[63],
-                             (int)*pViewScript++ * 0x100,
+            ScaleFixedVector(&aShipFwdVec[63],
+                             (int)*pCurrentViewScriptPtr++ * 0x100,
                              &vector);
 #else
-            ScaleFixedVector(&aShipForwardVector[63],
-                             (int)*pViewScript++ << 8,
+            ScaleFixedVector(&aShipFwdVec[63],
+                             (int)*pCurrentViewScriptPtr++ << 8,
                              &vector);
 #endif
             AddFixedVectors(&aShipVelocity[61], &vector,
@@ -174,33 +139,33 @@ unsigned int parse_view_script(void)
             copy_frame(nScriptedViewObject, 61);
             break;
         case 12:
-            aShipPosition[61] =
-                aShipPosition[nScriptedViewObject];
+            aShipPositionsArray[61] =
+                aShipPositionsArray[nScriptedViewObject];
             break;
         case 15:
-            ComputeVectorDelta(&aShipPosition[61],
-                &aShipPosition[nScriptedViewObject],
+            ComputeVectorDelta(&aShipPositionsArray[61],
+                &aShipPositionsArray[nScriptedViewObject],
                 &vector);
-            aShipForwardVector[61] = vector;
+            aShipFwdVec[61] = vector;
             fix_objects_ijk(61);
             break;
         case 16:
             obj = 0;
             while (obj < 10) {
                 if (nShipMissionIndices[obj] ==
-                    *pViewScript)
+                    *pCurrentViewScriptPtr)
                     break;
                 obj++;
             }
             if (obj < 10)
                 nScriptedViewObject = obj;
-            pViewScript++;
+            pCurrentViewScriptPtr++;
             break;
         }
-        if (*pViewScript == 13)
+        if (*pCurrentViewScriptPtr == 13)
             return 0;
     }
-    asObjectCounter[61] = pViewScript[1];
+    asObjectCounterArray[61] = pCurrentViewScriptPtr[1];
     return 0;
 }
 
@@ -210,20 +175,20 @@ unsigned int update_scripted_view(void)
     short counter;
     int command;
 
-    command = *pViewScript;
+    command = *pCurrentViewScriptPtr;
     switch (command) {
     case 13:
-        if ((nEyeYawGoal == nEyePitchGoal) !=
-            nEyeRollGoal) {
-            pViewScript++;
+        if ((nEyeYawGoalValue == nEyePitchTargetValue) !=
+            nEyeRollTargetValue) {
+            pCurrentViewScriptPtr++;
             parse_view_script();
         }
         break;
     case 14:
-        counter = asObjectCounter[61];
-        asObjectCounter[61]--;
+        counter = asObjectCounterArray[61];
+        asObjectCounterArray[61]--;
         if (counter < 1) {
-            pViewScript += 2;
+            pCurrentViewScriptPtr += 2;
             parse_view_script();
         }
         break;
@@ -237,7 +202,7 @@ void initialize_scripted_view(const short *script)
     bScriptedView = 1;
     zero_vector(&aShipVelocity[61]);
     init_ijk(61);
-    pViewScript = script;
+    pCurrentViewScriptPtr = script;
     parse_view_script();
     asObjectCollisionRadius[61] = 100;
 }
@@ -249,7 +214,7 @@ unsigned int InitializeFireworks(void)
     short i = 0;
 
     do {
-        aFireworks[i].frame = (short)empty;
+        aFireworksList[i].frame = (short)empty;
         i = i + 1;
     } while (i < 0x1e);
     return 0;
@@ -264,21 +229,21 @@ short TheEndFireWorks(Viewport *viewport, short count)
     emptyCount = 0;
     index = count;
     while (--index >= 0) {
-        if (aFireworks[index].frame == -1) {
+        if (aFireworksList[index].frame == -1) {
             emptyCount++;
         } else {
             DrawSpriteDefault(
-                viewport, aFireworks[index].x,
-                aFireworks[index].y,
+                viewport, aFireworksList[index].x,
+                aFireworksList[index].y,
                 pFireworkShape,
-                (short)(aFireworks[index].frame +
-                        aFireworks[index].variant * 8));
-            if (aFireworks[index].frame++ == 7) {
-                aFireworks[index].frame = -1;
+                (short)(aFireworksList[index].frame +
+                        aFireworksList[index].variant * 8));
+            if (aFireworksList[index].frame++ == 7) {
+                aFireworksList[index].frame = -1;
                 FlushSoundEffectsAndLog(
-                    aFireworks[index].soundHandle, index);
-            } else if (aFireworks[index].frame == 1) {
-                aFireworks[index].soundHandle =
+                    aFireworksList[index].soundHandle, index);
+            } else if (aFireworksList[index].frame == 1) {
+                aFireworksList[index].soundHandle =
                     ((unsigned int (__cdecl *)(
                         const unsigned char *, int, int, short, short,
                         int))SoundFxTick)(
@@ -286,7 +251,7 @@ short TheEndFireWorks(Viewport *viewport, short count)
                             0, 127,
                             (signed char)(
                                 127 -
-                                (int)aFireworks[index].x *
+                                (int)aFireworksList[index].x *
                                     127 / 319),
                             index, 1);
             }
@@ -309,45 +274,45 @@ unsigned int InitializeConstellationField(Viewport *viewport,
     short width;
     int population;
 
-    pConstellationViewport = viewport;
+    pConstellationViewportPtr = viewport;
     nConstellationDirection = direction;
     width = (short)(viewport->right - viewport->left);
     viewportHeight = (short)(viewport->bottom - viewport->top);
     population = density;
-    nConstellationStarCount = (short)(population * 10 / 16);
+    nViewConstellationStarCount = (short)(population * 10 / 16);
     population *= 16;
-    nConstellationParticleCount = (short)(population / 16);
+    nConstellationParticleTotal = (short)(population / 16);
     index = 0;
-    if (index < nConstellationStarCount) {
+    if (index < nViewConstellationStarCount) {
         starHeight = viewportHeight;
         do {
-            aConstellationStars[index].x =
+            aConstellationStarsTable[index].x =
                 RandomInRange(0, width);
-            aConstellationStars[index].y =
+            aConstellationStarsTable[index].y =
                 RandomInRange(0, starHeight);
-            aConstellationStars[index].frame =
+            aConstellationStarsTable[index].frame =
                 (short)(RandomInRange(0, 5) + 32);
             index++;
-        } while (index < nConstellationStarCount);
+        } while (index < nViewConstellationStarCount);
     }
     index = 0;
-    while (index < nConstellationParticleCount) {
+    while (index < nConstellationParticleTotal) {
         randomIndex = RandomInRange(0, 15);
         particleOffset = (int)index * sizeof(ConstellationParticle);
         index++;
-        ((ConstellationParticle *)((unsigned char *)aConstellationParticles +
+        ((ConstellationParticle *)((unsigned char *)aConstellationParticlesList +
                                   particleOffset))->x =
-            (short)(pConstellationViewport->left +
+            (short)(pConstellationViewportPtr->left +
                     RandomInRange(0, width));
-        ((ConstellationParticle *)((unsigned char *)aConstellationParticles +
+        ((ConstellationParticle *)((unsigned char *)aConstellationParticlesList +
                                   particleOffset))->y =
-            (short)(pConstellationViewport->top +
+            (short)(pConstellationViewportPtr->top +
                     RandomInRange(0, viewportHeight));
-        ((ConstellationParticle *)((unsigned char *)aConstellationParticles +
+        ((ConstellationParticle *)((unsigned char *)aConstellationParticlesList +
                                   particleOffset))->velocity =
             (short)(asConstellationVelocity[randomIndex] *
                     nConstellationDirection);
-        ((ConstellationParticle *)((unsigned char *)aConstellationParticles +
+        ((ConstellationParticle *)((unsigned char *)aConstellationParticlesList +
                                   particleOffset))->frame =
             (short)(asConstellationFrame[randomIndex] +
                     RandomInRange(0, 3));
@@ -363,62 +328,62 @@ unsigned int DrawConstellationField(void)
     int tableOffset;
     short speed;
 
-    height = (short)(pConstellationViewport->bottom -
-                     pConstellationViewport->top);
-    ClearViewport(pConstellationViewport, cPrimaryViewBufferColour);
+    height = (short)(pConstellationViewportPtr->bottom -
+                     pConstellationViewportPtr->top);
+    ClearViewport(pConstellationViewportPtr, cPrimaryViewBufferColour);
     for (index = 0;
-         index < nConstellationStarCount;
+         index < nViewConstellationStarCount;
          index++) {
-        DrawSpriteDefault(pConstellationViewport,
-                          aConstellationStars[index].x,
-                          aConstellationStars[index].y,
-                          pConstellationShape,
-                          aConstellationStars[index].frame);
+        DrawSpriteDefault(pConstellationViewportPtr,
+                          aConstellationStarsTable[index].x,
+                          aConstellationStarsTable[index].y,
+                          pCurrentConstellationShape,
+                          aConstellationStarsTable[index].frame);
     }
     for (index = 0;
-         index < nConstellationParticleCount;
+         index < nConstellationParticleTotal;
          index++) {
-        DrawSpriteDefault(pConstellationViewport,
-                          aConstellationParticles[index].x,
-                          aConstellationParticles[index].y,
-                          pConstellationShape,
-                          aConstellationParticles[index].frame);
-        aConstellationParticles[index].x = (short)(
-            aConstellationParticles[index].x +
-            aConstellationParticles[index].velocity);
-        aConstellationParticles[index].frame = (short)(
-            (aConstellationParticles[index].frame & 0xfc) +
-            (aConstellationParticles[index].frame + 1) % 4);
+        DrawSpriteDefault(pConstellationViewportPtr,
+                          aConstellationParticlesList[index].x,
+                          aConstellationParticlesList[index].y,
+                          pCurrentConstellationShape,
+                          aConstellationParticlesList[index].frame);
+        aConstellationParticlesList[index].x = (short)(
+            aConstellationParticlesList[index].x +
+            aConstellationParticlesList[index].velocity);
+        aConstellationParticlesList[index].frame = (short)(
+            (aConstellationParticlesList[index].frame & 0xfc) +
+            (aConstellationParticlesList[index].frame + 1) % 4);
         if (nConstellationDirection < 0) {
-            if (aConstellationParticles[index].x >=
-                pConstellationViewport->left)
+            if (aConstellationParticlesList[index].x >=
+                pConstellationViewportPtr->left)
                 continue;
             tableOffset = (int)RandomInRange(0, 15) * sizeof(short);
             speed = *(short *)((unsigned char *)asConstellationVelocity +
                               tableOffset);
-            aConstellationParticles[index].x = (short)(
-                pConstellationViewport->right -
+            aConstellationParticlesList[index].x = (short)(
+                pConstellationViewportPtr->right -
                 RandomInRange(0, speed));
-            aConstellationParticles[index].y = (short)(
-                pConstellationViewport->top +
+            aConstellationParticlesList[index].y = (short)(
+                pConstellationViewportPtr->top +
                 RandomInRange(0, height));
-            aConstellationParticles[index].velocity = (short)-speed;
+            aConstellationParticlesList[index].velocity = (short)-speed;
         } else {
-            if (aConstellationParticles[index].x <=
-                pConstellationViewport->right)
+            if (aConstellationParticlesList[index].x <=
+                pConstellationViewportPtr->right)
                 continue;
             tableOffset = (int)RandomInRange(0, 15) * sizeof(short);
             speed = *(short *)((unsigned char *)asConstellationVelocity +
                               tableOffset);
-            aConstellationParticles[index].velocity = speed;
-            aConstellationParticles[index].x = (short)(
-                pConstellationViewport->left +
+            aConstellationParticlesList[index].velocity = speed;
+            aConstellationParticlesList[index].x = (short)(
+                pConstellationViewportPtr->left +
                 RandomInRange(0, speed));
-            aConstellationParticles[index].y = (short)(
-                pConstellationViewport->top +
+            aConstellationParticlesList[index].y = (short)(
+                pConstellationViewportPtr->top +
                 RandomInRange(0, height));
         }
-        aConstellationParticles[index].frame = (short)(
+        aConstellationParticlesList[index].frame = (short)(
             *(short *)((unsigned char *)asConstellationFrame +
                        tableOffset) +
             RandomInRange(0, 3));
@@ -545,7 +510,7 @@ void * __stdcall DecompressPacketSection(
                 }
             }
             workspace = IdentityHandle(largeScratch);
-            pPacketDecompressInput = IdentityHandle(smallScratch);
+            pPktDecompInput = IdentityHandle(smallScratch);
             wPacketDecompressInputSize = 0x400;
             goto initializeDecompressor;
         }
@@ -554,10 +519,10 @@ void * __stdcall DecompressPacketSection(
     workspace = IdentityHandle(decompressionWorkspace);
     wPacketDecompressInputSize = 0x400;
     allocationSize = 0x3020;
-    pPacketDecompressInput =
+    pPktDecompInput =
         ((PacketDecompressionWorkspace *)decompressionWorkspace)->input;
-    pPacketDecompressInput =
-        IdentityHandle(pPacketDecompressInput);
+    pPktDecompInput =
+        IdentityHandle(pPktDecompInput);
     if (wPacketDecompressionInputSizeOverride != 0)
         wPacketDecompressInputSize =
             wPacketDecompressionInputSizeOverride;
@@ -565,13 +530,13 @@ void * __stdcall DecompressPacketSection(
     smallScratch = (void *)allocationSize;
 
 initializeDecompressor:
-    nPacketDecompressSourceFile = handle->file;
-    nPacketDecompressInputPosition = 0;
+    nPktDecompressSourceFile = handle->file;
+    nPacketDecompressInputPositionValue = 0;
     nPacketDecompressPending = 0;
-    nPacketDecompressWorkspaceSegment =
+    nCurrentPacketDecompressScratchSegment =
         (short)(unsigned int)workspace;
     if (workspace != 0)
-        nPacketDecompressWorkspaceSegment++;
+        nCurrentPacketDecompressScratchSegment++;
 
     if (SeekPacketSection(handle, 0, 0) == -1) {
         nPacketError = 5;
@@ -595,7 +560,7 @@ initializeDecompressor:
     if (nPacketError == 0) {
         packet = pLastPacketAllocation;
         if (ReadPacketSectionData(
-                handle, pPacketDecompressInput,
+                handle, pPktDecompInput,
                 wPacketDecompressInputSize) == 0)
             packet = 0;
         nPacketDecompressResult = GetPacketDecompressionResult(packet);
@@ -637,8 +602,8 @@ void show_target_disp(void)
     short armor;
     Viewport targetViewport;
 
-    DrawTextAt(&stRightVduTextContext,
-               stRightVdu.left, stRightVdu.top,
+    DrawTextAt(&stRightVduTxtContext,
+               stRightVduViewport.left, stRightVduViewport.top,
                "", 2);
     if (nTargetLockMode != 0) {
         DrawFormattedText("%F%s%F",
@@ -650,13 +615,13 @@ void show_target_disp(void)
                           (unsigned int)cDefaultTextColour,
                           "  AUTO TARGETTING");
     }
-    target = acShipTarget[0];
+    target = acShipTargetTable[0];
     if (target != -1 &&
         (aeObjectClass[target] < OBJECT_CLASS_SHIP ||
-         aeSpecialManeuver[target] ==
+         aeSpecialManeuvers[target] ==
              SPECIAL_MANEUVER_UNKNOWN_9)) {
         target = -1;
-        acShipTarget[0] = -1;
+        acShipTargetTable[0] = -1;
     }
     cTargetDisplayObject = (signed char)target;
     DrawFormattedText("\nTarget:");
@@ -665,13 +630,13 @@ void show_target_disp(void)
         return;
     }
     targetIndex = (int)target;
-    objectType = aeObjectType[targetIndex];
+    objectType = aeObjectTypeList[targetIndex];
     typeData = &aObjectTypeData[objectType];
     rating = acShipRating[targetIndex];
     if (rating >= 0 && rating <= 7) {
         DrawFormattedText(
             " %s",
-            apWingmanPilots[(int)rating]->callsign);
+            apWingmanPilotsList[(int)rating]->callsign);
     } else if (rating >= 9 && rating <= 12) {
         DrawFormattedText(
             " %s",
@@ -681,22 +646,22 @@ void show_target_disp(void)
                           typeData->displayName);
     }
     DrawFormattedText("\nRange : ");
-    InitializeCockpitReadout(1, &stRightVduTextContext);
-    if (asObjectScreenX[targetIndex] == (short)0x8001) {
+    InitializeCockpitReadout(1, &stRightVduTxtContext);
+    if (asObjectScreenXList[targetIndex] == (short)0x8001) {
         cTargetDisplayObject = -1;
         return;
     }
 
-    x = (short)(stRightVdu.left + 0x25);
-    y = (short)(stRightVdu.top + 0x26);
+    x = (short)(stRightVduViewport.left + 0x25);
+    y = (short)(stRightVduViewport.top + 0x26);
     frame = (short)((3 - MinShort(
         (short)((aasShipShield[targetIndex][1] * 6) /
                 typeData->shieldAft), 3)) * 2);
     if (frame < 6)
-        DrawSpriteDefault(&stRightVdu, x, y,
+        DrawSpriteDefault(&stRightVduViewport, x, y,
                           pCockpitIndicatorShape, frame);
 
-    targetViewport = stRightVdu;
+    targetViewport = stRightVduViewport;
     maximumArmor = &typeData->armorFront;
     for (armor = 0; armor < 4; armor++) {
         targetViewport.left =
@@ -717,12 +682,12 @@ void show_target_disp(void)
         }
     }
 
-    DrawSpriteDefault(&stRightVdu, x, y, typeData->shape, 2);
+    DrawSpriteDefault(&stRightVduViewport, x, y, typeData->shape, 2);
     frame = (short)((3 - MinShort(
         (short)((aasShipShield[targetIndex][0] * 6) /
                 typeData->shieldFore), 3)) * 2);
     if (frame < 6)
-        DrawSpriteDefault(&stRightVdu, x, y,
+        DrawSpriteDefault(&stRightVduViewport, x, y,
                           pCockpitIndicatorShape,
                           (short)(frame + 1));
 }
@@ -732,7 +697,7 @@ void DrawTargetRangeReadout(void)
 {
     short target;
 
-    target = acShipTarget[0];
+    target = acShipTargetTable[0];
 #ifdef SDL_PORT
     /* The original tests the table before the -1 sentinel.  At target -1 it
        reads the zero-filled gap at 0x0059c3bc, so the comparison is false. */
@@ -740,15 +705,15 @@ void DrawTargetRangeReadout(void)
 #else
     if (
 #endif
-        aeSpecialManeuver[target] ==
+        aeSpecialManeuvers[target] ==
         SPECIAL_MANEUVER_UNKNOWN_9) {
-        acShipTarget[0] = -1;
+        acShipTargetTable[0] = -1;
         InvalidateVduMode(1);
         return;
     }
     if (target != -1 &&
         aeObjectClass[target] < OBJECT_CLASS_SHIP) {
-        acShipTarget[0] = -1;
+        acShipTargetTable[0] = -1;
         target = -1;
     }
     if (cTargetDisplayObject != target ||
@@ -759,30 +724,30 @@ void DrawTargetRangeReadout(void)
     if (target == -1)
         return;
 
-    if (asObjectScreenX[target] != (short)0x8001) {
-        if ((unsigned short)asObjectDistance[target] > 30000) {
-            strcpy(szTextScratchBuffer, "TOO FAR");
+    if (asObjectScreenXList[target] != (short)0x8001) {
+        if ((unsigned short)asObjDistancesTable[target] > 30000) {
+            strcpy(szTxtWorkspaceBuffer, "TOO FAR");
         } else {
-            strcpy(szTextScratchBuffer + strlen(
-                itoa((unsigned short)asObjectDistance[target],
-                     szTextScratchBuffer, 10)), " m");
+            strcpy(szTxtWorkspaceBuffer + strlen(
+                itoa((unsigned short)asObjDistancesTable[target],
+                     szTxtWorkspaceBuffer, 10)), " m");
         }
     } else {
-        strcpy(szTextScratchBuffer, "----- m");
+        strcpy(szTxtWorkspaceBuffer, "----- m");
     }
 
-    DrawCockpitReadout(1, szTextScratchBuffer);
+    DrawCockpitReadout(1, szTxtWorkspaceBuffer);
     if (nTargetLockCountdown == 0) {
         if (bTargetLockAcquired == 1) {
             bTargetLockAcquired = 0;
             return;
         }
     } else if (bTargetLockReadoutDirty != 0) {
-        EraseCockpitReadoutRegion(&stRightVdu,
-                                  stRightVdu.left,
-                                  (short)(stRightVdu.bottom - 6),
-                                  stRightVdu.right,
-                                  stRightVdu.bottom,
+        EraseCockpitReadoutRegion(&stRightVduViewport,
+                                  stRightVduViewport.left,
+                                  (short)(stRightVduViewport.bottom - 6),
+                                  stRightVduViewport.right,
+                                  stRightVduViewport.bottom,
                                   (short)cBlackColour);
         bTargetLockReadoutDirty = 0;
     }
@@ -826,13 +791,13 @@ unsigned short __stdcall AllocateViewport(Viewport *viewport,
     height = (unsigned short)(viewport->bottom - top + 1);
     width = (unsigned short)(viewport->right - viewport->left + 1);
     left = viewport->left;
-    nAllocateViewportCalls++;
+    nAllocateViewportCallsValue++;
     if (nVideoMode != 0x13)
         LogDisplayMode("not MCGA");
     viewport->allocation = AllocateTaggedMemory(
         (unsigned int)width * height, (unsigned short)(flags + 2));
     apViewportAllocations[
-        nViewportAllocationCount++] = viewport->allocation;
+        nViewAllocTotal++] = viewport->allocation;
     if (viewport->allocation == 0)
         return 0;
     viewport->pixels = viewport->allocation;

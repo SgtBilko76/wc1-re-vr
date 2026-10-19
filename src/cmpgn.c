@@ -14,8 +14,11 @@ static short asMouthFramesByPhoneme[26] = {
 }; /* 0x004655f0 */
 
 /* Linker commons defined here; LINK orders them by identifier hash. */
+signed char cScrambleWalkerPair; /* 0x005a8748 */
+unsigned char *pScrambleCanopyShape; /* 0x005a874c */
+unsigned char *pScrambleShipShape; /* 0x005a8750 */
 short nTalkingHeadFaceX; /* 0x005a8754 */
-short nTalkingHeadFaceY; /* 0x005a8756 */
+short nTalkingHeadFaceCoordY; /* 0x005a8756 */
 short nTalkingHeadMouthY; /* 0x005a8758 */
 short nTalkingHeadMouthX; /* 0x005a875a */
 
@@ -102,14 +105,14 @@ char *AddPCName(const char *text)
     char *output;
     short length;
 
-    szTextScratchBuffer[0] = '\0';
+    szTxtWorkspaceBuffer[0] = '\0';
     for (;;) {
         marker = DosStrchr(text, '$');
         if (marker == 0) {
-            DosStrcat(szTextScratchBuffer, text);
-            return szTextScratchBuffer;
+            DosStrcat(szTxtWorkspaceBuffer, text);
+            return szTxtWorkspaceBuffer;
         }
-        output = DosStrchr(szTextScratchBuffer, 0);
+        output = DosStrchr(szTxtWorkspaceBuffer, 0);
         while (text != marker) {
             *output++ = *text++;
         }
@@ -117,65 +120,65 @@ char *AddPCName(const char *text)
         marker++;
         switch (*marker++) {
         case 'A':
-            DosStrcat(szTextScratchBuffer,
+            DosStrcat(szTxtWorkspaceBuffer,
                       apszMedalNames[
-                          nConversationMedalIndex]);
+                          nCurrentConversationMedalIndex]);
             break;
         case 'C':
-            DosStrcat(szTextScratchBuffer,
+            DosStrcat(szTxtWorkspaceBuffer,
                       stCampaignState.currentPilot->callsign);
             break;
         case 'K':
             sprintf(formatted, "%d",
-                    nPlayerKillCount);
-            DosStrcat(szTextScratchBuffer, formatted);
+                    nPlayerKillTotal);
+            DosStrcat(szTxtWorkspaceBuffer, formatted);
             break;
         case 'L':
             sprintf(formatted,
                     "%d",
                     nWingmanKillCount);
-            DosStrcat(szTextScratchBuffer, formatted);
+            DosStrcat(szTxtWorkspaceBuffer, formatted);
             break;
         case 'D':
             sprintf(formatted, "%03d.%03d",
                     pCurrentCampaignDate->year,
                     pCurrentCampaignDate->day);
-            DosStrcat(szTextScratchBuffer, formatted);
+            DosStrcat(szTxtWorkspaceBuffer, formatted);
             break;
         case 'E':
             sprintf(formatted, "%03d.%03d",
                     stSavedCampaignDate.year,
                     stSavedCampaignDate.day);
-            DosStrcat(szTextScratchBuffer, formatted);
+            DosStrcat(szTxtWorkspaceBuffer, formatted);
             break;
         case 'N':
         case 'P':
-            DosStrcat(szTextScratchBuffer,
+            DosStrcat(szTxtWorkspaceBuffer,
                       stCampaignState.currentPilot->name);
             break;
         case 'R':
-            DosStrcat(szTextScratchBuffer,
+            DosStrcat(szTxtWorkspaceBuffer,
                       apszPilotRankNames[
                           stCampaignState.currentPilot->rank]);
-            length = DosStrlen(szTextScratchBuffer);
-            if (szTextScratchBuffer[length - 1] == '.' &&
+            length = DosStrlen(szTxtWorkspaceBuffer);
+            if (szTxtWorkspaceBuffer[length - 1] == '.' &&
                 *marker == '.')
-                szTextScratchBuffer[
-                    DosStrlen(szTextScratchBuffer) - 1] = '\0';
+                szTxtWorkspaceBuffer[
+                    DosStrlen(szTxtWorkspaceBuffer) - 1] = '\0';
             break;
         case 'S':
-            DosStrcat(szTextScratchBuffer,
+            DosStrcat(szTxtWorkspaceBuffer,
                       (char *)abSeriesAuxData);
             break;
         case 'T':
             sprintf(formatted, "%02d:%02d",
-                    (int)((signed char *)pElapsedCampaignDate)[0],
-                    (int)((signed char *)pElapsedCampaignDate)[1]);
-            DosStrcat(szTextScratchBuffer, formatted);
+                    (int)((signed char *)pElapsedCampaignDatePtr)[0],
+                    (int)((signed char *)pElapsedCampaignDatePtr)[1]);
+            DosStrcat(szTxtWorkspaceBuffer, formatted);
             break;
         case 'W':
-            DosStrcat(szTextScratchBuffer,
-                      apWingmanPilots[*marker++ - '0']->name);
+            DosStrcat(szTxtWorkspaceBuffer,
+                      apWingmanPilotsList[*marker++ - '0']->name);
             break;
         }
         text = marker;
@@ -229,26 +232,26 @@ unsigned int LoadFace(short face)
         break;
     }
     if (face != nTalkingHeadFace) {
-        if (pTalkingHeadShape != 0)
-            FreePacketAndClear(&pTalkingHeadShape, 0);
-        pTalkingHeadShape =
+        if (pTalkHeadShape != 0)
+            FreePacketAndClear(&pTalkHeadShape, 0);
+        pTalkHeadShape =
             FetchDiskPacketRetrying(6, face, 0);
-    } else if (pTalkingHeadShape == 0)
-        pTalkingHeadShape =
+    } else if (pTalkHeadShape == 0)
+        pTalkHeadShape =
             FetchDiskPacketRetrying(6, face, 0);
     nTalkingHeadFace = face;
-    if (pConversationOverlayShape == 0)
-        pConversationOverlayShape =
+    if (pConvOverlayShapePtr == 0)
+        pConvOverlayShapePtr =
             FetchDiskPacketRetrying(6, 11, 0);
     nTalkingHeadFaceX =
         aTalkingHeadOrigins[face].faceX;
-    nTalkingHeadFaceY =
+    nTalkingHeadFaceCoordY =
         aTalkingHeadOrigins[face].faceY;
     nTalkingHeadMouthX =
         aTalkingHeadOrigins[face].mouthX;
     nTalkingHeadMouthY =
         aTalkingHeadOrigins[face].mouthY;
-    CloseTalk(pTalkingHeadShape, -1, -1);
+    CloseTalk(pTalkHeadShape, -1, -1);
     return 0;
 }
 
@@ -269,7 +272,7 @@ unsigned int LongTalk(unsigned char *talker, char *text,
     AddPCName(text);
     faceStart = faceCommands;
     mouthStart = mouthCommands;
-    ClearViewport(&stConversationTextViewport,
+    ClearViewport(&stCurrentConvTextViewport,
                   cBlackColour);
     faceFrame = 0;
     mouthFrame = 0;
@@ -277,8 +280,8 @@ unsigned int LongTalk(unsigned char *talker, char *text,
     mouthCountdown = 0;
     FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
-                              nConversationTextColour,
-                              szTextScratchBuffer);
+                              nConvTextColorValue,
+                              szTxtWorkspaceBuffer);
     nFrameSkipCounter = 1;
     for (;;) {
         if (*mouthCommands == -1 && *faceCommands == -1) {
@@ -351,7 +354,7 @@ unsigned int CloseTalk(unsigned char *talker, short mouthFrame,
 {
     if (bConversationConstellation == 1)
         DrawConstellationField();
-    switch (nConversationSceneType) {
+    switch (nTalkSceneType) {
     case 0:
     case 1:
     case 2:
@@ -359,7 +362,7 @@ unsigned int CloseTalk(unsigned char *talker, short mouthFrame,
     case 5:
         if (nConversationBackdropFrame != -1) {
             DrawSpriteDefault(&stSceneBuffer, 0, 0,
-                              pConversationBackdropShape,
+                              pCurrentConversationBackdropShapePtr,
                               nConversationBackdropFrame);
             break;
         }
@@ -376,7 +379,7 @@ unsigned int CloseTalk(unsigned char *talker, short mouthFrame,
     if (faceFrame > -1)
         DrawSpriteDefault(&stSceneBuffer,
                           nTalkingHeadFaceX,
-                          nTalkingHeadFaceY,
+                          nTalkingHeadFaceCoordY,
                           talker, (short)(faceFrame + 11));
     if (mouthFrame > -1)
         DrawSpriteDefault(&stSceneBuffer,
@@ -385,19 +388,19 @@ unsigned int CloseTalk(unsigned char *talker, short mouthFrame,
                           talker, (short)(mouthFrame + 1));
     if (bConversationOverlay != 0)
         DrawSpriteDefault(&stSceneBuffer, 0, 0,
-                          pConversationOverlayShape,
+                          pConvOverlayShapePtr,
                           MinShort(nTalkingHeadFace, 1));
     switch (nConversationCharacter) {
     case 5:
         DrawSpriteDefault(&stSceneBuffer, 0, 0,
-                          pConversationSpecialShape, 10);
+                          pCurrentConversationSpecialShape, 10);
         RefreshMemoryStatusOverlay();
         return 0;
     case 6:
         DrawSpriteDefault(&stSceneBuffer, 0, 0,
-                          pConversationSpecialShape, 10);
+                          pCurrentConversationSpecialShape, 10);
         DrawSpriteDefault(&stSceneBuffer, 0, 0,
-                          pConversationSpecialShape, 11);
+                          pCurrentConversationSpecialShape, 11);
         RefreshMemoryStatusOverlay();
         return 0;
     }
@@ -408,17 +411,17 @@ unsigned int CloseTalk(unsigned char *talker, short mouthFrame,
 /* Function start: 0x405660 */
 unsigned int Briefing(short series, short mission)
 {
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     PreloadMusicTrackHook(0x18);
     PreloadMusicTrackHook(0x19);
     PreloadMusicTrackHook(0x1a);
     LoadMissionData(series, mission);
     LoadBriefingData(series, mission);
-    if (bEscapePressed == 0) {
+    if (bEscapePressedFlag == 0) {
         Build_objective_list();
         LoadBriefingRoom();
     }
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     ReleasePacketHandle(pBriefingPacket);
     ReleaseMusicTrackHook(0x18);
     ReleaseMusicTrackHook(0x19);
@@ -432,7 +435,7 @@ unsigned int DeBriefing(short series, short mission)
     short fullScore;
     short playerScore;
 
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     fullScore = (short)FullMissionScore();
     playerScore = (short)PlayersMissionScore();
     if (fullScore == 0) {
@@ -448,19 +451,19 @@ unsigned int DeBriefing(short series, short mission)
     LoadMissionData(series, mission);
     InitializeConversationViewport();
     InitializeConversationText();
-    ClearViewport(stConversationTextContext.viewport,
+    ClearViewport(stCurrentConvTxtCtx.viewport,
                   cBlackColour);
-    SetTextContext(&stConversationTextContext);
+    SetTextContext(&stCurrentConvTxtCtx);
     LoadBriefingData(series, mission);
-    pConversationBackdropShape =
+    pCurrentConversationBackdropShapePtr =
         FetchDiskPacketRetrying(4, 6, 0);
-    SceneDirector(1, pDebriefingSceneData,
-                  pDebriefingTextData);
+    SceneDirector(1, pDebriefingSceneDataPtr,
+                  pDebriefingTxtInfo);
     DIBslam();
     DIBslamReal();
-    bEscapePressed = 0;
-    ReleasePacketHandle(pConversationBackdropShape);
-    pConversationBackdropShape = 0;
+    bEscapePressedFlag = 0;
+    ReleasePacketHandle(pCurrentConversationBackdropShapePtr);
+    pCurrentConversationBackdropShapePtr = 0;
     ReleasePacketHandle(pBriefingPacket);
     ReleaseTextFont(0);
     ResetScreenClipToFullHeight();
@@ -478,7 +481,7 @@ unsigned int Office(void)
     unsigned char *sceneData;
     unsigned char *textData;
 
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     PreloadMusicTrackHook(0x24);
     spacetrack(0x24, 2, 1);
     InitializeConversationViewport();
@@ -489,14 +492,14 @@ unsigned int Office(void)
     header = (BriefingPacketHeader *)packet;
     sceneData = packet + header->briefingScene;
     textData = packet + header->briefingText;
-    pConversationBackdropShape =
+    pCurrentConversationBackdropShapePtr =
         FetchDiskPacketRetrying(4, 7, 0);
     SceneDirector(4, sceneData, textData);
     DIBslam();
     DIBslamReal();
-    bEscapePressed = 0;
-    ReleasePacketHandle(pConversationBackdropShape);
-    pConversationBackdropShape = 0;
+    bEscapePressedFlag = 0;
+    ReleasePacketHandle(pCurrentConversationBackdropShapePtr);
+    pCurrentConversationBackdropShapePtr = 0;
     ReleasePacketHandle(packet);
     ReleaseTextFont(0);
     ResetScreenClipToFullHeight();
@@ -514,25 +517,25 @@ unsigned int LoadBriefingData(short series, short mission)
         asCampaignBriefingFiles[nCampaignDataSet],
         (short)(mission + series * 4), 0);
     header = (BriefingPacketHeader *)pBriefingPacket;
-    pBriefingSceneData = pBriefingPacket +
+    pBriefingSceneInfo = pBriefingPacket +
         header->briefingScene;
-    pBriefingTextData = pBriefingPacket +
+    pCurrentBriefingTextData = pBriefingPacket +
         header->briefingText;
-    pDebriefingSceneData = pBriefingPacket +
+    pDebriefingSceneDataPtr = pBriefingPacket +
         header->debriefingScene;
-    pDebriefingTextData = pBriefingPacket +
+    pDebriefingTxtInfo = pBriefingPacket +
         header->debriefingText;
-    apRecRoomSceneData[0] = pBriefingPacket +
+    apRecRoomSceneDataList[0] = pBriefingPacket +
         header->recRoomScene0;
-    apRecRoomTextData[0] = pBriefingPacket +
+    apRecRoomTxtDataArray[0] = pBriefingPacket +
         header->recRoomText0;
-    apRecRoomSceneData[2] = pBriefingPacket +
+    apRecRoomSceneDataList[2] = pBriefingPacket +
         header->recRoomScene2;
-    apRecRoomTextData[2] = pBriefingPacket +
+    apRecRoomTxtDataArray[2] = pBriefingPacket +
         header->recRoomText2;
-    apRecRoomSceneData[1] = pBriefingPacket +
+    apRecRoomSceneDataList[1] = pBriefingPacket +
         header->recRoomScene1;
-    apRecRoomTextData[1] = pBriefingPacket +
+    apRecRoomTxtDataArray[1] = pBriefingPacket +
         header->recRoomText1;
     return 0;
 }
@@ -614,16 +617,16 @@ unsigned int LoadMissionData(short series, short mission)
         return 1;
     }
 #endif
-    stMissionHeader.entryNavPoint = header->entryNavPoint;
-    stMissionHeader.homeMissionShip = header->homeMissionShip;
-    stMissionHeader.playerMissionShip = header->playerMissionShip;
+    stCurrentMissionHeader.entryNavPoint = header->entryNavPoint;
+    stCurrentMissionHeader.homeMissionShip = header->homeMissionShip;
+    stCurrentMissionHeader.playerMissionShip = header->playerMissionShip;
     sourceInitialShip = header->initialMissionShips;
-    initialShip = stMissionHeader.initialMissionShips;
-    for (; initialShip < &stMissionHeader.initialMissionShips[8];
+    initialShip = stCurrentMissionHeader.initialMissionShips;
+    for (; initialShip < &stCurrentMissionHeader.initialMissionShips[8];
          initialShip++, sourceInitialShip++) {
         *initialShip = *sourceInitialShip;
     }
-    stMissionHeader.field_16 = header->field_16;
+    stCurrentMissionHeader.field_16 = header->field_16;
     ReleasePacketHandle(packet);
 
     packet = FetchDiskPacketRetrying(logicalFile, 1, 0);
@@ -715,25 +718,25 @@ unsigned int UpdateMap(char *text, short duration)
     Viewport savedScreen;
     Viewport savedVirtualScreen;
 
-    savedScreen = stScreen;
+    savedScreen = stScreenView;
     savedVirtualScreen = stSceneBuffer;
-    ClearViewport(&stScreen, cBlackColour);
+    ClearViewport(&stScreenView, cBlackColour);
     if (stSceneBuffer.pixels != 0)
         ClearViewport(&stSceneBuffer, cBlackColour);
     AddPCName(text);
-    ClearViewport(&stConversationTextViewport,
+    ClearViewport(&stCurrentConvTextViewport,
                   cBlackColour);
     FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
-                              nConversationTextColour,
-                              szTextScratchBuffer);
-    stScreen = savedScreen;
+                              nConvTextColorValue,
+                              szTxtWorkspaceBuffer);
+    stScreenView = savedScreen;
     stSceneBuffer = savedVirtualScreen;
     BriefingMap_DisplayMap();
     WaitForSceneAdvance(duration, 0);
-    ClearViewport(&stScreen, cBlackColour);
-    SetTextContext(&stConversationTextContext);
-    ClearViewport(&stScreen, cBlackColour);
+    ClearViewport(&stScreenView, cBlackColour);
+    SetTextContext(&stCurrentConvTxtCtx);
+    ClearViewport(&stScreenView, cBlackColour);
     return 0;
 }
 
@@ -753,12 +756,12 @@ unsigned int CloseLook(unsigned char *shape, short shot,
     frameCounter = 0;
     finished = 0;
     AddPCName(text);
-    ClearViewport(&stConversationTextViewport,
+    ClearViewport(&stCurrentConvTextViewport,
                   cBlackColour);
     FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
-                              nConversationTextColour,
-                              szTextScratchBuffer);
+                              nConvTextColorValue,
+                              szTxtWorkspaceBuffer);
     cursor = animation;
     start = animation;
     nFrameSkipCounter = 1;
@@ -794,7 +797,7 @@ unsigned int CloseLook(unsigned char *shape, short shot,
                             DrawSpriteDefault(
                                 &stSceneBuffer,
                                 nDebriefingPodiumX, 53,
-                                pConversationBackdropShape,
+                                pCurrentConversationBackdropShapePtr,
                                 (short)(frame + 17));
                     } else if (frame > -1) {
                         DrawSpriteDefault(&stSceneBuffer, 225, 34,
@@ -824,12 +827,12 @@ unsigned int CloseLook(unsigned char *shape, short shot,
                 nFrameSkipCounter = nFrameSkip;
                 DrawSpriteDefault(
                     &stSceneBuffer, 0, 0,
-                    pConversationBackdropShape, 0);
+                    pCurrentConversationBackdropShapePtr, 0);
                 DrawSpriteDefault(&stSceneBuffer, 241, 60,
-                                  pBriefingAnimationShape,
+                                  pCurrentBriefingAnimShape,
                                   frameCounter);
                 DrawSpriteDefault(&stSceneBuffer, 241, 64,
-                                  pBriefingAnimationShape, 22);
+                                  pCurrentBriefingAnimShape, 22);
                 for (character = 0; character < 14; character++) {
                     DrawBriefingCharacter(
                         character, 0,

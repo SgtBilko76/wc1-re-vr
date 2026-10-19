@@ -61,19 +61,19 @@ void SdlBuildSwcMap(SwcNavMap *map, const SwcTextFont *font, int navigation)
     int distance;
 
     SDL_zero(*map);
-    map->minX = map->maxX = (cMissionObjectiveCount > 0 ?
-        aMissionObjectives[0].position.x : aShipPosition[0].x) >> 8;
-    map->minZ = map->maxZ = (cMissionObjectiveCount > 0 ?
-        aMissionObjectives[0].position.z : aShipPosition[0].z) >> 8;
+    map->minX = map->maxX = (cMissionObjectiveCountValue > 0 ?
+        aMissionObjectivesArray[0].position.x : aShipPositionsArray[0].x) >> 8;
+    map->minZ = map->maxZ = (cMissionObjectiveCountValue > 0 ?
+        aMissionObjectivesArray[0].position.z : aShipPositionsArray[0].z) >> 8;
     /* SetScale +0x1c8a includes every objective, even hidden objectives,
      * and refreshes mobile positions before calculating the bounds. */
-    SwcNavCheckPoint(map, aShipPosition[0]);
-    for (index = 0; index < cMissionObjectiveCount; index++) {
-        objective = &aMissionObjectives[index];
+    SwcNavCheckPoint(map, aShipPositionsArray[0]);
+    for (index = 0; index < cMissionObjectiveCountValue; index++) {
+        objective = &aMissionObjectivesArray[index];
         if (mobile_objective((short)index)) {
             object = find_ship_index(objective->index);
             if (object >= 0 && object < 10)
-                objective->position = aShipPosition[object];
+                objective->position = aShipPositionsArray[object];
         }
         SwcNavCheckPoint(map, objective->position);
     }
@@ -98,8 +98,8 @@ void SdlBuildSwcMap(SwcNavMap *map, const SwcTextFont *font, int navigation)
                 "Asteroids" : "Mines", sizeof(entry->text));
         }
     }
-    for (index = 0; index < cMissionObjectiveCount; index++) {
-        objective = &aMissionObjectives[index];
+    for (index = 0; index < cMissionObjectiveCountValue; index++) {
+        objective = &aMissionObjectivesArray[index];
         if (objective->type < 0 || objective->type > 4 || hidden_objective((short)index))
             continue;
         if (mobile_objective((short)index)) {
@@ -126,7 +126,7 @@ void SdlBuildSwcMap(SwcNavMap *map, const SwcTextFont *font, int navigation)
     }
     if (navigation) {
         entry = &map->entries[map->count++];
-        entry->position = aShipPosition[0];
+        entry->position = aShipPositionsArray[0];
         entry->frame = 2;
         entry->color = 0xf8;
         entry->objective = -1;
@@ -170,9 +170,9 @@ void SdlBuildSwcMap(SwcNavMap *map, const SwcTextFont *font, int navigation)
  * distinct from a marker's objective index. Bound the search if all hide. */
 static void SwcSelectNavObjective(int direction, int objective)
 {
-    int index = cCurrentNavPointIndex;
+    int index = cCurrentNavPtIdx;
     int previousIndex = index;
-    int count = cMissionObjectiveCount;
+    int count = cMissionObjectiveCountValue;
     int attempt;
 
     for (attempt = 0; attempt < count; attempt++) {
@@ -180,13 +180,13 @@ static void SwcSelectNavObjective(int direction, int objective)
             index = attempt;
         else
             index = (index + direction + count) % count;
-        if (abFlightPath[index] < 0 || abFlightPath[index] >= count ||
-            (objective >= 0 && abFlightPath[index] != objective))
+        if (abFlightPathList[index] < 0 || abFlightPathList[index] >= count ||
+            (objective >= 0 && abFlightPathList[index] != objective))
             continue;
         if (set_new_objective((short)index))
             return;
     }
-    cCurrentNavPointIndex = (signed char)previousIndex;
+    cCurrentNavPtIdx = (signed char)previousIndex;
 }
 
 static int SwcLoadNavArt(SDL_Renderer *renderer, const SwcCmf *cmf,
@@ -231,7 +231,7 @@ static int SwcDrawNavText(SDL_Renderer *renderer, const SwcTextFont *font,
     const char *text[] = {"ConFed Nav", "Scan", "", "SECTOR:", "XR-231.3",
         "SYSTEM:", (const char *)abSeriesAuxData, "", (const char *)abMissionAuxData, ""};
     SDL_Rect clip = {178, 43, 80, 138};
-    int role = aMissionShips[stMissionHeader.playerMissionShip].missionType;
+    int role = aMissionShips[stCurrentMissionHeader.playerMissionShip].missionType;
     int index;
     int result = -1;
 
@@ -247,7 +247,7 @@ static int SwcDrawNavText(SDL_Renderer *renderer, const SwcTextFont *font,
     clip = (SDL_Rect){41, 43, 217, 145};
     if (SDL_RenderSetClipRect(renderer, &clip) != 0)
         goto done;
-    if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCount &&
+    if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCountValue &&
         SdlDrawSwcProportionalText(renderer, font, 45, 179, colors[1],
             nav_note(cCurrentObjective)) != 0)
         goto done;
@@ -270,49 +270,49 @@ static int SwcBuildComputerComms(int recipient, int options[10], const char *nam
         "Form on my wing", "Keep radio silence", "Broadcast freely", "Request Landing"
     };
     int wingman = nYourWingman;
-    int target = acShipTarget[0];
+    int target = acShipTargetTable[0];
     int count = 0;
     int object;
     int rating;
 
     if (recipient < 0) {
         if (wingman > 0 && wingman < 10 && aeObjectClass[wingman] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[wingman] != SPECIAL_MANEUVER_UNKNOWN_9) {
+            aeSpecialManeuvers[wingman] != SPECIAL_MANEUVER_UNKNOWN_9) {
             rating = acShipRating[wingman];
-            if (rating >= 0 && rating < 8 && apWingmanPilots[rating] != NULL) {
+            if (rating >= 0 && rating < 8 && apWingmanPilotsList[rating] != NULL) {
                 options[count] = wingman;
-                names[count++] = apWingmanPilots[rating]->callsign;
+                names[count++] = apWingmanPilotsList[rating]->callsign;
             }
         }
         for (object = 1; object < 10; object++) {
             if (aeShipSide[object] != SIDE_IMPERIAL ||
                 aeObjectClass[object] < OBJECT_CLASS_SHIP ||
-                aeSpecialManeuver[object] == SPECIAL_MANEUVER_UNKNOWN_9 ||
+                aeSpecialManeuvers[object] == SPECIAL_MANEUVER_UNKNOWN_9 ||
                 (count > 0 && options[0] == object))
                 continue;
             if ((object == wingman && aeObjectClass[object] == OBJECT_CLASS_SHIP) ||
-                aeObjectType[object] == OBJECT_TYPE_TIGERS_CLAW) {
+                aeObjectTypeList[object] == OBJECT_TYPE_TIGERS_CLAW) {
                 options[count] = object;
-                names[count++] = aObjectTypeData[aeObjectType[object]].displayName;
+                names[count++] = aObjectTypeData[aeObjectTypeList[object]].displayName;
             }
         }
         if (target > 0 && target < 10 && aeShipSide[target] == SIDE_KILRATHI &&
             aeObjectClass[target] == OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[target] != SPECIAL_MANEUVER_UNKNOWN_9) {
+            aeSpecialManeuvers[target] != SPECIAL_MANEUVER_UNKNOWN_9) {
             options[count] = target;
             names[count++] = "ENEMY TARGET";
         }
         return count;
     }
     if (recipient == wingman) {
-        if (aeShipObjective[recipient] == OBJECTIVE_HOLD_FORMATION && any_enemy(0, 14000))
+        if (aeShipObjectiveList[recipient] == OBJECTIVE_HOLD_FORMATION && any_enemy(0, 14000))
             options[count++] = 7;
         options[count++] = nAutoEngageTimer == -1 ? 9 : 8;
         options[count++] = bRadioSilence ? 11 : 10;
         options[count++] = 3;
     }
     if (aeShipSide[recipient] == aeShipSide[0]) {
-        if (aeObjectType[recipient] == OBJECT_TYPE_TIGERS_CLAW && !bLandingAuthorized)
+        if (aeObjectTypeList[recipient] == OBJECT_TYPE_TIGERS_CLAW && !bLandingAuthorized)
             options[count++] = 12;
         if (target > 0 && target < 10 && !unactive((short)target) &&
             aeShipSide[target] == SIDE_KILRATHI)
@@ -363,10 +363,10 @@ static int SwcDrawComputerLoadout(SDL_Renderer *renderer, SDL_Texture *canvas,
                                     const SwcTextFont *smallFont, const SDL_Color colors[256],
                                     int page, Uint32 ticks)
 {
-    const ShipWeaponSlot *slots = (const ShipWeaponSlot *)&aShipWeapons[0][1];
+    const ShipWeaponSlot *slots = (const ShipWeaponSlot *)&aShipWeaponsTable[0][1];
     const short *placement;
     char text[96];
-    int count = (signed char)aShipWeapons[0][0];
+    int count = (signed char)aShipWeaponsTable[0][0];
     int index;
     int type;
     int row = 0;
@@ -453,7 +453,7 @@ int SdlShowSwcComputer(SDL_Window *window, SDL_Renderer *renderer, const char *r
     int close;
     int step;
     int guard = 0;
-    int shipFrame = (int)aeObjectType[0];
+    int shipFrame = (int)aeObjectTypeList[0];
     int index;
     int command;
     int result = SWC_MOVIE_ERROR;
@@ -709,11 +709,11 @@ int SdlShowSwcComputer(SDL_Window *window, SDL_Renderer *renderer, const char *r
                     goto done;
                 }
             }
-            if (activate && page == SWC_COMPUTER_EJECT && acPlayerComponentDamage[7] < 4) {
+            if (activate && page == SWC_COMPUTER_EJECT && acPlayerComponentDamageList[7] < 4) {
                 /* +0x34e6..+0x351c: selection alone never ejects. Activation
                  * uses the same exclusive Random3DO bound as Ctrl+E. */
-                if (acPlayerComponentDamage[7] <= 1 ||
-                    RandomBelowOrEqual((short)(acPlayerComponentDamage[7] - 1)) == 0)
+                if (acPlayerComponentDamageList[7] <= 1 ||
+                    RandomBelowOrEqual((short)(acPlayerComponentDamageList[7] - 1)) == 0)
                     nArcadeState = 2;
                 else
                     SdlPlaySwcSound(25, 127);

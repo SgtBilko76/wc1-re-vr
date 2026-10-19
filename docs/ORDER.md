@@ -858,6 +858,20 @@ recovers 37 of the 42 exact functions lost at object level. The loss is
 therefore a symbol-count effect. It will be resolved in a dedicated
 declaration-count pass, not by keeping declarations of other units' statics.
 
+All 488 game commons now occupy their original addresses. Each tentative
+definition sits in the unit whose block holds it, under that unit's
+`/* Linker commons defined here… */` comment, in address order. Within a
+block, LINK orders commons by the same identifier-hash key as the statics
+above. Of the 488 commons, 320 were renamed so that their keys follow the
+original addresses, and 294 definitions moved to their block's unit. Every
+new name still describes its variable. A block fixes which object must
+define a common in link order. Where the referencing units do not establish
+the original owner, the block's unit is placement evidence only. `sound.c`
+is compiled as C++, where a tentative definition becomes ordinary `.bss`
+storage, so it holds no commons. The `nUnused…` commons are write-only. The
+three flight-profiler words at `0x00598888` are only zeroed with the
+profiler's deltas, and the input-timer flag at `0x0059AB64` is only set to 1.
+
 The 200-byte `szSfxWavePath` buffer at `0x00476558` now resides in `music.c`.
 Its two original references both occur in `PlaySfxWaveFileByNumber`: `sprintf`
 formats the filename into it, then `playWAVE` receives the same buffer. Its

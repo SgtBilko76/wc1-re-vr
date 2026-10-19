@@ -61,6 +61,7 @@ static PacketResourceDescriptor aIntroResourceDescriptors[3] = {
 static int bTitleMenuSceneInitialized = 0; /* 0x00468ad8 */
 
 /* Linker commons defined here; LINK orders them by identifier hash. */
+short nExternalViewAngle; /* 0x005a7f06 */
 unsigned char *pTitleShape; /* 0x005a7f08 */
 
 /* Function start: 0x40FA30 */
@@ -78,32 +79,32 @@ void DrawTitleLogo(short distance, short y)
     if (distance <= 10)
         return;
     scale = (short)(0x1000 / distance);
-    GetTransformedShapeBounds(&stSpaceBuffer,
+    GetTransformedShapeBounds(&stSpaceBufferViewport,
                               (short)(nScreenWidth >> 1), y,
                               pTitleShape, 1, 0, scale, 0,
                               bounds);
 #ifdef SDL_PORT
     if (!SdlRecordSpaceSprite(
-            &stSpaceBuffer, (short)(bounds[0] - 1), y,
+            &stSpaceBufferViewport, (short)(bounds[0] - 1), y,
             pTitleShape, 0, 0, scale, 0))
 #endif
-        DrawSpriteScaled(&stSpaceBuffer, (short)(bounds[0] - 1), y,
+        DrawSpriteScaled(&stSpaceBufferViewport, (short)(bounds[0] - 1), y,
                          pTitleShape, 0, 0, scale, 0);
 #ifdef SDL_PORT
     if (!SdlRecordSpaceSprite(
-            &stSpaceBuffer,
+            &stSpaceBufferViewport,
             (short)(nScreenWidth >> 1), y,
             pTitleShape, 1, 0, scale, 0))
 #endif
-        DrawSpriteScaled(&stSpaceBuffer,
+        DrawSpriteScaled(&stSpaceBufferViewport,
                          (short)(nScreenWidth >> 1), y,
                          pTitleShape, 1, 0, scale, 0);
 #ifdef SDL_PORT
     if (!SdlRecordSpaceSprite(
-            &stSpaceBuffer, bounds[2], y,
+            &stSpaceBufferViewport, bounds[2], y,
             pTitleShape, 2, 0, scale, 0))
 #endif
-        DrawSpriteScaled(&stSpaceBuffer, bounds[2], y,
+        DrawSpriteScaled(&stSpaceBufferViewport, bounds[2], y,
                          pTitleShape, 2, 0, scale, 0);
 }
 
@@ -149,7 +150,7 @@ int Title_Sequence(void)
     state = 0;
     if (bShowKilrathiSagaCredits != 0)
         nIntroCreditCount += 9;
-    if (bEscapePressed == 0) {
+    if (bEscapePressedFlag == 0) {
         PreloadMusicTrackHook(0x17);
         SetEventManagerPump(PollJoystickButtonEvents);
         bIntroSceneResourcesActive = 0;
@@ -157,15 +158,15 @@ int Title_Sequence(void)
         nCannedSceneMode = 2;
         pIntroFont =
             FetchDiskPacketRetrying(9, 1, 0);
-        nSceneResourceBudget = 0x3e8000;
-        nSceneResourceBudget = LoadPacketResourceList(
+        nSceneResourceBudgetValue = 0x3e8000;
+        nSceneResourceBudgetValue = LoadPacketResourceList(
             aIntroResourceDescriptors, 0, 0x3e8000);
         aObjectTypeData[OBJECT_TYPE_DEBRIS_WING].shapeSet =
             aObjectTypeData[
                 OBJECT_TYPE_DEBRIS_METAL_SHEET].shapeSet;
         ClearInputKeyStatePreservingModifiers();
         FlushInputEvents();
-        bEscapePressed = 0;
+        bEscapePressedFlag = 0;
 
         while (state == 0) {
             PumpWindowMessages();
@@ -188,7 +189,7 @@ int Title_Sequence(void)
             do {
                 Update_3Space();
                 if (Draw_3Space_Frame() != 0) {
-                    print_subtitle(&stSpaceBuffer, 0x32,
+                    print_subtitle(&stSpaceBufferViewport, 0x32,
                                    pszIntroOpeningText);
                     dump_buffer_to_screen();
                     DIBslam();
@@ -225,7 +226,7 @@ int Title_Sequence(void)
                 Update_3Space();
                 if (Draw_3Space_Frame() != 0) {
                     DrawTitleLogo(titleDistance,
-                                  (short)(nViewCenterY - 6));
+                                  (short)(nCurrentViewCenterPosY - 6));
                     dump_buffer_to_screen();
                     DIBslam();
                     DIBslamReal();
@@ -243,13 +244,13 @@ int Title_Sequence(void)
             if (state != 0)
                 break;
 
-            ScaleFixedVector(&aShipForwardVector[61], 0x9600,
+            ScaleFixedVector(&aShipFwdVec[61], 0x9600,
                              &aShipVelocity[61]);
             set_up_action_sphere(17);
             bIntroSecondaryScene = 1;
-            anObjectPitchRotation[0] = 0;
+            anObjPitchRot[0] = 0;
             anObjectYawRotation[0] = 0;
-            anObjectRollRotation[0] = 0;
+            anObjectRollRotationList[0] = 0;
             start_hazard_field(0);
 
             credit = 0;
@@ -258,7 +259,7 @@ int Title_Sequence(void)
                 do {
                     Update_3Space();
                     if (Draw_3Space_Frame() != 0) {
-                        print_subtitle(&stSpaceBuffer, 0x32,
+                        print_subtitle(&stSpaceBufferViewport, 0x32,
                             apszIntroCredits[credit]);
                         dump_buffer_to_screen();
                         DIBslam();
@@ -322,7 +323,7 @@ int Title_Sequence(void)
         ReleaseMusicTrackHook(0x17);
     }
 
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     if (bTitleMenuSceneInitialized == 0) {
         SceneEnterHook();
         bTitleMenuSceneInitialized = 1;
@@ -362,17 +363,17 @@ int Title_Sequence(void)
         menuIndex++;
     } while (menuIndex < 4);
 
-    ClearViewport(&stScreen, cBlackColour);
+    ClearViewport(&stScreenView, cBlackColour);
     menuIndex = 0;
     do {
         if (menuOptions[menuIndex] != -1) {
             if (menuOptions[menuIndex] < 3) {
-                DrawSpriteDefault(&stScreen,
+                DrawSpriteDefault(&stScreenView,
                     aTitleMenuRegions[menuIndex].left,
                     aTitleMenuRegions[menuIndex].top,
                     menuShape, menuOptions[menuIndex]);
             } else {
-                DrawSpriteDefault(&stScreen,
+                DrawSpriteDefault(&stScreenView,
                     aTitleMenuRegions[menuIndex].left,
                     aTitleMenuRegions[menuIndex].top,
                     alternateMenuShape, 0);
@@ -383,12 +384,12 @@ int Title_Sequence(void)
     DIBslam();
     DIBslamReal();
 
-    stMouseCursorState.viewport = &stScreen;
+    stMouseCursorState.viewport = &stScreenView;
     SetEventManagerPump(PollMenuInputDevices);
     nMenuInputRepeatDelay = 6;
     WarpMouseTo(160, 100);
     EnterAllocationScope();
-    bInputMode = 1;
+    bInputModeState = 1;
     bKeyEventQueueEnabled = 0;
     while (state == 0) {
         selectedIndex = -1;
@@ -452,8 +453,8 @@ int Title_Sequence(void)
     SetEventManagerPump(0);
     EventManagerHook(0);
     LeaveAllocationScope();
-    FadeViewportPaletteToColour(&stScreen, cBlackColour, 1);
-    ClearViewport(&stScreen, cBlackColour);
+    FadeViewportPaletteToColour(&stScreenView, cBlackColour, 1);
+    ClearViewport(&stScreenView, cBlackColour);
     DIBslam();
     DIBslamReal();
     RestoreGamePalette();

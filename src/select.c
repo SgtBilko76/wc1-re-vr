@@ -4,10 +4,19 @@
 #define WC1_SELECT_SOURCE
 #include "wc1.h"
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned char *pCommMenuPointerShape; /* 0x005a7660 */
+Viewport stModalSrcViewport; /* 0x005a7670 */
+unsigned char *pCurrentPilotHandShapePtr; /* 0x005a7684 */
+Viewport stPilotHandComposite; /* 0x005a7690 */
+Viewport stSceneBuffer; /* 0x005a76b0 */
+short aPaletteFadeEntries[6][3]; /* 0x005a76d0 */
+unsigned char *pCockpitDamageShape; /* 0x005a76f4 */
+
 /* Function start: 0x42AD00 */
 short find_next_gun(short obj, enum ObjectType currentGun)
 {
-    unsigned char *loadout = aShipWeapons[obj];
+    unsigned char *loadout = aShipWeaponsTable[obj];
     int foundCurrent = 0;
     short weapon = 0;
     short firstGun = -1;
@@ -46,9 +55,9 @@ int select_guns(short obj, short selectedGun)
     ShipWeaponSlot *weaponSlot;
 
     (void)obj;
-    weaponCount = (signed char)aShipWeapons[0][0];
+    weaponCount = (signed char)aShipWeaponsTable[0][0];
     found = 0;
-    weaponSlot = (ShipWeaponSlot *)&aShipWeapons[0][1];
+    weaponSlot = (ShipWeaponSlot *)&aShipWeaponsTable[0][1];
     if (weaponCount > 0) {
         do {
             if (aObjectTypeData[weaponSlot->type].objectClass ==
@@ -93,10 +102,10 @@ unsigned int select_new_release_weapon(enum ObjectType preferredType)
     signed char weapon;
     ShipWeaponSlot *weaponSlots;
 
-    weaponCount = (signed char)aShipWeapons[0][0];
+    weaponCount = (signed char)aShipWeaponsTable[0][0];
     currentWeapon = nSelectedReleaseWeaponIndex;
     weapon = (signed char)(currentWeapon + 1);
-    weaponSlots = (ShipWeaponSlot *)&aShipWeapons[0][1];
+    weaponSlots = (ShipWeaponSlot *)&aShipWeaponsTable[0][1];
 
     if (weaponCount <= weapon)
         weapon = 0;
@@ -105,7 +114,7 @@ unsigned int select_new_release_weapon(enum ObjectType preferredType)
             weapon = 0;
             if (weaponCount > 0) {
                 for (; weapon <
-                           (signed char)aShipWeapons[0][0];
+                           (signed char)aShipWeaponsTable[0][0];
                      weapon++) {
                     if (weaponSlots[weapon].type == preferredType) {
                         currentWeapon = weapon;

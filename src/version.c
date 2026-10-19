@@ -6,3 +6,6 @@
 #include "wc1.h"
 
 char *pGameVersion = "1.03F-95"; /* 0x004693b4 */
+/* Linker commons defined here; LINK orders them by identifier hash. */
+ShortPoint stReleaseWeaponDisplayPosition; /* 0x005a7dbc */
+

@@ -15,49 +15,22 @@ static
 unsigned char abCursorSaveArea[0x1000]; /* 0x004865a8 */
 
 /* Linker commons defined here; LINK orders them by identifier hash. */
-InputEvent aInputEventPool[0x100]; /* 0x00598c40 */
-int nMouseCursorSavedY; /* 0x0059a840 */
+InputEvent aInputEvtPool[0x100]; /* 0x00598c40 */
+int nMouseCursorSavedCoordY; /* 0x0059a840 */
 int nMouseCursorSavedX; /* 0x0059a844 */
-unsigned char bInputMode; /* 0x0059a848 */
+unsigned char bInputModeState; /* 0x0059a848 */
 unsigned char bFilteredKeyWaitActive; /* 0x0059a849 */
-int bMouseCursorDrawn; /* 0x0059a84c */
+int bEventMouseCursorDrawnFlag; /* 0x0059a84c */
 short nEventManagerActive; /* 0x0059a850 */
-short nViewCenterX; /* 0x0059a852 */
-short nViewCenterY; /* 0x0059a854 */
-short bExpandedMemoryAvailable; /* 0x0059a856 */
-short nPacketDecompressSourceFile; /* 0x0059a858 */
-unsigned char abInputKeyState[0x80]; /* 0x0059a860 */
-int nMouseCursorDrawnY; /* 0x0059a8e0 */
-int nMouseCursorDrawnX; /* 0x0059a8e4 */
-int anObjectDepthPlaced[SPACE_OBJECT_COUNT]; /* 0x0059a8f0 */
+short nCurrentViewCenterPosX; /* 0x0059a852 */
+short nCurrentViewCenterPosY; /* 0x0059a854 */
+short bCurrentExpandedMemoryAvail; /* 0x0059a856 */
+short nPktDecompressSourceFile; /* 0x0059a858 */
+unsigned char abInputKeyStateArray[0x80]; /* 0x0059a860 */
+int nMousePointerDrawnY; /* 0x0059a8e0 */
+int nMousePointerDrawnX; /* 0x0059a8e4 */
+int anEventObjectDepthPlacedList[SPACE_OBJECT_COUNT]; /* 0x0059a8f0 */
 short DAT_0059a9f0;
-signed char cScreenViewportMode; /* 0x0059a9f2 */
-const ScreenViewportGeometry *
-    pScreenViewportGeometry; /* 0x0059a9f4 */
-int anSortedObject[SPACE_OBJECT_COUNT]; /* 0x0059aa00 */
-short nPacketDecompressInputPosition; /* 0x0059ab00 */
-void *pPacketDecompressInput; /* 0x0059ab04 */
-unsigned short wCurrentInputModifiers; /* 0x0059ab08 */
-MouseCursorState stMouseCursorState; /* 0x0059ab10 */
-void (*pEventManagerPump)(void); /* 0x0059ab2c */
-int nPacketDecompressResult; /* 0x0059ab30 */
-short bRunningFromHardDisk; /* 0x0059ab34 */
-short nPacketDecompressPending; /* 0x0059ab36 */
-unsigned short wPacketDecompressInputSize; /* 0x0059ab38 */
-short nPacketDecompressWorkspaceSegment; /* 0x0059ab3a */
-volatile int bFrameTickPending; /* 0x0059ab3c */
-int bMouseCursorDamagePending; /* 0x0059ab40 */
-int nMouseCursorDamageRight; /* 0x0059ab44 */
-int nMouseCursorDamageBottom; /* 0x0059ab48 */
-int nSavedDosInterruptVector; /* 0x0059ab4c */
-short nViewportOriginY; /* 0x0059ab50 */
-short nViewportOriginX; /* 0x0059ab52 */
-unsigned int nTickCount60Hz; /* 0x0059ab54 */
-unsigned char bEscapePressed; /* 0x0059ab58 */
-int nMouseCursorDamageLeft; /* 0x0059ab5c */
-int nMouseCursorDamageTop; /* 0x0059ab60 */
-short DAT_0059ab64;
-int aiInputEventSlotUsed[0x100]; /* 0x0059ab70 */
 
 /* Function start: 0x4355F0 */
 void TranslatePolledInputEvent(unsigned short type, unsigned int value)
@@ -75,9 +48,9 @@ void TranslatePolledInputEvent(unsigned short type, unsigned int value)
                         state);
         return;
     case 6:
-        samples = aInputDeviceSamples;
-        QueueInputEvent(type, samples[nActiveInputDevice].x,
-                        samples[nActiveInputDevice].y, 0, 0, 0, 0);
+        samples = aInputDevSamples;
+        QueueInputEvent(type, samples[nCurrentActiveInputDevice].x,
+                        samples[nCurrentActiveInputDevice].y, 0, 0, 0, 0);
         return;
     case 13:
         QueueInputEvent(type, nHostMouseMessageX, nHostMouseMessageY,
@@ -104,24 +77,24 @@ InputEvent *AllocateInputEvent(void)
 
     if (bInputEventPoolInitialized != 0) {
         index = 0;
-        used = aiInputEventSlotUsed;
+        used = aiInputEventSlotUsedTable;
         do {
             if (*used == 0) {
-                aiInputEventSlotUsed[index] = 1;
-                return &aInputEventPool[index];
+                aiInputEventSlotUsedTable[index] = 1;
+                return &aInputEvtPool[index];
             }
             used++;
             index++;
-        } while (used < &aiInputEventSlotUsed[0x100]);
+        } while (used < &aiInputEventSlotUsedTable[0x100]);
         return 0;
     }
-    memset(aInputEventPool, 0,
-           sizeof(aInputEventPool));
-    memset(aiInputEventSlotUsed, 0,
-           sizeof(aiInputEventSlotUsed));
+    memset(aInputEvtPool, 0,
+           sizeof(aInputEvtPool));
+    memset(aiInputEventSlotUsedTable, 0,
+           sizeof(aiInputEventSlotUsedTable));
     bInputEventPoolInitialized = 1;
-    aiInputEventSlotUsed[0] = 1;
-    return &aInputEventPool[0];
+    aiInputEventSlotUsedTable[0] = 1;
+    return &aInputEvtPool[0];
 }
 
 /* Function start: 0x435760 */
@@ -130,8 +103,8 @@ void ReleaseInputEvent(InputEvent *event)
     int slot;
 
     for (slot = 0; slot < 0x100; slot++) {
-        if (&aInputEventPool[slot] == event)
-            aiInputEventSlotUsed[slot] = 0;
+        if (&aInputEvtPool[slot] == event)
+            aiInputEventSlotUsedTable[slot] = 0;
     }
 }
 
@@ -474,16 +447,16 @@ void CaptureMouseCursorBackground(void)
     y = stMouseCursorState.y;
     if (nMouseCursorDamageLeft > x - 16)
         nMouseCursorDamageLeft = x - 16;
-    nMouseCursorDrawnX = x;
+    nMousePointerDrawnX = x;
     if (nMouseCursorDamageRight < x + 16)
         nMouseCursorDamageRight = x + 16;
-    if (nMouseCursorDamageTop > y - 16)
-        nMouseCursorDamageTop = y - 16;
-    nMouseCursorDrawnY = y;
-    if (nMouseCursorDamageBottom < y + 16)
-        nMouseCursorDamageBottom = y + 16;
+    if (nMousePointerDamageTopValue > y - 16)
+        nMousePointerDamageTopValue = y - 16;
+    nMousePointerDrawnY = y;
+    if (nEventMousePointerDamageBottom < y + 16)
+        nEventMousePointerDamageBottom = y + 16;
     bMouseCursorDamagePending = 1;
-    bMouseCursorDrawn = 1;
+    bEventMouseCursorDrawnFlag = 1;
 }
 
 /* Function start: 0x435EF0 */
@@ -508,10 +481,10 @@ void DrawMouseCursor(void)
     if (nMouseCursorDamageRight < x + 16)
         nMouseCursorDamageRight = x + 16;
     y = stMouseCursorState.y;
-    if (nMouseCursorDamageTop > y - 16)
-        nMouseCursorDamageTop = y - 16;
-    if (nMouseCursorDamageBottom < y + 16)
-        nMouseCursorDamageBottom = y + 16;
+    if (nMousePointerDamageTopValue > y - 16)
+        nMousePointerDamageTopValue = y - 16;
+    if (nEventMousePointerDamageBottom < y + 16)
+        nEventMousePointerDamageBottom = y + 16;
     bMouseCursorDamagePending = 1;
 }
 
@@ -524,43 +497,43 @@ void RestoreMouseCursorBackground(void)
     if (nMouseCursorShowCount == 0 ||
         stMouseCursorState.viewport == 0 ||
         stMouseCursorState.shape == 0 ||
-        bMouseCursorDrawn == 0)
+        bEventMouseCursorDrawnFlag == 0)
         return;
 
     RestoreSpriteBackground(stMouseCursorState.viewport,
                             abCursorSaveArea,
-                            (short)nMouseCursorDrawnX,
-                            (short)nMouseCursorDrawnY,
+                            (short)nMousePointerDrawnX,
+                            (short)nMousePointerDrawnY,
                             stMouseCursorState.shape,
                             stMouseCursorState.frame);
-    x = nMouseCursorDrawnX;
+    x = nMousePointerDrawnX;
     if (nMouseCursorDamageLeft > x - 16)
         nMouseCursorDamageLeft = x - 16;
     if (nMouseCursorDamageRight < x + 16)
         nMouseCursorDamageRight = x + 16;
-    y = nMouseCursorDrawnY;
-    if (nMouseCursorDamageTop > y - 16)
-        nMouseCursorDamageTop = y - 16;
-    if (nMouseCursorDamageBottom < y + 16)
-        nMouseCursorDamageBottom = y + 16;
-    bMouseCursorDrawn = 0;
+    y = nMousePointerDrawnY;
+    if (nMousePointerDamageTopValue > y - 16)
+        nMousePointerDamageTopValue = y - 16;
+    if (nEventMousePointerDamageBottom < y + 16)
+        nEventMousePointerDamageBottom = y + 16;
+    bEventMouseCursorDrawnFlag = 0;
 }
 
 /* Function start: 0x436060 */
 void RefreshMouseCursorDisplay(void)
 {
     nMouseCursorDamageLeft = 319;
-    nMouseCursorDamageTop = 199;
+    nMousePointerDamageTopValue = 199;
     nMouseCursorDamageRight = 0;
-    nMouseCursorDamageBottom = 0;
+    nEventMousePointerDamageBottom = 0;
     bMouseCursorDamagePending = 0;
-    bMouseCursorDrawn = 0;
+    bEventMouseCursorDrawnFlag = 0;
     CaptureMouseCursorBackground();
     DrawMouseCursor();
     DIBupdate(nMouseCursorDamageLeft,
-              nMouseCursorDamageTop,
+              nMousePointerDamageTopValue,
               nMouseCursorDamageRight,
-              nMouseCursorDamageBottom);
+              nEventMousePointerDamageBottom);
     RestoreMouseCursorBackground();
 }
 
@@ -593,7 +566,7 @@ void __stdcall SetMouseCursorShape(unsigned char *shape, short frame)
         RestoreSpriteBackground(stMouseCursorState.viewport,
                                 abCursorSaveArea,
                                 (short)nMouseCursorSavedX,
-                                (short)nMouseCursorSavedY,
+                                (short)nMouseCursorSavedCoordY,
                                 pDrawnMouseCursorShape,
                                 (short)stMouseCursorState.frame);
         pDrawnMouseCursorShape = 0;
@@ -647,13 +620,13 @@ void __stdcall SetFrameTimerPeriodDirect(short p)
 /* Function start: 0x436230 */
 void WaitForFrameTick(void)
 {
-    while (bFrameTickPending != 0) ;
+    while (bFrameTickPendingFlag != 0) ;
 }
 
 /* Function start: 0x436240 */
 int IsFrameTickElapsed(void)
 {
-    return bFrameTickPending == 0;
+    return bFrameTickPendingFlag == 0;
 }
 
 /* Function start: 0x436250 */
@@ -811,21 +784,21 @@ void ResetInputKeyStatePreservingModifiers(void)
 /* Function start: 0x4363A0 */
 void ClearInputKeyStatePreservingModifiers(void)
 {
-    unsigned int control = abInputKeyState[0x1d];
-    unsigned int alt = abInputKeyState[0x38];
+    unsigned int control = abInputKeyStateArray[0x1d];
+    unsigned int alt = abInputKeyStateArray[0x38];
 
-    memset(abInputKeyState, 0,
-           sizeof(abInputKeyState));
-    abInputKeyState[0x1d] = control;
-    abInputKeyState[0x38] = alt;
+    memset(abInputKeyStateArray, 0,
+           sizeof(abInputKeyStateArray));
+    abInputKeyStateArray[0x1d] = control;
+    abInputKeyStateArray[0x38] = alt;
     ClearDebugPauseFlags();
 }
 
 /* Function start: 0x4363E0 */
 void ClearInputKeyState(void)
 {
-    memset(abInputKeyState, 0,
-           sizeof(abInputKeyState));
+    memset(abInputKeyStateArray, 0,
+           sizeof(abInputKeyStateArray));
     ClearDebugPauseFlags();
 }
 
@@ -847,7 +820,7 @@ void KeyboardScanHook(void)
 void SetInputKeyState(int scanCode, unsigned char pressed)
 {
     if (scanCode >= 0 && scanCode < 0x80) {
-        abInputKeyState[scanCode] = pressed;
+        abInputKeyStateArray[scanCode] = pressed;
         return;
     }
     SystemDebugPrintf("keyboard almost messed up\n");
@@ -871,18 +844,18 @@ void sort_object_depth(void)
 
     previous = -999999999;
     bestObject = -1;
-    memset(anObjectDepthPlaced, 0,
-           sizeof(anObjectDepthPlaced));
+    memset(anEventObjectDepthPlacedList, 0,
+           sizeof(anEventObjectDepthPlacedList));
     obj = 0;
     for (; obj < SPACE_OBJECT_COUNT; obj++) {
-        distance = (unsigned short)asObjectDistance[obj];
+        distance = (unsigned short)asObjDistancesTable[obj];
         if (previous < (int)distance) {
             previous = (int)distance;
             bestObject = obj;
         }
     }
     sorted = 0;
-    sortedEntry = anSortedObject;
+    sortedEntry = anSortedObjects;
     for (; sorted < SPACE_OBJECT_COUNT; sorted++, sortedEntry++) {
         best = -1;
         *sortedEntry = bestObject;
@@ -890,17 +863,17 @@ void sort_object_depth(void)
             return;
         screenOffset = 0;
         obj = 0;
-        anObjectDepthPlaced[bestObject] = 1;
+        anEventObjectDepthPlacedList[bestObject] = 1;
         bestObject = -1;
-        placed = anObjectDepthPlaced;
-        for (; placed < anObjectDepthPlaced +
+        placed = anEventObjectDepthPlacedList;
+        for (; placed < anEventObjectDepthPlacedList +
                            SPACE_OBJECT_COUNT;
              screenOffset += sizeof(short), placed++, obj++) {
             if (*placed == 0 &&
-                *(short *)((unsigned char *)asObjectScreenX +
+                *(short *)((unsigned char *)asObjectScreenXList +
                            screenOffset) != (short)0x8001) {
                 distance = *(unsigned short *)(
-                    (unsigned char *)asObjectDistance +
+                    (unsigned char *)asObjDistancesTable +
                     screenOffset);
                 if (best < (int)distance && previous >= (int)distance) {
                     bestObject = obj;
@@ -928,48 +901,48 @@ void draw_sorted_objects_to_buffer(void)
     short projectedScreenY;
 #endif
 
-    sortedEntry = anSortedObject;
+    sortedEntry = anSortedObjects;
     do {
         obj = *sortedEntry;
         if (obj < 0)
             return;
-        if ((int)aeObjectType[obj] < 0)
+        if ((int)aeObjectTypeList[obj] < 0)
             return;
         objectClass = aeObjectClass[obj];
 #ifdef SDL_PORT
         enhancedScreenX = (float)(short)(
-            asObjectScreenX[obj] + nViewCenterX);
+            asObjectScreenXList[obj] + nCurrentViewCenterPosX);
         enhancedScreenY = (float)(short)(
-            asObjectScreenY[obj] + nViewCenterY);
+            asObjectScreenYArray[obj] + nCurrentViewCenterPosY);
         if (objectClass != OBJECT_CLASS_NULL &&
             objectClass != OBJECT_CLASS_FIXED_OBJECT &&
             obj != nNavPointerObject &&
-            aObjectViewPosition[obj].z != 0) {
+            aObjectViewPositionsList[obj].z != 0) {
             projectedScreenX = (short)(DivideFixed(
                 MultiplyFixed(
                     (short)(nScreenWidth & ~1) << 7,
-                    aObjectViewPosition[obj].x),
-                aObjectViewPosition[obj].z) >> 8);
+                    aObjectViewPositionsList[obj].x),
+                aObjectViewPositionsList[obj].z) >> 8);
             projectedScreenY = (short)(DivideFixed(
                 MultiplyFixed(
                     (short)(nScreenWidth & ~1) << 7,
-                    aObjectViewPosition[obj].y),
-                aObjectViewPosition[obj].z) >> 8);
-            if (projectedScreenX == asObjectScreenX[obj] &&
-                projectedScreenY == asObjectScreenY[obj]) {
+                    aObjectViewPositionsList[obj].y),
+                aObjectViewPositionsList[obj].z) >> 8);
+            if (projectedScreenX == asObjectScreenXList[obj] &&
+                projectedScreenY == asObjectScreenYArray[obj]) {
                 enhancedScreenX =
-                    (float)nViewCenterX +
+                    (float)nCurrentViewCenterPosX +
                     (float)(((double)(nScreenWidth & ~1) * 0.5 *
-                             aObjectViewPosition[obj].x) /
-                            aObjectViewPosition[obj].z);
+                             aObjectViewPositionsList[obj].x) /
+                            aObjectViewPositionsList[obj].z);
                 enhancedScreenY =
-                    (float)nViewCenterY +
+                    (float)nCurrentViewCenterPosY +
                     (float)(((double)(nScreenWidth & ~1) * 0.5 *
-                             aObjectViewPosition[obj].y) /
-                            aObjectViewPosition[obj].z);
+                             aObjectViewPositionsList[obj].y) /
+                            aObjectViewPositionsList[obj].z);
             }
         } else if (objectClass == OBJECT_CLASS_FIXED_OBJECT &&
-                   aeObjectType[obj] == OBJECT_TYPE_THRUSTERS) {
+                   aeObjectTypeList[obj] == OBJECT_TYPE_THRUSTERS) {
             SdlGetThrusterScreenPosition(
                 (short)obj, &enhancedScreenX, &enhancedScreenY);
         }
@@ -977,29 +950,29 @@ void draw_sorted_objects_to_buffer(void)
         if (objectClass != OBJECT_CLASS_NULL) {
             switch (objectClass) {
             default:
-                screenY = asObjectScreenY[obj];
-                screenX = (short)(asObjectScreenX[obj] +
-                                  nViewCenterX);
-                shape = apObjectShape[obj];
-                asObjectDrawX[obj] = screenX;
-                screenY = (short)(screenY + nViewCenterY);
-                asObjectDrawY[obj] = screenY;
+                screenY = asObjectScreenYArray[obj];
+                screenX = (short)(asObjectScreenXList[obj] +
+                                  nCurrentViewCenterPosX);
+                shape = apObjShapeArray[obj];
+                asObjectDrawPosX[obj] = screenX;
+                screenY = (short)(screenY + nCurrentViewCenterPosY);
+                asObjectDrawPosY[obj] = screenY;
                 if (shape != 0) {
 #ifdef SDL_PORT
                     if (!SdlRecordSpaceSprite(
-                            &stSpaceBuffer, enhancedScreenX, enhancedScreenY,
+                            &stSpaceBufferViewport, enhancedScreenX, enhancedScreenY,
                             shape,
-                            asObjectViewFrame[obj],
-                            asObjectScreenAngle[obj],
-                            asObjectScreenScale[obj],
-                            asObjectFlip[obj]))
+                            asObjectViewFrames[obj],
+                            asObjScreenAngles[obj],
+                            asObjScreenScalesArray[obj],
+                            asObjectFlipArray[obj]))
 #endif
                     DrawSpriteScaled(
-                        &stSpaceBuffer, screenX, screenY, shape,
-                        asObjectViewFrame[obj],
-                        asObjectScreenAngle[obj],
-                        asObjectScreenScale[obj],
-                        asObjectFlip[obj]);
+                        &stSpaceBufferViewport, screenX, screenY, shape,
+                        asObjectViewFrames[obj],
+                        asObjScreenAngles[obj],
+                        asObjScreenScalesArray[obj],
+                        asObjectFlipArray[obj]);
                 }
                 break;
             case OBJECT_CLASS_STAR:
@@ -1010,29 +983,29 @@ void draw_sorted_objects_to_buffer(void)
 #endif
             case OBJECT_CLASS_DUST:
                 specialObject = (int)nNavPointerObject;
-                screenY = asObjectScreenY[obj];
-                screenX = (short)(asObjectScreenX[obj] +
-                                  nViewCenterX);
-                asObjectDrawX[obj] = screenX;
-                screenY = (short)(screenY + nViewCenterY);
-                asObjectDrawY[obj] = screenY;
+                screenY = asObjectScreenYArray[obj];
+                screenX = (short)(asObjectScreenXList[obj] +
+                                  nCurrentViewCenterPosX);
+                asObjectDrawPosX[obj] = screenX;
+                screenY = (short)(screenY + nCurrentViewCenterPosY);
+                asObjectDrawPosY[obj] = screenY;
                 if (specialObject == obj)
-                    shape = apObjectShape[obj];
+                    shape = apObjShapeArray[obj];
                 else
-                    shape = pConstellationShape;
+                    shape = pCurrentConstellationShape;
 #ifdef SDL_PORT
                 if (!SdlRecordSpaceSprite(
-                        &stSpaceBuffer, enhancedScreenX,
+                        &stSpaceBufferViewport, enhancedScreenX,
                         enhancedScreenY, shape,
-                        asObjectViewFrame[obj], 0, 0x100, 0))
+                        asObjectViewFrames[obj], 0, 0x100, 0))
 #endif
-                DrawSpriteDefault(&stSpaceBuffer, screenX, screenY, shape,
-                                  asObjectViewFrame[obj]);
+                DrawSpriteDefault(&stSpaceBufferViewport, screenX, screenY, shape,
+                                  asObjectViewFrames[obj]);
                 break;
             }
         }
         sortedEntry++;
-    } while (sortedEntry < anSortedObject +
+    } while (sortedEntry < anSortedObjects +
                            SPACE_OBJECT_COUNT);
 }
 
@@ -1044,23 +1017,23 @@ void intro_drawbackgroundships(void)
     int obj;
 
     for (obj = 0; obj < SPACE_OBJECT_COUNT; obj++) {
-        if (aeObjectType[obj] < 0)
+        if (aeObjectTypeList[obj] < 0)
             return;
         objectClass = aeObjectClass[obj];
         if (objectClass != OBJECT_CLASS_NULL) {
             switch (objectClass) {
             default:
-                shape = apObjectShape[obj];
+                shape = apObjShapeArray[obj];
                 if (shape != 0) {
                     DrawSolidColourSpriteScaled(
-                        &stSpaceBuffer,
-                        asObjectDrawX[obj],
-                        asObjectDrawY[obj],
+                        &stSpaceBufferViewport,
+                        asObjectDrawPosX[obj],
+                        asObjectDrawPosY[obj],
                         shape,
-                        asObjectViewFrame[obj],
-                        asObjectScreenAngle[obj],
-                        asObjectScreenScale[obj],
-                        asObjectFlip[obj],
+                        asObjectViewFrames[obj],
+                        asObjScreenAngles[obj],
+                        asObjScreenScalesArray[obj],
+                        asObjectFlipArray[obj],
                         cPrimaryViewBufferColour);
                 }
                 break;
@@ -1073,19 +1046,19 @@ void intro_drawbackgroundships(void)
             case OBJECT_CLASS_DUST:
                 if (obj == nNavPointerObject) {
                     DrawSolidColourSprite(
-                        &stSpaceBuffer,
-                        asObjectDrawX[obj],
-                        asObjectDrawY[obj],
-                        apObjectShape[obj],
-                        asObjectViewFrame[obj],
+                        &stSpaceBufferViewport,
+                        asObjectDrawPosX[obj],
+                        asObjectDrawPosY[obj],
+                        apObjShapeArray[obj],
+                        asObjectViewFrames[obj],
                         cPrimaryViewBufferColour);
                 } else {
                     DrawSolidColourSprite(
-                        &stSpaceBuffer,
-                        asObjectDrawX[obj],
-                        asObjectDrawY[obj],
-                        pConstellationShape,
-                        asObjectViewFrame[obj],
+                        &stSpaceBufferViewport,
+                        asObjectDrawPosX[obj],
+                        asObjectDrawPosY[obj],
+                        pCurrentConstellationShape,
+                        asObjectViewFrames[obj],
                         cPrimaryViewBufferColour);
                 }
                 break;
@@ -1099,42 +1072,42 @@ void set_up_screen_viewport(signed char mode)
 {
     int modeIndex;
 
-    cScreenViewportMode = mode;
+    cScreenViewMode = mode;
     modeIndex = (int)mode;
     switch (modeIndex) {
     case 4:
     case 5:
-        pScreenViewportGeometry =
+        pScreenViewGeometry =
             &aScreenViewportGeometry[modeIndex];
         break;
     default:
-        pScreenViewportGeometry =
+        pScreenViewGeometry =
             (const ScreenViewportGeometry *)(
-                (const unsigned char *)pScreenViewportPacket +
-                pScreenViewportPacket
+                (const unsigned char *)pCurrentScreenViewportPkt +
+                pCurrentScreenViewportPkt
                     ->geometryOffsets[modeIndex]);
         break;
     }
 
     if (bCockpitlessView != 0 && bCockpitlessView != -2) {
-        nScreenWidth = pScreenViewportGeometry->width;
-        nViewCenterX = (short)(nScreenWidth / 2);
-        nScreenHeight = pScreenViewportGeometry->height;
-        nViewCenterY = (short)(nScreenHeight / 2);
-        nViewportOriginX = pScreenViewportGeometry->originX;
-        nViewportOriginY = pScreenViewportGeometry->originY;
-        switch ((int)cCockpitView) {
+        nScreenWidth = pScreenViewGeometry->width;
+        nCurrentViewCenterPosX = (short)(nScreenWidth / 2);
+        nScreenHeight = pScreenViewGeometry->height;
+        nCurrentViewCenterPosY = (short)(nScreenHeight / 2);
+        nViewportOriginPositionX = pScreenViewGeometry->originX;
+        nViewportOriginPositionY = pScreenViewGeometry->originY;
+        switch ((int)cCurrentCockpitView) {
         case 0:
-            nViewportOriginY += 10;
-            nViewCenterY += 10;
+            nViewportOriginPositionY += 10;
+            nCurrentViewCenterPosY += 10;
             break;
         case 1:
-            nViewportOriginY += 25;
-            nViewCenterY += 25;
+            nViewportOriginPositionY += 25;
+            nCurrentViewCenterPosY += 25;
             break;
         case 2:
-            nViewportOriginY += 50;
-            nViewCenterY += 50;
+            nViewportOriginPositionY += 50;
+            nCurrentViewCenterPosY += 50;
             break;
         }
         nScreenWidth = 320;
@@ -1142,12 +1115,12 @@ void set_up_screen_viewport(signed char mode)
         return;
     }
 
-    nScreenWidth = pScreenViewportGeometry->width;
-    nViewCenterX = (short)(nScreenWidth / 2);
-    nScreenHeight = pScreenViewportGeometry->height;
-    nViewCenterY = (short)(nScreenHeight / 2);
-    nViewportOriginX = pScreenViewportGeometry->originX;
-    nViewportOriginY = pScreenViewportGeometry->originY;
+    nScreenWidth = pScreenViewGeometry->width;
+    nCurrentViewCenterPosX = (short)(nScreenWidth / 2);
+    nScreenHeight = pScreenViewGeometry->height;
+    nCurrentViewCenterPosY = (short)(nScreenHeight / 2);
+    nViewportOriginPositionX = pScreenViewGeometry->originX;
+    nViewportOriginPositionY = pScreenViewGeometry->originY;
 }
 
 /* Function start: 0x436890 */

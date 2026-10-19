@@ -19,7 +19,7 @@ unsigned int WaitForKeyExceptXOrF12(void)
 {
     int key;
 
-    bFilteredKeyWaitStarted =
+    bFilteredKeyDelayStartedState =
         bFilteredKeyWaitActive = 1;
     do {
         key = PumpMessagesDuringWait();
@@ -41,25 +41,25 @@ void ShowMeanwhileTransition(short scene, short variant)
     InitializeConversationViewport();
     InitializeConversationText();
     LoadSceneAnimationResources(scene, variant);
-    ClearViewport(stConversationTextContext.viewport,
+    ClearViewport(stCurrentConvTxtCtx.viewport,
                   cBlackColour);
-    SetTextContext(&stConversationTextContext);
+    SetTextContext(&stCurrentConvTxtCtx);
     pIntroFont =
         (unsigned char *)FetchDiskPacketRetrying(9, 1, 0);
     print_subtitle(&stSceneBuffer, 0x40, "Meanwhile...");
-    PanToScreen(&stSceneBuffer, &stScreen);
+    PanToScreen(&stSceneBuffer, &stScreenView);
     FreePacketAndClear((int *)&pIntroFont, 0);
     WaitForSceneAdvance(100, 0);
-    ClearViewport(&stModalSourceViewport, cBlackColour);
+    ClearViewport(&stModalSrcViewport, cBlackColour);
     DIBslam();
     DIBslamReal();
-    SceneDirector(6, pSceneAnimationSceneData,
+    SceneDirector(6, pSceneAnimationSceneDataPtr,
                   pSceneAnimationTextData);
     SaveGamePalette();
     StopMusic(30);
-    FadeViewportPaletteToColour(&stModalSourceViewport,
+    FadeViewportPaletteToColour(&stModalSrcViewport,
                                 cBlackColour, 1);
-    ClearViewport(&stModalSourceViewport, cBlackColour);
+    ClearViewport(&stModalSrcViewport, cBlackColour);
     DIBslam();
     DIBslamReal();
     RestoreGamePalette();
@@ -128,15 +128,15 @@ short PromptForAnswerText(short entry)
     bounds.top = 50;
     bounds.right = 269;
     bounds.bottom = 149;
-    ClearViewport(&stScreen, cBlackColour);
-    LoadAnswerPromptAndResponse(entry, szHudMessageBuffer,
+    ClearViewport(&stScreenView, cBlackColour);
+    LoadAnswerPromptAndResponse(entry, szHudMessageBuf,
                                 szComponentHitMessage);
-    ApplyAnswerTextCipher(szHudMessageBuffer, 1);
+    ApplyAnswerTextCipher(szHudMessageBuf, 1);
     InitializeModalTextPanel(&panel, 0, bounds,
                              cViewportClearColour,
                              cBlackColour, cRedColour);
     DrawModalTextPanel(&panel, 6, 10, 2,
-                       szHudMessageBuffer);
+                       szHudMessageBuf);
     szComponentHitMessage[20] =
         ""[0];
     PromptForTextInput(65, 125, (char *)"Answer: ",

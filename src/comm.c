@@ -41,14 +41,21 @@ short nCommSpeakerObject = 0; /* 0x0046afc8 */
 short nCommSpeakerRating = 0; /* 0x0046afcc */
 short nCommPortraitIndex = -1; /* 0x0046afd0 */
 
+
 /* Linker commons defined here; LINK orders them by identifier hash. */
-unsigned char *apCommPortraitShapes[16]; /* 0x0059e180 */
-char szHudMessageBuffer[0x60]; /* 0x0059e1c0 */
-char *aapszPilotSpeech[14][11]; /* 0x0059e220 */
-signed char abCommMenuChoiceCommand[7]; /* 0x0059e488 */
-const char *pszCommMenuHeading; /* 0x0059e490 */
-char szCommMenuHeadingBuffer[0x40]; /* 0x0059e4a0 */
-const char *apszCommMenuChoiceText[7]; /* 0x0059e4e0 */
+unsigned char *apObjShapeArray[SPACE_OBJECT_COUNT]; /* 0x0059d2f0 */
+short nPitchInput; /* 0x0059d3f0 */
+short nYawInputValue; /* 0x0059d3f2 */
+short nCurrentRollInputValue; /* 0x0059d3f4 */
+short asShipWingLeaderArray[16]; /* 0x0059d400 */
+/* The Win32 object allocator reserves slots 0 through 9 for live ships. */
+short aasShipArmor[10][4]; /* 0x0059d420 */
+short asShipWpnEnergyList[10]; /* 0x0059d470 */
+signed char acFormationMemberLists[16]; /* 0x0059d490 */
+signed char acShipIonDriveDmg[16]; /* 0x0059d4a0 */
+short anShipMissionShips[16]; /* 0x0059d4b0 */
+FixedVector vToTgt; /* 0x0059d4d0 */
+short asCannedCommands[16]; /* 0x0059d4e0 */
 
 /* Function start: 0x430BC0 */
 short get_face(short rating, unsigned int side)
@@ -72,7 +79,7 @@ void LoadCommPortraitShape(short face, signed char alternate)
     else
         section = -1;
     if (section != -1)
-        apCommPortraitShapes[face] =
+        apCommunicationPortraitShapesTable[face] =
             FetchDiskPacketRetrying(11, section,
                                                      (short)alternate);
 }
@@ -83,11 +90,11 @@ void ResetCommMenuChoices(short reuse)
     short choice;
 
     if (reuse == 0) {
-        memset(abCommMenuChoiceCommand, -1,
-               sizeof(abCommMenuChoiceCommand));
+        memset(abCommMenuChoiceCommands, -1,
+               sizeof(abCommMenuChoiceCommands));
         choice = 0;
         do {
-            apszCommMenuChoiceText[choice] = 0;
+            apszCommMenuChoiceTextTable[choice] = 0;
             choice++;
         } while (choice < 7);
     }
@@ -107,13 +114,13 @@ void AppendCommMenuChoice(const char *text, short command)
     int index;
 
     if (nCommMenuReuseMode == 1) {
-        if (apszCommMenuChoiceText[nCommMenuChoiceCount] != text ||
-            abCommMenuChoiceCommand[nCommMenuChoiceCount] != command)
+        if (apszCommMenuChoiceTextTable[nCommMenuChoiceCount] != text ||
+            abCommMenuChoiceCommands[nCommMenuChoiceCount] != command)
             nCommMenuReuseMode = 0;
     }
     index = nCommMenuChoiceCount++;
-    apszCommMenuChoiceText[index] = text;
-    abCommMenuChoiceCommand[index] = (signed char)command;
+    apszCommMenuChoiceTextTable[index] = text;
+    abCommMenuChoiceCommands[index] = (signed char)command;
 }
 
 /* Function start: 0x430D30 */
@@ -174,7 +181,7 @@ short wingman_dead(void)
 /* Function start: 0x430E30 */
 short have_target(void)
 {
-    return unactive(acShipTarget[0]) == 0;
+    return unactive(acShipTargetTable[0]) == 0;
 }
 
 /* Function start: 0x430E50 */
@@ -203,20 +210,20 @@ void BuildCommunicationRecipientMenu(void)
     OpenCommMenuForTarget("VID-COM SYSTEM\n\nSend message to?\n\n",
                           "SELECT");
     if (wingman_dead() != 0) {
-        SelectCommRecipient(acShipTarget[0]);
+        SelectCommRecipient(acShipTargetTable[0]);
         return;
     }
     if (have_target() == 0 ||
-        acShipTarget[0] == nYourWingman) {
+        acShipTargetTable[0] == nYourWingman) {
         SelectCommRecipient(nYourWingman);
         return;
     }
     AppendCommMenuChoice(
-        apWingmanPilots[
+        apWingmanPilotsList[
             (signed char)acShipRating[
                 nYourWingman]]->callsign,
         1);
-    target = acShipTarget[0];
+    target = acShipTargetTable[0];
     if (target != -1) {
         if (aeShipSide[target] == SIDE_KILRATHI &&
             aeObjectClass[target] == OBJECT_CLASS_SHIP)
@@ -224,11 +231,11 @@ void BuildCommunicationRecipientMenu(void)
         else if (aeShipSide[target] == SIDE_IMPERIAL &&
                  ((aeObjectClass[target] == OBJECT_CLASS_SHIP &&
                    any_enemy(0, 14000) != 0) ||
-                  aeObjectType[target] ==
+                  aeObjectTypeList[target] ==
                       OBJECT_TYPE_TIGERS_CLAW))
             AppendCommMenuChoice(
                 aObjectTypeData[
-                    aeObjectType[acShipTarget[0]]].displayName,
+                    aeObjectTypeList[acShipTargetTable[0]]].displayName,
                 3);
     }
     SendCommMenuChoice(0);
@@ -242,14 +249,14 @@ void BuildCommunicationCommandMenu(void)
 
     ResetCommMenuChoices(nCommMenuReuseMode);
     if (cCommMenuRecipient == nYourWingman) {
-        if (aeShipObjective[nYourWingman] ==
+        if (aeShipObjectiveList[nYourWingman] ==
                 OBJECTIVE_HOLD_FORMATION &&
             any_enemy(0, 14000) != 0) {
             SendCommMenuChoice(7);
         }
         if (nAutoEngageTimer != -1)
             SendCommMenuChoice(8);
-        else if (aeShipObjective[nYourWingman] !=
+        else if (aeShipObjectiveList[nYourWingman] !=
                      OBJECTIVE_HOLD_FORMATION)
             SendCommMenuChoice(9);
         if (bRadioSilence != 0)
@@ -259,13 +266,13 @@ void BuildCommunicationCommandMenu(void)
     }
     if (aeShipSide[cCommMenuRecipient] ==
             aeShipSide[0]) {
-        if (aeObjectType[cCommMenuRecipient] ==
+        if (aeObjectTypeList[cCommMenuRecipient] ==
                 OBJECT_TYPE_TIGERS_CLAW &&
             bLandingAuthorized == 0) {
             SendCommMenuChoice(12);
         }
         if (have_target() != 0 &&
-            aeShipSide[acShipTarget[0]] ==
+            aeShipSide[acShipTargetTable[0]] ==
                 SIDE_KILRATHI) {
             SendCommMenuChoice(1);
         }
@@ -286,21 +293,21 @@ void BuildCommunicationCommandMenu(void)
         SendCommMenuChoice(0);
 
     if (IsCommChoiceMenuOpen() != 0) {
-        strcpy(szCommMenuHeadingBuffer,
+        strcpy(szCommMenuHeadingBuf,
                "VID-COM SYSTEM\n\nTo: ");
         rating = acShipRating[cCommMenuRecipient];
         if (rating == -1) {
             name = aObjectTypeData[
-                aeObjectType[
+                aeObjectTypeList[
                     cCommMenuRecipient]].displayName;
         } else if (rating < 8) {
-            name = apWingmanPilots[rating]->callsign;
+            name = apWingmanPilotsList[rating]->callsign;
         } else {
             name = apszKilrathiAceNames[rating - 9];
         }
-        strcat(szCommMenuHeadingBuffer, name);
-        strcat(szCommMenuHeadingBuffer, "\n");
-        OpenCommMenuForTarget(szCommMenuHeadingBuffer,
+        strcat(szCommMenuHeadingBuf, name);
+        strcat(szCommMenuHeadingBuf, "\n");
+        OpenCommMenuForTarget(szCommMenuHeadingBuf,
                               "CHOOSE");
     }
 }
@@ -344,32 +351,32 @@ void show_communications_disp(void)
         HandleCommunicationMenuRequest();
     if (IsCommChoiceMenuOpen() != 0) {
         set_new_vdu(1);
-        DrawTextAt(&stRightVduTextContext, stRightVdu.left,
-                   stRightVdu.top, pszCommMenuHeading, 2);
+        DrawTextAt(&stRightVduTxtContext, stRightVduViewport.left,
+                   stRightVduViewport.top, pszCommMenuHeading, 2);
         choice = 0;
 #ifdef SDL_PORT
         selectedChoice = SdlGetCommunicationMenuSelection();
-        normalColour = stRightVduTextContext.colour;
+        normalColour = stRightVduTxtContext.colour;
 #endif
         if (nCommMenuChoiceCount > 0) {
             do {
 #ifdef SDL_PORT
                 if ((int)choice == selectedChoice)
-                    stRightVduTextContext.colour = cYellowColour;
+                    stRightVduTxtContext.colour = cYellowColour;
 #endif
                 DrawFormattedText("\n%d %s", (int)choice + 1,
-                                  apszCommMenuChoiceText[
+                                  apszCommMenuChoiceTextTable[
                                       (int)choice]);
 #ifdef SDL_PORT
-                stRightVduTextContext.colour = normalColour;
+                stRightVduTxtContext.colour = normalColour;
 #endif
                 choice++;
             } while (choice < nCommMenuChoiceCount);
         }
-        DrawSpriteDefault(&stRightVdu,
-                          (short)(stRightVdu.left + 36),
-                          (short)(stRightVdu.top + 10),
-                          pCommMenuCursorShape, 0x19);
+        DrawSpriteDefault(&stRightVduViewport,
+                          (short)(stRightVduViewport.left + 36),
+                          (short)(stRightVduViewport.top + 10),
+                          pCommMenuPointerShape, 0x19);
         nCommMenuReuseMode = 1;
     }
 }
@@ -386,22 +393,22 @@ unsigned int Chosen_communicate_option(short choice)
         CloseCommChoiceMenu();
         return 0;
     case 1:
-        if (abCommMenuChoiceCommand[choice] == 0) {
+        if (abCommMenuChoiceCommands[choice] == 0) {
             CloseCommChoiceMenu();
             return 0;
         }
-        if (abCommMenuChoiceCommand[choice] == 1) {
+        if (abCommMenuChoiceCommands[choice] == 1) {
             SelectCommRecipient(nYourWingman);
             RefreshCommunicationMenu();
             return 0;
         }
-        SelectCommRecipient(acShipTarget[0]);
+        SelectCommRecipient(acShipTargetTable[0]);
         RefreshCommunicationMenu();
         return 0;
     case 2:
         CloseCommChoiceMenu();
         request(0, (short)cCommMenuRecipient,
-                (short)abCommMenuChoiceCommand[choice]);
+                (short)abCommMenuChoiceCommands[choice]);
         return 0;
     }
     return 0;
@@ -421,7 +428,7 @@ void FreeCommDisplayResources(void)
        aliasing the final two palette-allocation words at 0x0059E17C. */
     if (nCommPortraitIndex != -1)
 #endif
-    FreePacketAndClear(&apCommPortraitShapes[
+    FreePacketAndClear(&apCommunicationPortraitShapesTable[
         nCommPortraitIndex], 0);
     FreePacketAndClear(&pConfedCommBackground, 0);
     FreePacketAndClear(&pKilrathiCommBackground, 0);
@@ -439,7 +446,7 @@ void EndCommSessionWithWingman(void)
 #else
     if (
 #endif
-        apCommPortraitShapes[nCommPortraitIndex] != 0)
+        apCommunicationPortraitShapesTable[nCommPortraitIndex] != 0)
         malf_noise(1, 1, 12, 23, 1);
     FreeCommDisplayResources();
     if (get_mode(1) == 6)
@@ -458,8 +465,8 @@ void EndCommMenu(void)
 /* Function start: 0x4314F0 */
 void ShowCentredPrompt(char *text, unsigned short arg)
 {
-    DosStrcpy(szHudMessageBuffer, text);
-    SetHudMessageText(szHudMessageBuffer,
+    DosStrcpy(szHudMessageBuf, text);
+    SetHudMessageText(szHudMessageBuf,
                       cYellowColour, arg);
 }
 
@@ -498,9 +505,9 @@ char *ExpandCommMessageTokens(const char *text)
     const char *marker;
     short length;
 
-    szTextScratchBuffer[0] = '\0';
+    szTxtWorkspaceBuffer[0] = '\0';
     while ((marker = DosStrchr(text, '$')) != 0) {
-        destination = DosStrchr(szTextScratchBuffer, '\0');
+        destination = DosStrchr(szTxtWorkspaceBuffer, '\0');
         while (marker != text)
             *destination++ = *text++;
         *destination = '\0';
@@ -508,30 +515,30 @@ char *ExpandCommMessageTokens(const char *text)
         switch (*marker++) {
         case 'C':
             DosStrcat(
-                szTextScratchBuffer,
+                szTxtWorkspaceBuffer,
                 stCampaignState.currentPilot->callsign);
             break;
         case 'N':
         case 'P':
-            DosStrcat(szTextScratchBuffer,
+            DosStrcat(szTxtWorkspaceBuffer,
                       stCampaignState.currentPilot->name);
             break;
         case 'R':
-            DosStrcat(szTextScratchBuffer,
+            DosStrcat(szTxtWorkspaceBuffer,
                       apszPilotRankNames[
                           stCampaignState.currentPilot->rank]);
-            length = DosStrlen(szTextScratchBuffer);
-            if (szTextScratchBuffer[length - 1] == '.' &&
+            length = DosStrlen(szTxtWorkspaceBuffer);
+            if (szTxtWorkspaceBuffer[length - 1] == '.' &&
                 *marker == '.') {
-                length = DosStrlen(szTextScratchBuffer);
-                szTextScratchBuffer[length - 1] = '\0';
+                length = DosStrlen(szTxtWorkspaceBuffer);
+                szTxtWorkspaceBuffer[length - 1] = '\0';
             }
             break;
         }
         text = marker;
     }
-    DosStrcat(szTextScratchBuffer, text);
-    return szTextScratchBuffer;
+    DosStrcat(szTxtWorkspaceBuffer, text);
+    return szTxtWorkspaceBuffer;
 }
 
 /* Function start: 0x4316E0 */
@@ -556,10 +563,10 @@ void real_vid_transmit(short obj, short message)
     if (nCommPortraitIndex == -1)
         return;
     if (bCommVideoEnabled != 0 && bVideoImagesSuppressed == 0) {
-        if (apCommPortraitShapes[
+        if (apCommunicationPortraitShapesTable[
                 nCommPortraitIndex] == 0)
             LoadCommPortraitShape(nCommPortraitIndex, 0);
-        if (apCommPortraitShapes[
+        if (apCommunicationPortraitShapesTable[
                 nCommPortraitIndex] != 0 &&
             LoadCommDisplayResources(nCommSpeakerRating,
                 aeShipSide[
@@ -567,34 +574,34 @@ void real_vid_transmit(short obj, short message)
             push_mode(1, 6);
             malf_noise(1, 3, 12, 23, 1);
             if (aeShipSide[nCommSpeakerObject] == SIDE_IMPERIAL)
-                DrawSpriteDefault(&stRightVdu, stRightVdu.left,
-                                  stRightVdu.top,
+                DrawSpriteDefault(&stRightVduViewport, stRightVduViewport.left,
+                                  stRightVduViewport.top,
                                   pConfedCommBackground, 0);
             else
-                DrawSpriteDefault(&stRightVdu, stRightVdu.left,
-                                  stRightVdu.top,
+                DrawSpriteDefault(&stRightVduViewport, stRightVduViewport.left,
+                                  stRightVduViewport.top,
                                   pKilrathiCommBackground, 0);
             DrawSpriteDefault(
-                &stRightVdu, stRightVdu.left,
-                stRightVdu.top,
-                apCommPortraitShapes[
+                &stRightVduViewport, stRightVduViewport.left,
+                stRightVduViewport.top,
+                apCommunicationPortraitShapesTable[
                     nCommPortraitIndex],
                 0);
         }
     }
-    speech = aapszPilotSpeech[
+    speech = aapszPilotSpeeches[
         nCommPortraitIndex][message];
     if (nCommSpeakerRating >= 0 &&
         nCommSpeakerRating <= 7) {
 #ifdef SDL_PORT
         /* MSVC 4.20 accepts %Fs as its legacy far-string conversion. */
         sprintf(text, "%s: %s",
-                apWingmanPilots[
+                apWingmanPilotsList[
                     nCommSpeakerRating]->callsign,
                 speech);
 #else
         sprintf(text, "%s: %Fs",
-                apWingmanPilots[
+                apWingmanPilotsList[
                     nCommSpeakerRating]->callsign,
                 speech);
 #endif
@@ -614,11 +621,11 @@ void real_vid_transmit(short obj, short message)
     } else {
 #ifdef SDL_PORT
         sprintf(text, "%s: %s",
-                aObjectTypeData[aeObjectType[obj]].displayName,
+                aObjectTypeData[aeObjectTypeList[obj]].displayName,
                 speech);
 #else
         sprintf(text, "%s: %Fs",
-                aObjectTypeData[aeObjectType[obj]].displayName,
+                aObjectTypeData[aeObjectTypeList[obj]].displayName,
                 speech);
 #endif
     }

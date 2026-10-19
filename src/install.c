@@ -4,6 +4,17 @@
  */
 #include "wc1.h"
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+ScreenAllocation *pScreenAllocPtr; /* 0x005a66ec */
+int aiSoundEffectSourceActiveArray[0x40]; /* 0x005a66f0 */
+unsigned char abAudioPlaybackSlots[0xf8]; /* 0x005a67f0 */
+int nPassingShipAudioCooldown; /* 0x005a68e8 */
+int nAllocateViewportCallsValue; /* 0x005a68ec */
+void *pLastPacketAllocation; /* 0x005a68f0 */
+FireworkState aFireworksList[30]; /* 0x005a6900 */
+unsigned char *pFireworkShape; /* 0x005a6a68 */
+ConstellationStar aConstellationStarsTable[10]; /* 0x005a6a70 */
+
 /* Function start: 0x42C410 */
 void FxDriverShutdownHook(void)
 {
@@ -16,15 +27,15 @@ unsigned short InitializeDiskPromptTextContext(void)
     short textHeight;
 
     nDiskPromptBorderColour = 0x50;
-    if (stScreen.pixels == 0)
+    if (stScreenView.pixels == 0)
         InitializeGameTextContexts();
-    stDiskPromptTextContext = stDefaultTextContext;
+    stDiskPromptTextContext = stDefaultTxtContext;
     stDiskPromptTextContext.viewport =
         &stDiskPromptViewport;
     stDiskPromptTextContext.text =
-        szTextScratchBuffer;
+        szTxtWorkspaceBuffer;
     stDiskPromptTextContext.alignment = 2;
-    stDiskPromptViewport = stScreen;
+    stDiskPromptViewport = stScreenView;
     textWidth =
         (short)(MeasureTextPixelWidthClamped(
                     "Press any key when ready") +
@@ -100,7 +111,7 @@ short LoadWingCmdrCfgFile(short argc, char **argv)
 
     argumentIndex = 1;
     argumentCount = 0;
-    destination = szTextScratchBuffer;
+    destination = szTxtWorkspaceBuffer;
 #ifdef SDL_PORT
     if (SdlResolvePath("WINGCMDR.CFG", resolvedPath,
                           sizeof(resolvedPath)))
@@ -115,14 +126,14 @@ short LoadWingCmdrCfgFile(short argc, char **argv)
             fclose(file);
             break;
         }
-        pStartupArguments[argumentCount++] =
+        pCurrentStartupArgumentsPtr[argumentCount++] =
             destination;
         destination = strchr(destination, 0) + 1;
     }
 
     while (argc-- != 0) {
         strcpy(destination, argv[argumentIndex]);
-        pStartupArguments[argumentCount++] = destination;
+        pCurrentStartupArgumentsPtr[argumentCount++] = destination;
         argumentIndex++;
         destination = strchr(destination, 0) + 1;
     }

@@ -205,8 +205,8 @@ static void SwcUpdateCommunication(void)
     int object;
     int message;
 
-    if (swcCommNavPoint != nCurrentNavPoint) {
-        swcCommNavPoint = nCurrentNavPoint;
+    if (swcCommNavPoint != nCurrentNavigationPoint) {
+        swcCommNavPoint = nCurrentNavigationPoint;
         /* CODE_04 set_up_action_sphere +0x0cb6: Random3DO(0,8). */
         swcKilrathiVoice = RandomInRange(0, 7);
     }
@@ -238,10 +238,10 @@ static void SwcUpdateCommunication(void)
     for (object = 1; object < 10 && !SdlSwcMessageShowing(); object++) {
         if (aeObjectClass[object] < OBJECT_CLASS_SHIP)
             continue;
-        message = acWingmanMessageState[object];
+        message = acWingmanMessageStatesArray[object];
         if (message == -1)
             continue;
-        acWingmanMessageState[object] = -1;
+        acWingmanMessageStatesArray[object] = -1;
         if (message == swcPreviousCommMessage[object] && (message == 4 || message == 10) &&
             (unsigned int)(nTickCount60Hz - swcPreviousCommTick[object]) < 30U * 60U)
             continue;
@@ -253,10 +253,10 @@ static void SwcUpdateCommunication(void)
         for (object = 1; object < 10; object++) {
             if (aeObjectClass[object] >= OBJECT_CLASS_SHIP &&
                 aeShipSide[object] == SIDE_KILRATHI &&
-                (aeShipObjective[object] == OBJECTIVE_ENGAGE_ENEMY ||
-                 aeShipObjective[object] == OBJECTIVE_DESTROY_SHIP) &&
+                (aeShipObjectiveList[object] == OBJECTIVE_ENGAGE_ENEMY ||
+                 aeShipObjectiveList[object] == OBJECTIVE_DESTROY_SHIP) &&
                 (acShipRating[object] != -1 || RandomBelowOrEqual(99) < 20)) {
-                acWingmanMessageState[object] = (signed char)RandomInRange(2, 4);
+                acWingmanMessageStatesArray[object] = (signed char)RandomInRange(2, 4);
                 break;
             }
         }
@@ -351,8 +351,8 @@ short SdlSwcAutopilotValid(short showReason)
     enum ObjectType type;
     int voice = -1;
 
-    if (cMissionObjectiveCount == 0 || cCurrentObjective < 0 ||
-        cCurrentObjective >= cMissionObjectiveCount)
+    if (cMissionObjectiveCountValue == 0 || cCurrentObjective < 0 ||
+        cCurrentObjective >= cMissionObjectiveCountValue)
         return 0;
     if (pActiveHazardField != NULL) {
         reason = "Hazard Near";
@@ -365,9 +365,9 @@ short SdlSwcAutopilotValid(short showReason)
             return 0;
         /* +0x179a indexes the object-type array with this stored ship ID.
            Only types 6, 4, 7 and 5 have a wait message in the original. */
-        ship = anShipMissionShip[0];
+        ship = anShipMissionShips[0];
         if (ship >= 0 && ship < SPACE_OBJECT_COUNT) {
-            type = aeObjectType[ship];
+            type = aeObjectTypeList[ship];
             if (type == OBJECT_TYPE_DRAYMAN || type == OBJECT_TYPE_VENTURE ||
                 type == OBJECT_TYPE_EXETER || type == OBJECT_TYPE_DILLIGENT) {
                 SDL_snprintf(szObjectiveStatusMessage, sizeof(szObjectiveStatusMessage),
@@ -379,7 +379,7 @@ short SdlSwcAutopilotValid(short showReason)
         }
         return 0;
     } else if (distance_from_point(0,
-                   &aMissionObjectives[(int)cCurrentObjective].position) < 8000) {
+                   &aMissionObjectivesArray[(int)cCurrentObjective].position) < 8000) {
         reason = "Already Near";
         voice = 1;
     }
@@ -392,8 +392,8 @@ short SdlSwcAutopilotValid(short showReason)
  * reaching the selected objective ahead of its escort sets it again. */
 void SdlSwcFlagReached(short objective, short reached)
 {
-    short carrierMissionShip = anShipMissionShip[0];
-    short objectiveType = (short)aMissionObjectives[objective].type;
+    short carrierMissionShip = anShipMissionShips[0];
+    short objectiveType = (short)aMissionObjectivesArray[objective].type;
     short carrierObject = find_ship_index(carrierMissionShip);
     short markVisited = objective != cCurrentObjective;
     short advanceDestination = 0;
@@ -401,10 +401,10 @@ void SdlSwcFlagReached(short objective, short reached)
     bSwcWaitingForEscort = 0;
     if (objective == cCurrentObjective) {
         if (reached == 0 && escorting_a_ship() && carrierObject != -1 &&
-            aMissionObjectives[objective].index != carrierMissionShip) {
+            aMissionObjectivesArray[objective].index != carrierMissionShip) {
             if (objectiveType != 1 || aMissionShips[carrierMissionShip].state != 1) {
                 SDL_snprintf(szObjectiveStatusMessage, sizeof(szObjectiveStatusMessage),
-                             "Wait for %s", aObjectTypeData[aeObjectType[carrierObject]].displayName);
+                             "Wait for %s", aObjectTypeData[aeObjectTypeList[carrierObject]].displayName);
                 SdlSwcCockpitMessage(szObjectiveStatusMessage, 0x84, 1, -1);
                 bSwcWaitingForEscort = 1;
             }
@@ -420,8 +420,8 @@ void SdlSwcFlagReached(short objective, short reached)
     }
     if (objectiveType != 1 && markVisited) {
         if (!visited(objective) && carrierObject != -1 &&
-            aMissionObjectives[objective].index == carrierMissionShip &&
-            aeObjectType[carrierObject] != OBJECT_TYPE_TIGERS_CLAW)
+            aMissionObjectivesArray[objective].index == carrierMissionShip &&
+            aeObjectTypeList[carrierObject] != OBJECT_TYPE_TIGERS_CLAW)
             send_message(carrierObject, 6);
         flag_objective(objective, 1);
     }
@@ -638,11 +638,11 @@ void SdlDrawSwcCockpitReadout(signed char slot, const char *text)
 
 static int SwcCockpitTarget(void)
 {
-    int target = acShipTarget[0];
+    int target = acShipTargetTable[0];
 
     return target > 0 && target < 10 &&
         aeObjectClass[target] >= OBJECT_CLASS_SHIP &&
-        aeSpecialManeuver[target] != SPECIAL_MANEUVER_UNKNOWN_9 ? target : -1;
+        aeSpecialManeuvers[target] != SPECIAL_MANEUVER_UNKNOWN_9 ? target : -1;
 }
 
 /* CODE_13 lock_off +0x3708. The Mac owns two sound IDs and a persistent
@@ -665,7 +665,7 @@ void SdlSwcLockOff(void)
  * stall, without WC2's torpedo, target-camera or damage-eligibility branches. */
 static void SwcUpdateTargetLock(void)
 {
-    const ShipWeaponSlot *weapons = (ShipWeaponSlot *)&aShipWeapons[0][1];
+    const ShipWeaponSlot *weapons = (ShipWeaponSlot *)&aShipWeaponsTable[0][1];
     int target = SwcCockpitTarget();
     enum ObjectType weapon;
     int duration;
@@ -673,27 +673,27 @@ static void SwcUpdateTargetLock(void)
     int y;
 
     if (target == -1 || aeShipSide[target] == aeShipSide[0] ||
-        acPlayerComponentDamage[5] >= 4) {
+        acPlayerComponentDamageList[5] >= 4) {
         swcIttsActive = 0;
         SdlSwcLockOff();
         return;
     }
-    x = asObjectScreenX[target];
+    x = asObjectScreenXList[target];
     if (x == (short)0x8001)
         return;
     if (nTargetLockCountdown < -1) {
         nTargetLockCountdown++;
     } else {
-        y = asObjectScreenY[target];
+        y = asObjectScreenYArray[target];
         if (x * x + y * y > 3600 || nSelectedReleaseWeaponIndex < 0 ||
-            nSelectedReleaseWeaponIndex >= (signed char)aShipWeapons[0][0]) {
+            nSelectedReleaseWeaponIndex >= (signed char)aShipWeaponsTable[0][0]) {
             SdlSwcLockOff();
             return;
         }
         weapon = weapons[nSelectedReleaseWeaponIndex].type;
         if (weapon == OBJECT_TYPE_HEAT_SEEKING_MISSILE) {
             get_facing_range_from_object(0, (short)target);
-            if (nTargetFacing > -65) {
+            if (nTargetFacingValue > -65) {
                 SdlSwcLockOff();
                 return;
             }
@@ -733,37 +733,37 @@ static void SwcCheckTarget(void)
     int index;
     short hasEnemy;
 
-    if (acShipTarget[0] != oldTarget) {
-        acShipTarget[0] = (signed char)oldTarget;
+    if (acShipTargetTable[0] != oldTarget) {
+        acShipTargetTable[0] = (signed char)oldTarget;
         nTargetLockCountdown = -1;
     }
     if (oldTarget == -1 || (nTargetLockMode == 0 &&
-        (asObjectScreenX[oldTarget] == (short)0x8001 ||
+        (asObjectScreenXList[oldTarget] == (short)0x8001 ||
          aeShipSide[oldTarget] == aeShipSide[0]))) {
         if (oldTarget == -1)
             nTargetLockMode = 0;
         build_your_target_list(&hasEnemy);
         if (cViableTargetCount == 0) {
-            acShipTarget[0] = -1;
+            acShipTargetTable[0] = -1;
             if (oldTarget != -1)
                 swcScannerEnemy = oldTarget;
         } else if (!(hasEnemy == 0 && oldTarget != -1 &&
                      aeShipSide[oldTarget] == aeShipSide[0] &&
                      (nTargetLockMode != 0 ||
-                      asObjectScreenX[oldTarget] != (short)0x8001))) {
+                      asObjectScreenXList[oldTarget] != (short)0x8001))) {
             for (index = 0; index < cViableTargetCount &&
-                 acViableTarget[index] != oldTarget; index++)
+                 acViableTargetList[index] != oldTarget; index++)
                 ;
-            acShipTarget[0] = acViableTarget[index % cViableTargetCount];
+            acShipTargetTable[0] = acViableTargetList[index % cViableTargetCount];
             nTargetLockMode = 1;
         }
-        if (acShipTarget[0] != oldTarget) {
-            if (oldTarget != -1 && acShipTarget[0] == -1)
+        if (acShipTargetTable[0] != oldTarget) {
+            if (oldTarget != -1 && acShipTargetTable[0] == -1)
                 nTargetLockMode = 0;
             nTargetLockCountdown = -1;
         }
     }
-    if (acShipTarget[0] == -1 || aeShipSide[acShipTarget[0]] == aeShipSide[0]) {
+    if (acShipTargetTable[0] == -1 || aeShipSide[acShipTargetTable[0]] == aeShipSide[0]) {
         nTargetLockMode = 0;
         swcIttsActive = 0;
     }
@@ -773,8 +773,8 @@ static void SwcCheckTarget(void)
    HasInRangeGunForTargetLead (cockpt.c, 0x43ce8f) has the same loop. */
 static int SwcIttsRangeCheck(short targetRange)
 {
-    const ShipWeaponSlot *weapons = (ShipWeaponSlot *)&aShipWeapons[0][1];
-    int remaining = (signed char)aShipWeapons[0][0];
+    const ShipWeaponSlot *weapons = (ShipWeaponSlot *)&aShipWeaponsTable[0][1];
+    int remaining = (signed char)aShipWeaponsTable[0][0];
 
     while (remaining-- > 0) {
         const ObjectTypeData *type;
@@ -794,7 +794,7 @@ static void SwcUpdateItts(void)
     /* CODE_13 position_itts_crosshair +0x2c48, overlay +0x2f56.
        Reuse WC2 UpdateTargetLeadIndicator (0x43cf5a)'s velocity prediction,
        retaining SWC's forward cone, 160-pixel projection and sprite origin. */
-    const ShipWeaponSlot *weapons = (ShipWeaponSlot *)&aShipWeapons[0][1];
+    const ShipWeaponSlot *weapons = (ShipWeaponSlot *)&aShipWeaponsTable[0][1];
     int target = SwcCockpitTarget();
     int weapon;
     int projectileSpeed = 100;
@@ -811,7 +811,7 @@ static void SwcUpdateItts(void)
     if (target == -1 || nTargetLockMode == 0 ||
         aeShipSide[target] == aeShipSide[0] ||
         aeObjectClass[target] >= OBJECT_CLASS_CAPITAL_SHIP ||
-        acPlayerComponentDamage[5] >= 4) {
+        acPlayerComponentDamageList[5] >= 4) {
         swcIttsActive = 0;
         return;
     }
@@ -822,7 +822,7 @@ static void SwcUpdateItts(void)
         /* Mac set_global_message +0x3f4e only writes DATA+0x4712/+0x4716.
          * Neither global is read anywhere in this executable. */
     }
-    weapon = (signed char)aShipWeapons[0][0];
+    weapon = (signed char)aShipWeaponsTable[0][0];
     while (weapon-- > 0) {
         const ObjectTypeData *type;
 
@@ -833,9 +833,9 @@ static void SwcUpdateItts(void)
             projectileSpeed < type->maximumVelocity)
             projectileSpeed = type->maximumVelocity;
     }
-    vector_component_in_dir(&aShipVelocity[0], &aShipForwardVector[0],
+    vector_component_in_dir(&aShipVelocity[0], &aShipFwdVec[0],
                             &combinedVelocity);
-    ScaleFixedVector(&aShipForwardVector[0], projectileSpeed << 8,
+    ScaleFixedVector(&aShipFwdVec[0], projectileSpeed << 8,
                      &projectileVelocity);
     AddFixedVectors(&projectileVelocity, &combinedVelocity, &combinedVelocity);
     projectileSpeed = (Vector_magnitude(&combinedVelocity) >> 8) + 1;
@@ -844,12 +844,12 @@ static void SwcUpdateItts(void)
     if (interceptFrames > 0)
         ScaleFixedVector(&aShipVelocity[target], interceptFrames << 8,
                          &targetOffset);
-    AddFixedVectors(&aShipPosition[target], &targetOffset, &interceptPoint);
+    AddFixedVectors(&aShipPositionsArray[target], &targetOffset, &interceptPoint);
     if (!SwcIttsRangeCheck(distance_from_point(0, &interceptPoint))) {
         swcIttsActive = 0;
         return;
     }
-    ComputeVectorDelta(&aShipPosition[0], &interceptPoint, &relative);
+    ComputeVectorDelta(&aShipPositionsArray[0], &interceptPoint, &relative);
     distance = Vector_magnitude(&relative);
     if (distance <= asObjectCollisionRadius[EYE_OBJECT] * 256)
         return;
@@ -889,12 +889,12 @@ static void SwcUpdateCockpitScanner(void)
         swcScannerEnemy = target;
     if (swcScannerEnemy != -1 &&
         (aeObjectClass[swcScannerEnemy] < OBJECT_CLASS_SHIP ||
-         aeSpecialManeuver[swcScannerEnemy] == SPECIAL_MANEUVER_UNKNOWN_9 ||
+         aeSpecialManeuvers[swcScannerEnemy] == SPECIAL_MANEUVER_UNKNOWN_9 ||
          aeShipSide[swcScannerEnemy] == aeShipSide[0]))
         swcScannerEnemy = -1;
     for (object = 1; object < 10; object++) {
         if (swcScannerEnemy == -1 && aeObjectClass[object] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[object] != SPECIAL_MANEUVER_UNKNOWN_9 &&
+            aeSpecialManeuvers[object] != SPECIAL_MANEUVER_UNKNOWN_9 &&
             aeShipSide[object] != aeShipSide[0])
             swcScannerEnemy = object;
         if (!get_color(object, &color))
@@ -915,7 +915,7 @@ static void SwcUpdateCockpitScanner(void)
             frame = 3;
         /* CODE_13 +0x2940..+0x295c transforms each contact directly. The scene's
            projected-position cache can omit objects close to the player. */
-        ComputeVectorDelta(&aShipPosition[0], &aShipPosition[object], &relative);
+        ComputeVectorDelta(&aShipPositionsArray[0], &aShipPositionsArray[object], &relative);
         transform_to_objects_frame(&relative, &rotated, EYE_OBJECT);
         rectangular_to_spherical(&rotated, &spherical);
         /* SWC's scanner cutoff is 30,000; WC1's draw_3d_scanner uses 60,000. */
@@ -925,14 +925,14 @@ static void SwcUpdateCockpitScanner(void)
         if (object == swcScannerEnemy)
             enemyVisible = 1;
         if (target == object) {
-            if (!(nSpaceFrame & 1))
+            if (!(nCurrentSpaceFrameValue & 1))
                 continue;
             frame++;
         }
         swcScannerFrames[object] = frame;
     }
     if (enemyVisible) {
-        x = asScannerObjectX[swcScannerEnemy];
+        x = asScannerObjectPositionX[swcScannerEnemy];
         y = asScannerObjectY[swcScannerEnemy];
         if (y < 169)
             swcHostileArrow = 0;
@@ -960,12 +960,12 @@ static void SwcDrawCockpitScanner(void)
     for (object = 1; object < 10; object++) {
         if (swcScannerFrames[object] != -1)
             SwcDrawInstrument(SWC_SCANNER_CONTACTS, swcScannerFrames[object],
-                             asScannerObjectX[object], asScannerObjectY[object]);
+                             asScannerObjectPositionX[object], asScannerObjectY[object]);
     }
     if (nNavPointerObject != -1 && cCurrentObjective >= 0 &&
-        cCurrentObjective < cMissionObjectiveCount) {
+        cCurrentObjective < cMissionObjectiveCountValue) {
         SwcDrawInstrument(SWC_SCANNER_CONTACTS, 0,
-                             asScannerObjectX[10] - 3, asScannerObjectY[10] - 3);
+                             asScannerObjectPositionX[10] - 3, asScannerObjectY[10] - 3);
     }
     /* CODE_13 draw_3d_scanner +0x285a, DATA/0 +0x390: grid over contacts. */
     SwcDrawInstrument(SWC_SCANNER_GRID, 0, 139, 151);
@@ -984,7 +984,7 @@ short SdlSwcComponentMalfunction(char component)
         swcMalfunctionTicks[index]--;
         return 1;
     }
-    damage = acPlayerComponentDamage[index];
+    damage = acPlayerComponentDamageList[index];
     if ((unsigned short)RandomInRange(0, 14) < damage * damage) {
         swcMalfunctionTicks[index] = RandomInRange(5, 9);
         return 1;
@@ -1003,7 +1003,7 @@ void SdlSwcCockpitDamage(short region)
     swcSparkRegion = region;
     swcSparkPosition = swcDamagePositions[region];
     swcSparkFrame = 0;
-    swcSparkStartFrame = nSpaceFrame;
+    swcSparkStartFrame = nCurrentSpaceFrameValue;
     SdlPlaySwcSound(24, 255); /* CODE_13 malf_sound +0x19e4. */
 }
 
@@ -1035,14 +1035,14 @@ void SdlUpdateSwcCockpit(void)
     /* CODE_13 handle_cockpit_banking +0x18f2: move one pixel toward
        six times pitch/yaw velocity, clamped to +/-6 vertically, +/-8 horizontally. */
     horizontal = SDL_clamp(anObjectYawRotation[0] * 6, -8, 8);
-    vertical = SDL_clamp(anObjectPitchRotation[0] * 6, -6, 6);
+    vertical = SDL_clamp(anObjPitchRot[0] * 6, -6, 6);
     swcCockpitOffset.x += (swcCockpitOffset.x < horizontal) -
         (swcCockpitOffset.x > horizontal);
     swcCockpitOffset.y += (swcCockpitOffset.y < vertical) -
         (swcCockpitOffset.y > vertical);
     /* determine_pilot_hand +0x14e2: horizontal input wins over vertical.
        PC00/6 contains the sixteen Hornet hand frames at their own offsets. */
-    horizontal = SDL_clamp(nYawInput, -8, 8) / 2;
+    horizontal = SDL_clamp(nYawInputValue, -8, 8) / 2;
     vertical = SDL_clamp(nPitchInput, -8, 8) / 2;
     swcPilotHand = horizontal > 0 ? horizontal - 1 : horizontal < 0 ? 3 - horizontal :
         vertical < 0 ? 11 - vertical : vertical > 0 ? 7 + vertical : -1;
@@ -1053,16 +1053,16 @@ void SdlUpdateSwcCockpit(void)
         if (swcWeaponNoticeVisible[vdu])
             anSwcWeaponNoticeTicks[vdu]--;
     }
-    if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCount)
+    if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCountValue)
         set_objective_range(1);
-    if (nSpaceFrame % 7 == 0) {
+    if (nCurrentSpaceFrameValue % 7 == 0) {
         swcAutopilotLight = cCurrentObjective >= 0 &&
-            cCurrentObjective < cMissionObjectiveCount && auto_pilot_valid(0);
+            cCurrentObjective < cMissionObjectiveCountValue && auto_pilot_valid(0);
         swcMissileLight = missile_on_tail(0);
         swcDamageLight = calculate_damage_level() >= 3 &&
             aasShipShield[0][0] + aasShipShield[0][1] < 10;
     }
-    if (swcDamageLight && nSpaceFrame % 30 == 0)
+    if (swcDamageLight && nCurrentSpaceFrameValue % 30 == 0)
         SdlPlaySwcSound(32, 255); /* update_lights +0x04fc. */
     for (vdu = 0; vdu < 2; vdu++) {
         swcVduDead[vdu] = 0;
@@ -1083,10 +1083,10 @@ void SdlUpdateSwcCockpit(void)
     /* Preserve shared damage notices in the Mac status queue. CODE_05
      * fire_missile +0x38b0 rejects an unlocked shot silently; CODE_13's
      * lock/ITTS paths never draw WC1's two VDU message slots. */
-    if (aHudMessageSlots[0].text != NULL && aHudMessageSlots[0].flashCount != 0 &&
-        strcmp(aHudMessageSlots[0].text, "Need Lock") != 0)
-        SdlSwcCockpitMessage(aHudMessageSlots[0].text,
-            aHudMessageSlots[0].colour == cRedColour ? 0xd4 : 0x84, 1, -1);
+    if (aCockpitHudMessageSlotsTable[0].text != NULL && aCockpitHudMessageSlotsTable[0].flashCount != 0 &&
+        strcmp(aCockpitHudMessageSlotsTable[0].text, "Need Lock") != 0)
+        SdlSwcCockpitMessage(aCockpitHudMessageSlotsTable[0].text,
+            aCockpitHudMessageSlotsTable[0].colour == cRedColour ? 0xd4 : 0x84, 1, -1);
     ClearHudGunReadouts();
     SwcUpdateMessage();
     SwcUpdateCommunication();
@@ -1100,7 +1100,7 @@ void SdlUpdateSwcCockpit(void)
         swcDamageDisplayTicks = 30;
         for (count = 0; count < 9; count++) {
             swcDamageComponent = (swcDamageComponent + 1) % 9;
-            if (acPlayerComponentDamage[swcDamageComponent] != 0)
+            if (acPlayerComponentDamageList[swcDamageComponent] != 0)
                 break;
         }
     }
@@ -1109,7 +1109,7 @@ void SdlUpdateSwcCockpit(void)
         SwcUpdateItts();
     /* CODE_13 explosion_draw +0x40a0: eight frames, occasional repeat
        around the damaged panel. Frame zero is retained for the impact tick. */
-    if (swcSparkFrame >= 0 && swcSparkStartFrame != nSpaceFrame &&
+    if (swcSparkFrame >= 0 && swcSparkStartFrame != nCurrentSpaceFrameValue &&
         ++swcSparkFrame >= 8) {
         if ((unsigned short)RandomInRange(0, 9) < 3) {
             swcSparkFrame = 0;
@@ -1136,7 +1136,7 @@ static void SwcDrawTargetStatus(void)
 
     if (target == -1 || swcCockpitDrawResult != 0)
         return;
-    objectType = aeObjectType[target];
+    objectType = aeObjectTypeList[target];
     type = &aObjectTypeData[objectType];
     capital = type->objectClass == OBJECT_CLASS_CAPITAL_SHIP;
     SDL_snprintf(chunk, sizeof(chunk), "%s%02d", capital ? "SH" : "ST", objectType);
@@ -1146,7 +1146,7 @@ static void SwcDrawTargetStatus(void)
     swcCockpitDrawResult = SwcLoadCockpitShape(swcCockpitCmf, chunk,
                                                capital ? 38 : 2, 5, shape);
     SwcDrawCockpitShape(shape, 4, 230, 136);
-    if (nSpaceFrame % 10 < 5) {
+    if (nCurrentSpaceFrameValue % 10 < 5) {
         if (aasShipArmor[target][0] < type->armorFront / 2)
             SwcDrawCockpitShape(shape, 0, 230, 136);
         if (aasShipArmor[target][3] < type->armorRight / 2)
@@ -1188,12 +1188,12 @@ static void SwcDrawVduShape(int polygon, SwcCockpitShape *shape, int frame)
 
 static void SwcDrawPlayerStatus(void)
 {
-    const ObjectTypeData *type = &aObjectTypeData[aeObjectType[0]];
+    const ObjectTypeData *type = &aObjectTypeData[aeObjectTypeList[0]];
 
     /* CODE_13 show_weapon_disp +0x0e54: hull silhouette, flashing armor
        below half strength, and fore/aft shield presence at 1/11 strength. */
     SwcDrawInstrument(SWC_PLAYER_STATUS, 2, 0, 0);
-    if (nSpaceFrame % 10 < 5) {
+    if (nCurrentSpaceFrameValue % 10 < 5) {
         if (aasShipArmor[0][0] < type->armorFront / 2)
             SwcDrawInstrument(SWC_PLAYER_STATUS, 3, 0, 0);
         if (aasShipArmor[0][3] < type->armorRight / 2)
@@ -1211,8 +1211,8 @@ static void SwcDrawPlayerStatus(void)
 
 int SdlDrawSwcCockpit(void)
 {
-    const ObjectTypeData *type = &aObjectTypeData[aeObjectType[0]];
-    TextContext *savedTextContext = pCurrentTextContext;
+    const ObjectTypeData *type = &aObjectTypeData[aeObjectTypeList[0]];
+    TextContext *savedTextContext = pCurTextContext;
     int fuelCapacity;
     int frame;
 
@@ -1223,7 +1223,7 @@ int SdlDrawSwcCockpit(void)
         SwcDrawInstrument(SWC_AUTOPILOT_LIGHT, 0, 0, 0);
     if (swcMissileLight)
         SwcDrawInstrument(SWC_MISSILE_LIGHT, 0, 0, 0);
-    if (swcDamageLight && nSpaceFrame % 30 != 0)
+    if (swcDamageLight && nCurrentSpaceFrameValue % 30 != 0)
         SwcDrawInstrument(SWC_DAMAGE_LIGHT, 0, 156, 45);
     if (!anCockpitDamageState[0])
         SwcDrawCockpitScanner();
@@ -1255,14 +1255,14 @@ int SdlDrawSwcCockpit(void)
     }
     /* CODE_13 update_bars +0x0520. The original uses separate animated
        shape sets for energy, commanded throttle and fuel, not WC1's bars. */
-    frame = SDL_clamp(asShipWeaponEnergy[0] * 10 / 100, 0, 10);
+    frame = SDL_clamp(asShipWpnEnergyList[0] * 10 / 100, 0, 10);
     SwcDrawInstrument(SWC_WEAPON_ENERGY, frame, 0, 0);
-    frame = asShipMaximumSpeed[0] > 0 ?
-        (anShipSpeed[0] >> 8) * 13 / asShipMaximumSpeed[0] : 0;
+    frame = asShipMaximumSpeedArray[0] > 0 ?
+        (anShipSpeed[0] >> 8) * 13 / asShipMaximumSpeedArray[0] : 0;
     SwcDrawInstrument(SWC_THROTTLE, SDL_clamp(frame, 0, 13), 0, 0);
     fuelCapacity = type->lifetime;
-    frame = anShipFuel[0] < 0 || fuelCapacity <= 0 ? 0 :
-        (int)((int64_t)anShipFuel[0] * 13 / fuelCapacity) + 1;
+    frame = anShipFuelsTable[0] < 0 || fuelCapacity <= 0 ? 0 :
+        (int)((int64_t)anShipFuelsTable[0] * 13 / fuelCapacity) + 1;
     SwcDrawInstrument(SWC_FUEL, SDL_clamp(frame, 0, 13), 0, 0);
     swcCockpitDrawing = 1;
     update_digital_readouts();
@@ -1326,7 +1326,7 @@ static void SwcDrawTargetBox(int object, const SDL_Rect *bounds,
     int y;
 
     if (object <= 0 || object >= 10 || bounds->w == 0 ||
-        asObjectScreenX[object] == (short)0x8001 || swcCockpitDrawResult != 0)
+        asObjectScreenXList[object] == (short)0x8001 || swcCockpitDrawResult != 0)
         return;
     if (ink == 0xd4 && aeShipSide[object] == aeShipSide[0])
         ink = 0xef;
@@ -1346,10 +1346,10 @@ static void SwcDrawTargetBox(int object, const SDL_Rect *bounds,
         SwcDrawInstrument(SWC_TARGET_BRACKETS, index, corners[index].x, corners[index].y);
     }
     if (!missileLock || nTargetLockCountdown < 0 ||
-        (bTargetLockAcquired && !(nSpaceFrame & 1)))
+        (bTargetLockAcquired && !(nCurrentSpaceFrameValue & 1)))
         return;
-    x = 160 + asObjectScreenX[object] - 14;
-    y = 100 + asObjectScreenY[object] - 14;
+    x = 160 + asObjectScreenXList[object] - 14;
+    y = 100 + asObjectScreenYArray[object] - 14;
     SwcDrawInstrument(SWC_MISSILE_LOCK, 0, x, y - nTargetLockCountdown);
     SwcDrawInstrument(SWC_MISSILE_LOCK, 1, x + nTargetLockCountdown, y);
     SwcDrawInstrument(SWC_MISSILE_LOCK, 2, x, y + nTargetLockCountdown);
@@ -1383,14 +1383,14 @@ int SdlDrawSwcSpaceHud(const SDL_Rect objectBounds[10])
     if (!anCockpitDamageState[0] && swcHostileArrow != -1)
         SwcDrawInstrument(SWC_RETICLE, 6 + swcHostileArrow, 144, 96);
     swcCockpitDrawOffset = (SDL_Point){0, 0};
-    if (object >= 0 && asObjectScreenX[object] != (short)0x8001) {
+    if (object >= 0 && asObjectScreenXList[object] != (short)0x8001) {
         const SDL_Rect *bounds = &swcCockpitShapes[SWC_RETICLE].frames[3].bounds;
 
         /* The shared nav pointer is a centered space object, not an
            instrument placed by MacDraw2's sprite-origin offsets. */
         SwcDrawInstrument(SWC_RETICLE, 3,
-            160 + asObjectScreenX[object] - bounds->x - bounds->w / 2,
-            100 + asObjectScreenY[object] - bounds->y - bounds->h / 2);
+            160 + asObjectScreenXList[object] - bounds->x - bounds->w / 2,
+            100 + asObjectScreenYArray[object] - bounds->y - bounds->h / 2);
     }
     return swcCockpitDrawResult;
 }
@@ -1403,14 +1403,14 @@ int SdlDrawSwcHud(void)
     static const char *const weapons[] = {
         "DF Missile", "HS Missile", "FF Missile", "IR Missile", "Torpedo", "Mine"
     };
-    const ShipWeaponSlot *loadout = (ShipWeaponSlot *)&aShipWeapons[0][1];
+    const ShipWeaponSlot *loadout = (ShipWeaponSlot *)&aShipWeaponsTable[0][1];
     enum ObjectType weapon = (enum ObjectType)-1;
     int target = SwcCockpitTarget();
     int gun = (int)eSelectedGunType;
     int index;
     int range;
     int baseline = 84;
-    int damage = SDL_clamp(acPlayerComponentDamage[swcDamageComponent], 0, 4);
+    int damage = SDL_clamp(acPlayerComponentDamageList[swcDamageComponent], 0, 4);
     char text[64];
 
     swcCockpitDrawResult = 0;
@@ -1438,7 +1438,7 @@ int SdlDrawSwcHud(void)
     }
     if (swcWeaponNoticeVisible[1]) {
         if (nSelectedReleaseWeaponIndex >= 0 &&
-            nSelectedReleaseWeaponIndex < (signed char)aShipWeapons[0][0])
+            nSelectedReleaseWeaponIndex < (signed char)aShipWeaponsTable[0][0])
             weapon = loadout[nSelectedReleaseWeaponIndex].type;
         SwcDrawCockpitText(51, baseline, 0x81, "WEAP: ");
         SwcDrawCockpitText(51 + SdlSwcTextWidth(&swcCockpitFont, "WEAP: "), baseline, 0xb0,
@@ -1454,12 +1454,12 @@ int SdlDrawSwcHud(void)
          * DATA/A5+0x2ca4. Named fighters display the pilot, other ships
          * display their class. Series 6 retains its Valkyrie override. */
         static const char *const aces[] = {"Bhurak", "Dakhath", "Khajja", "Bakhtosh"};
-        const char *name = aObjectTypeData[aeObjectType[target]].displayName;
+        const char *name = aObjectTypeData[aeObjectTypeList[target]].displayName;
         int rating = acShipRating[target];
 
         if (aeObjectClass[target] == OBJECT_CLASS_SHIP) {
-            if (rating >= 0 && rating < 8 && apWingmanPilots[rating] != NULL) {
-                name = apWingmanPilots[rating]->callsign;
+            if (rating >= 0 && rating < 8 && apWingmanPilotsList[rating] != NULL) {
+                name = apWingmanPilotsList[rating]->callsign;
                 if (rating == 0 && nCampaignDataSet == 0 &&
                     stCampaignState.currentSeries == 6 && stCampaignState.currentMission == 0)
                     name = "Valkyrie";
@@ -1475,7 +1475,7 @@ int SdlDrawSwcHud(void)
         SDL_snprintf(text, sizeof(text), " %d", range);
         SwcDrawCockpitText(200 + SdlSwcTextWidth(&swcCockpitFont, "Range:"),
             121, 0x84, range < 32000 ? text : " FAR");
-    } else if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCount) {
+    } else if (cCurrentObjective >= 0 && cCurrentObjective < cMissionObjectiveCountValue) {
         set_objective_range(0);
         /* Original destination/range layer at DATA/0 +0x6f6, including FAR
            at 32,000. Name visibility and distance remain WC1 core logic. */
@@ -1484,8 +1484,8 @@ int SdlDrawSwcHud(void)
             94, 0x84, objective_name((short)cCurrentObjective));
         /* CODE_06 tprintf +0x2214 advances by font size + 2 (9 + 2). */
         SwcDrawCockpitText(200, 105, 0x81, "Range:");
-        if (nCurrentObjectiveRange < 32000)
-            SDL_snprintf(text, sizeof(text), " %d", nCurrentObjectiveRange);
+        if (nCurObjectiveRangeValue < 32000)
+            SDL_snprintf(text, sizeof(text), " %d", nCurObjectiveRangeValue);
         else
             SDL_strlcpy(text, " FAR", sizeof(text));
         SwcDrawCockpitText(200 + SdlSwcTextWidth(&swcCockpitFont, "Range:"), 105, 0x84, text);
@@ -1515,13 +1515,13 @@ int SdlDrawSwcHud(void)
                 heading++;
         }
         for (index = 0; index < nCommMenuChoiceCount && index < 7; index++) {
-            SDL_snprintf(text, sizeof(text), "%d. %s", index + 1, apszCommMenuChoiceText[index]);
+            SDL_snprintf(text, sizeof(text), "%d. %s", index + 1, apszCommMenuChoiceTextTable[index]);
             SwcDrawCockpitText(16, 45 + 11 * index,
                 index == selection ? 0x81 : 0x84, text);
         }
         nCommMenuReuseMode = 1;
     }
-    if (bPlayerDestroyed || nArcadeState == 4)
+    if (bCurrentPlayerDestroyed || nArcadeState == 4)
         SwcDrawCockpitText(125, 65, 0xd4, "SHIP DESTROYED");
     return swcCockpitDrawResult;
 }

@@ -5,15 +5,27 @@
  */
 #include "wc1.h"
 
+
 /* Linker commons defined here; LINK orders them by identifier hash. */
-void *apPacketHandles[0x1000]; /* 0x0059e530 */
-int aiPacketHandleOffsets[0x1000]; /* 0x005a2530 */
-int nPacketHandleCount; /* 0x005a6530 */
-Viewport *pAllocatedScreenViewport; /* 0x005a6534 */
-int *pFullScreenRecord; /* 0x005a6538 */
-unsigned short awScreenRowOffsets[202]; /* 0x005a6540 */
-ScreenAllocation stScreenAllocation; /* 0x005a66e0 */
-ScreenAllocation *pScreenAllocation; /* 0x005a66ec */
+short anPitchGoal[16]; /* 0x0059d7a0 */
+signed char abShipNavPtIdx[16]; /* 0x0059d7c0 */
+signed char acTurnIntervalArray[16]; /* 0x0059d7d0 */
+short anObjectRollRotationList[SPACE_OBJECT_COUNT]; /* 0x0059d7e0 */
+signed char abShipTurnList[16]; /* 0x0059d860 */
+HazardField aHazardFields[8]; /* 0x0059d870 */
+short nFacingToTargetValue; /* 0x0059d920 */
+short asObjectScreenYArray[SPACE_OBJECT_COUNT]; /* 0x0059d930 */
+short asObjectScreenXList[SPACE_OBJECT_COUNT]; /* 0x0059d9b0 */
+short asObjectAnimIndexes[SPACE_OBJECT_COUNT]; /* 0x0059da30 */
+signed char cCurrentCockpitView; /* 0x0059dab0 */
+MissionObjective aMissionObjectivesArray[MISSION_OBJECTIVE_COUNT]; /* 0x0059dac0 */
+enum ShipManeuver aeShipManeuversTable[12]; /* 0x0059dcb0 */
+const short *apCannedSequenceList[12]; /* 0x0059dce0 */
+FixedVector aShipMissionSpotArray[10]; /* 0x0059dd10 */
+short asCapitalShipViewFramesTable[16]; /* 0x0059dd90 */
+signed char acObjCollisionGraceTicks[SPACE_OBJECT_COUNT]; /* 0x0059ddb0 */
+ObjectResourceSlot aObjectResourceSlotsArray[4]; /* 0x0059ddf0 */
+signed char acShipDestroyedWeaponCountArray[16]; /* 0x0059de30 */
 
 /* Function start: 0x42EFC0 */
 void cleanup_objectives(void)
@@ -26,15 +38,15 @@ void cleanup_objectives(void)
     short object;
 
     objective = 0;
-    home = find_ship_index(stMissionHeader.homeMissionShip);
+    home = find_ship_index(stCurrentMissionHeader.homeMissionShip);
     proximity = aMissionNavPoints[
-        stMissionHeader.entryNavPoint].proximityRadius;
-    objectiveType = aMissionObjectives[objective].type;
+        stCurrentMissionHeader.entryNavPoint].proximityRadius;
+    objectiveType = aMissionObjectivesArray[objective].type;
     for (; objectiveType != -1;
          objective++,
-         objectiveType = aMissionObjectives[objective].type) {
+         objectiveType = aMissionObjectivesArray[objective].type) {
         if (achieved(objective) == 0) {
-            index = (short)aMissionObjectives[objective].index;
+            index = (short)aMissionObjectivesArray[objective].index;
             switch (objectiveType) {
             case 0:
             case 1:
@@ -145,14 +157,14 @@ short can_land(void)
 
     result = 0;
     if (any_enemy(0, 20000) == 0) {
-        if (evaluate_damage(0) < 50 || nPlayerKillCount > 0 ||
-            anShipFuel[0] < 1000)
+        if (evaluate_damage(0) < 50 || nPlayerKillTotal > 0 ||
+            anShipFuelsTable[0] < 1000)
             result = 1;
         index = 0;
-        if (cMissionObjectiveCount > 0) {
+        if (cMissionObjectiveCountValue > 0) {
             do {
                 objectiveType =
-                    &aMissionObjectives[index].type;
+                    &aMissionObjectivesArray[index].type;
                 if (*objectiveType != 1) {
                     if (achieved(index) == 0) {
                         if (visited(index) == 0 || *objectiveType == 2)
@@ -162,7 +174,7 @@ short can_land(void)
                 }
 next_objective:
                 index++;
-            } while (index < cMissionObjectiveCount);
+            } while (index < cMissionObjectiveCountValue);
         }
     }
     return result;
@@ -198,7 +210,7 @@ void request(short requester, short ship, short command)
     short object;
     short attacker;
 
-    requesterTarget = &acShipTarget[requester];
+    requesterTarget = &acShipTargetTable[requester];
 
     for (;;) {
         target = (short)*requesterTarget;
@@ -218,11 +230,11 @@ void request(short requester, short ship, short command)
             for (object = 0; object < 10; object++) {
                 if (aeObjectClass[object] >=
                         OBJECT_CLASS_SHIP &&
-                    aeSpecialManeuver[object] !=
+                    aeSpecialManeuvers[object] !=
                         SPECIAL_MANEUVER_UNKNOWN_9 &&
                     aeShipSide[ship] !=
                         aeShipSide[object] &&
-                    acShipTarget[object] == requester) {
+                    acShipTargetTable[object] == requester) {
                     attacker = object;
                     break;
                 }
@@ -250,7 +262,7 @@ void request(short requester, short ship, short command)
                 ((signed char)acShipRating[ship] >= 9 &&
                  (signed char)acShipRating[ship] <= 12))
                 send_message(ship, command - 2);
-            if (acShipTarget[ship] != requester &&
+            if (acShipTargetTable[ship] != requester &&
                 too_busy(ship) == 0) {
                 engage(ship, requester, OBJECTIVE_ENGAGE_ENEMY);
                 return;
@@ -258,7 +270,7 @@ void request(short requester, short ship, short command)
             break;
         case 7:
             allow_engage();
-            if (aeShipObjective[ship] ==
+            if (aeShipObjectiveList[ship] ==
                     OBJECTIVE_HOLD_FORMATION) {
                 reset_objective(ship, OBJECTIVE_BREAK_FORMATION);
                 reply(ship, 1);
@@ -320,10 +332,10 @@ unsigned short __stdcall InitializeDIBScreenViewport(
     short row;
 
     (void)colour;
-    stScreenAllocation.state = 0;
+    stCurrentScreenAlloc.state = 0;
     pAllocatedScreenViewport = viewport;
-    stScreenAllocation.viewport = viewport;
-    pScreenAllocation = &stScreenAllocation;
+    stCurrentScreenAlloc.viewport = viewport;
+    pScreenAllocPtr = &stCurrentScreenAlloc;
     viewport->right = 319;
     viewport->bottom = 199;
     viewport->left = 0;
@@ -390,7 +402,7 @@ int GetFreeNearHeapBytes(void)
     freeBytes = 0;
     descriptorAddress =
         nNearHeapBase + nNearHeapSize - 8;
-    for (; descriptorAddress >= nNearHeapFirstDescriptor;
+    for (; descriptorAddress >= nCurrentNearHeapFirstDescriptor;
          descriptorAddress -= 8) {
         block = DosNearPtrToFar(descriptorAddress);
         if ((block->sizeAndFlags & 0x80000000) == 0)
@@ -411,7 +423,7 @@ int GetLargestFreeNearHeapBlock(void)
     largestBytes = 0;
     descriptorAddress =
         nNearHeapBase + nNearHeapSize - 8;
-    for (; descriptorAddress >= nNearHeapFirstDescriptor;
+    for (; descriptorAddress >= nCurrentNearHeapFirstDescriptor;
          descriptorAddress -= 8) {
         block = DosNearPtrToFar(descriptorAddress);
         if ((block->sizeAndFlags & 0x80000000) == 0 &&
@@ -447,14 +459,14 @@ void *PushMemoryStackFrame(void *memory, int offset)
 #if !defined(SDL_PORT) || defined(SDL_PORT_LEGACY_DEBUG_OUTPUT)
         printf("push %p by %d\n", memory, offset);
 #endif
-        if (nPacketHandleCount == 0x1000)
+        if (nPacketHandleTotal == 0x1000)
             exit_squadron("qq mem push overflow");
-        aiPacketHandleOffsets[nPacketHandleCount] = offset;
+        aiPktHandleDeltas[nPacketHandleTotal] = offset;
         if (offset < 0)
-            apPacketHandles[nPacketHandleCount++] = memory =
+            apPacketHandlesList[nPacketHandleTotal++] = memory =
                 (unsigned char *)memory - offset;
         else
-            apPacketHandles[nPacketHandleCount++] = memory =
+            apPacketHandlesList[nPacketHandleTotal++] = memory =
                 (unsigned char *)memory + offset;
     }
     return memory;
@@ -466,15 +478,15 @@ int IsPushedPacketHandle(void *handle)
     int index;
 
     index = 0;
-    if (nPacketHandleCount > 0) {
+    if (nPacketHandleTotal > 0) {
         do {
-            if (apPacketHandles[index] == handle) {
-                if (aiPacketHandleOffsets[index] < 0)
+            if (apPacketHandlesList[index] == handle) {
+                if (aiPktHandleDeltas[index] < 0)
                     return 1;
                 return 0;
             }
             index++;
-        } while (index < nPacketHandleCount);
+        } while (index < nPacketHandleTotal);
     }
     return 0;
 }
@@ -482,7 +494,7 @@ int IsPushedPacketHandle(void *handle)
 /* Function start: 0x42FA20 */
 void *MapPacketHandleToBlock(void *handle)
 {
-    int count = nPacketHandleCount;
+    int count = nPacketHandleTotal;
     int bytes = count * 4;
     int i;
     void **entry;
@@ -490,32 +502,32 @@ void *MapPacketHandleToBlock(void *handle)
 
     for (;;) {
         i = 0;
-        nPacketHandleCount = count;
+        nPacketHandleTotal = count;
         if (bytes <= 0)
             return handle;
-        entry = apPacketHandles;
+        entry = apPacketHandlesList;
         while (*entry != handle) {
             entry = entry + 1;
             i = i + 1;
-            nPacketHandleCount = count;
+            nPacketHandleTotal = count;
             if (i >= count)
                 return handle;
         }
-        offset = aiPacketHandleOffsets[i];
+        offset = aiPktHandleDeltas[i];
         if (offset < 0)
             handle = (unsigned char *)handle + offset;
         else
             handle = (unsigned char *)handle - offset;
 #ifdef SDL_PORT
-        apPacketHandles[i] =
-            apPacketHandles[count - 1];
+        apPacketHandlesList[i] =
+            apPacketHandlesList[count - 1];
 #else
-        apPacketHandles[i] =
-            *(void **)((unsigned char *)apPacketHandles + bytes - 4);
+        apPacketHandlesList[i] =
+            *(void **)((unsigned char *)apPacketHandlesList + bytes - 4);
 #endif
         bytes = bytes - 4;
         count = count - 1;
-        aiPacketHandleOffsets[i] =
-            *(int *)((unsigned char *)aiPacketHandleOffsets + bytes);
+        aiPktHandleDeltas[i] =
+            *(int *)((unsigned char *)aiPktHandleDeltas + bytes);
     }
 }

@@ -157,7 +157,7 @@ static void SdlUpdateJoystickRumble(void)
 
     if (!g_bSdlJoystickRumbleEnabled)
         return;
-    activeSlot = (int)nActiveInputDevice;
+    activeSlot = (int)nCurrentActiveInputDevice;
     if (!g_bSdlJoystickSpaceflightActive || activeSlot < 0 ||
         activeSlot >= 2 ||
         g_aSdlJoystickDevices[activeSlot].joystick == 0) {
@@ -170,8 +170,8 @@ static void SdlUpdateJoystickRumble(void)
 
     low = 0;
     high = 0;
-    if (anShipFuel[0] > 0 &&
-        aeSpecialManeuver[0] ==
+    if (anShipFuelsTable[0] > 0 &&
+        aeSpecialManeuvers[0] ==
             SPECIAL_MANEUVER_AFTERBURNER &&
         asShipAfterburnerTimer[0] > 0) {
         low = 0x6000;
@@ -486,14 +486,14 @@ static void SdlRefreshJoysticks(void)
 
 static void SdlSelectSwcJoystick(void)
 {
-    int slot = (int)nActiveInputDevice;
+    int slot = (int)nCurrentActiveInputDevice;
 
     if (slot >= 0 && slot < 2 && g_aSdlJoystickDevices[slot].joystick != NULL)
         return;
-    nActiveInputDevice = -1;
+    nCurrentActiveInputDevice = -1;
     for (slot = 0; slot < 2; slot++) {
         if (g_aSdlJoystickDevices[slot].joystick != NULL) {
-            nActiveInputDevice = (short)slot;
+            nCurrentActiveInputDevice = (short)slot;
             break;
         }
     }
@@ -584,7 +584,7 @@ BOOL SdlReadJoystick(unsigned int deviceIndex, JOYINFO *information)
         (unsigned int)((int)SdlReadJoystickAxis(device, 1) + 32768);
     information->wZpos = 0;
     buttonState = 0;
-    if (pEventManagerPump == get_player_input &&
+    if (pCurrentEventManagerPump == get_player_input &&
         g_eSdlJoystickMode != SDL_PORT_JOYSTICK_ORIGINAL) {
         if (SdlReadJoystickButton(device, 0))
             buttonState = 1;
@@ -617,7 +617,7 @@ static int SdlReadExtraJoystickAxes(Sint16 *first, Sint16 *second)
     SdlJoystickDevice *other;
     int activeSlot;
 
-    activeSlot = (int)nActiveInputDevice;
+    activeSlot = (int)nCurrentActiveInputDevice;
     if (activeSlot < 0 || activeSlot >= 2)
         return 0;
     device = &g_aSdlJoystickDevices[activeSlot];
@@ -677,9 +677,9 @@ int SdlReadSwcJoystickFlightSample(InputDeviceSample *sample)
     SDL_JoystickUpdate();
     SdlRefreshJoysticks();
     SdlSelectSwcJoystick();
-    if (nActiveInputDevice < 0)
+    if (nCurrentActiveInputDevice < 0)
         return 0;
-    device = &g_aSdlJoystickDevices[nActiveInputDevice];
+    device = &g_aSdlJoystickDevices[nCurrentActiveInputDevice];
     sample->x = SdlNormalizeFlightAxis(SdlReadJoystickAxis(device, 0));
     sample->y = SdlNormalizeFlightAxis(SdlReadJoystickAxis(device, 1));
     for (button = 0; button < 4; button++) {
@@ -688,7 +688,7 @@ int SdlReadSwcJoystickFlightSample(InputDeviceSample *sample)
     }
     /* The shared enhanced axis layouts consume this normalized sample.
      * SDL axes already have known ranges; no legacy j.cal file is needed. */
-    aInputDeviceSamples[nActiveInputDevice] = *sample;
+    aInputDevSamples[nCurrentActiveInputDevice] = *sample;
     return 1;
 }
 
@@ -698,7 +698,7 @@ static void SdlApplyLinearThrottle(Sint16 raw)
     int targetSpeed;
     unsigned int position;
 
-    maximumSpeed = (int)asShipMaximumSpeed[0] << 8;
+    maximumSpeed = (int)asShipMaximumSpeedArray[0] << 8;
     position = (unsigned int)((int)raw + 32768);
     targetSpeed = (int)(((int64_t)(65535U - position) * maximumSpeed) /
                         65535);
@@ -716,17 +716,17 @@ void SdlApplyJoystickFlightControls(void)
     int axisCount;
 
     g_bSdlJoystickSpaceflightActive = 1;
-    if ((pEventManagerPump != get_player_input && !SdlSwcFlightActive()) ||
+    if ((pCurrentEventManagerPump != get_player_input && !SdlSwcFlightActive()) ||
         g_eSdlJoystickMode == SDL_PORT_JOYSTICK_ORIGINAL) {
         SdlUpdateJoystickRumble();
         return;
     }
-    activeSlot = (int)nActiveInputDevice;
+    activeSlot = (int)nCurrentActiveInputDevice;
     if (activeSlot < 0 || activeSlot >= 2) {
         SdlUpdateJoystickRumble();
         return;
     }
-    sample = &aInputDeviceSamples[activeSlot];
+    sample = &aInputDevSamples[activeSlot];
     if (SdlReadJoystickButton(
             &g_aSdlJoystickDevices[activeSlot], 2))
         your_afterburner();
@@ -737,14 +737,14 @@ void SdlApplyJoystickFlightControls(void)
         if (SdlReadJoystickButton(
                 &g_aSdlJoystickDevices[activeSlot], 3)) {
             g_bSdlTwoAxisModifierActive = 1;
-            nYawInput = 0;
+            nYawInputValue = 0;
             nPitchInput = 0;
-            nRollInput = (short)sample->x;
+            nCurrentRollInputValue = (short)sample->x;
             accelerate((short)-(sample->y / 2));
         } else if (g_bSdlTwoAxisModifierActive) {
             g_bSdlTwoAxisModifierActive = 0;
-            nRollInput = 0;
-            nYawInput = (short)sample->x;
+            nCurrentRollInputValue = 0;
+            nYawInputValue = (short)sample->x;
             nPitchInput = (short)-sample->y;
         }
         return;
@@ -758,24 +758,24 @@ void SdlApplyJoystickFlightControls(void)
 
     switch (g_eSdlJoystickAxesMode) {
     case SDL_PORT_JOYSTICK_AXES_TWIN_STICK_ROLL:
-        nRollInput = first;
+        nCurrentRollInputValue = first;
         if (axisCount > 1)
             accelerate((short)-(second / 2));
         break;
     case SDL_PORT_JOYSTICK_AXES_TWIN_STICK_YAW:
-        nRollInput = (short)sample->x;
-        nYawInput = first;
+        nCurrentRollInputValue = (short)sample->x;
+        nYawInputValue = first;
         if (axisCount > 1)
             accelerate((short)-(second / 2));
         break;
     case SDL_PORT_JOYSTICK_AXES_HOTAS_YAW:
-        nRollInput = (short)sample->x;
-        nYawInput = first;
+        nCurrentRollInputValue = (short)sample->x;
+        nYawInputValue = first;
         if (axisCount > 1)
             SdlApplyLinearThrottle(secondRaw);
         break;
     case SDL_PORT_JOYSTICK_AXES_HOTAS_ROLL:
-        nRollInput = first;
+        nCurrentRollInputValue = first;
         if (axisCount > 1)
             SdlApplyLinearThrottle(secondRaw);
         break;
@@ -787,11 +787,11 @@ void SdlApplyJoystickFlightControls(void)
             SdlApplyLinearThrottle(firstRaw);
         break;
     case SDL_PORT_JOYSTICK_AXES_RUDDER_YAW:
-        nRollInput = (short)sample->x;
-        nYawInput = first;
+        nCurrentRollInputValue = (short)sample->x;
+        nYawInputValue = first;
         break;
     case SDL_PORT_JOYSTICK_AXES_RUDDER_ROLL:
-        nRollInput = first;
+        nCurrentRollInputValue = first;
         break;
     }
 }
@@ -974,7 +974,7 @@ void SdlTranslateSwcJoystickEvent(SDL_Event *event, int flight)
     SdlRefreshJoysticks();
     SdlSelectSwcJoystick();
     slot = SdlFindJoystick(instance);
-    if (slot < 0 || slot != (int)nActiveInputDevice) {
+    if (slot < 0 || slot != (int)nCurrentActiveInputDevice) {
         event->type = 0;
         return;
     }
@@ -1087,7 +1087,7 @@ void SdlHandleJoystickButtonEvent(SDL_JoystickID instanceId,
     int slot;
 
     slot = SdlFindJoystick(instanceId);
-    if (slot == -1 || slot != (int)nActiveInputDevice)
+    if (slot == -1 || slot != (int)nCurrentActiveInputDevice)
         return;
     device = &g_aSdlJoystickDevices[slot];
     if (controllerEvent) {
@@ -1100,12 +1100,12 @@ void SdlHandleJoystickButtonEvent(SDL_JoystickID instanceId,
     }
 
     spaceflightActive = g_bSdlJoystickSpaceflightActive &&
-        pEventManagerPump == get_player_input &&
+        pCurrentEventManagerPump == get_player_input &&
         nArcadeState == 0;
     eventType = pressed ? 3 : 4;
     if (button == SDL_PORT_JOYSTICK_BUTTON_BACK) {
         if (pressed)
-            bEscapePressed = 1;
+            bEscapePressedFlag = 1;
         if (bKeyEventQueueEnabled != 0)
             QueueInputEvent(eventType, 0, 0, 0x1b, 0, 0, 0);
         QueueInputEvent(eventType, 0, 0, 0x01, 0, 0, 0);
@@ -1149,7 +1149,7 @@ void SdlHandleJoystickHatEvent(SDL_JoystickID instanceId,
     int slot;
 
     slot = SdlFindJoystick(instanceId);
-    if (slot == -1 || slot != (int)nActiveInputDevice ||
+    if (slot == -1 || slot != (int)nCurrentActiveInputDevice ||
         hat != 0)
         return;
     device = &g_aSdlJoystickDevices[slot];
@@ -1206,7 +1206,7 @@ void SdlHandleJoystickDeviceEvent(Uint32 type, Sint32 which)
     }
     if (type == SDL_JOYDEVICEADDED &&
         g_bSdlJoystickInputStarted &&
-        nActiveInputDevice == -1)
+        nCurrentActiveInputDevice == -1)
         LoadJoystickCalibrationFile(9, 9, 1, 1);
 }
 

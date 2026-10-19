@@ -376,7 +376,7 @@ static void CopyBaseWithoutMouse(unsigned char *destination,
     Viewport viewport;
 
     memcpy(destination, pixels, sizeof(g_renderer.spaceFrameBase));
-    if (bMouseCursorDrawn == 0 ||
+    if (bEventMouseCursorDrawnFlag == 0 ||
         stMouseCursorState.viewport == 0 ||
         stMouseCursorState.shape == 0 ||
         stMouseCursorState.viewport->pixels != pixels)
@@ -385,8 +385,8 @@ static void CopyBaseWithoutMouse(unsigned char *destination,
     viewport.pixels = destination;
     viewport.allocation = destination;
     RestoreSpriteBackground(&viewport, abCursorSaveArea,
-                            (short)nMouseCursorDrawnX,
-                            (short)nMouseCursorDrawnY,
+                            (short)nMousePointerDrawnX,
+                            (short)nMousePointerDrawnY,
                             stMouseCursorState.shape,
                             (short)stMouseCursorState.frame);
 }

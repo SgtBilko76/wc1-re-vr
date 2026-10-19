@@ -90,32 +90,22 @@ static int bForceDamageDisplayRedraw = 0; /* 0x00469288 */
 /* 0x00475ff0 */
 static unsigned char abMouseCursorBackground[0x400];
 
-/* Linker commons defined here; LINK orders them by identifier hash. */
-ShortPoint stReleaseWeaponDisplayPosition; /* 0x005a7dbc */
-enum ObjectType eReleaseWeaponDisplayType; /* 0x005a7dc0 */
-unsigned char *pScannerMarkerBackground; /* 0x005a7dc4 */
-unsigned char bStickIndicatorFrame; /* 0x005a7dc8 */
-short nMessageTimer; /* 0x005a7dca */
-short nPendingCockpitDamage; /* 0x005a7dcc */
-HudMessageSlot aHudMessageSlots[2]; /* 0x005a7dd0 */
-signed char cPreviousTargetObject; /* 0x005a7df2 */
+enum ObjectType eReleaseWpnDisplayType; /* 0x005a7dc0 */
+unsigned char *pRadarMarkerBackground; /* 0x005a7dc4 */
+unsigned char bStickIndicatorFrameState; /* 0x005a7dc8 */
+short nCurrentNoticeTimer; /* 0x005a7dca */
+short nPendingCockpitDamageValue; /* 0x005a7dcc */
+HudMessageSlot aCockpitHudMessageSlotsTable[2]; /* 0x005a7dd0 */
+signed char cLastTargetObject; /* 0x005a7df2 */
 int nSavedMouseCursorY; /* 0x005a7df4 */
-int nSavedMouseCursorX; /* 0x005a7df8 */
+int nStoredMouseCursorPosX; /* 0x005a7df8 */
 char szComponentHitMessage[40]; /* 0x005a7e00 */
 short nTargetLockMarkerY; /* 0x005a7e28 */
-short nCarrierMissionShipIndex; /* 0x005a7e2a */
+short nCarrierMissionShipIndexValue; /* 0x005a7e2a */
 CockpitReadout aCockpitReadouts[6]; /* 0x005a7e30 */
 short nScannerCursorX; /* 0x005a7e6c */
 short nScannerCursorY; /* 0x005a7e6e */
-unsigned char abCockpitLightState[7]; /* 0x005a7e70 */
-short asScannerObjectY[11]; /* 0x005a7e80 */
-volatile ShortPoint stCockpitExplosionPosition; /* 0x005a7e98 */
-short asScannerObjectX[11]; /* 0x005a7ea0 */
-unsigned char abCockpitLightGoal[7]; /* 0x005a7eb8 */
-int nDamageAlarmSfxHandle; /* 0x005a7ec0 */
-short asScannerBackgroundColour[10]; /* 0x005a7ed0 */
-unsigned int anCockpitDamageState[4]; /* 0x005a7ef0 */
-unsigned short nPendingHudMessageColour; /* 0x005a7f00 */
+unsigned char abCockpitIndicatorStatesArray[7]; /* 0x005a7e70 */
 /* Function start: 0x413A10 */
 void EmitTextString(void (__stdcall *writer)(int), const char *text)
 {
@@ -151,10 +141,10 @@ void FormatTextTokens(void (__stdcall *writer)(int),
             switch (character) {
             case 'B':
 #ifdef SDL_PORT
-                pCurrentTextContext->backgroundColour =
+                pCurTextContext->backgroundColour =
                     (unsigned char)va_arg(*arguments, int);
 #else
-                pCurrentTextContext->backgroundColour =
+                pCurTextContext->backgroundColour =
                     (unsigned char)va_arg(arguments, int);
 #endif
                 break;
@@ -168,24 +158,24 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                 break;
             case 'F':
 #ifdef SDL_PORT
-                pCurrentTextContext->colour =
+                pCurTextContext->colour =
                     (unsigned char)va_arg(*arguments, int);
 #else
-                pCurrentTextContext->colour =
+                pCurTextContext->colour =
                     (unsigned char)va_arg(arguments, int);
 #endif
                 break;
             case 'J':
 #ifdef SDL_PORT
-                pCurrentTextContext->alignment =
+                pCurTextContext->alignment =
                     (unsigned char)va_arg(*arguments, int);
 #else
-                pCurrentTextContext->alignment =
+                pCurTextContext->alignment =
                     (unsigned char)va_arg(arguments, int);
 #endif
                 break;
             case 'P':
-                DrawTextString(pCurrentTextContext->text);
+                DrawTextString(pCurTextContext->text);
                 break;
             case 'U':
 #ifdef SDL_PORT
@@ -197,19 +187,19 @@ void FormatTextTokens(void (__stdcall *writer)(int),
                 break;
             case 'X':
 #ifdef SDL_PORT
-                pCurrentTextContext->cursorX =
+                pCurTextContext->cursorX =
                     (short)va_arg(*arguments, int);
 #else
-                pCurrentTextContext->cursorX =
+                pCurTextContext->cursorX =
                     va_arg(arguments, short);
 #endif
                 break;
             case 'Y':
 #ifdef SDL_PORT
-                pCurrentTextContext->cursorY =
+                pCurTextContext->cursorY =
                     (short)va_arg(*arguments, int);
 #else
-                pCurrentTextContext->cursorY =
+                pCurTextContext->cursorY =
                     va_arg(arguments, short);
 #endif
                 break;
@@ -278,16 +268,16 @@ void DrawFormattedText(const char *format, ...)
     FormatTextTokens((void (__stdcall *)(int))DrawTextCharacter,
                      format, (va_list)(&format + 1));
 #endif
-    if (pCurrentTextContext->viewport->pixels ==
-        stScreen.pixels)
+    if (pCurTextContext->viewport->pixels ==
+        stScreenView.pixels)
         DIBslam();
 }
 
 /* Function start: 0x413C70 */
 void FormatTextBufferFromStart(const char *format, ...)
 {
-    pCurrentTextContext->textCursor =
-        pCurrentTextContext->text;
+    pCurTextContext->textCursor =
+        pCurTextContext->text;
 #ifdef SDL_PORT
     {
         va_list arguments;
@@ -301,8 +291,8 @@ void FormatTextBufferFromStart(const char *format, ...)
     FormatTextTokens((void (__stdcall *)(int))AppendTextCharacter,
                      format, (va_list)(&format + 1));
 #endif
-    if (pCurrentTextContext->viewport->pixels ==
-        stScreen.pixels)
+    if (pCurTextContext->viewport->pixels ==
+        stScreenView.pixels)
         DIBslam();
 }
 
@@ -320,8 +310,8 @@ void AppendFormattedText(const char *format, ...)
     FormatTextTokens((void (__stdcall *)(int))AppendTextCharacter,
                      format, (va_list)(&format + 1));
 #endif
-    if (pCurrentTextContext->viewport->pixels ==
-        stScreen.pixels)
+    if (pCurTextContext->viewport->pixels ==
+        stScreenView.pixels)
         DIBslam();
 }
 
@@ -381,21 +371,21 @@ void vdu_polygon(signed char bar, short percent)
     short extent;
 
     extent = (short)((percent * (length =
-        aaCockpitBars[(int)cCockpitView][(int)bar].length)) / 100);
+        aaCockpitBars[(int)cCurrentCockpitView][(int)bar].length)) / 100);
     left = stCockpitBar.left =
-        aaCockpitBars[(int)cCockpitView][(int)bar].left;
+        aaCockpitBars[(int)cCurrentCockpitView][(int)bar].left;
     if (left != -99) {
         right = stCockpitBar.right =
-            aaCockpitBars[(int)cCockpitView][(int)bar].right;
+            aaCockpitBars[(int)cCurrentCockpitView][(int)bar].right;
         top = stCockpitBar.top =
-            aaCockpitBars[(int)cCockpitView][(int)bar].top;
+            aaCockpitBars[(int)cCurrentCockpitView][(int)bar].top;
         bottom = stCockpitBar.bottom =
-            aaCockpitBars[(int)cCockpitView][(int)bar].bottom;
+            aaCockpitBars[(int)cCurrentCockpitView][(int)bar].bottom;
         emptyFrame = (signed char)
-            aaCockpitBars[(int)cCockpitView][(int)bar].emptyFrame;
+            aaCockpitBars[(int)cCurrentCockpitView][(int)bar].emptyFrame;
         filledFrame = (signed char)
-            aaCockpitBars[(int)cCockpitView][(int)bar].filledFrame;
-        direction = aaCockpitBars[(int)cCockpitView][(int)bar].direction;
+            aaCockpitBars[(int)cCurrentCockpitView][(int)bar].filledFrame;
+        direction = aaCockpitBars[(int)cCurrentCockpitView][(int)bar].direction;
 
         if (direction < 2) {
             if (direction == 1) {
@@ -463,7 +453,7 @@ void DrawCockpitReadout(signed char slot, const char *text)
                       (unsigned short)aCockpitReadouts[slot].y);
         DrawFormattedText(text);
         EraseCockpitReadoutRegion(
-            &stScreen, aCockpitReadouts[slot].context->cursorX,
+            &stScreenView, aCockpitReadouts[slot].context->cursorX,
             aCockpitReadouts[slot].y,
             aCockpitReadouts[slot].previousRight,
             (short)(*(short *)aCockpitReadouts[slot].context->font +
@@ -479,7 +469,7 @@ void EraseCockpitReadoutAtPosition(signed char slot, short left,
                                    short top)
 {
     EraseCockpitReadoutRegion(
-        &stScreen, left, top, aCockpitReadouts[slot].previousRight,
+        &stScreenView, left, top, aCockpitReadouts[slot].previousRight,
         (short)(*(short *)aCockpitReadouts[slot].context->font +
                 aCockpitReadouts[slot].y),
         cBlackColour);
@@ -543,10 +533,10 @@ void ClearHudMessageIfMatching(HudMessageSlot *slot, const char *text)
 /* Function start: 0x4141D0 */
 void ClearHudGunReadouts(void)
 {
-    aHudMessageSlots[0].text = 0;
-    aHudMessageSlots[0].flashCount = 0;
-    aHudMessageSlots[1].text = 0;
-    aHudMessageSlots[1].flashCount = 0;
+    aCockpitHudMessageSlotsTable[0].text = 0;
+    aCockpitHudMessageSlotsTable[0].flashCount = 0;
+    aCockpitHudMessageSlotsTable[1].text = 0;
+    aCockpitHudMessageSlotsTable[1].flashCount = 0;
 }
 
 /* Function start: 0x4141F0 */
@@ -581,9 +571,9 @@ void UpdateMessage(HudMessageSlot *slot)
 void set_global_message(const char *text, unsigned short colour,
                         int flashCount)
 {
-    SetHudMessageSlot(&aHudMessageSlots[1], &stRightVduTextContext,
-                      stRightVdu.left,
-                      (short)(stRightVdu.bottom - 6),
+    SetHudMessageSlot(&aCockpitHudMessageSlotsTable[1], &stRightVduTxtContext,
+                      stRightVduViewport.left,
+                      (short)(stRightVduViewport.bottom - 6),
                       text, colour, (signed char)flashCount);
 }
 
@@ -591,7 +581,7 @@ void set_global_message(const char *text, unsigned short colour,
 void CockpitMessage(const char *text, unsigned short colour,
                     int flashCount)
 {
-    if (text != aHudMessageSlots[1].text)
+    if (text != aCockpitHudMessageSlotsTable[1].text)
         set_global_message(text, colour, flashCount);
 }
 
@@ -599,13 +589,13 @@ void CockpitMessage(const char *text, unsigned short colour,
 /* Nothing in the shipped executable calls this. */
 void ClearGlobalMessage(void)
 {
-    ClearHudMessageSlot(&aHudMessageSlots[1]);
+    ClearHudMessageSlot(&aCockpitHudMessageSlotsTable[1]);
 }
 
 /* Function start: 0x4142E0 */
 void remove_message(const char *text)
 {
-    ClearHudMessageIfMatching(&aHudMessageSlots[1], text);
+    ClearHudMessageIfMatching(&aCockpitHudMessageSlotsTable[1], text);
 }
 
 /* Function start: 0x414300 */
@@ -617,8 +607,8 @@ short kilrathi_near(short obj, short range)
     do {
         if (aeObjectClass[ship] >= OBJECT_CLASS_SHIP &&
             aeShipSide[ship] == SIDE_KILRATHI &&
-            (short)IsPointWithinRange(&aShipPosition[obj],
-                                      &aShipPosition[ship],
+            (short)IsPointWithinRange(&aShipPositionsArray[obj],
+                                      &aShipPositionsArray[ship],
                                       range) != 0)
             return 1;
         ship++;
@@ -636,11 +626,11 @@ short auto_pilot_valid(short showReason)
         return SdlSwcAutopilotValid(showReason);
 #endif
     reason = 0;
-    if (cMissionObjectiveCount == 0)
+    if (cMissionObjectiveCountValue == 0)
         return 0;
     if (distance_from_point(
             0,
-            &aMissionObjectives[
+            &aMissionObjectivesArray[
                 cCurrentObjective].position) < 8000) {
         reason = "Already Near";
     } else if (kilrathi_near(0, 16000) != 0) {
@@ -656,11 +646,11 @@ short auto_pilot_valid(short showReason)
 /* Function start: 0x414410 */
 void *reset_cockpit(void)
 {
-    memset(abCockpitLightGoal, 0,
-           sizeof(abCockpitLightGoal));
-    memset(abCockpitLightState, 0,
-           sizeof(abCockpitLightState));
-    return abCockpitLightState;
+    memset(abCockpitLightGoalArray, 0,
+           sizeof(abCockpitLightGoalArray));
+    memset(abCockpitIndicatorStatesArray, 0,
+           sizeof(abCockpitIndicatorStatesArray));
+    return abCockpitIndicatorStatesArray;
 }
 
 /* Function start: 0x414440 */
@@ -668,15 +658,15 @@ unsigned int SetCockpitLightBlink(signed char light, short interval)
 {
     if (interval < 20) {
         if (interval == 0) {
-            abCockpitLightGoal[(int)light] ^= 1;
+            abCockpitLightGoalArray[(int)light] ^= 1;
             return 0;
         }
-        if (nSpaceFrame % interval == 0) {
-            abCockpitLightGoal[(int)light] ^= 1;
+        if (nCurrentSpaceFrameValue % interval == 0) {
+            abCockpitLightGoalArray[(int)light] ^= 1;
             return 0;
         }
     } else {
-        abCockpitLightGoal[(int)light] = 0;
+        abCockpitLightGoalArray[(int)light] = 0;
     }
     return 0;
 }
@@ -691,45 +681,45 @@ void draw_cockpit_lights(void)
 
     if (nRenderedSpaceFrame % 4 == 0) {
         if (auto_pilot_valid(0) != 0)
-            abCockpitLightGoal[4] = 1;
+            abCockpitLightGoalArray[4] = 1;
         else
-            abCockpitLightGoal[4] = 0;
+            abCockpitLightGoalArray[4] = 0;
     }
     light = 0;
     do {
         if (bCockpitlessView == 0) {
-            if (abCockpitLightState[(int)light] !=
-                abCockpitLightGoal[(int)light]) {
+            if (abCockpitIndicatorStatesArray[(int)light] !=
+                abCockpitLightGoalArray[(int)light]) {
                 x = aasCockpitLightX[
-                    (int)cCockpitView][(int)light];
+                    (int)cCurrentCockpitView][(int)light];
                 y = aasCockpitLightY[
-                    (int)cCockpitView][(int)light];
-                if (abCockpitLightGoal[(int)light] == 1)
+                    (int)cCurrentCockpitView][(int)light];
+                if (abCockpitLightGoalArray[(int)light] == 1)
                     frame = aacCockpitLightOnFrame[
-                        (int)cCockpitView][(int)light];
+                        (int)cCurrentCockpitView][(int)light];
                 else
                     frame = aacCockpitLightOffFrame[
-                        (int)cCockpitView][(int)light];
-                DrawSpriteDefault(&stScreen, x, y,
+                        (int)cCurrentCockpitView][(int)light];
+                DrawSpriteDefault(&stScreenView, x, y,
                                   pCockpitDamageShape, frame);
-                abCockpitLightState[(int)light] =
-                    abCockpitLightGoal[(int)light];
+                abCockpitIndicatorStatesArray[(int)light] =
+                    abCockpitLightGoalArray[(int)light];
             }
         } else {
             x = aasCockpitLightX[
-                (int)cCockpitView][(int)light];
+                (int)cCurrentCockpitView][(int)light];
             y = aasCockpitLightY[
-                (int)cCockpitView][(int)light];
-            if (abCockpitLightGoal[(int)light] == 1)
+                (int)cCurrentCockpitView][(int)light];
+            if (abCockpitLightGoalArray[(int)light] == 1)
                 frame = aacCockpitLightOnFrame[
-                    (int)cCockpitView][(int)light];
+                    (int)cCurrentCockpitView][(int)light];
             else
                 frame = aacCockpitLightOffFrame[
-                    (int)cCockpitView][(int)light];
-            DrawSpriteDefault(&stScreen, x, y,
+                    (int)cCurrentCockpitView][(int)light];
+            DrawSpriteDefault(&stScreenView, x, y,
                               pCockpitDamageShape, frame);
-            abCockpitLightState[(int)light] =
-                abCockpitLightGoal[(int)light];
+            abCockpitIndicatorStatesArray[(int)light] =
+                abCockpitLightGoalArray[(int)light];
         }
         light++;
     } while (light < 7);
@@ -741,26 +731,26 @@ void update_lights(void)
     short fuelPercent;
 
     fuelPercent = (short)(
-        (anShipFuel[0] * 100) /
+        (anShipFuelsTable[0] * 100) /
         aObjectTypeData[
-            aeObjectType[0]].lifetime);
+            aeObjectTypeList[0]].lifetime);
     SetCockpitLightBlink(6, fuelPercent);
     vdu_polygon(0, fuelPercent);
-    vdu_polygon(1, asShipWeaponEnergy[0]);
+    vdu_polygon(1, asShipWpnEnergyList[0]);
 
     if (nTrainSimActive == 0) {
         if (calculate_damage_level() >= 3 &&
             (int)aasShipShield[0][1] +
                 (int)aasShipShield[0][0] < 10) {
             SetCockpitLightBlink(3, 2);
-            if (nDamageAlarmSfxHandle == 0 ||
-                nSpaceFrame % 10 == 0)
+            if (nCurrentDamageAlarmSfxHandle == 0 ||
+                nCurrentSpaceFrameValue % 10 == 0)
                 PlaySfxWaveFileByNumber(0x20, -1, 0);
-        } else if (nDamageAlarmSfxHandle != 0) {
+        } else if (nCurrentDamageAlarmSfxHandle != 0) {
             FlushSoundEffectsAndLog(
-                nDamageAlarmSfxHandle, 1);
-            nDamageAlarmSfxHandle = 0;
-            abCockpitLightGoal[3] = 0;
+                nCurrentDamageAlarmSfxHandle, 1);
+            nCurrentDamageAlarmSfxHandle = 0;
+            abCockpitLightGoalArray[3] = 0;
         }
     }
 }
@@ -772,7 +762,7 @@ void update_bars(void)
     short forePercent;
     short aftPercent;
 
-    typeData = &aObjectTypeData[aeObjectType[0]];
+    typeData = &aObjectTypeData[aeObjectTypeList[0]];
     vdu_polygon(2,
         (short)((aasShipArmor[0][0] * 100) /
                 typeData->armorFront));
@@ -791,14 +781,14 @@ void update_bars(void)
     vdu_polygon(6, forePercent);
     DrawCockpitReadout(
         4, itoa((int)aasShipShield[0][0],
-                szTextScratchBuffer, 10));
+                szTxtWorkspaceBuffer, 10));
     aftPercent = (short)((aasShipShield[0][1] * 100) /
                          typeData->shieldAft);
     SetCockpitLightBlink(1, aftPercent);
     vdu_polygon(7, aftPercent);
     DrawCockpitReadout(
         5, itoa((int)aasShipShield[0][1],
-                szTextScratchBuffer, 10));
+                szTxtWorkspaceBuffer, 10));
 }
 
 /* Function start: 0x4147E0 */
@@ -812,7 +802,7 @@ short get_mode(short i)
 void set_mode(short i, int state)
 {
     if (get_mode(i) != state)
-        ClearHudMessageSlot(&aHudMessageSlots[i]);
+        ClearHudMessageSlot(&aCockpitHudMessageSlotsTable[i]);
     acVduModeStackDepth[i] = 0;
     *(int *)&ausVduModeStack[i * 8] = state;
 }
@@ -837,7 +827,7 @@ short GetVduModeStackDepth(short i)
 /* Function start: 0x4148A0 */
 void push_mode(short i, int state)
 {
-    ClearHudMessageSlot(&aHudMessageSlots[i]);
+    ClearHudMessageSlot(&aCockpitHudMessageSlotsTable[i]);
     acVduModeStackDepth[i]++;
     *(int *)&ausVduModeStack[
         ((int)acVduModeStackDepth[i] + i * 4) * 2] = state;
@@ -846,7 +836,7 @@ void push_mode(short i, int state)
 /* Function start: 0x4148E0 */
 void pop_mode(short i)
 {
-    ClearHudMessageSlot(&aHudMessageSlots[i]);
+    ClearHudMessageSlot(&aCockpitHudMessageSlotsTable[i]);
     acVduModeStackDepth[i]--;
 }
 
@@ -857,7 +847,7 @@ void set_new_vdu(short vdu)
         malf_noise(vdu, 1, cDarkGreenColour, 0x17, 0);
     } else {
         if (vdu == 1)
-            ClearViewport(&stRightVdu, cBlackColour);
+            ClearViewport(&stRightVduViewport, cBlackColour);
         else
             ClearViewport(&stLeftVdu, cBlackColour);
     }
@@ -884,7 +874,7 @@ void InvalidateVduMode(short i)
 /* Function start: 0x4149E0 */
 void clear_message_time(void)
 {
-    nMessageTimer = 0;
+    nCurrentNoticeTimer = 0;
 }
 
 /* Function start: 0x4149F0 */
@@ -894,13 +884,13 @@ short message_showing(void)
     if (SdlSwcFlightActive())
         return SdlSwcMessageShowing();
 #endif
-    return 0 < nMessageTimer;
+    return 0 < nCurrentNoticeTimer;
 }
 
 /* Function start: 0x414A10 */
 unsigned short set_message_time(unsigned short v)
 {
-    nMessageTimer = (short)v;
+    nCurrentNoticeTimer = (short)v;
     return 0;
 }
 
@@ -908,8 +898,8 @@ unsigned short set_message_time(unsigned short v)
 void check_message(void)
 {
     if (message_showing() &&
-        (nMessageTimer = nMessageTimer - 1,
-         nMessageTimer <= 0))
+        (nCurrentNoticeTimer = nCurrentNoticeTimer - 1,
+         nCurrentNoticeTimer <= 0))
         EndCommMenu();
 }
 
@@ -919,16 +909,16 @@ unsigned int update_digital_readouts(void)
     long velocity;
     short speed;
 
-    SetTextContext(&stCockpitReadoutTextContext);
+    SetTextContext(&stCurrentCockpitReadoutTextCtx);
     speed = (short)((anShipSpeed[0] >> 8) * 10);
     DrawCockpitReadout(
         2, itoa((int)speed,
-                szTextScratchBuffer, 10));
+                szTxtWorkspaceBuffer, 10));
     velocity = MultiplyFixed(
         Vector_magnitude(&aShipVelocity[0]), 0xa00);
     DrawCockpitReadout(
         3, itoa((int)(short)(velocity >> 8),
-                szTextScratchBuffer, 10));
+                szTxtWorkspaceBuffer, 10));
     return 0;
 }
 
@@ -947,7 +937,7 @@ void malf_sound(void)
 /* Function start: 0x414AF0 */
 short malf(char component)
 {
-    int damage = acPlayerComponentDamage[(int)component];
+    int damage = acPlayerComponentDamageList[(int)component];
 
 #ifdef SDL_PORT
     if (SdlSwcFlightActive())
@@ -974,10 +964,10 @@ void ShowComponentHitHudMessage(const char *text, unsigned short colour,
                                 short flashCount)
 {
     if (nTrainSimActive == 0 && get_mode(0) != 0) {
-        if (aHudMessageSlots[0].text != 0)
-            ClearHudMessageSlot(&aHudMessageSlots[0]);
+        if (aCockpitHudMessageSlotsTable[0].text != 0)
+            ClearHudMessageSlot(&aCockpitHudMessageSlotsTable[0]);
         DosStrcpy(szComponentHitMessage, text);
-        SetHudMessageSlot(&aHudMessageSlots[0],
+        SetHudMessageSlot(&aCockpitHudMessageSlotsTable[0],
                           &stLeftVduTextContext,
                           stLeftVdu.left,
                           (short)(stLeftVdu.bottom - 6),
@@ -992,8 +982,8 @@ int damage_your_component(char component, char amount, char maximum)
     int index = (int)component;
     char text[40];
 
-    acPlayerComponentDamage[index] = (signed char)MinShort(
-        (short)(acPlayerComponentDamage[index] + amount),
+    acPlayerComponentDamageList[index] = (signed char)MinShort(
+        (short)(acPlayerComponentDamageList[index] + amount),
         (short)maximum);
     if (malf(component) != 0 && index == 3) {
         vdu_malf(0, 0x18);
@@ -1004,7 +994,7 @@ int damage_your_component(char component, char amount, char maximum)
                 apszComponentNames[index]);
         ShowComponentHitHudMessage(text, (unsigned char)cRedColour, 5);
     }
-    return acPlayerComponentDamage[index];
+    return acPlayerComponentDamageList[index];
 }
 
 /* Function start: 0x414CB0 */
@@ -1013,7 +1003,7 @@ void RemovePlayerReleaseWeapon(signed char weapon)
     enum ObjectType preferredType;
     int hardpoint;
 
-    preferredType = ((ShipWeaponSlot *)&aShipWeapons[0][1])[weapon].type;
+    preferredType = ((ShipWeaponSlot *)&aShipWeaponsTable[0][1])[weapon].type;
 #ifdef SDL_PORT
     if (SdlSwcFlightActive()) {
         remove_weapon(0, weapon);
@@ -1022,16 +1012,16 @@ void RemovePlayerReleaseWeapon(signed char weapon)
         return;
     }
 #endif
-    eReleaseWeaponDisplayType = preferredType;
+    eReleaseWpnDisplayType = preferredType;
     cReleaseWeaponDisplayFrame =
         (signed char)(preferredType * 2 - 0x2f);
-    hardpoint = ((ShipWeaponSlot *)&aShipWeapons[0][1])[weapon].hardpoint;
+    hardpoint = ((ShipWeaponSlot *)&aShipWeaponsTable[0][1])[weapon].hardpoint;
     stReleaseWeaponDisplayPosition.x =
         (short)(aWeaponDisplayPositions[hardpoint].x +
-                nWeaponDisplayOriginX);
+                nWpnDispOriginX);
     stReleaseWeaponDisplayPosition.y =
         (short)(aWeaponDisplayPositions[hardpoint].y +
-                nWeaponDisplayOriginY);
+                nWpnDisplayBaseY);
     cReleaseWeaponDisplayTicks = 3;
     cReleaseWeaponDisplayState = 0;
     if (pReleaseWeaponDisplayBackground == 0)
@@ -1053,11 +1043,11 @@ void fire_computer_graphic_missile(void)
         RestoreSpriteBackground(&stLeftVdu, pReleaseWeaponDisplayBackground,
                                 stReleaseWeaponDisplayPosition.x,
                                 stReleaseWeaponDisplayPosition.y,
-                                pCockpitWeaponShape,
+                                pCockpitWeaponShapePtr,
                                 cReleaseWeaponDisplayFrame);
     if (stReleaseWeaponDisplayPosition.y > stLeftVdu.top - 10 &&
         stReleaseWeaponDisplayPosition.y < stLeftVdu.bottom) {
-        if (eReleaseWeaponDisplayType == OBJECT_TYPE_SPACE_MINE)
+        if (eReleaseWpnDisplayType == OBJECT_TYPE_SPACE_MINE)
             stReleaseWeaponDisplayPosition.y += cReleaseWeaponDisplayTicks;
         else
             stReleaseWeaponDisplayPosition.y -= cReleaseWeaponDisplayTicks;
@@ -1067,10 +1057,10 @@ void fire_computer_graphic_missile(void)
                                     pReleaseWeaponDisplayBackground,
                                     stReleaseWeaponDisplayPosition.x,
                                     stReleaseWeaponDisplayPosition.y,
-                                    pCockpitWeaponShape,
+                                    pCockpitWeaponShapePtr,
                                     cReleaseWeaponDisplayFrame);
             DrawSpriteDefault(&stLeftVdu, stReleaseWeaponDisplayPosition.x,
-                              stReleaseWeaponDisplayPosition.y, pCockpitWeaponShape,
+                              stReleaseWeaponDisplayPosition.y, pCockpitWeaponShapePtr,
                               cReleaseWeaponDisplayFrame);
         }
         cReleaseWeaponDisplayState = (signed char)visible;
@@ -1091,7 +1081,7 @@ void show_weapon_disp(void)
     short frame;
 
     selectedWeapon =
-        &((ShipWeaponSlot *)&aShipWeapons[0][1])[
+        &((ShipWeaponSlot *)&aShipWeaponsTable[0][1])[
             nSelectedReleaseWeaponIndex];
     set_new_vdu(0);
     DrawTextAt(&stLeftVduTextContext,
@@ -1123,35 +1113,35 @@ void show_weapon_disp(void)
     DrawFormattedText("\nWeapon: %s", releaseName);
     DrawFormattedText("\nGun: %s", gunName);
 
-    nWeaponDisplayOriginX =
+    nWpnDispOriginX =
         (short)(stLeftVdu.left +
                 aWeaponDisplayOrigins[
-                    (int)cCockpitView].x);
-    nWeaponDisplayOriginY =
+                    (int)cCurrentCockpitView].x);
+    nWpnDisplayBaseY =
         (short)(stLeftVdu.top +
                 aWeaponDisplayOrigins[
-                    (int)cCockpitView].y);
-    DrawSpriteDefault(&stLeftVdu, nWeaponDisplayOriginX,
-                      nWeaponDisplayOriginY,
-                      pCockpitWeaponShape, 0);
-    weapons = (ShipWeaponSlot *)&aShipWeapons[0][1];
+                    (int)cCurrentCockpitView].y);
+    DrawSpriteDefault(&stLeftVdu, nWpnDispOriginX,
+                      nWpnDisplayBaseY,
+                      pCockpitWeaponShapePtr, 0);
+    weapons = (ShipWeaponSlot *)&aShipWeaponsTable[0][1];
     count = 0;
-    if ((signed char)aShipWeapons[0][0] > 0)
+    if ((signed char)aShipWeaponsTable[0][0] > 0)
         do {
             count++;
             frame = (short)((int)weapons->type * 2 +
                             weapons->disabled - 0x2f);
             DrawSpriteDefault(
                 &stLeftVdu,
-                (short)(nWeaponDisplayOriginX +
+                (short)(nWpnDispOriginX +
                         aWeaponDisplayPositions[
                             weapons->hardpoint].x),
-                (short)(nWeaponDisplayOriginY +
+                (short)(nWpnDisplayBaseY +
                         aWeaponDisplayPositions[
                             weapons->hardpoint].y),
-                pCockpitWeaponShape, frame);
+                pCockpitWeaponShapePtr, frame);
             weapons++;
-        } while (count < (signed char)aShipWeapons[0][0]);
+        } while (count < (signed char)aShipWeaponsTable[0][0]);
 }
 
 /* Function start: 0x415040 */
@@ -1162,64 +1152,64 @@ void update_status_text(void)
 /* Function start: 0x415050 */
 short sighted(short objective)
 {
-    return (aMissionObjectives[objective].flags & 4) == 4;
+    return (aMissionObjectivesArray[objective].flags & 4) == 4;
 }
 
 /* Function start: 0x415070 */
 short visited(short objective)
 {
-    return (aMissionObjectives[objective].flags & 1) == 1;
+    return (aMissionObjectivesArray[objective].flags & 1) == 1;
 }
 
 /* Function start: 0x415090 */
 short achieved(short objective)
 {
-    return (aMissionObjectives[objective].flags & 2) == 2;
+    return (aMissionObjectivesArray[objective].flags & 2) == 2;
 }
 
 /* Function start: 0x4150B0 */
 void flag_objective(short objective, unsigned char flags)
 {
-    aMissionObjectives[objective].flags |= flags;
+    aMissionObjectivesArray[objective].flags |= flags;
 }
 
 /* Function start: 0x4150D0 */
 void DrawCalculatingLabel(void)
 {
-    if (nCurrentObjectiveRange <= 0) {
+    if (nCurObjectiveRangeValue <= 0) {
         DrawCockpitReadout(0, "CALCULATING");
     } else {
-        strcpy(szTextScratchBuffer +
-                   strlen(ltoa((long)nCurrentObjectiveRange,
-                               szTextScratchBuffer, 10)),
+        strcpy(szTxtWorkspaceBuffer +
+                   strlen(ltoa((long)nCurObjectiveRangeValue,
+                               szTxtWorkspaceBuffer, 10)),
                " km");
-        DrawCockpitReadout(0, szTextScratchBuffer);
+        DrawCockpitReadout(0, szTxtWorkspaceBuffer);
     }
     nDisplayedObjectiveRange =
-        nCurrentObjectiveRange;
+        nCurObjectiveRangeValue;
 }
 
 /* Function start: 0x415130 */
 const char *objective_name(short objective)
 {
-    if (objective >= (short)cMissionObjectiveCount)
+    if (objective >= (short)cMissionObjectiveCountValue)
         return "NONE";
-    if (*aMissionObjectives[objective].name == '?' &&
+    if (*aMissionObjectivesArray[objective].name == '?' &&
         sighted(objective) == 0)
         return "UNKNOWN";
-    return aMissionObjectives[objective].displayName;
+    return aMissionObjectivesArray[objective].displayName;
 }
 
 /* Function start: 0x415180 */
 void show_navigation_disp(void)
 {
-    DrawTextAt(&stRightVduTextContext,
-               stRightVdu.left, stRightVdu.top,
+    DrawTextAt(&stRightVduTxtContext,
+               stRightVduViewport.left, stRightVduViewport.top,
                "COMP NAVIGATION", 2);
     DrawFormattedText("\n\nDESTINATION\n  %s",
                       objective_name((short)cCurrentObjective));
     DrawFormattedText("\n\nRANGE\n  ");
-    InitializeCockpitReadout(0, &stRightVduTextContext);
+    InitializeCockpitReadout(0, &stRightVduTxtContext);
     DrawFormattedText("\n\n(N)ew Objective");
     DrawCalculatingLabel();
 }
@@ -1232,23 +1222,23 @@ short hidden_objective(short objective)
     short ship;
 
     nameHidden =
-        *aMissionObjectives[objective].displayName == '.' ||
-        *aMissionObjectives[objective].name == '.';
+        *aMissionObjectivesArray[objective].displayName == '.' ||
+        *aMissionObjectivesArray[objective].name == '.';
     if (nameHidden != 0 ||
         (mobile_objective(objective) != 0 &&
          aMissionShips[
-             (signed char)aMissionObjectives[
+             (signed char)aMissionObjectivesArray[
                  objective].index].state != 0))
         hidden = 1;
     else
         hidden = 0;
     if (hidden == 0 && mobile_objective(objective) != 0 &&
-        aMissionObjectives[
-            cMissionObjectiveCount].type == 0) {
+        aMissionObjectivesArray[
+            cMissionObjectiveCountValue].type == 0) {
         ship = find_ship_index(
-            (short)aMissionObjectives[objective].index);
+            (short)aMissionObjectivesArray[objective].index);
         if (aMissionShips[
-                (signed char)aMissionObjectives[
+                (signed char)aMissionObjectivesArray[
                     objective].index].missionType ==
                 MISSION_TYPE_WARP_ARRIVE &&
             ship != -1)
@@ -1264,22 +1254,22 @@ int set_new_objective(short pathIndex)
         pathIndex = -1;
         do {
             pathIndex++;
-        } while (abFlightPath[pathIndex] != -1 &&
-                 pathIndex < (short)cMissionObjectiveCount);
+        } while (abFlightPathList[pathIndex] != -1 &&
+                 pathIndex < (short)cMissionObjectiveCountValue);
         pathIndex--;
     }
-    if (pathIndex > (short)cMissionObjectiveCount)
+    if (pathIndex > (short)cMissionObjectiveCountValue)
         pathIndex = 0;
-    if (abFlightPath[pathIndex] == -1)
+    if (abFlightPathList[pathIndex] == -1)
         pathIndex = 0;
-    cCurrentNavPointIndex = (signed char)pathIndex;
+    cCurrentNavPtIdx = (signed char)pathIndex;
     if (hidden_objective(
-            (short)abFlightPath[pathIndex]) != 0)
+            (short)abFlightPathList[pathIndex]) != 0)
         return 0;
     cCurrentObjective =
-        abFlightPath[cCurrentNavPointIndex];
-    aeShipObjective[0] =
-        (enum ShipObjective)aMissionObjectives[
+        abFlightPathList[cCurrentNavPtIdx];
+    aeShipObjectiveList[0] =
+        (enum ShipObjective)aMissionObjectivesArray[
             (short)cCurrentObjective].type;
     set_objective_range(0);
     return 1;
@@ -1293,14 +1283,14 @@ short cycle_next_objective(void)
     wraps = 0;
     do {
         if (set_new_objective(
-                (short)((short)cCurrentNavPointIndex + 1)) != 0)
+                (short)((short)cCurrentNavPtIdx + 1)) != 0)
             break;
-        if (cCurrentNavPointIndex == 0)
+        if (cCurrentNavPtIdx == 0)
             wraps++;
     } while (wraps < 3);
     if (wraps >= 3) {
-        cCurrentNavPointIndex = 0;
-        cCurrentObjective = abFlightPath[0];
+        cCurrentNavPtIdx = 0;
+        cCurrentObjective = abFlightPathList[0];
     }
     return wraps < 3;
 }
@@ -1311,19 +1301,19 @@ void set_next_destination(void)
     set_new_objective(0);
     do {
         if (set_new_objective(
-                (short)cCurrentNavPointIndex) != 0 &&
-            visited((short)abFlightPath[
-                cCurrentNavPointIndex]) == 0)
+                (short)cCurrentNavPtIdx) != 0 &&
+            visited((short)abFlightPathList[
+                cCurrentNavPtIdx]) == 0)
             break;
-        cCurrentNavPointIndex++;
-    } while (cCurrentNavPointIndex <
-                 cMissionObjectiveCount &&
-             abFlightPath[
-                 cCurrentNavPointIndex] != -1);
-    if (cCurrentNavPointIndex >=
-            cMissionObjectiveCount ||
-        abFlightPath[
-            cCurrentNavPointIndex] == -1) {
+        cCurrentNavPtIdx++;
+    } while (cCurrentNavPtIdx <
+                 cMissionObjectiveCountValue &&
+             abFlightPathList[
+                 cCurrentNavPtIdx] != -1);
+    if (cCurrentNavPtIdx >=
+            cMissionObjectiveCountValue ||
+        abFlightPathList[
+            cCurrentNavPtIdx] == -1) {
         set_new_objective(0);
         cycle_next_objective();
     }
@@ -1337,8 +1327,8 @@ short LocateMobileObjective(short objective)
 
     if (mobile_objective(objective) != 0) {
         ship = locate_ship(
-            aMissionObjectives[objective].index,
-            &aMissionObjectives[objective].position);
+            aMissionObjectivesArray[objective].index,
+            &aMissionObjectivesArray[objective].position);
     }
     return ship;
 }
@@ -1351,7 +1341,7 @@ unsigned int someone_coming(void)
     do {
         if (aeObjectClass[ship] >= OBJECT_CLASS_SHIP &&
             aeShipMissionType[ship] == MISSION_TYPE_COME_HOME &&
-            abShipNavPointIndex[ship] <= cCurrentNavPointIndex)
+            abShipNavPtIdx[ship] <= cCurrentNavPtIdx)
             return 1;
         ship = ship + 1;
     } while (ship < 10);
@@ -1383,16 +1373,16 @@ void flag_reached(short objective, short reached)
         return;
     }
 #endif
-    objectiveType = (short)aMissionObjectives[objective].type;
-    carrierMissionShip = anShipMissionShip[0];
-    carrierObject = find_ship_index(anShipMissionShip[0]);
+    objectiveType = (short)aMissionObjectivesArray[objective].type;
+    carrierMissionShip = anShipMissionShips[0];
+    carrierObject = find_ship_index(anShipMissionShips[0]);
     markVisited = objective != cCurrentObjective;
     advanceDestination = 0;
     if (objective == cCurrentObjective) {
         if (reached != 0 || escorting_a_ship() == 0 ||
             carrierObject == -1 ||
-            aMissionObjectives[objective].index ==
-                anShipMissionShip[0]) {
+            aMissionObjectivesArray[objective].index ==
+                anShipMissionShips[0]) {
             if (visited(objective) != 0)
                 CockpitMessage("Already Visited", cYellowColour, 4);
             else
@@ -1404,7 +1394,7 @@ void flag_reached(short objective, short reached)
                 sprintf(pszObjectiveStatusMessage,
                         "Wait for %s",
                         aObjectTypeData[
-                            aeObjectType[carrierObject]].
+                            aeObjectTypeList[carrierObject]].
                                 displayName);
                 CockpitMessage(pszObjectiveStatusMessage,
                                cYellowColour, 4);
@@ -1413,9 +1403,9 @@ void flag_reached(short objective, short reached)
     }
     if (objectiveType != 1 && markVisited != 0) {
         if (visited(objective) == 0 && carrierObject != -1 &&
-            aMissionObjectives[objective].index ==
-                anShipMissionShip[0] &&
-            aeObjectType[carrierObject] !=
+            aMissionObjectivesArray[objective].index ==
+                anShipMissionShips[0] &&
+            aeObjectTypeList[carrierObject] !=
                 OBJECT_TYPE_TIGERS_CLAW)
             send_message(carrierObject, 6);
         flag_objective(objective, 1);
@@ -1429,7 +1419,7 @@ void check_sighting(short objective, short range, short object)
 {
     if (sighted(objective) == 0 && range < 16000 &&
         (object == -1 ||
-         asObjectScreenX[object] != (short)0x8001))
+         asObjectScreenXList[object] != (short)0x8001))
         flag_objective(objective, 4);
 }
 
@@ -1438,8 +1428,8 @@ void check_visit(short objective, short range)
 {
     int reachedRange;
 
-    if ((short)aMissionObjectives[objective].type == 3 ||
-        (short)aMissionObjectives[objective].type == 4)
+    if ((short)aMissionObjectivesArray[objective].type == 3 ||
+        (short)aMissionObjectivesArray[objective].type == 4)
         reachedRange = 6000;
     else
         reachedRange = 1500;
@@ -1458,8 +1448,8 @@ void update_objective_location(short objective)
     if (sighted(objective) != 0 && visited(objective) != 0 &&
         cCurrentObjective != objective)
         return;
-    ComputeVectorDelta(&aShipPosition[0],
-                       &aMissionObjectives[objective].position,
+    ComputeVectorDelta(&aShipPositionsArray[0],
+                       &aMissionObjectivesArray[objective].position,
                        &delta);
     range = FixedToShortSaturating(
         Vector_magnitude(&delta));
@@ -1468,7 +1458,7 @@ void update_objective_location(short objective)
         if (object != -1)
             check_visit(objective, range);
     } else if (aMissionNavPoints[
-                   aMissionObjectives[objective].index].type >= 1) {
+                   aMissionObjectivesArray[objective].index].type >= 1) {
         check_visit(objective, range);
     }
 }
@@ -1479,8 +1469,8 @@ unsigned int objective_lost(short objective)
     unsigned short state;
 
     state = *(signed char volatile *)&aMissionShips[
-        aMissionObjectives[objective].index].state;
-    switch (*(int volatile *)&aMissionObjectives[objective].type) {
+        aMissionObjectivesArray[objective].index].state;
+    switch (*(int volatile *)&aMissionObjectivesArray[objective].type) {
         case 2:
         case 3:
             return state >= 1;
@@ -1501,7 +1491,7 @@ void check_objectives(void)
         update_objective_location((short)cCurrentObjective);
     }
     if (nDisplayedObjectiveRange !=
-        nCurrentObjectiveRange)
+        nCurObjectiveRangeValue)
         DrawCalculatingLabel();
 }
 
@@ -1514,7 +1504,7 @@ void rotational_pos_to_scanner_pos(signed char object,
     const CockpitScannerGeometry *scanner;
 
     scanner = SdlSwcFlightActive() ? &stSwcCockpitScanner :
-        &stCockpitLayout.scanner[(int)cCockpitView];
+        &stCockpitLayout.scanner[(int)cCurrentCockpitView];
 #endif
 
     horizontal = position->yaw;
@@ -1524,7 +1514,7 @@ void rotational_pos_to_scanner_pos(signed char object,
             scanner->centerX + horizontal / 4);
 #else
             stCockpitLayout.scanner[
-                (int)cCockpitView].centerX + horizontal / 4);
+                (int)cCurrentCockpitView].centerX + horizontal / 4);
 #endif
     else
         nScannerCursorX = (short)(
@@ -1532,7 +1522,7 @@ void rotational_pos_to_scanner_pos(signed char object,
             scanner->centerX + horizontal / 6);
 #else
             stCockpitLayout.scanner[
-                (int)cCockpitView].centerX + horizontal / 6);
+                (int)cCurrentCockpitView].centerX + horizontal / 6);
 #endif
 
     nScannerCursorY = (short)(
@@ -1547,25 +1537,25 @@ void rotational_pos_to_scanner_pos(signed char object,
     nScannerCursorY = MaxShort(scanner->minimumY, nScannerCursorY);
 #else
         stCockpitLayout.scanner[
-            (int)cCockpitView].centerY + position->pitch / -3);
+            (int)cCurrentCockpitView].centerY + position->pitch / -3);
     nScannerCursorX =
         MinShort(stCockpitLayout.scanner[
-                     (int)cCockpitView].maximumX,
+                     (int)cCurrentCockpitView].maximumX,
                  nScannerCursorX);
     nScannerCursorX =
         MaxShort(stCockpitLayout.scanner[
-                     (int)cCockpitView].minimumX,
+                     (int)cCurrentCockpitView].minimumX,
                  nScannerCursorX);
     nScannerCursorY =
         MinShort(stCockpitLayout.scanner[
-                     (int)cCockpitView].maximumY,
+                     (int)cCurrentCockpitView].maximumY,
                  nScannerCursorY);
     nScannerCursorY =
         MaxShort(stCockpitLayout.scanner[
-                     (int)cCockpitView].minimumY,
+                     (int)cCurrentCockpitView].minimumY,
                  nScannerCursorY);
 #endif
-    asScannerObjectX[(int)object] =
+    asScannerObjectPositionX[(int)object] =
         nScannerCursorX;
     asScannerObjectY[(int)object] =
         nScannerCursorY;
@@ -1574,7 +1564,7 @@ void rotational_pos_to_scanner_pos(signed char object,
 /* Function start: 0x415A30 */
 short mobile_objective(short objective)
 {
-    short type = (short)aMissionObjectives[objective].type;
+    short type = (short)aMissionObjectivesArray[objective].type;
 
     if (type == 1 || type == 3 || type == 4 || type == 2)
         return 1;
@@ -1587,7 +1577,7 @@ void ResetScannerContacts(void)
     short i = 10;
 
     do {
-        asScannerObjectX[i] = 0;
+        asScannerObjectPositionX[i] = 0;
         i = i - 1;
     } while (i != 0);
     nScannerTargetObject = -1;
@@ -1599,29 +1589,29 @@ void clear_head_up_display(void)
     short object;
 
     if (nScannerTargetObject != -1) {
-        DrawViewportPixel(&stScreen,
-                          asScannerObjectX[nScannerTargetObject],
+        DrawViewportPixel(&stScreenView,
+                          asScannerObjectPositionX[nScannerTargetObject],
                           asScannerObjectY[nScannerTargetObject],
                           asScannerBackgroundColour[
                               nScannerTargetObject]);
-        asScannerObjectX[nScannerTargetObject] = 0;
+        asScannerObjectPositionX[nScannerTargetObject] = 0;
     }
-    if (asScannerObjectX[10] != 0) {
-        RestoreSpriteBackground(&stScreen,
-                                pScannerMarkerBackground,
-                                asScannerObjectX[10],
+    if (asScannerObjectPositionX[10] != 0) {
+        RestoreSpriteBackground(&stScreenView,
+                                pRadarMarkerBackground,
+                                asScannerObjectPositionX[10],
                                 asScannerObjectY[10],
-                                pTargetLockShape, 2);
-        asScannerObjectX[10] = 0;
+                                pTgtLockShapePtr, 2);
+        asScannerObjectPositionX[10] = 0;
     }
     object = 9;
     do {
-        if (asScannerObjectX[object] != 0) {
-            DrawViewportPixel(&stScreen,
-                              asScannerObjectX[object],
+        if (asScannerObjectPositionX[object] != 0) {
+            DrawViewportPixel(&stScreenView,
+                              asScannerObjectPositionX[object],
                               asScannerObjectY[object],
                               asScannerBackgroundColour[object]);
-            asScannerObjectX[object] = 0;
+            asScannerObjectPositionX[object] = 0;
         }
         object--;
     } while (object != 0);
@@ -1636,15 +1626,15 @@ unsigned int set_objective_range(short showOnScanner)
     SphericalVector spherical;
 
     LocateMobileObjective((short)cCurrentObjective);
-    ComputeVectorDelta(&aShipPosition[0],
-                       &aMissionObjectives[
+    ComputeVectorDelta(&aShipPositionsArray[0],
+                       &aMissionObjectivesArray[
                            (short)cCurrentObjective].position,
                        &relative);
     transform_to_objects_frame(&relative, &rotated, 0);
     rectangular_to_spherical(&rotated, &spherical);
     if (showOnScanner != 0)
         rotational_pos_to_scanner_pos(10, &spherical);
-    nCurrentObjectiveRange = spherical.radius >> 8;
+    nCurObjectiveRangeValue = spherical.radius >> 8;
     return 0;
 }
 
@@ -1668,14 +1658,14 @@ short get_color(short object, unsigned short *colour)
     if (objectClass == OBJECT_CLASS_CAPITAL_SHIP) {
         if (aeShipSide[object] == SIDE_KILRATHI)
             *colour = cOrangeColour;
-        else if (aeObjectType[object] ==
+        else if (aeObjectTypeList[object] ==
                  OBJECT_TYPE_TIGERS_CLAW)
             *colour = cViewportClearColour;
         else
             *colour = cDarkGreyColour;
         return 1;
     }
-    if (acShipTarget[object] == 0) {
+    if (acShipTargetTable[object] == 0) {
         *colour = cYellowColour;
         return 1;
     }
@@ -1701,29 +1691,29 @@ unsigned int draw_3d_scanner(void)
                 if (gridValue == -1) {
                     row++;
                 } else {
-                    DrawViewportPixel(&stScreen,
+                    DrawViewportPixel(&stScreenView,
                         (short)(stCockpitLayout.scanner[
-                            (int)cCockpitView].centerX + row),
+                            (int)cCurrentCockpitView].centerX + row),
                         (short)(stCockpitLayout.scanner[
-                            (int)cCockpitView].centerY + gridValue), 0xaa);
+                            (int)cCurrentCockpitView].centerY + gridValue), 0xaa);
                     if (gridValue != 0)
-                        DrawViewportPixel(&stScreen,
+                        DrawViewportPixel(&stScreenView,
                             (short)(stCockpitLayout.scanner[
-                                (int)cCockpitView].centerX + row),
+                                (int)cCurrentCockpitView].centerX + row),
                             (short)(stCockpitLayout.scanner[
-                                (int)cCockpitView].centerY - gridValue), 0xaa);
+                                (int)cCurrentCockpitView].centerY - gridValue), 0xaa);
                     if (row != 0) {
-                        DrawViewportPixel(&stScreen,
+                        DrawViewportPixel(&stScreenView,
                             (short)(stCockpitLayout.scanner[
-                                (int)cCockpitView].centerX - row),
+                                (int)cCurrentCockpitView].centerX - row),
                             (short)(stCockpitLayout.scanner[
-                                (int)cCockpitView].centerY + gridValue), 0xaa);
+                                (int)cCurrentCockpitView].centerY + gridValue), 0xaa);
                         if (gridValue != 0)
-                            DrawViewportPixel(&stScreen,
+                            DrawViewportPixel(&stScreenView,
                                 (short)(stCockpitLayout.scanner[
-                                    (int)cCockpitView].centerX - row),
+                                    (int)cCurrentCockpitView].centerX - row),
                                 (short)(stCockpitLayout.scanner[
-                                    (int)cCockpitView].centerY - gridValue), 0xaa);
+                                    (int)cCurrentCockpitView].centerY - gridValue), 0xaa);
                     }
                 }
                 grid++;
@@ -1732,7 +1722,7 @@ unsigned int draw_3d_scanner(void)
     }
 
     clear_head_up_display();
-    nScannerTargetObject = acShipTarget[0];
+    nScannerTargetObject = acShipTargetTable[0];
     if (nScannerTargetObject != -1 &&
         aeObjectClass[nScannerTargetObject] <
             OBJECT_CLASS_SHIP)
@@ -1740,17 +1730,17 @@ unsigned int draw_3d_scanner(void)
 
     for (object = 1; object <= 9; object++) {
         if (get_color(object, &colour) != 0) {
-            rectangular_to_spherical(&aObjectViewPosition[object],
+            rectangular_to_spherical(&aObjectViewPositionsList[object],
                                      &spherical);
             if (spherical.radius < 0xea6000) {
                 rotational_pos_to_scanner_pos((signed char)object,
                                                &spherical);
                 asScannerBackgroundColour[object] =
                     (short)GetViewportPixel(
-                        &stScreen, nScannerCursorX,
+                        &stScreenView, nScannerCursorX,
                         nScannerCursorY);
                 if (nScannerTargetObject != object)
-                    DrawViewportPixel(&stScreen,
+                    DrawViewportPixel(&stScreenView,
                                       nScannerCursorX,
                                       nScannerCursorY,
                                       colour);
@@ -1760,23 +1750,23 @@ unsigned int draw_3d_scanner(void)
 
     if (get_mode(1) == 5) {
         set_objective_range(1);
-        CaptureSpriteBackground(&stScreen,
-                                pScannerMarkerBackground,
+        CaptureSpriteBackground(&stScreenView,
+                                pRadarMarkerBackground,
                                 nScannerCursorX,
                                 nScannerCursorY,
-                                pTargetLockShape, 2);
-        DrawSpriteDefault(&stScreen,
+                                pTgtLockShapePtr, 2);
+        DrawSpriteDefault(&stScreenView,
                           nScannerCursorX,
                           nScannerCursorY,
-                          pTargetLockShape, 2);
+                          pTgtLockShapePtr, 2);
     }
 
     object = nScannerTargetObject;
     if (object != -1 && get_color(object, &colour) != 0) {
-        DrawViewportPixel(&stScreen,
-            asScannerObjectX[nScannerTargetObject],
+        DrawViewportPixel(&stScreenView,
+            asScannerObjectPositionX[nScannerTargetObject],
             asScannerObjectY[nScannerTargetObject],
-            (short)(nSpaceFrame % 2) != 0 ? (short)colour : cBlackColour);
+            (short)(nCurrentSpaceFrameValue % 2) != 0 ? (short)colour : cBlackColour);
     }
     return 0;
 }
@@ -1859,11 +1849,11 @@ void target_locking(signed char target)
 
     if (target != -1 &&
         aeShipSide[(short)target] != aeShipSide[0] &&
-        acPlayerComponentDamage[5] < 4) {
-        x = asObjectScreenX[(short)target];
+        acPlayerComponentDamageList[5] < 4) {
+        x = asObjectScreenXList[(short)target];
         if (x == -0x7fff)
             return;
-        y = asObjectScreenY[(short)target];
+        y = asObjectScreenYArray[(short)target];
         countdown = nTargetLockCountdown;
         if (countdown < -1) {
             nTargetLockCountdown = ++countdown;
@@ -1883,11 +1873,11 @@ void target_locking(signed char target)
             lock_off();
             return;
         }
-        weaponType = ((ShipWeaponSlot *)&aShipWeapons[0][1])[
+        weaponType = ((ShipWeaponSlot *)&aShipWeaponsTable[0][1])[
             nSelectedReleaseWeaponIndex].type;
 #else
         weaponType = *(enum ObjectType *)(
-            &aShipWeapons[0][1] +
+            &aShipWeaponsTable[0][1] +
             nSelectedReleaseWeaponIndex * 7);
 #endif
         switch (weaponType) {
@@ -1896,7 +1886,7 @@ void target_locking(signed char target)
             return;
         case OBJECT_TYPE_HEAT_SEEKING_MISSILE:
             get_facing_range_from_object(0, (short)target);
-            if (nTargetFacing > -0x41) {
+            if (nTargetFacingValue > -0x41) {
                 lock_off();
                 return;
             }
@@ -1954,15 +1944,15 @@ void print_message_text(char *text, unsigned short colour)
 
     SetRectBounds(&viewport,
                   (unsigned short)asHudMessageOrigins[
-                      (int)cCockpitView * 2],
+                      (int)cCurrentCockpitView * 2],
                   (unsigned short)asHudMessageOrigins[
-                      (int)cCockpitView * 2 + 1],
+                      (int)cCurrentCockpitView * 2 + 1],
                   (unsigned short)(
                       319 - asHudMessageOrigins[
-                                (int)cCockpitView * 2]),
+                                (int)cCurrentCockpitView * 2]),
                   (unsigned short)(
                       asHudMessageOrigins[
-                          (int)cCockpitView * 2 + 1] + 60));
+                          (int)cCurrentCockpitView * 2 + 1] + 60));
     context.backgroundColour = 0xff;
     context.colour = colour;
     charactersPerLine = GetRectHeight(&viewport) / 6;
@@ -1986,32 +1976,32 @@ void print_message_text(char *text, unsigned short colour)
     *output = 0;
 
     if (bCockpitlessView != 0) {
-        switch ((int)cCockpitView) {
+        switch ((int)cCurrentCockpitView) {
         case 0:
             DrawTextAt(&context,
-                       asHudMessageOrigins[(int)cCockpitView * 2],
+                       asHudMessageOrigins[(int)cCurrentCockpitView * 2],
                        (short)(asHudMessageOrigins[
-                                   (int)cCockpitView * 2 + 1] + 10),
+                                   (int)cCurrentCockpitView * 2 + 1] + 10),
                        wrapped, 2);
             break;
         case 1:
             DrawTextAt(&context,
-                       asHudMessageOrigins[(int)cCockpitView * 2],
+                       asHudMessageOrigins[(int)cCurrentCockpitView * 2],
                        (short)(asHudMessageOrigins[
-                                   (int)cCockpitView * 2 + 1] + 25),
+                                   (int)cCurrentCockpitView * 2 + 1] + 25),
                        wrapped, 2);
             break;
         case 2:
             DrawTextAt(&context,
-                       asHudMessageOrigins[(int)cCockpitView * 2],
+                       asHudMessageOrigins[(int)cCurrentCockpitView * 2],
                        (short)(asHudMessageOrigins[
-                                   (int)cCockpitView * 2 + 1] + 50),
+                                   (int)cCurrentCockpitView * 2 + 1] + 50),
                        wrapped, 2);
             break;
         case 3:
             DrawTextAt(&context,
-                       asHudMessageOrigins[(int)cCockpitView * 2],
-                       asHudMessageOrigins[(int)cCockpitView * 2 + 1],
+                       asHudMessageOrigins[(int)cCurrentCockpitView * 2],
+                       asHudMessageOrigins[(int)cCurrentCockpitView * 2 + 1],
                        wrapped, 2);
             break;
         default:
@@ -2019,8 +2009,8 @@ void print_message_text(char *text, unsigned short colour)
         }
     } else {
         DrawTextAt(&context,
-                   asHudMessageOrigins[(int)cCockpitView * 2],
-                   asHudMessageOrigins[(int)cCockpitView * 2 + 1],
+                   asHudMessageOrigins[(int)cCurrentCockpitView * 2],
+                   asHudMessageOrigins[(int)cCurrentCockpitView * 2 + 1],
                    wrapped, 2);
     }
     pszDisplayedHudMessage = pszPendingHudMessage;
@@ -2062,21 +2052,21 @@ void draw_target_box(unsigned short colour, signed char object,
             valid = 0;
         } else {
             valid = 1;
-            if (asObjectScreenX[object] == -0x7fff)
+            if (asObjectScreenXList[object] == -0x7fff)
                 valid = 0;
         }
         if (valid != 0) {
-            centerX = (short)(asObjectScreenX[object] +
-                              nViewCenterX);
-            centerY = (short)(asObjectScreenY[object] +
-                              nViewCenterY);
+            centerX = (short)(asObjectScreenXList[object] +
+                              nCurrentViewCenterPosX);
+            centerY = (short)(asObjectScreenYArray[object] +
+                              nCurrentViewCenterPosY);
             if ((short)GetTransformedShapeBounds(
-                    &stSpaceBuffer, centerX, centerY,
-                    apObjectShape[object],
-                    asObjectViewFrame[object],
-                    asObjectScreenAngle[object],
-                    asObjectScreenScale[object],
-                    asObjectFlip[object],
+                    &stSpaceBufferViewport, centerX, centerY,
+                    apObjShapeArray[object],
+                    asObjectViewFrames[object],
+                    asObjScreenAngles[object],
+                    asObjScreenScalesArray[object],
+                    asObjectFlipArray[object],
                     (short *)&bounds) != 0) {
                 bounds.left = (short)(bounds.left - padding);
                 bounds.top = (short)(bounds.top - padding);
@@ -2093,35 +2083,35 @@ void draw_target_box(unsigned short colour, signed char object,
             colour = (unsigned char)cBlueColour;
         }
         if (solid != 0) {
-            DrawViewportBorder(&stSpaceBuffer, bounds.left, bounds.top,
+            DrawViewportBorder(&stSpaceBufferViewport, bounds.left, bounds.top,
                                bounds.right, bounds.bottom, colour);
         } else {
             segmentLength =
                 (short)(((int)bounds.right - bounds.left) / 6 + 1);
-            DrawViewportLine(&stSpaceBuffer, bounds.left, bounds.top,
+            DrawViewportLine(&stSpaceBufferViewport, bounds.left, bounds.top,
                              (short)(bounds.left + segmentLength), bounds.top,
                              colour);
-            DrawViewportLine(&stSpaceBuffer, bounds.left, bounds.bottom,
+            DrawViewportLine(&stSpaceBufferViewport, bounds.left, bounds.bottom,
                              (short)(bounds.left + segmentLength), bounds.bottom,
                              colour);
-            DrawViewportLine(&stSpaceBuffer, bounds.right, bounds.top,
+            DrawViewportLine(&stSpaceBufferViewport, bounds.right, bounds.top,
                              (short)(bounds.right - segmentLength), bounds.top,
                              colour);
-            DrawViewportLine(&stSpaceBuffer, bounds.right, bounds.bottom,
+            DrawViewportLine(&stSpaceBufferViewport, bounds.right, bounds.bottom,
                              (short)(bounds.right - segmentLength), bounds.bottom,
                              colour);
             segmentLength =
                 (short)(((int)bounds.bottom - bounds.top) / 6 + 1);
-            DrawViewportLine(&stSpaceBuffer, bounds.left, bounds.top,
+            DrawViewportLine(&stSpaceBufferViewport, bounds.left, bounds.top,
                              bounds.left, (short)(bounds.top + segmentLength),
                              colour);
-            DrawViewportLine(&stSpaceBuffer, bounds.left, bounds.bottom,
+            DrawViewportLine(&stSpaceBufferViewport, bounds.left, bounds.bottom,
                              bounds.left,
                              (short)(bounds.bottom - segmentLength), colour);
-            DrawViewportLine(&stSpaceBuffer, bounds.right, bounds.top,
+            DrawViewportLine(&stSpaceBufferViewport, bounds.right, bounds.top,
                              bounds.right, (short)(bounds.top + segmentLength),
                              colour);
-            DrawViewportLine(&stSpaceBuffer, bounds.right, bounds.bottom,
+            DrawViewportLine(&stSpaceBufferViewport, bounds.right, bounds.bottom,
                              bounds.right,
                              (short)(bounds.bottom - segmentLength), colour);
         }
@@ -2130,24 +2120,24 @@ void draw_target_box(unsigned short colour, signed char object,
                 if (nTargetLockCountdown > -1) {
                     nTargetLockMarkerAngle = (short)(
                         nTargetLockMarkerAngle +
-                        anObjectRollRotation[0] +
-                        anObjectPitchRotation[0]);
+                        anObjectRollRotationList[0] +
+                        anObjPitchRot[0]);
                     centerX = (short)(centerX +
                         ((CosFixed(nTargetLockMarkerAngle) *
                           nTargetLockCountdown * 2) >> 8));
                     centerY = (short)(centerY +
                         ((SinFixed(nTargetLockMarkerAngle) *
                           nTargetLockCountdown * 2) >> 8));
-                    DrawSpriteDefault(&stSpaceBuffer, centerX, centerY,
-                                      pTargetLockShape, 1);
+                    DrawSpriteDefault(&stSpaceBufferViewport, centerX, centerY,
+                                      pTgtLockShapePtr, 1);
                     nTargetLockMarkerX = centerX;
                     nTargetLockMarkerY = centerY;
                 }
             } else if (nTargetLockMarkerX != -0x7fff) {
-                DrawSolidColourSprite(&stSpaceBuffer,
+                DrawSolidColourSprite(&stSpaceBufferViewport,
                                       nTargetLockMarkerX,
                                       nTargetLockMarkerY,
-                                      pTargetLockShape, 1,
+                                      pTgtLockShapePtr, 1,
                                       cPrimaryViewBufferColour);
                 nTargetLockMarkerX = -0x7fff;
             }
@@ -2190,7 +2180,7 @@ void draw_nav_pointer(void)
     if (SdlSwcFlightActive())
         active = nTrainSimActive == 0 && nCannedSceneMode != 4 &&
             nCameraViewMode == 0 && cCurrentObjective >= 0 &&
-            cCurrentObjective < cMissionObjectiveCount;
+            cCurrentObjective < cMissionObjectiveCountValue;
 #endif
     if (active == 0) {
         remove_nav_pointer();
@@ -2202,20 +2192,20 @@ void draw_nav_pointer(void)
         nNavPointerObject = object;
         if (object == -1)
             return;
-        asObjectViewFrame[object] = 3;
-        acObjectOwner[object] = -1;
-        asObjectScreenAngle[object] = 0;
-        asObjectScreenScale[object] = 0x100;
+        asObjectViewFrames[object] = 3;
+        acObjOwnersTable[object] = -1;
+        asObjScreenAngles[object] = 0;
+        asObjScreenScalesArray[object] = 0x100;
         aeObjectClass[object] = OBJECT_CLASS_PLANET;
-        apObjectShape[object] =
-            pTargetLockShape;
+        apObjShapeArray[object] =
+            pTgtLockShapePtr;
     }
     nNavPointerObject = object;
-    asObjectScreenX[object] = (short)0x8001;
-    asObjectDistance[object] = 0;
-    objectivePosition = aMissionObjectives[
+    asObjectScreenXList[object] = (short)0x8001;
+    asObjDistancesTable[object] = 0;
+    objectivePosition = aMissionObjectivesArray[
         (signed char)cCurrentObjective].position;
-    ComputeVectorDelta(&aShipPosition[EYE_OBJECT],
+    ComputeVectorDelta(&aShipPositionsArray[EYE_OBJECT],
                        &objectivePosition, &direction);
     distance = Vector_magnitude(&direction);
     if (asObjectCollisionRadius[EYE_OBJECT] * 0x100 >=
@@ -2228,28 +2218,28 @@ void draw_nav_pointer(void)
         return;
     if (DivideFixed(viewPosition.z, distance) < 0x94)
         return;
-    asObjectScreenX[nNavPointerObject] = (short)(DivideFixed(
+    asObjectScreenXList[nNavPointerObject] = (short)(DivideFixed(
         MultiplyFixed(
             (short)(nScreenWidth & ~1) << 7,
             viewPosition.x),
         viewPosition.z) >> 8);
-    asObjectScreenY[nNavPointerObject] = (short)(DivideFixed(
+    asObjectScreenYArray[nNavPointerObject] = (short)(DivideFixed(
         MultiplyFixed(
             (short)(nScreenWidth & ~1) << 7,
             viewPosition.y),
         viewPosition.z) >> 8);
-    asObjectDistance[nNavPointerObject] = 0x4a38;
+    asObjDistancesTable[nNavPointerObject] = 0x4a38;
 }
 
 /* Function start: 0x416AC0 */
 unsigned int overlay_head_up_display(void)
 {
-    target_locking(acShipTarget[0]);
+    target_locking(acShipTargetTable[0]);
     if (message_showing() && nCommSpeakerObject != -1) {
-        cPreviousTargetObject =
+        cLastTargetObject =
             (signed char)nCommSpeakerObject;
         draw_target_box(cYellowColour,
-                        cPreviousTargetObject,
+                        cLastTargetObject,
                         0, 0, 2,
                         &stPreviousTargetBracketBounds);
     }
@@ -2258,35 +2248,35 @@ unsigned int overlay_head_up_display(void)
             bTargetBracketVisible ^= 1;
         if (bTargetBracketVisible == 1) {
             draw_target_box(cRedColour,
-                            acShipTarget[0],
+                            acShipTargetTable[0],
                             nTargetLockMode,
                             1, 1,
                             &stTargetBracketBounds);
         }
     } else {
         draw_target_box(cRedColour,
-                        acShipTarget[0],
+                        acShipTargetTable[0],
                         nTargetLockMode,
                         1, 1,
                         &stTargetBracketBounds);
     }
 
     if (bCockpitlessView != 0) {
-        switch (cCockpitView) {
+        switch (cCurrentCockpitView) {
         case 0:
         case 2:
             goto centered_sight;
         case 1:
-            DrawSpriteDefault(&stSpaceBuffer,
-                              nViewCenterX,
-                              (short)(nViewCenterY - 1),
-                              pTargetLockShape, 0);
+            DrawSpriteDefault(&stSpaceBufferViewport,
+                              nCurrentViewCenterPosX,
+                              (short)(nCurrentViewCenterPosY - 1),
+                              pTgtLockShapePtr, 0);
             break;
         case 3:
-            DrawSpriteDefault(&stSpaceBuffer,
-                              nViewCenterX,
-                              (short)(nViewCenterY + 14),
-                              pTargetLockShape, 0);
+            DrawSpriteDefault(&stSpaceBufferViewport,
+                              nCurrentViewCenterPosX,
+                              (short)(nCurrentViewCenterPosY + 14),
+                              pTgtLockShapePtr, 0);
             break;
         default:
             goto no_sight;
@@ -2294,17 +2284,17 @@ unsigned int overlay_head_up_display(void)
         goto no_sight;
     }
 centered_sight:
-    DrawSpriteDefault(&stSpaceBuffer,
-                      nViewCenterX,
-                      nViewCenterY,
-                      pTargetLockShape, 0);
+    DrawSpriteDefault(&stSpaceBufferViewport,
+                      nCurrentViewCenterPosX,
+                      nCurrentViewCenterPosY,
+                      pTgtLockShapePtr, 0);
 
 no_sight:
     DAT_0046c05c = 0;
     if (pszPendingHudMessage != 0)
         ShowHudTextLine(pszPendingHudMessage, nPendingHudMessageColour);
     if (bMouseCursorVisible == 1) {
-        nSavedMouseCursorX = stMouseCursorState.x;
+        nStoredMouseCursorPosX = stMouseCursorState.x;
         nSavedMouseCursorY = stMouseCursorState.y;
         CaptureSpriteBackground(stMouseCursorState.viewport,
                                 abMouseCursorBackground,
@@ -2336,19 +2326,19 @@ unsigned int RestoreTransientCockpitGraphics(void)
     if (bMouseCursorVisible == 1) {
         RestoreSpriteBackground(stMouseCursorState.viewport,
                                 abMouseCursorBackground,
-                                (short)nSavedMouseCursorX,
+                                (short)nStoredMouseCursorPosX,
                                 (short)nSavedMouseCursorY,
                                 stMouseCursorState.shape,
                                 (short)stMouseCursorState.frame);
     }
-    if (cPreviousTargetObject != -1) {
+    if (cLastTargetObject != -1) {
         draw_target_box(cPrimaryViewBufferColour,
-                        cPreviousTargetObject,
+                        cLastTargetObject,
                         0, 0, 2,
                         &stPreviousTargetBracketBounds);
-        cPreviousTargetObject = -1;
+        cLastTargetObject = -1;
     }
-    draw_target_box(cPrimaryViewBufferColour, acShipTarget[0],
+    draw_target_box(cPrimaryViewBufferColour, acShipTargetTable[0],
                     nTargetLockMode, 1, 1,
                     &stTargetBracketBounds);
     if (pszDisplayedHudMessage != pszPendingHudMessage && pszDisplayedHudMessage != 0)
@@ -2357,14 +2347,14 @@ unsigned int RestoreTransientCockpitGraphics(void)
         pCockpitExplosionBackground != 0) {
         if (bCockpitlessView == 0) {
             CaptureSpriteBackground(
-                &stScreen, pCockpitExplosionBackground,
+                &stScreenView, pCockpitExplosionBackground,
                 stCockpitExplosionPosition.x,
                 stCockpitExplosionPosition.y,
                 pCockpitExplosionShape,
                 nCockpitExplosionFrame);
         }
         if (bCockpitlessView == 0) {
-            DrawSpriteDefault(&stScreen,
+            DrawSpriteDefault(&stScreenView,
                               stCockpitExplosionPosition.x,
                               stCockpitExplosionPosition.y,
                               pCockpitExplosionShape,
@@ -2392,7 +2382,7 @@ void SetHudMessageText(char *text, unsigned short colour,
 void malf_noise(short vdu, int effect, unsigned short colour,
                 short sound, short refresh)
 {
-    Viewport *viewport = vdu == 0 ? &stLeftVdu : &stRightVdu;
+    Viewport *viewport = vdu == 0 ? &stLeftVdu : &stRightVduViewport;
 
     if (sound != -1) {
         if (sound == 0x17)
@@ -2416,15 +2406,15 @@ void build_your_target_list(short *hasEnemy)
     object = 1;
     do {
         if (aeObjectClass[(int)object] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[(int)object] !=
+            aeSpecialManeuvers[(int)object] !=
                 SPECIAL_MANEUVER_UNKNOWN_9 &&
-            asObjectScreenX[(int)object] != (short)0x8001 &&
-            (unsigned short)asObjectDistance[(int)object] <
+            asObjectScreenXList[(int)object] != (short)0x8001 &&
+            (unsigned short)asObjDistancesTable[(int)object] <
                 12000) {
             targetIndex = cViableTargetCount;
-            asViableTargetDistance[(int)targetIndex] =
-                asObjectDistance[(int)object];
-            acViableTarget[(int)targetIndex] = object;
+            asViableTgtDistList[(int)targetIndex] =
+                asObjDistancesTable[(int)object];
+            acViableTargetList[(int)targetIndex] = object;
             cViableTargetCount++;
             if (aeShipSide[(int)object] !=
                 aeShipSide[0])
@@ -2443,29 +2433,29 @@ void cycle_onscreen_targets(void)
     signed char index;
     short hasEnemy;
 
-    previousTarget = acShipTarget[0];
+    previousTarget = acShipTargetTable[0];
     build_your_target_list(&hasEnemy);
     if (cViableTargetCount == 0) {
-        acShipTarget[0] = -1;
+        acShipTargetTable[0] = -1;
     } else {
         for (index = 0;
              index < cViableTargetCount &&
-             acViableTarget[(int)index] !=
-                 acShipTarget[0];
+             acViableTargetList[(int)index] !=
+                 acShipTargetTable[0];
              index++)
             ;
         do {
             index = (signed char)((index + 1) %
                                   cViableTargetCount);
-            acShipTarget[0] =
-                acViableTarget[(int)index];
+            acShipTargetTable[0] =
+                acViableTargetList[(int)index];
             if (hasEnemy == 0)
                 break;
         } while (aeShipSide[
-                     acShipTarget[0]] ==
+                     acShipTargetTable[0]] ==
                  aeShipSide[0]);
     }
-    if (acShipTarget[0] != previousTarget)
+    if (acShipTargetTable[0] != previousTarget)
         nTargetLockCountdown = -1;
 }
 
@@ -2478,11 +2468,11 @@ void check_target(void)
     short hasEnemy;
 
     selectNewTarget = 1;
-    oldTarget = acShipTarget[0];
+    oldTarget = acShipTargetTable[0];
     if (oldTarget != -1 &&
-        aeSpecialManeuver[oldTarget] ==
+        aeSpecialManeuvers[oldTarget] ==
             SPECIAL_MANEUVER_UNKNOWN_9) {
-        acShipTarget[0] = -1;
+        acShipTargetTable[0] = -1;
         oldTarget = -1;
     }
     if (nTargetLockMode != 0 &&
@@ -2493,7 +2483,7 @@ void check_target(void)
     }
     if (oldTarget != -1 &&
         (nTargetLockMode != 0 ||
-         asObjectScreenX[oldTarget] != (short)0x8001) &&
+         asObjectScreenXList[oldTarget] != (short)0x8001) &&
         (nTargetLockMode != 0 ||
          aeShipSide[oldTarget] != aeShipSide[0]))
         return;
@@ -2503,33 +2493,33 @@ void check_target(void)
     build_your_target_list(&hasEnemy);
     if (cViableTargetCount == 0) {
         if (nTargetLockMode != 0)
-            acShipTarget[0] = oldTarget;
+            acShipTargetTable[0] = oldTarget;
         else
-            acShipTarget[0] = -1;
+            acShipTargetTable[0] = -1;
     } else {
         if (hasEnemy == 0 && oldTarget != -1 &&
             aeShipSide[oldTarget] ==
                 aeShipSide[0] &&
             (nTargetLockMode != 0 ||
-             asObjectScreenX[oldTarget] != (short)0x8001)) {
+             asObjectScreenXList[oldTarget] != (short)0x8001)) {
             selectNewTarget = 0;
-            acShipTarget[0] = oldTarget;
+            acShipTargetTable[0] = oldTarget;
         }
         if (selectNewTarget != 0) {
             for (targetIndex = 0;
                  targetIndex < cViableTargetCount &&
                  aeShipSide[
-                     (short)acViableTarget[targetIndex]] ==
+                     (short)acViableTargetList[targetIndex]] ==
                      aeShipSide[0];
                  targetIndex++)
                 ;
-            acShipTarget[0] =
-                acViableTarget[
+            acShipTargetTable[0] =
+                acViableTargetList[
                     targetIndex % (short)cViableTargetCount];
         }
     }
-    if (acShipTarget[0] != oldTarget) {
-        if (oldTarget != -1 && acShipTarget[0] == -1)
+    if (acShipTargetTable[0] != oldTarget) {
+        if (oldTarget != -1 && acShipTargetTable[0] == -1)
             nTargetLockMode = 0;
         nTargetLockCountdown = -1;
     }
@@ -2543,7 +2533,7 @@ void update_missile_warning(void)
         if (nTrainSimActive == 0)
             spacetrack(3, 1, -1);
     } else {
-        abCockpitLightGoal[2] = 0;
+        abCockpitLightGoalArray[2] = 0;
     }
 }
 
@@ -2553,53 +2543,53 @@ void determine_pilot_hand(void)
     short yaw;
     short pitch;
 
-    yaw = nYawInput / 2;
+    yaw = nYawInputValue / 2;
     pitch = nPitchInput / 2;
     if (yaw > 0) {
-        bStickIndicatorFrame =
+        bStickIndicatorFrameState =
             (unsigned char)MinShort((short)(yaw + 8), 12);
         return;
     }
     if (yaw < 0) {
-        bStickIndicatorFrame =
+        bStickIndicatorFrameState =
             (unsigned char)MinShort((short)(4 - yaw), 8);
         return;
     }
     if (pitch > 0) {
-        bStickIndicatorFrame =
+        bStickIndicatorFrameState =
             (unsigned char)MinShort((short)(pitch + 12), 16);
         return;
     }
     if (pitch < 0) {
-        bStickIndicatorFrame =
+        bStickIndicatorFrameState =
             (unsigned char)MinShort((short)-pitch, 4);
         return;
     }
-    bStickIndicatorFrame = 0;
+    bStickIndicatorFrameState = 0;
 }
 
 /* Function start: 0x417260 */
 void DrawPilotHandFrame(void)
 {
-    int view = (int)cCockpitView;
+    int view = (int)cCurrentCockpitView;
     short x = (short)(asPilotHandOrigins[view * 2] -
-                      stPilotHand.left);
+                      stPilotHandView.left);
     short y = (short)(asPilotHandOrigins[view * 2 + 1] -
-                      stPilotHand.top);
+                      stPilotHandView.top);
 
-    CopyViewportContents(&stPilotHandBackdrop,
+    CopyViewportContents(&stPilotHandBackdropView,
                          &stPilotHandComposite);
-    DrawSpriteDefault(&stPilotHandComposite, x, y, pPilotHandShape,
-                      (short)(signed char)bStickIndicatorFrame);
+    DrawSpriteDefault(&stPilotHandComposite, x, y, pCurrentPilotHandShapePtr,
+                      (short)(signed char)bStickIndicatorFrameState);
     DrawSpriteDefault(
         &stPilotHandComposite,
         (short)(x + asPilotHandOffsets[
-            (signed char)bStickIndicatorFrame * 2]),
+            (signed char)bStickIndicatorFrameState * 2]),
         (short)(y + asPilotHandOffsets[
-            (signed char)bStickIndicatorFrame * 2 + 1]),
-        pPilotHandShape, 0x11);
-    CopyViewportContents(&stPilotHandComposite, &stPilotHand);
-    cRenderedPilotHandFrame = bStickIndicatorFrame;
+            (signed char)bStickIndicatorFrameState * 2 + 1]),
+        pCurrentPilotHandShapePtr, 0x11);
+    CopyViewportContents(&stPilotHandComposite, &stPilotHandView);
+    cRenderedPilotHandFrame = bStickIndicatorFrameState;
 }
 
 /* Function start: 0x417320 */
@@ -2607,27 +2597,27 @@ void CopyTrainSimPilotViewToRightVdu(void)
 {
     Viewport destination;
 
-    destination = stPilotHandBackdrop;
+    destination = stPilotHandBackdropView;
     if (stTrainSimVduSource.left == 0) {
-        stTrainSimVduSource = stPilotHand;
-        stTrainSimVduSource.left = stRightVdu.left;
-        stTrainSimVduSource.top = stPilotHand.top;
-        stTrainSimVduSource.right = stPilotHand.right;
-        stTrainSimVduSource.bottom = stRightVdu.bottom;
+        stTrainSimVduSource = stPilotHandView;
+        stTrainSimVduSource.left = stRightVduViewport.left;
+        stTrainSimVduSource.top = stPilotHandView.top;
+        stTrainSimVduSource.right = stPilotHandView.right;
+        stTrainSimVduSource.bottom = stRightVduViewport.bottom;
     }
     destination.left = (short)(stTrainSimVduSource.left -
-                               stPilotHand.left);
+                               stPilotHandView.left);
     destination.bottom = (short)(stTrainSimVduSource.bottom -
-                                 stPilotHand.top);
+                                 stPilotHandView.top);
     CopyViewportContents(&stTrainSimVduSource, &destination);
 }
 
 /* Function start: 0x4173C0 */
 void animate_pilot(void)
 {
-    if (pPilotHandShape != 0) {
+    if (pCurrentPilotHandShapePtr != 0) {
         determine_pilot_hand();
-        if (cRenderedPilotHandFrame != bStickIndicatorFrame)
+        if (cRenderedPilotHandFrame != bStickIndicatorFrameState)
             DrawPilotHandFrame();
     }
 }
@@ -2635,9 +2625,9 @@ void animate_pilot(void)
 /* Function start: 0x4173F0 */
 void ResetPilotHandAnimation(void)
 {
-    if (pPilotHandShape != 0) {
+    if (pCurrentPilotHandShapePtr != 0) {
         cRenderedPilotHandFrame = 0xff;
-        CopyViewportContents(&stPilotHand, &stPilotHandBackdrop);
+        CopyViewportContents(&stPilotHandView, &stPilotHandBackdropView);
         animate_pilot();
     }
 }
@@ -2651,22 +2641,22 @@ void send_message(short obj, short message)
         if (nYourWingman != -1 &&
             nYourWingman == obj &&
             bRadioSilence != 0) {
-            acWingmanMessageState[obj] = -1;
+            acWingmanMessageStatesArray[obj] = -1;
             return;
         }
         if (obj > -1 && obj < 10 &&
             aeObjectClass[obj] >= OBJECT_CLASS_SHIP) {
             if (acShipRating[obj] != -1) {
-                acWingmanMessageState[obj] = message;
+                acWingmanMessageStatesArray[obj] = message;
                 return;
             }
-            if (aeObjectType[obj] ==
+            if (aeObjectTypeList[obj] ==
                     OBJECT_TYPE_TIGERS_CLAW ||
                 nShipMissionIndices[obj] ==
-                    anShipMissionShip[0]) {
-                acWingmanMessageState[obj] = message;
+                    anShipMissionShips[0]) {
+                acWingmanMessageStatesArray[obj] = message;
             } else if (aeShipSide[obj] == SIDE_KILRATHI) {
-                acWingmanMessageState[obj] = message;
+                acWingmanMessageStatesArray[obj] = message;
                 return;
             }
         }
@@ -2684,10 +2674,10 @@ void npc_communication(void)
         while (message_showing() == 0 && obj <= 9) {
             if (aeObjectClass[(short)obj] >=
                     OBJECT_CLASS_SHIP &&
-                acWingmanMessageState[(short)obj] != -1) {
+                acWingmanMessageStatesArray[(short)obj] != -1) {
                 vid_equiv((short)obj,
-                          (short)acWingmanMessageState[(short)obj]);
-                acWingmanMessageState[(short)obj] = -1;
+                          (short)acWingmanMessageStatesArray[(short)obj]);
+                acWingmanMessageStatesArray[(short)obj] = -1;
             }
             obj++;
         }
@@ -2696,13 +2686,13 @@ void npc_communication(void)
                 if (aeObjectClass[(short)obj] >=
                         OBJECT_CLASS_SHIP &&
                     aeShipSide[(short)obj] == SIDE_KILRATHI &&
-                    (aeShipObjective[(short)obj] ==
+                    (aeShipObjectiveList[(short)obj] ==
                          OBJECTIVE_ENGAGE_ENEMY ||
-                     aeShipObjective[(short)obj] ==
+                     aeShipObjectiveList[(short)obj] ==
                          OBJECTIVE_DESTROY_SHIP) &&
                     (acShipRating[(short)obj] != -1 ||
                      RandomBelowOrEqual(100) < 20)) {
-                    acWingmanMessageState[(short)obj] =
+                    acWingmanMessageStatesArray[(short)obj] =
                         (signed char)(RandomBelowOrEqual(2) + 2);
                     return;
                 }
@@ -2731,11 +2721,11 @@ void explosion_draw(void)
     do {
         if (anCockpitDamageState[damage] == 1) {
             DrawSpriteDefault(
-                &stScreen,
+                &stScreenView,
                 aaCockpitDamagePositions[
-                    (int)cCockpitView][damage].x,
+                    (int)cCurrentCockpitView][damage].x,
                 aaCockpitDamagePositions[
-                    (int)cCockpitView][damage].y,
+                    (int)cCurrentCockpitView][damage].y,
                 pCockpitPilotShape, damage);
         }
         damage++;
@@ -2750,19 +2740,19 @@ unsigned int DrawPendingCockpitDamage(void)
         pCockpitPilotShape =
             FetchDiskPacketRetrying(
                 (short)cCockpitLogicalFile, 4, 0);
-    DrawSpriteDefault(&stScreen,
+    DrawSpriteDefault(&stScreenView,
                       stCockpitExplosionPosition.x,
                       stCockpitExplosionPosition.y,
                       pCockpitPilotShape,
-                      nPendingCockpitDamage);
-    if (pPilotHandShape != 0) {
-        DrawSpriteDefault(&stPilotHandBackdrop,
+                      nPendingCockpitDamageValue);
+    if (pCurrentPilotHandShapePtr != 0) {
+        DrawSpriteDefault(&stPilotHandBackdropView,
                           (short)(stCockpitExplosionPosition.x -
-                                  stPilotHand.left),
+                                  stPilotHandView.left),
                           (short)(stCockpitExplosionPosition.y -
-                                  stPilotHand.top),
+                                  stPilotHandView.top),
                           pCockpitPilotShape,
-                          nPendingCockpitDamage);
+                          nPendingCockpitDamageValue);
     }
     FreePacketAndClear(&pCockpitPilotShape, 0);
     return 0;
@@ -2775,7 +2765,7 @@ void RestoreCockpitExplosionBackground(void)
         pCockpitExplosionShape != 0 &&
         pCockpitExplosionBackground != 0) {
         RestoreSpriteBackground(
-            &stScreen, pCockpitExplosionBackground,
+            &stScreenView, pCockpitExplosionBackground,
             stCockpitExplosionPosition.x,
             stCockpitExplosionPosition.y,
             pCockpitExplosionShape,
@@ -2800,12 +2790,12 @@ void cockpit_explosion(void)
             pCockpitExplosionShape != 0 &&
             pCockpitExplosionBackground != 0) {
             CaptureSpriteBackground(
-                &stScreen, pCockpitExplosionBackground,
+                &stScreenView, pCockpitExplosionBackground,
                 stCockpitExplosionPosition.x,
                 stCockpitExplosionPosition.y,
                 pCockpitExplosionShape,
                 nCockpitExplosionFrame);
-            DrawSpriteDefault(&stScreen,
+            DrawSpriteDefault(&stScreenView,
                               stCockpitExplosionPosition.x,
                               stCockpitExplosionPosition.y,
                               pCockpitExplosionShape,
@@ -2831,17 +2821,17 @@ void place_damage_on_cockpit(short damage)
     if (nCameraViewMode == 0 && nTrainSimActive == 0 &&
         *(state = &anCockpitDamageState[damage]) == 0) {
         if (pCockpitExplosionShape == 0) {
-            nPendingCockpitDamage = damage;
+            nPendingCockpitDamageValue = damage;
             *state = 1;
             explosion_draw();
             return;
         }
-        nPendingCockpitDamage = damage;
+        nPendingCockpitDamageValue = damage;
         *state = 1;
         if (IsCockpitExplosionActive() == 0) {
             stCockpitExplosionPosition =
                 aaCockpitDamagePositions[
-                    (signed char)cCockpitView][damage];
+                    (signed char)cCurrentCockpitView][damage];
             nCockpitExplosionFrame = 0x7fff;
         }
     }
@@ -2863,20 +2853,20 @@ void vid_transmit(void)
          nRenderedSpaceFrame % 2 != 0 ||
          bCockpitlessView != 0) &&
         nCommPortraitIndex != -1 &&
-        aapszPilotSpeech[nCommPortraitIndex] != 0 &&
+        aapszPilotSpeeches[nCommPortraitIndex] != 0 &&
         bVideoImagesSuppressed == 0) {
-        if (aeSpecialManeuver[speaker] ==
+        if (aeSpecialManeuvers[speaker] ==
             SPECIAL_MANEUVER_UNKNOWN_9) {
             if (aeShipSide[speaker] == SIDE_IMPERIAL) {
                 DrawSpriteDefault(
-                    &stRightVdu, stRightVdu.left,
-                    stRightVdu.top,
+                    &stRightVduViewport, stRightVduViewport.left,
+                    stRightVduViewport.top,
                     pCommStaticShape,
-                    (short)(asObjectCounter[speaker] / 5));
+                    (short)(asObjectCounterArray[speaker] / 5));
                 return;
             }
-            DrawSpriteDefault(&stRightVdu, stRightVdu.left,
-                              stRightVdu.top,
+            DrawSpriteDefault(&stRightVduViewport, stRightVduViewport.left,
+                              stRightVduViewport.top,
                               pCommStaticShape, 2);
             return;
         }
@@ -2890,16 +2880,16 @@ void vid_transmit(void)
         set_new_vdu(1);
         if (aeShipSide[nCommSpeakerObject] == SIDE_IMPERIAL) {
             DrawSpriteDefault(
-                &stRightVdu, stRightVdu.left, stRightVdu.top,
+                &stRightVduViewport, stRightVduViewport.left, stRightVduViewport.top,
                 pConfedCommBackground, 0);
         } else {
             DrawSpriteDefault(
-                &stRightVdu, stRightVdu.left, stRightVdu.top,
+                &stRightVduViewport, stRightVduViewport.left, stRightVduViewport.top,
                 pKilrathiCommBackground, 0);
         }
         DrawSpriteDefault(
-            &stRightVdu, stRightVdu.left, stRightVdu.top,
-            apCommPortraitShapes[nCommPortraitIndex],
+            &stRightVduViewport, stRightVduViewport.left, stRightVduViewport.top,
+            apCommunicationPortraitShapesTable[nCommPortraitIndex],
             (short)nCommPortraitFrame);
     }
 }
@@ -2925,7 +2915,7 @@ void check_stranded(void)
 {
     if (nTrainSimActive == 0 &&
         aMissionShips[
-            nCarrierMissionShipIndex].state == 3 &&
+            nCarrierMissionShipIndexValue].state == 3 &&
         any_enemy(0, 30000) == 0)
         nArcadeState = 3;
 }
@@ -2938,26 +2928,26 @@ void update_VDUs(void)
     SetTextContext(&stLeftVduTextContext);
     if (bCockpitlessView != 0) {
         DrawFilledViewportRect(
-            &stScreen,
+            &stScreenView,
             stCockpitLayout.leftVduBounds[
-                (int)cCockpitView].left,
+                (int)cCurrentCockpitView].left,
             stCockpitLayout.leftVduBounds[
-                (int)cCockpitView].top,
+                (int)cCurrentCockpitView].top,
             stCockpitLayout.leftVduBounds[
-                (int)cCockpitView].right,
+                (int)cCurrentCockpitView].right,
             stCockpitLayout.leftVduBounds[
-                (int)cCockpitView].bottom,
+                (int)cCurrentCockpitView].bottom,
             0);
         DrawFilledViewportRect(
-            &stScreen,
+            &stScreenView,
             stCockpitLayout.rightVduBounds[
-                (int)cCockpitView].left,
+                (int)cCurrentCockpitView].left,
             stCockpitLayout.rightVduBounds[
-                (int)cCockpitView].top,
+                (int)cCurrentCockpitView].top,
             stCockpitLayout.rightVduBounds[
-                (int)cCockpitView].right,
+                (int)cCurrentCockpitView].right,
             stCockpitLayout.rightVduBounds[
-                (int)cCockpitView].bottom,
+                (int)cCurrentCockpitView].bottom,
             0);
     }
     changed = update_vid_disp(0);
@@ -3000,11 +2990,11 @@ void update_VDUs(void)
         }
     }
     if (get_mode(0) == 0)
-        aHudMessageSlots[0].text = 0;
+        aCockpitHudMessageSlotsTable[0].text = 0;
     else
-        UpdateMessage(&aHudMessageSlots[0]);
+        UpdateMessage(&aCockpitHudMessageSlotsTable[0]);
 
-    SetTextContext(&stRightVduTextContext);
+    SetTextContext(&stRightVduTxtContext);
     changed = update_vid_disp(1);
     if (changed != 0) {
         switch (get_mode(1)) {
@@ -3050,11 +3040,11 @@ void update_VDUs(void)
         }
     }
     if (get_mode(1) == 6 || get_mode(1) == 0)
-        aHudMessageSlots[1].text = 0;
+        aCockpitHudMessageSlotsTable[1].text = 0;
     else
-        UpdateMessage(&aHudMessageSlots[1]);
+        UpdateMessage(&aCockpitHudMessageSlotsTable[1]);
     if (nTrainSimActive != 0 &&
-        pPilotHandShape != 0)
+        pCurrentPilotHandShapePtr != 0)
         CopyTrainSimPilotViewToRightVdu();
 }
 
@@ -3063,10 +3053,10 @@ void update_cockpit(void)
 {
     check_target();
     repair_internal_damage();
-    if (cMissionObjectiveCount != 0)
+    if (cMissionObjectiveCountValue != 0)
         update_objective_location(
-            (short)(nSpaceFrame %
-                    (short)cMissionObjectiveCount));
+            (short)(nCurrentSpaceFrameValue %
+                    (short)cMissionObjectiveCountValue));
     if (nCameraViewMode == 0) {
         if (bCockpitlessView == 0)
             RestoreCockpitExplosionBackground();
@@ -3148,7 +3138,7 @@ void SelectCockpitVduMode(short vdu, int mode)
             select_new_release_weapon((enum ObjectType)-1);
         break;
     case 2:
-        nDamageDisplayTicks = 0;
+        nCurrentDmgDispTicks = 0;
         break;
     case 3:
         cycle_onscreen_targets();

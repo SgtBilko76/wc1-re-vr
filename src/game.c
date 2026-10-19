@@ -542,137 +542,21 @@ signed char acPilotRecovery[20] = {
     8, 9, 7, 0, 7, 7, 8, 8, 0, 0
 };
 
-/* Linker commons defined here; LINK orders them by identifier hash. */
-MouseCursorState stHostMouseState; /* 0x0059af70 */
-TextContext *pCurrentTextContext; /* 0x0059af8c */
-int nInputTickScale; /* 0x0059af90 */
-FixedVector aObjectViewPosition[SPACE_OBJECT_COUNT]; /* 0x0059afa0 */
-short anObjectPitchRotation[SPACE_OBJECT_COUNT]; /* 0x0059b2a0 */
-int anShipSpeed[64]; /* 0x0059b320 */
-short nSpaceFrame; /* 0x0059b420 */
-unsigned int anShipAlertFlags[12]; /* 0x0059b430 */
-FixedVector vPlayerAcceleration; /* 0x0059b460 */
-int anShipFuel[12]; /* 0x0059b470 */
-short asObjectDistance[SPACE_OBJECT_COUNT]; /* 0x0059b4a0 */
-ShortVector aShipFormationOffset[10]; /* 0x0059b520 */
-enum ObjectType aeObjectType[SPACE_OBJECT_COUNT]; /* 0x0059b560 */
-short asObjectAnimationDelay[SPACE_OBJECT_COUNT]; /* 0x0059b660 */
-FixedVector aShipRightVector[64]; /* 0x0059b6e0 */
-FixedVector aShipUpVector[64]; /* 0x0059b9e0 */
-FixedVector aShipForwardVector[64]; /* 0x0059bce0 */
-HazardField *pActiveHazardField; /* 0x0059bfe0 */
-signed char acPlayerComponentDamage[9]; /* 0x0059bff0 */
-signed char abFlightPath[MISSION_OBJECTIVE_COUNT]; /* 0x0059c000 */
-FixedVector aShipVelocity[SPACE_OBJECT_COUNT]; /* 0x0059c010 */
-short anYawGoal[16]; /* 0x0059c310 */
-short asObjectCounter[SPACE_OBJECT_COUNT]; /* 0x0059c330 */
+short asObjectCounterArray[SPACE_OBJECT_COUNT]; /* 0x0059c330 */
 short nTargetShip; /* 0x0059c3b0 */
-enum SpecialManeuver aeSpecialManeuver[12]; /* 0x0059c3c0 */
+enum SpecialManeuver aeSpecialManeuvers[12]; /* 0x0059c3c0 */
 enum ShipMissionType aeShipMissionType[12]; /* 0x0059c3f0 */
-short asShipCount[16]; /* 0x0059c420 */
-short asShipMaximumSpeed[16]; /* 0x0059c440 */
-signed char acShipDamage[10]; /* 0x0059c460 */
-signed char cMissionObjectiveCount; /* 0x0059c46a */
-short asViableTargetDistance[16]; /* 0x0059c470 */
-FixedVector aShipPosition[SPACE_OBJECT_COUNT]; /* 0x0059c490 */
-unsigned short awObjectMass[SPACE_OBJECT_COUNT]; /* 0x0059c790 */
+short asShipTotal[16]; /* 0x0059c420 */
+short asShipMaximumSpeedArray[16]; /* 0x0059c440 */
+signed char acShipDmg[10]; /* 0x0059c460 */
+signed char cMissionObjectiveCountValue; /* 0x0059c46a */
+short asViableTgtDistList[16]; /* 0x0059c470 */
+FixedVector aShipPositionsArray[SPACE_OBJECT_COUNT]; /* 0x0059c490 */
+unsigned short awObjMassArray[SPACE_OBJECT_COUNT]; /* 0x0059c790 */
 short asShipAfterburnerTimer[16]; /* 0x0059c810 */
 short nShipMissionIndices[10]; /* 0x0059c830 */
-signed char acShipCommunicator[16]; /* 0x0059c850 */
+signed char acShipCommunicatorArray[16]; /* 0x0059c850 */
 FixedVector vStarFieldMotion; /* 0x0059c860 */
-signed char cCurrentNavPointIndex; /* 0x0059c86c */
-short asObjectFlip[SPACE_OBJECT_COUNT]; /* 0x0059c870 */
-short nEyeRollGoal; /* 0x0059c8f0 */
-FixedVector vPreviousStarFieldMotion; /* 0x0059c900 */
-short nHazardFieldCount; /* 0x0059c90c */
-signed char acLastAttacker[16]; /* 0x0059c910 */
-signed char acViableTarget[16]; /* 0x0059c920 */
-short asActionCount[10]; /* 0x0059c930 */
-short nEyeYawGoal; /* 0x0059c944 */
-short asObjectScreenScale[SPACE_OBJECT_COUNT]; /* 0x0059c950 */
-short asObjectAfterburnerVelocity[SPACE_OBJECT_COUNT]; /* 0x0059c9d0 */
-CampaignState stCampaignState; /* 0x0059ca50 */
-unsigned char aShipWeapons[10][0x47]; /* 0x0059cab0 */
-signed char acShipRating[16]; /* 0x0059cd80 */
-short asObjectScreenAngle[SPACE_OBJECT_COUNT]; /* 0x0059cd90 */
-short nTargetRange; /* 0x0059ce10 */
-unsigned int anVduModeCache[2]; /* 0x0059ce18 */
-signed char acObjectOwner[64]; /* 0x0059ce20 */
-signed char acShipTarget[16]; /* 0x0059ce60 */
-short nPreviousPitchInput; /* 0x0059ce70 */
-short nPreviousYawInput; /* 0x0059ce72 */
-short nPreviousRollInput; /* 0x0059ce74 */
-short anObjectYawRotation[SPACE_OBJECT_COUNT]; /* 0x0059ce80 */
-signed char acPilotHitPoints[16]; /* 0x0059cf00 */
-signed char acTurnRegulator[16]; /* 0x0059cf10 */
-unsigned char abCollisionAlertTarget[0x10]; /* 0x0059cf20 */
-int aiPilotLevel[12]; /* 0x0059cf30 */
-short asTargetListRange[16]; /* 0x0059cf60 */
-short asObjectDrawY[SPACE_OBJECT_COUNT]; /* 0x0059cf80 */
-short asObjectDrawX[SPACE_OBJECT_COUNT]; /* 0x0059d000 */
-short asPreviousObjectDistance[SPACE_OBJECT_COUNT]; /* 0x0059d080 */
-enum ObjectClass aeObjectClass[SPACE_OBJECT_COUNT]; /* 0x0059d100 */
-enum ShipObjective aeShipObjective[12]; /* 0x0059d200 */
-short asObjectViewFrame[SPACE_OBJECT_COUNT]; /* 0x0059d230 */
-int nCurrentObjectiveRange; /* 0x0059d2b0 */
-signed char acWingmanMessageState[16]; /* 0x0059d2c0 */
-short asCollisionCountdown[16]; /* 0x0059d2d0 */
-unsigned char *apObjectShape[SPACE_OBJECT_COUNT]; /* 0x0059d2f0 */
-short nPitchInput; /* 0x0059d3f0 */
-short nYawInput; /* 0x0059d3f2 */
-short nRollInput; /* 0x0059d3f4 */
-short asShipWingLeader[16]; /* 0x0059d400 */
-/* The Win32 object allocator reserves slots 0 through 9 for live ships. */
-short aasShipArmor[10][4]; /* 0x0059d420 */
-short asShipWeaponEnergy[10]; /* 0x0059d470 */
-signed char acFormationMemberList[16]; /* 0x0059d490 */
-signed char acShipIonDriveDamage[16]; /* 0x0059d4a0 */
-short anShipMissionShip[16]; /* 0x0059d4b0 */
-FixedVector vToTarget; /* 0x0059d4d0 */
-short asCannedCommand[16]; /* 0x0059d4e0 */
-unsigned short ausVduModeStack[16]; /* 0x0059d500 */
-char acShipSequence[10]; /* 0x0059d520 */
-short nTargetFacing; /* 0x0059d52a */
-FixedVector aShipDestination[10]; /* 0x0059d530 */
-short aasShipShield[10][2]; /* 0x0059d5b0 */
-enum ShipTactic aeShipTactic[12]; /* 0x0059d5e0 */
-signed char abShipExhaustHeat[10]; /* 0x0059d610 */
-short nRenderedSpaceFrame; /* 0x0059d61a */
-short nEyePitchGoal; /* 0x0059d61c */
-signed char acShipStress[16]; /* 0x0059d620 */
-short anRollGoal[16]; /* 0x0059d630 */
-enum Side aeShipSide[12]; /* 0x0059d650 */
-signed char acShipAiCooldown[16]; /* 0x0059d680 */
-FixedVector vCollisionDelta; /* 0x0059d690 */
-signed char acLastCollisionObject[SPACE_OBJECT_COUNT]; /* 0x0059d6a0 */
-short aasShipMaximumShield[10][2]; /* 0x0059d6e0 */
-short asObjectCollisionRadius[64]; /* 0x0059d710 */
-signed char acShipPointingMode[16]; /* 0x0059d790 */
-short anPitchGoal[16]; /* 0x0059d7a0 */
-signed char abShipNavPointIndex[16]; /* 0x0059d7c0 */
-signed char acTurnInterval[16]; /* 0x0059d7d0 */
-short anObjectRollRotation[SPACE_OBJECT_COUNT]; /* 0x0059d7e0 */
-signed char abShipTurn[16]; /* 0x0059d860 */
-HazardField aHazardFields[8]; /* 0x0059d870 */
-short nFacingToTarget; /* 0x0059d920 */
-short asObjectScreenY[SPACE_OBJECT_COUNT]; /* 0x0059d930 */
-short asObjectScreenX[SPACE_OBJECT_COUNT]; /* 0x0059d9b0 */
-short asObjectAnimationIndex[SPACE_OBJECT_COUNT]; /* 0x0059da30 */
-signed char cCockpitView; /* 0x0059dab0 */
-MissionObjective aMissionObjectives[MISSION_OBJECTIVE_COUNT]; /* 0x0059dac0 */
-enum ShipManeuver aeShipManeuver[12]; /* 0x0059dcb0 */
-const short *apCannedSequence[12]; /* 0x0059dce0 */
-FixedVector aShipMissionSpot[10]; /* 0x0059dd10 */
-short asCapitalShipViewFrame[16]; /* 0x0059dd90 */
-signed char acObjectCollisionGraceTicks[ /* 0x0059ddb0 */
-    SPACE_OBJECT_COUNT];
-ObjectResourceSlot aObjectResourceSlots[4]; /* 0x0059ddf0 */
-signed char acShipDestroyedWeaponCount[16]; /* 0x0059de30 */
-unsigned short awObjectScale[SPACE_OBJECT_COUNT]; /* 0x0059de40 */
-signed char acVduModeStackDepth[16]; /* 0x0059dec0 */
-signed char acShipSpawnNavPoint[16]; /* 0x0059ded0 */
-short asShipAccumulatedDamage[SPACE_OBJECT_COUNT]; /* 0x0059dee0 */
-short nCurrentNavPoint; /* 0x0059df60 */
 
 /* Function start: 0x433910 */
 void show_info_disp(void)
@@ -691,20 +575,20 @@ void show_info_disp(void)
                       (int)stCampaignState.currentSeries,
                       (int)stCampaignState.currentMission);
     DrawFormattedText("PC Kills   =%d\nWing Kills =%d\n",
-                      (int)nPlayerKillCount,
+                      (int)nPlayerKillTotal,
                       (int)nWingmanKillCount);
     DrawFormattedText("Series Score   =%d\n",
                       (int)stCampaignState.seriesScore);
     DrawFormattedText("Miss Score %d, Medal %d\n",
                       (int)stCampaignState.missionScore,
-                      (int)nMissionMedalScore);
+                      (int)nMissionMedalScoreValue);
     DrawFormattedText("Promotion Score=%d\n",
                       (int)stCampaignState.promotionScore);
     DrawFormattedText("OBJECTIVES\n");
     strcpy(objectiveSummary, "");
     for (objective = 0; objective < 16; objective++) {
         marker = " ";
-        if (objective < cMissionObjectiveCount) {
+        if (objective < cMissionObjectiveCountValue) {
             sprintf(objectiveMarker, "%c", objective % 10 + '1');
             marker = objectiveMarker;
             if (sighted(objective) != 0)

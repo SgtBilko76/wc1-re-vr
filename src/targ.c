@@ -3,17 +3,32 @@
  */
 #include "wc1.h"
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+TextContext stRightVduTxtContext; /* 0x005a7700 */
+TextContext stCurrentCockpitReadoutTextCtx; /* 0x005a7720 */
+TextContext stDefaultTxtContext; /* 0x005a7740 */
+TextContext stCurrentConvTxtCtx; /* 0x005a7760 */
+short asDamageFlashColour[3]; /* 0x005a7780 */
+short nCurrentDmgDispTicks; /* 0x005a7786 */
+short nWpnDispOriginX; /* 0x005a7788 */
+short nWpnDisplayBaseY; /* 0x005a778a */
+char szDmgStateText[0x48]; /* 0x005a7790 */
+ShortPoint stDamageSpritePos; /* 0x005a77d8 */
+signed char cDamageDisplayComponentValue; /* 0x005a77dc */
+signed char cDamageDisplayFrame; /* 0x005a77dd */
+signed char cDamagedComponentCount; /* 0x005a77de */
+
 /* Function start: 0x42A8F0 */
 short find_objective(int type, short index)
 {
     short objective;
 
     objective = 0;
-    while (objective < (short)cMissionObjectiveCount) {
-        if (aMissionObjectives[objective].type == type) {
+    while (objective < (short)cMissionObjectiveCountValue) {
+        if (aMissionObjectivesArray[objective].type == type) {
             if (index == -1)
                 return objective;
-            if (aMissionObjectives[objective].index == index)
+            if (aMissionObjectivesArray[objective].index == index)
                 return objective;
         }
         objective++;
@@ -24,11 +39,11 @@ short find_objective(int type, short index)
 /* Function start: 0x42A950 */
 void arrive_from_warp(short obj)
 {
-    short objective = find_objective(0, nCurrentNavPoint);
+    short objective = find_objective(0, nCurrentNavigationPoint);
 
     if (objective != -1) {
-        if (aMissionObjectives[
-                abFlightPath[objective]].type != 1)
+        if (aMissionObjectivesArray[
+                abFlightPathList[objective]].type != 1)
             flag_objective(objective, 1);
         if (cCurrentObjective == objective)
             set_next_destination();
@@ -36,7 +51,7 @@ void arrive_from_warp(short obj)
     approve_xyz(obj, 2000, 5000);
     unwarp(obj);
     anShipSpeed[obj] =
-        (int)asShipMaximumSpeed[obj] << 8;
+        (int)asShipMaximumSpeedArray[obj] << 8;
     fix_velocity(obj);
     if (aeShipSide[obj] == SIDE_IMPERIAL)
         reset_mission_type(obj, MISSION_TYPE_COME_HOME);
@@ -49,19 +64,19 @@ unsigned int unwarp(short obj)
 {
     short effect;
 
-    ClearViewport(&stSpaceBuffer, cViewportClearColour);
+    ClearViewport(&stSpaceBufferViewport, cViewportClearColour);
     bViewportDirty = 1;
     effect = find_vacant_3d_object();
     if (effect != -1) {
         set_objects_data(effect, OBJECT_TYPE_HYPERSPACE_JUMP_FLASH, obj);
-        aShipPosition[effect] = aShipPosition[obj];
+        aShipPositionsArray[effect] = aShipPositionsArray[obj];
         aShipVelocity[effect] = aShipVelocity[obj];
-        aeShipManeuver[obj] = MANEUVER_NONE;
-        asObjectCounter[obj] = 6;
+        aeShipManeuversTable[obj] = MANEUVER_NONE;
+        asObjectCounterArray[obj] = 6;
         return 0;
     }
-    abShipNavPointIndex[obj] =
-        (signed char)aeObjectType[obj];
+    abShipNavPtIdx[obj] =
+        (signed char)aeObjectTypeList[obj];
     set_objects_data(obj, OBJECT_TYPE_HYPERSPACE_JUMP_FLASH, obj);
     return 0;
 }
@@ -71,20 +86,20 @@ unsigned int warp(short obj)
 {
     short effect;
 
-    ClearViewport(&stSpaceBuffer, cViewportClearColour);
+    ClearViewport(&stSpaceBufferViewport, cViewportClearColour);
     bViewportDirty = 1;
     effect = find_vacant_3d_object();
     if (effect != -1) {
         set_objects_data(effect, OBJECT_TYPE_HYPERSPACE_JUMP_FLASH,
-                         acObjectOwner[obj]);
-        aShipPosition[effect] = aShipPosition[obj];
+                         acObjOwnersTable[obj]);
+        aShipPositionsArray[effect] = aShipPositionsArray[obj];
         aShipVelocity[effect] = aShipVelocity[obj];
-        aeShipManeuver[obj] = MANEUVER_WARPING_OUT;
-        asObjectCounter[obj] = 6;
+        aeShipManeuversTable[obj] = MANEUVER_WARPING_OUT;
+        asObjectCounterArray[obj] = 6;
         return 0;
     }
     set_objects_data(obj, OBJECT_TYPE_HYPERSPACE_JUMP_FLASH,
-                     acObjectOwner[obj]);
+                     acObjOwnersTable[obj]);
     return 0;
 }
 
@@ -94,10 +109,10 @@ int drop_player_mine(short obj)
     enum ObjectType type;
     short weapon;
 
-    for (weapon = 0; weapon < (signed char)aShipWeapons[obj][0]; weapon++) {
-        type = ((ShipWeaponSlot *)&aShipWeapons[obj][1])[weapon].type;
+    for (weapon = 0; weapon < (signed char)aShipWeaponsTable[obj][0]; weapon++) {
+        type = ((ShipWeaponSlot *)&aShipWeaponsTable[obj][1])[weapon].type;
         if (aObjectTypeData[type].objectClass == OBJECT_CLASS_MINE &&
-            ((ShipWeaponSlot *)&aShipWeapons[obj][1])[weapon].disabled == 0)
+            ((ShipWeaponSlot *)&aShipWeaponsTable[obj][1])[weapon].disabled == 0)
             return drop_mine(obj, (signed char)weapon, type, 20);
     }
     return -1;
@@ -123,11 +138,11 @@ unsigned int personality_killed(short personality)
 /* Function start: 0x42ACC0 */
 void clean_up_cockpit(void)
 {
-    acShipTarget[0] = -1;
+    acShipTargetTable[0] = -1;
     nTargetLockMode = 0;
     if (nYourWingman != -1) {
         nAutoEngageTimer = -1;
-        acShipTarget[nYourWingman] = -1;
+        acShipTargetTable[nYourWingman] = -1;
         reset_objective(nYourWingman, OBJECTIVE_HOLD_FORMATION);
     }
     ClearHudGunReadouts();

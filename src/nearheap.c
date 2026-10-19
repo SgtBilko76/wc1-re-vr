@@ -12,8 +12,15 @@ static volatile int nNearHeapRelocationBytes = 0; /* 0x004688c8 */
 /* Linker commons defined here; LINK orders them by identifier hash. */
 int nNearHeapSize; /* 0x005a811c */
 int nNearHeapBase; /* 0x005a8120 */
-int nNearHeapFirstDescriptor; /* 0x005a8124 */
-void * volatile pNearHeapAllocation; /* 0x005a8128 */
+int nCurrentNearHeapFirstDescriptor; /* 0x005a8124 */
+void * volatile pCurrentNearHeapAlloc; /* 0x005a8128 */
+short nNavMapMaximumPositionX; /* 0x005a812c */
+short nNavigationMapMinimumCoordX; /* 0x005a812e */
+unsigned short awMapNavObjectiveLabelIndex[16]; /* 0x005a8130 */
+short nNavMapMaximumPosY; /* 0x005a8150 */
+short nNavMapCentreX; /* 0x005a8152 */
+short nNavigationMapMinimumPositionY; /* 0x005a8154 */
+TextContext stCurrentNavMapTxtCtx; /* 0x005a8160 */
 
 /* Function start: 0x40E890 */
 unsigned short MergeAdjacentNearHeapBlocks(int descriptorAddress)
@@ -27,13 +34,13 @@ unsigned short MergeAdjacentNearHeapBlocks(int descriptorAddress)
             block[1].address) {
         block[1].address = block->address;
         block[1].sizeAndFlags += block->sizeAndFlags & 0xfffff;
-        while (descriptorAddress > nNearHeapFirstDescriptor) {
+        while (descriptorAddress > nCurrentNearHeapFirstDescriptor) {
             descriptorAddress -= 8;
             block = DosNearPtrToFar(descriptorAddress);
             block[1].address = block->address;
             block[1].sizeAndFlags = block->sizeAndFlags;
         }
-        nNearHeapFirstDescriptor += 8;
+        nCurrentNearHeapFirstDescriptor += 8;
         return 1;
     }
     return 0;
@@ -52,7 +59,7 @@ int ReleaseNearHeapBlock(int descriptorAddress)
             nNearHeapBase + nNearHeapSize &&
         MergeAdjacentNearHeapBlocks(descriptorAddress) != 0)
         descriptorAddress = nextDescriptorAddress;
-    if (descriptorAddress > nNearHeapFirstDescriptor)
+    if (descriptorAddress > nCurrentNearHeapFirstDescriptor)
         MergeAdjacentNearHeapBlocks(descriptorAddress - 8);
     return descriptorAddress;
 }
@@ -65,8 +72,8 @@ void PurgeNearHeapBlocks(unsigned short flags)
 
     if (nNearHeapActive != 0) {
         if ((flags & 0x10) != 0) {
-            nNearHeapFirstDescriptor = nNearHeapBase + nNearHeapSize - 8;
-            block = DosNearPtrToFar(nNearHeapFirstDescriptor);
+            nCurrentNearHeapFirstDescriptor = nNearHeapBase + nNearHeapSize - 8;
+            block = DosNearPtrToFar(nCurrentNearHeapFirstDescriptor);
             block->address = nNearHeapBase;
             block->sizeAndFlags =
                 nNearHeapSize - nNearHeapMaxDescriptors * 8;
@@ -74,7 +81,7 @@ void PurgeNearHeapBlocks(unsigned short flags)
         }
         descriptorAddress = nNearHeapBase +
                             nNearHeapSize - 8;
-        for (; descriptorAddress >= nNearHeapFirstDescriptor;
+        for (; descriptorAddress >= nCurrentNearHeapFirstDescriptor;
              descriptorAddress -= 8) {
             block = DosNearPtrToFar(descriptorAddress);
             if ((block->sizeAndFlags & 0x40000000) == 0)
@@ -88,14 +95,14 @@ unsigned short InitializeNearHeap(void)
 {
     if (nNearHeapActive == 0) {
         nNearHeapSize = (short)GetNavRangeSentinel();
-        pNearHeapAllocation = 0;
+        pCurrentNearHeapAlloc = 0;
         if (nNearHeapMaxDescriptors * 8 < nNearHeapSize)
-            pNearHeapAllocation =
+            pCurrentNearHeapAlloc =
                 AllocateTaggedMemory(nNearHeapSize, 0);
-        if (pNearHeapAllocation != 0) {
+        if (pCurrentNearHeapAlloc != 0) {
             nNearHeapActive++;
             nNearHeapBase =
-                DosFarPtrToNear(pNearHeapAllocation);
+                DosFarPtrToNear(pCurrentNearHeapAlloc);
             if (*(unsigned short *)0x00400013 == 0x270) {
                 nNearHeapRelocationBytes =
                     0x9c000 - nNearHeapSize - nNearHeapBase;
@@ -112,7 +119,7 @@ unsigned short InitializeNearHeap(void)
                             nNearHeapRelocationBytes),
                         nNearHeapRelocationBytes);
                 } else {
-                    FreeIfNotNull(pNearHeapAllocation);
+                    FreeIfNotNull(pCurrentNearHeapAlloc);
                     nNearHeapActive = 0;
                 }
             }
@@ -137,7 +144,7 @@ void ShutdownNearHeap(void)
                   DosNearPtrToFar(nNearHeapBase + nNearHeapSize),
                   relocationBytes);
     if (nNearHeapActive != 0)
-        FreeIfNotNull(pNearHeapAllocation);
+        FreeIfNotNull(pCurrentNearHeapAlloc);
     nNearHeapActive = 0;
 }
 
@@ -170,7 +177,7 @@ void *AllocateNearHeapBlockFromEnd(int size, unsigned short flags)
     allocationAddress = 0;
     descriptorAddress =
         nNearHeapBase + nNearHeapSize - 8;
-    for (; descriptorAddress >= nNearHeapFirstDescriptor;
+    for (; descriptorAddress >= nCurrentNearHeapFirstDescriptor;
          descriptorAddress -= 8) {
         block = DosNearPtrToFar(descriptorAddress);
         blockSize = block->sizeAndFlags & 0xfffff;
@@ -182,14 +189,14 @@ void *AllocateNearHeapBlockFromEnd(int size, unsigned short flags)
             if (nNearHeapBase -
                     nNearHeapMaxDescriptors * 8 +
                     nNearHeapSize >=
-                nNearHeapFirstDescriptor) {
+                nCurrentNearHeapFirstDescriptor) {
                 lastBlock = DosNearPtrToFar(
                     nNearHeapBase +
                     nNearHeapSize - 8);
                 if ((lastBlock->sizeAndFlags & 0x80000000) == 0) {
                     blockSize = lastBlock->sizeAndFlags & 0xfffff;
                     if (lastBlock->address + blockSize ==
-                            nNearHeapFirstDescriptor &&
+                            nCurrentNearHeapFirstDescriptor &&
                         (int)blockSize > 8) {
                         lastBlock->sizeAndFlags -= 8;
                         nNearHeapMaxDescriptors++;
@@ -200,11 +207,11 @@ void *AllocateNearHeapBlockFromEnd(int size, unsigned short flags)
             if (nNearHeapBase -
                     nNearHeapMaxDescriptors * 8 +
                     nNearHeapSize >=
-                nNearHeapFirstDescriptor)
+                nCurrentNearHeapFirstDescriptor)
                 continue;
 
-            nNearHeapFirstDescriptor -= 8;
-            shiftAddress = nNearHeapFirstDescriptor;
+            nCurrentNearHeapFirstDescriptor -= 8;
+            shiftAddress = nCurrentNearHeapFirstDescriptor;
             for (; descriptorAddress > shiftAddress; shiftAddress += 8) {
                 block = DosNearPtrToFar(shiftAddress);
                 block->address = block[1].address;
@@ -263,7 +270,7 @@ void *AllocateNearHeapBlockByFlags(int size, unsigned short flags)
         allocationFlags |= 0x40000000;
 
     allocationAddress = 0;
-    descriptorAddress = nNearHeapFirstDescriptor;
+    descriptorAddress = nCurrentNearHeapFirstDescriptor;
     for (; descriptorAddress <
                nNearHeapBase + nNearHeapSize;
          descriptorAddress += 8) {
@@ -278,14 +285,14 @@ void *AllocateNearHeapBlockByFlags(int size, unsigned short flags)
             if (nNearHeapBase -
                     nNearHeapMaxDescriptors * 8 +
                     nNearHeapSize >=
-                nNearHeapFirstDescriptor) {
+                nCurrentNearHeapFirstDescriptor) {
                 block = DosNearPtrToFar(
                     nNearHeapBase +
                     nNearHeapSize - 8);
                 if ((block->sizeAndFlags & 0x80000000) == 0) {
                     blockSize = block->sizeAndFlags & 0xfffff;
                     if (block->address + blockSize ==
-                            nNearHeapFirstDescriptor &&
+                            nCurrentNearHeapFirstDescriptor &&
                         blockSize > 8) {
                         block->sizeAndFlags -= 8;
                         nNearHeapMaxDescriptors++;
@@ -296,11 +303,11 @@ void *AllocateNearHeapBlockByFlags(int size, unsigned short flags)
             if (nNearHeapBase -
                     nNearHeapMaxDescriptors * 8 +
                     nNearHeapSize >=
-                nNearHeapFirstDescriptor)
+                nCurrentNearHeapFirstDescriptor)
                 continue;
 
-            nNearHeapFirstDescriptor -= 8;
-            shiftAddress = nNearHeapFirstDescriptor;
+            nCurrentNearHeapFirstDescriptor -= 8;
+            shiftAddress = nCurrentNearHeapFirstDescriptor;
             for (; descriptorAddress > shiftAddress; shiftAddress += 8) {
                 block = DosNearPtrToFar(shiftAddress);
                 block->address = block[1].address;
@@ -340,7 +347,7 @@ void FreeNearHeapBlock(void *pointer)
     address = DosFarPtrToNear(pointer);
     descriptorAddress =
         nNearHeapBase + nNearHeapSize - 8;
-    for (; descriptorAddress >= nNearHeapFirstDescriptor;
+    for (; descriptorAddress >= nCurrentNearHeapFirstDescriptor;
          descriptorAddress -= 8) {
         block = DosNearPtrToFar(descriptorAddress);
         if (block->address <= address &&
@@ -366,7 +373,7 @@ int GetNearHeapBlockSize(void *pointer)
     address = DosFarPtrToNear(pointer);
     descriptorAddress =
         nNearHeapBase + nNearHeapSize - 8;
-    for (; descriptorAddress >= nNearHeapFirstDescriptor;
+    for (; descriptorAddress >= nCurrentNearHeapFirstDescriptor;
          descriptorAddress -= 8) {
         block = DosNearPtrToFar(descriptorAddress);
         if (address >= block->address &&

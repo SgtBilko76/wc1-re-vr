@@ -51,11 +51,14 @@ int anPilotTurnInterval[18] = {
 };
 
 /* Linker commons defined here; LINK orders them by identifier hash. */
+unsigned char abSeriesAuxData[0x28]; /* 0x005a8240 */
 MissionObjectiveSource aMissionObjectiveSources[16]; /* 0x005a8270 */
-MissionHeaderDisk stMissionHeader; /* 0x005a8690 */
+MissionHeaderDisk stCurrentMissionHeader; /* 0x005a8690 */
 CampaignDate *pCurrentCampaignDate; /* 0x005a86a8 */
-CampaignDate *pElapsedCampaignDate; /* 0x005a86ac */
-signed char cObjectResourceLogicalFile; /* 0x005a86b0 */
+CampaignDate *pElapsedCampaignDatePtr; /* 0x005a86ac */
+signed char cCurrentObjResourceLogicalFile; /* 0x005a86b0 */
+Viewport *pScrambleView; /* 0x005a86b4 */
+short nSceneScrambleCanopyFrameValue; /* 0x005a86b8 */
 
 /* Function start: 0x40B670 */
 void set_sphere_point(const MissionShipRecord *record,
@@ -89,7 +92,7 @@ unsigned int check_futurion(short i)
     if (aeShipMissionType[i] == MISSION_TYPE_WARP_ARRIVE) {
         prev = aeObjectClass[i];
         aeObjectClass[i] = OBJECT_CLASS_FUTURION;
-        asObjectCounter[i] = prev;
+        asObjectCounterArray[i] = prev;
     }
     return 0;
 }
@@ -104,7 +107,7 @@ unsigned int init_mission(short series, short mission)
     LoadMissionData(series, mission);
 #endif
     init_3Space_objects(series);
-    nSceneResourceBudget = LoadPacketResourceList(
+    nSceneResourceBudgetValue = LoadPacketResourceList(
         aMissionResourceDescriptors, 0,
         nAvailableGameMemory);
     aObjectTypeData[OBJECT_TYPE_DEBRIS_WING].shapeSet =
@@ -125,33 +128,33 @@ void prepare_mission(void)
     short pilot;
 
     stCampaignState.missionScore = 0;
-    nWingmanKilledThisMission = 0;
-    playerShip = stMissionHeader.playerMissionShip;
-    bPlayerDestroyed = 0;
+    nCurrentWingmanKilledThisMission = 0;
+    playerShip = stCurrentMissionHeader.playerMissionShip;
+    bCurrentPlayerDestroyed = 0;
     nWingmanKillCount = 0;
-    nMissionMedalScore = 0;
-    nPlayerKillCount = 0;
+    nMissionMedalScoreValue = 0;
+    nPlayerKillTotal = 0;
 
     stCampaignState.playerShipType = aMissionShips[playerShip].type;
     load_ship(stCampaignState.playerShipType, 0);
     set_objects_data(0, stCampaignState.playerShipType, -1);
-    aMissionShips[playerShip].navPoint = stMissionHeader.entryNavPoint;
+    aMissionShips[playerShip].navPoint = stCurrentMissionHeader.entryNavPoint;
     if (nTrainSimActive == 0 && nStartNavPointOverride != -1)
         aMissionShips[playerShip].navPoint = nStartNavPointOverride;
     Set_up_ship_info(0, playerShip, -1);
 
-    memset(acPlayerComponentDamage, 0,
-           sizeof(acPlayerComponentDamage));
+    memset(acPlayerComponentDamageList, 0,
+           sizeof(acPlayerComponentDamageList));
     bInitialFormationSetup = 1;
     nYourWingman = -1;
     initial = 0;
     do {
-        missionShip = stMissionHeader.initialMissionShips[initial];
+        missionShip = stCurrentMissionHeader.initialMissionShips[initial];
         if (missionShip != -1) {
             pilot = (short)aMissionShips[missionShip].behaviour.pilot;
             if (is_alive(pilot) != 0 &&
                 find_ships_sphere(missionShip) == -1) {
-                init_ship(missionShip, stMissionHeader.entryNavPoint);
+                init_ship(missionShip, stCurrentMissionHeader.entryNavPoint);
                 if (nYourWingman == -1 &&
                     pilot > 4 && pilot < 14)
                     nYourWingman = DAT_0046c010;
@@ -163,7 +166,7 @@ void prepare_mission(void)
 
     Build_objective_list();
     missionShip = 0;
-    nCarrierMissionShipIndex = missionShip;
+    nCarrierMissionShipIndexValue = missionShip;
 #ifdef SDL_PORT
     /* The original scans to 64 even though the initialized table ends after
      * record 47.  Valid missions place the carrier in the loaded first 32;
@@ -174,11 +177,11 @@ void prepare_mission(void)
 #else
     while (aMissionShips[missionShip].type !=
                OBJECT_TYPE_TIGERS_CLAW &&
-           (nCarrierMissionShipIndex = missionShip) <
+           (nCarrierMissionShipIndexValue = missionShip) <
                MISSION_SHIP_SCAN_LIMIT) {
 #endif
         missionShip++;
-        nCarrierMissionShipIndex = missionShip;
+        nCarrierMissionShipIndexValue = missionShip;
     }
     nTargetLockMode = 0;
     bLandingAuthorized = 0;
@@ -193,8 +196,8 @@ int release_all_capital_ship_shapes(void)
     do {
         if (aeObjectClass[obj] ==
             OBJECT_CLASS_CAPITAL_SHIP) {
-            FreePacketAndClear(&apObjectShape[obj], 0);
-            asCapitalShipViewFrame[obj] = -1;
+            FreePacketAndClear(&apObjShapeArray[obj], 0);
+            asCapitalShipViewFramesTable[obj] = -1;
         }
         obj++;
     } while (obj < 10);
@@ -210,9 +213,9 @@ int release_capital_ship_shapes(enum ObjectType type)
         OBJECT_CLASS_CAPITAL_SHIP) {
         obj = 1;
         do {
-            if (aeObjectType[obj] == type) {
-                FreePacketAndClear(&apObjectShape[obj], 0);
-                asCapitalShipViewFrame[obj] = -1;
+            if (aeObjectTypeList[obj] == type) {
+                FreePacketAndClear(&apObjShapeArray[obj], 0);
+                asCapitalShipViewFramesTable[obj] = -1;
             }
             obj++;
         } while (obj < 10);
@@ -227,9 +230,9 @@ int load_ship(enum ObjectType type, short slot)
     short section;
 
     if (type != -1) {
-        if (aObjectResourceSlots[slot].shapeSet == 0) {
-            aObjectResourceSlots[slot].type = type;
-            cObjectResourceLogicalFile =
+        if (aObjectResourceSlotsArray[slot].shapeSet == 0) {
+            aObjectResourceSlotsArray[slot].type = type;
+            cCurrentObjResourceLogicalFile =
                 (signed char)(type + 22);
             if (type == OBJECT_TYPE_ASTEROID_FIELD) {
                 aObjectTypeData[
@@ -246,10 +249,10 @@ int load_ship(enum ObjectType type, short slot)
                     OBJECT_TYPE_ASTEROID1].shapeSet =
                     aObjectTypeData[
                         OBJECT_TYPE_ASTEROID5].shapeSet;
-                aObjectResourceSlots[slot].shapeSet =
+                aObjectResourceSlotsArray[slot].shapeSet =
                     aObjectTypeData[
                         OBJECT_TYPE_ASTEROID5].shapeSet;
-                if (nMemoryConfiguration == 2) {
+                if (nMemoryConfig == 2) {
                     aObjectTypeData[
                         OBJECT_TYPE_ASTEROID6].shapeSet =
                         FetchDiskPacketRetrying(
@@ -267,9 +270,9 @@ int load_ship(enum ObjectType type, short slot)
                 do {
                     if (aeObjectClass[obj] ==
                         OBJECT_CLASS_ASTEROID) {
-                        apObjectShape[obj] =
+                        apObjShapeArray[obj] =
                             aObjectTypeData[
-                                aeObjectType[obj]].shapeSet;
+                                aeObjectTypeList[obj]].shapeSet;
                     }
                     obj++;
                 } while (obj <= SPACE_LAST_MOVING_OBJECT);
@@ -280,14 +283,14 @@ int load_ship(enum ObjectType type, short slot)
                         OBJECT_CLASS_SHIP &&
                     aObjectTypeData[type].objectClass !=
                         OBJECT_CLASS_MISSILE) {
-                    if (bExpandedMemoryAvailable != 0) {
+                    if (bCurrentExpandedMemoryAvail != 0) {
                         section = 0;
                         do {
                             aapPacketReferences[slot]
                                 [section] =
                                 FetchDiskPacketRetrying(
                                     (short)
-                                        cObjectResourceLogicalFile,
+                                        cCurrentObjResourceLogicalFile,
                                     section, 4);
                             if (aapPacketReferences[slot]
                                     [section] == 0)
@@ -295,49 +298,49 @@ int load_ship(enum ObjectType type, short slot)
                             section++;
                         } while (section < 0x25);
                     }
-                    aObjectResourceSlots[slot].shape =
+                    aObjectResourceSlotsArray[slot].shape =
                         FetchDiskPacketRetrying(
-                            (short)cObjectResourceLogicalFile,
+                            (short)cCurrentObjResourceLogicalFile,
                             0x25, 0);
                     aObjectTypeData[type].shape =
-                        aObjectResourceSlots[slot].shape;
+                        aObjectResourceSlotsArray[slot].shape;
                     obj = 1;
                     do {
-                        if (aeObjectType[obj] == type) {
+                        if (aeObjectTypeList[obj] == type) {
                             FreePacketAndClear(
-                                &apObjectShape[obj], 0);
-                            asCapitalShipViewFrame[obj] = -1;
+                                &apObjShapeArray[obj], 0);
+                            asCapitalShipViewFramesTable[obj] = -1;
                         }
                         obj++;
                     } while (obj < 10);
                     return 0;
                 }
 
-                aObjectResourceSlots[slot].shapeSet =
+                aObjectResourceSlotsArray[slot].shapeSet =
                     FetchDiskPacketRetrying(
-                        (short)cObjectResourceLogicalFile,
+                        (short)cCurrentObjResourceLogicalFile,
                         0, 0);
                 aObjectTypeData[type].shapeSet =
-                    aObjectResourceSlots[slot].shapeSet;
-                aObjectResourceSlots[slot].animation =
+                    aObjectResourceSlotsArray[slot].shapeSet;
+                aObjectResourceSlotsArray[slot].animation =
                     FetchDiskPacketRetrying(
-                        (short)cObjectResourceLogicalFile,
+                        (short)cCurrentObjResourceLogicalFile,
                         2, 0);
                 aObjectTypeData[type].animation =
-                    aObjectResourceSlots[slot].animation;
-                aObjectResourceSlots[slot].shape =
+                    aObjectResourceSlotsArray[slot].animation;
+                aObjectResourceSlotsArray[slot].shape =
                     FetchDiskPacketRetrying(
-                        (short)cObjectResourceLogicalFile,
+                        (short)cCurrentObjResourceLogicalFile,
                         1, 0);
                 aObjectTypeData[type].shape =
-                    aObjectResourceSlots[slot].shape;
+                    aObjectResourceSlotsArray[slot].shape;
                 obj = 0;
                 do {
                     if (aeObjectClass[obj] >=
                             OBJECT_CLASS_MISSILE &&
-                        aeObjectType[obj] == type) {
-                        apObjectShape[obj] =
-                            aObjectResourceSlots[slot]
+                        aeObjectTypeList[obj] == type) {
+                        apObjShapeArray[obj] =
+                            aObjectResourceSlotsArray[slot]
                                 .shapeSet;
                     }
                     obj++;
@@ -358,14 +361,14 @@ int free_ship(short slot)
 #ifdef SDL_PORT
     /* The carrier-return sequence also frees empty slots. Their -1 type
      * becomes an unsigned enum index on native builds. */
-    if (aObjectResourceSlots[slot].type == -1)
+    if (aObjectResourceSlotsArray[slot].type == -1)
         return 0;
 #endif
-    type = (enum ObjectType)aObjectResourceSlots[slot].type;
+    type = (enum ObjectType)aObjectResourceSlotsArray[slot].type;
 
     if (aObjectTypeData[type].objectClass == OBJECT_CLASS_CAPITAL_SHIP) {
         release_capital_ship_shapes(type);
-        if (bExpandedMemoryAvailable != 0) {
+        if (bCurrentExpandedMemoryAvail != 0) {
             section = 0;
             do {
                 FreePacketAndClear(
@@ -374,13 +377,13 @@ int free_ship(short slot)
                 section++;
             } while (section < 0x25);
         }
-        FreePacketAndClear(&aObjectResourceSlots[slot].shape, 0);
+        FreePacketAndClear(&aObjectResourceSlotsArray[slot].shape, 0);
         aObjectTypeData[type].shape = 0;
     }
-    if (aObjectResourceSlots[slot].shapeSet == 0)
+    if (aObjectResourceSlotsArray[slot].shapeSet == 0)
         return 0;
 
-    FreePacketAndClear(&aObjectResourceSlots[slot].shapeSet, 0);
+    FreePacketAndClear(&aObjectResourceSlotsArray[slot].shapeSet, 0);
     if (type == OBJECT_TYPE_ASTEROID_FIELD) {
         FreePacketAndClear(
             &aObjectTypeData[OBJECT_TYPE_ROCK_CHUNK].shapeSet,
@@ -395,11 +398,11 @@ int free_ship(short slot)
         aObjectTypeData[OBJECT_TYPE_ASTEROID1].shapeSet = 0;
         obj = 10;
         do {
-            if (aeObjectType[obj] == OBJECT_TYPE_ROCK_CHUNK)
+            if (aeObjectTypeList[obj] == OBJECT_TYPE_ROCK_CHUNK)
                 remove_object(obj);
             else if (aeObjectClass[obj] ==
                      OBJECT_CLASS_ASTEROID)
-                apObjectShape[obj] = 0;
+                apObjShapeArray[obj] = 0;
             obj++;
         } while (obj <= SPACE_LAST_MOVING_OBJECT);
         return 0;
@@ -407,16 +410,16 @@ int free_ship(short slot)
 
     if (type != OBJECT_TYPE_MINE_FIELD) {
         aObjectTypeData[type].shapeSet = 0;
-        FreePacketAndClear(&aObjectResourceSlots[slot].animation, 0);
+        FreePacketAndClear(&aObjectResourceSlotsArray[slot].animation, 0);
         aObjectTypeData[type].animation = 0;
-        FreePacketAndClear(&aObjectResourceSlots[slot].shape, 0);
+        FreePacketAndClear(&aObjectResourceSlotsArray[slot].shape, 0);
         aObjectTypeData[type].shape = 0;
         obj = 0;
         do {
             if (aeObjectClass[obj] >=
                     OBJECT_CLASS_MISSILE &&
-                aeObjectType[obj] == type)
-                apObjectShape[obj] = 0;
+                aeObjectTypeList[obj] == type)
+                apObjShapeArray[obj] = 0;
             obj++;
         } while (obj < 10);
     }
@@ -431,7 +434,7 @@ int free_all_slots(void)
     GetScreenUpdateFlag();
     release_all_capital_ship_shapes();
     do {
-        if (aObjectResourceSlots[slot].type != -1)
+        if (aObjectResourceSlotsArray[slot].type != -1)
             free_ship(slot);
         slot++;
     } while (slot < 3);
@@ -450,7 +453,7 @@ int load_all_slots(void)
     release_all_capital_ship_shapes();
     do {
         type = (enum ObjectType)
-            aObjectResourceSlots[slot].type;
+            aObjectResourceSlotsArray[slot].type;
         if (type != -1)
             load_ship(type, slot);
         slot++;
@@ -475,7 +478,7 @@ short get_shape_slot(void)
     short slot = 0;
 
     do {
-        if (aObjectResourceSlots[slot].type == -1)
+        if (aObjectResourceSlotsArray[slot].type == -1)
             return slot;
         slot++;
     } while (slot < 4);
@@ -489,7 +492,7 @@ int shape_loaded(enum ObjectType type)
 
     do {
         if ((enum ObjectType)
-                aObjectResourceSlots[slot].type == type)
+                aObjectResourceSlotsArray[slot].type == type)
             return 1;
         slot++;
     } while (slot < 4);
@@ -530,7 +533,7 @@ int new_sphere_shapes(MissionNavPoint *navPoint)
     slot = 1;
     release_all_capital_ship_shapes();
     do {
-        resource = &aObjectResourceSlots[slot];
+        resource = &aObjectResourceSlotsArray[slot];
         if (resource->type != -1 &&
             !shape_needed(navPoint, (enum ObjectType)resource->type)) {
             free_ship(slot);
@@ -572,7 +575,7 @@ int set_up_action_sphere(short navPoint)
         bSwcExplosionGlare = 0;
     }
 #endif
-    nCurrentNavPoint = navPoint;
+    nCurrentNavigationPoint = navPoint;
     nav = &aMissionNavPoints[navPoint];
     nCurrentWave =
         aMissionNavPoints[navPoint + 1].type == 2 ? 2 : -1;
@@ -581,7 +584,7 @@ int set_up_action_sphere(short navPoint)
     obj = 1;
     do {
         if (aeObjectClass[obj] != OBJECT_CLASS_NULL &&
-            acShipSpawnNavPoint[obj] != -1) {
+            acShipSpawnNavPt[obj] != -1) {
             if (aeObjectClass[obj] >= OBJECT_CLASS_SHIP &&
                 aeShipMissionType[obj] == MISSION_TYPE_ROUT) {
                 aMissionShips[
@@ -589,9 +592,9 @@ int set_up_action_sphere(short navPoint)
             }
             if (aeObjectClass[obj] ==
                 OBJECT_CLASS_CAPITAL_SHIP) {
-                FreePacketAndClear(&apObjectShape[obj], 0);
+                FreePacketAndClear(&apObjShapeArray[obj], 0);
             }
-            if (asObjectScreenX[obj] != -0x7fff)
+            if (asObjectScreenXList[obj] != -0x7fff)
                 explode(-1, obj);
             else
                 remove_object(obj);
@@ -599,7 +602,7 @@ int set_up_action_sphere(short navPoint)
         obj++;
     } while (obj < 10);
     remove_all_hazards();
-    nHazardFieldCount = 0;
+    nCurrentHazardFieldTotal = 0;
     new_sphere_shapes(nav);
 
     entry = 0;
@@ -621,7 +624,7 @@ int set_up_action_sphere(short navPoint)
     } while (trigger < 8);
 
     objective = 0;
-    while (objective < cMissionObjectiveCount) {
+    while (objective < cMissionObjectiveCountValue) {
         LocateMobileObjective(objective);
         objective++;
     }
@@ -637,13 +640,13 @@ void free_pilot_talk(short personality)
 
     line = 0;
     do {
-        if (aapszPilotSpeech[personality][line] != 0) {
+        if (aapszPilotSpeeches[personality][line] != 0) {
             FreePacketAndClear(
-                &aapszPilotSpeech[personality][line], 0);
+                &aapszPilotSpeeches[personality][line], 0);
         }
-        if (apCommPortraitShapes[personality] != 0) {
+        if (apCommunicationPortraitShapesTable[personality] != 0) {
             FreePacketAndClear(
-                &apCommPortraitShapes[personality], 8);
+                &apCommunicationPortraitShapesTable[personality], 8);
         }
         line++;
     } while (line < 11);
@@ -678,9 +681,9 @@ void get_pilot_talk(short personality)
                                         (personality * 11 + line) * 80,
                                         80, speech) != 0);
         if (loaded != 0) {
-            aapszPilotSpeech[personality][line] =
+            aapszPilotSpeeches[personality][line] =
                 AllocateTaggedMemory(strlen(speech) + 1, 0);
-            DosStrcpy(aapszPilotSpeech[personality][line], speech);
+            DosStrcpy(aapszPilotSpeeches[personality][line], speech);
         }
     }
 
@@ -732,8 +735,8 @@ void approve_xyz(short obj, short minimum, short maximum)
     if (obj == -1 || room_for_me(obj, minimum) != 0)
         return;
     do {
-        random_radial(&aShipPosition[0], maximum,
-                      &aShipPosition[obj]);
+        random_radial(&aShipPositionsArray[0], maximum,
+                      &aShipPositionsArray[obj]);
     } while (room_for_me(obj, minimum) == 0);
 }
 
@@ -758,13 +761,13 @@ void set_up_next_wave(void)
     /* The original indexes through a base biased one MissionNavPoint before
      * aMissionNavPoints.  Preserve that -1 when expressing it as a typed
      * array index: arcade wave 2 is stored in nav record 1. */
-    waveNav = &aMissionNavPoints[nCurrentWave + nCurrentNavPoint - 1];
+    waveNav = &aMissionNavPoints[nCurrentWave + nCurrentNavigationPoint - 1];
     if (waveNav->type == nCurrentWave++) {
         new_sphere_shapes(waveNav);
         waveNav->type = -1;
         for (entry = 0; entry < 10; entry++) {
             approve_xyz(init_ship(waveNav->missionShips[entry],
-                                  nCurrentNavPoint),
+                                  nCurrentNavigationPoint),
                         5000, 10000);
         }
     } else {
@@ -803,13 +806,13 @@ unsigned int set_formation_position(short obj,
                                  [record->formationSpot],
             &aaFormationPositions[leaderRecord->formationIndex]
                                  [leaderRecord->formationSpot],
-            &aShipFormationOffset[obj]);
+            &aShipFormationDeltaList[obj]);
         if (source == 0 && bInitialFormationSetup == 0)
             return 0;
         copy_frame(source, obj);
-        set_sphere_point(leaderRecord, &aShipPosition[obj]);
-        offset_location(obj, &aShipFormationOffset[obj],
-                        &aShipPosition[obj]);
+        set_sphere_point(leaderRecord, &aShipPositionsArray[obj]);
+        offset_location(obj, &aShipFormationDeltaList[obj],
+                        &aShipPositionsArray[obj]);
         anShipSpeed[obj] = leaderRecord->speed << 8;
     }
     return 0;
@@ -821,24 +824,24 @@ unsigned int Set_up_ship_info(short obj, short missionShip,
 {
     MissionShipRecord *record;
 
-    asCapitalShipViewFrame[obj] = -1;
-    acWingmanMessageState[obj] = -1;
-    acLastAttacker[obj] = -1;
-    asActionCount[obj] = 0;
-    abShipExhaustHeat[obj] = 0;
-    asShipAccumulatedDamage[obj] = 0;
-    acShipDamage[obj] = 0;
-    asCannedCommand[obj] = 0;
-    acShipIonDriveDamage[obj] = 0;
-    acShipDestroyedWeaponCount[obj] = 0;
-    acShipCommunicator[obj] = 0;
-    apCannedSequence[obj] = 0;
-    acShipSpawnNavPoint[obj] = navPoint;
+    asCapitalShipViewFramesTable[obj] = -1;
+    acWingmanMessageStatesArray[obj] = -1;
+    acPreviousAttackers[obj] = -1;
+    asActionCounts[obj] = 0;
+    abShipExhaustHeatList[obj] = 0;
+    asShipAccumulatedDmg[obj] = 0;
+    acShipDmg[obj] = 0;
+    asCannedCommands[obj] = 0;
+    acShipIonDriveDmg[obj] = 0;
+    acShipDestroyedWeaponCountArray[obj] = 0;
+    acShipCommunicatorArray[obj] = 0;
+    apCannedSequenceList[obj] = 0;
+    acShipSpawnNavPt[obj] = navPoint;
     nShipMissionIndices[obj] = missionShip;
-    acShipPointingMode[obj] = 1;
+    acShipPointingModeList[obj] = 1;
 
     record = &aMissionShips[missionShip];
-    set_sphere_point(record, &aShipPosition[obj]);
+    set_sphere_point(record, &aShipPositionsArray[obj]);
     alter_yaw((short)-record->pitch, obj);
     alter_pitch((short)-record->yaw, obj);
     alter_roll(record->roll, obj);
@@ -846,8 +849,8 @@ unsigned int Set_up_ship_info(short obj, short missionShip,
     anShipSpeed[obj] = record->speed << 8;
     aiPilotLevel[obj] = record->behaviour.pilot;
     reset_mission_type(obj, record->missionType);
-    anShipMissionShip[obj] = record->targetMissionIndex;
-    asShipWingLeader[obj] =
+    anShipMissionShips[obj] = record->targetMissionIndex;
+    asShipWingLeaderArray[obj] =
         find_ship_index(record->leaderMissionIndex);
     set_formation_position(obj, record);
     zero_vector(&aShipVelocity[obj]);
@@ -860,11 +863,11 @@ unsigned int is_team_member(short missionShip)
 {
     short index;
 
-    if (missionShip == stMissionHeader.playerMissionShip)
+    if (missionShip == stCurrentMissionHeader.playerMissionShip)
         return 1;
     index = 0;
     while (index < 8) {
-        if (missionShip == stMissionHeader.initialMissionShips[index])
+        if (missionShip == stCurrentMissionHeader.initialMissionShips[index])
             return 1;
         index++;
     }
@@ -879,16 +882,16 @@ unsigned int find_next_ship_turn_slot(short obj)
 
     objectIndex = obj;
     other = 1;
-    acTurnRegulator[objectIndex] = 1;
-    acTurnInterval[objectIndex] = anPilotTurnInterval[aiPilotLevel[objectIndex]];
+    acTurnRegulatorsArray[objectIndex] = 1;
+    acTurnIntervalArray[objectIndex] = anPilotTurnInterval[aiPilotLevel[objectIndex]];
     do {
         if (aeObjectClass[other] == OBJECT_CLASS_SHIP &&
             other != obj &&
-            acTurnRegulator[other] == acTurnRegulator[objectIndex] &&
-            acTurnInterval[other] == acTurnInterval[objectIndex]) {
+            acTurnRegulatorsArray[other] == acTurnRegulatorsArray[objectIndex] &&
+            acTurnIntervalArray[other] == acTurnIntervalArray[objectIndex]) {
             other = 1;
-            acTurnRegulator[objectIndex]++;
-            if (acTurnInterval[objectIndex] < acTurnRegulator[objectIndex])
+            acTurnRegulatorsArray[objectIndex]++;
+            if (acTurnIntervalArray[objectIndex] < acTurnRegulatorsArray[objectIndex])
                 break;
         }
         other++;
@@ -949,42 +952,42 @@ unsigned int init_intelligence_data(short obj)
     FixedVector *missionSpot;
     short missionTarget;
 
-    abShipTurn[obj] = 0;
+    abShipTurnList[obj] = 0;
     clear_alert(obj);
-    missionTarget = anShipMissionShip[obj];
-    missionSpot = &aShipMissionSpot[obj];
-    aeSpecialManeuver[obj] = SPECIAL_MANEUVER_NONE;
+    missionTarget = anShipMissionShips[obj];
+    missionSpot = &aShipMissionSpotArray[obj];
+    aeSpecialManeuvers[obj] = SPECIAL_MANEUVER_NONE;
     *missionSpot = aMissionNavPoints[
-        nCurrentNavPoint].position;
+        nCurrentNavigationPoint].position;
 
     switch (aeShipMissionType[obj]) {
     case MISSION_TYPE_ESCORT:
     case MISSION_TYPE_STRIKE:
     case MISSION_TYPE_DEFEND:
     case MISSION_TYPE_WINGMAN:
-        anShipMissionShip[obj] = missionTarget;
+        anShipMissionShips[obj] = missionTarget;
         break;
     case MISSION_TYPE_GOTO_WARP:
         *missionSpot =
             aMissionNavPoints[missionTarget].position;
         break;
     case MISSION_TYPE_WARP_ARRIVE:
-        aeShipTactic[obj] = TACTIC_WARP_IN;
-        aeShipManeuver[obj] = MANEUVER_WARPING_IN;
+        aeShipTacticArray[obj] = TACTIC_WARP_IN;
+        aeShipManeuversTable[obj] = MANEUVER_WARPING_IN;
         if (aeShipSide[obj] == SIDE_KILRATHI)
             break;
         /* fall through */
     case MISSION_TYPE_COME_HOME:
-        locate_ship(stMissionHeader.homeMissionShip, missionSpot);
+        locate_ship(stCurrentMissionHeader.homeMissionShip, missionSpot);
         break;
     case MISSION_TYPE_CANNED_SEQUENCE:
 #ifdef SDL_PORT
         /* The native pointer does not fit in the legacy 32-bit AI slot. */
-        apCannedSequence[obj] =
+        apCannedSequenceList[obj] =
             aMissionShips[
                 nShipMissionIndices[obj]].behaviour.cannedSequence;
 #else
-        apCannedSequence[obj] = (const short *)aiPilotLevel[obj];
+        apCannedSequenceList[obj] = (const short *)aiPilotLevel[obj];
 #endif
         aiPilotLevel[obj] = 2;
         advance_canned_sequence(obj);
@@ -1000,7 +1003,7 @@ unsigned int init_intelligence_data(short obj)
     else
         acShipRating[obj] =
             (signed char)~RATING_PROVINCIAL;
-    acShipStress[obj] = 0;
+    acShipStressList[obj] = 0;
     return 0;
 }
 
@@ -1035,7 +1038,7 @@ int __stdcall SampleJoystickDevice(InputDeviceSample *samples,
                                  (unsigned int *)&sample->y,
                                  &sample->buttons, joystick, fallback);
     if (result != 0)
-        nActiveInputDevice = -1;
+        nCurrentActiveInputDevice = -1;
     return result;
 }
 
@@ -1054,9 +1057,9 @@ void SampleActiveJoystickDevice(void)
 {
     short device;
 
-    device = nActiveInputDevice;
+    device = nCurrentActiveInputDevice;
     if (device != -1)
-        SampleJoystickDevice(&aInputDeviceSamples[device],
+        SampleJoystickDevice(&aInputDevSamples[device],
                              device, 0);
 }
 
@@ -1064,10 +1067,10 @@ void SampleActiveJoystickDevice(void)
 void DrawNavTextLine(unsigned char alignment, unsigned short colour,
                      const char *format, ...)
 {
-    pCurrentTextContext->colour = colour;
-    pCurrentTextContext->alignment = alignment;
-    pCurrentTextContext->textCursor =
-        pCurrentTextContext->text;
+    pCurTextContext->colour = colour;
+    pCurTextContext->alignment = alignment;
+    pCurTextContext->textCursor =
+        pCurTextContext->text;
 #ifdef SDL_PORT
     {
         va_list arguments;
@@ -1081,7 +1084,7 @@ void DrawNavTextLine(unsigned char alignment, unsigned short colour,
     FormatTextTokens((void (__stdcall *)(int))AppendTextCharacter,
                      format, (va_list)(&format + 1));
 #endif
-    DrawTextString(pCurrentTextContext->text);
+    DrawTextString(pCurTextContext->text);
 }
 
 /* Function start: 0x40CBB0 */
@@ -1101,7 +1104,7 @@ void ScaleNavMapCoordinates(short *x, short *y, short mapX, short mapY)
 {
     *x = (short)((mapX - nNavMapCentreX) /
                  nNavMapScale + 75);
-    *y = (short)((nNavMapCentreY - mapY) /
+    *y = (short)((nNavMapCenterPositionY - mapY) /
                  nNavMapScale + 67);
 }
 
@@ -1133,14 +1136,14 @@ void nav_getxy(short *x, short *y, int worldX, int worldZ)
 /* Function start: 0x40CC80 */
 void CheckPoint(short x, short y)
 {
-    nNavMapMinimumX =
-        MinShort(nNavMapMinimumX, x);
-    nNavMapMaximumX =
-        MaxShort(nNavMapMaximumX, x);
-    nNavMapMinimumY =
-        MinShort(nNavMapMinimumY, y);
-    nNavMapMaximumY =
-        MaxShort(nNavMapMaximumY, y);
+    nNavigationMapMinimumCoordX =
+        MinShort(nNavigationMapMinimumCoordX, x);
+    nNavMapMaximumPositionX =
+        MaxShort(nNavMapMaximumPositionX, x);
+    nNavigationMapMinimumPositionY =
+        MinShort(nNavigationMapMinimumPositionY, y);
+    nNavMapMaximumPosY =
+        MaxShort(nNavMapMaximumPosY, y);
 }
 
 /* Function start: 0x40CCF0 */
@@ -1164,40 +1167,40 @@ void SetScale(void)
     short width;
 
     SetNavMapCoordinateScaling(0);
-    nNavMapMinimumX = aMissionObjectives[0].mapX;
-    nNavMapMaximumX = aMissionObjectives[0].mapX;
-    nNavMapMinimumY = aMissionObjectives[0].mapY;
-    nNavMapMaximumY = aMissionObjectives[0].mapY;
+    nNavigationMapMinimumCoordX = aMissionObjectivesArray[0].mapX;
+    nNavMapMaximumPositionX = aMissionObjectivesArray[0].mapX;
+    nNavigationMapMinimumPositionY = aMissionObjectivesArray[0].mapY;
+    nNavMapMaximumPosY = aMissionObjectivesArray[0].mapY;
     objectiveIndex = 0;
-    while (objectiveIndex < (short)cMissionObjectiveCount) {
+    while (objectiveIndex < (short)cMissionObjectiveCountValue) {
         if (mobile_objective(objectiveIndex) != 0) {
             ship = find_ship_index((short)
-                aMissionObjectives[objectiveIndex].index);
+                aMissionObjectivesArray[objectiveIndex].index);
             if (ship != -1)
-                aMissionObjectives[objectiveIndex].position =
-                    aShipPosition[ship];
+                aMissionObjectivesArray[objectiveIndex].position =
+                    aShipPositionsArray[ship];
         }
         nav_getxy(
-            &aMissionObjectives[objectiveIndex].mapX,
-            &aMissionObjectives[objectiveIndex].mapY,
-            aMissionObjectives[objectiveIndex].position.x,
-            aMissionObjectives[objectiveIndex].position.z);
-        CheckPoint(aMissionObjectives[objectiveIndex].mapX,
-                   aMissionObjectives[objectiveIndex].mapY);
+            &aMissionObjectivesArray[objectiveIndex].mapX,
+            &aMissionObjectivesArray[objectiveIndex].mapY,
+            aMissionObjectivesArray[objectiveIndex].position.x,
+            aMissionObjectivesArray[objectiveIndex].position.z);
+        CheckPoint(aMissionObjectivesArray[objectiveIndex].mapX,
+                   aMissionObjectivesArray[objectiveIndex].mapY);
         objectiveIndex++;
     }
-    IncludeNavMapWorldPoint(aShipPosition[0].x,
-                            aShipPosition[0].z);
-    width = (short)(nNavMapMaximumX -
-                    nNavMapMinimumX);
-    height = (short)(nNavMapMaximumY -
-                     nNavMapMinimumY);
+    IncludeNavMapWorldPoint(aShipPositionsArray[0].x,
+                            aShipPositionsArray[0].z);
+    width = (short)(nNavMapMaximumPositionX -
+                    nNavigationMapMinimumCoordX);
+    height = (short)(nNavMapMaximumPosY -
+                     nNavigationMapMinimumPositionY);
     halfWidth = (short)(width / 2);
     nNavMapCentreX =
-        (short)(nNavMapMinimumX + halfWidth);
+        (short)(nNavigationMapMinimumCoordX + halfWidth);
     halfHeight = (short)(height / 2);
-    nNavMapCentreY =
-        (short)(nNavMapMinimumY + halfHeight);
+    nNavMapCenterPositionY =
+        (short)(nNavigationMapMinimumPositionY + halfHeight);
     nNavMapScale = MaxShort(
         (short)((width + halfWidth) / 150),
         (short)((halfHeight + height) / 135));
@@ -1219,21 +1222,21 @@ void Build_objective_list(void)
 
     flightPathCount = 0;
     SetNavMapCoordinateScaling(0);
-    cMissionObjectiveCount = 0;
+    cMissionObjectiveCountValue = 0;
     source = aMissionObjectiveSources;
     type = source->type;
     for (; type != -1; source++, type = source->type) {
         sourceIndex = source->index;
-        aMissionObjectives[
-            cMissionObjectiveCount].flags = 0;
+        aMissionObjectivesArray[
+            cMissionObjectiveCountValue].flags = 0;
         switch (type) {
         case 0:
             position = aMissionNavPoints[
                 sourceIndex].position;
             displayName = aMissionNavPoints[
                 sourceIndex].name;
-            abFlightPath[flightPathCount++] =
-                cMissionObjectiveCount;
+            abFlightPathList[flightPathCount++] =
+                cMissionObjectiveCountValue;
             break;
         case 1:
         case 2:
@@ -1243,38 +1246,38 @@ void Build_objective_list(void)
             displayName =
                 aObjectTypeData[ship->type].displayName;
             set_sphere_point(ship, &position);
-            abFlightPath[flightPathCount++] =
-                cMissionObjectiveCount;
+            abFlightPathList[flightPathCount++] =
+                cMissionObjectiveCountValue;
             break;
         }
 
-        aMissionObjectives[
-            cMissionObjectiveCount].type = type;
-        aMissionObjectives[
-            cMissionObjectiveCount].index = source->index;
-        aMissionObjectives[
-            cMissionObjectiveCount].name = source->description;
-        aMissionObjectives[
-            cMissionObjectiveCount].position = position;
+        aMissionObjectivesArray[
+            cMissionObjectiveCountValue].type = type;
+        aMissionObjectivesArray[
+            cMissionObjectiveCountValue].index = source->index;
+        aMissionObjectivesArray[
+            cMissionObjectiveCountValue].name = source->description;
+        aMissionObjectivesArray[
+            cMissionObjectiveCountValue].position = position;
         nav_getxy(
-            &aMissionObjectives[
-                cMissionObjectiveCount].mapX,
-            &aMissionObjectives[
-                cMissionObjectiveCount].mapY,
+            &aMissionObjectivesArray[
+                cMissionObjectiveCountValue].mapX,
+            &aMissionObjectivesArray[
+                cMissionObjectiveCountValue].mapY,
             position.x, position.z);
-        aMissionObjectives[
-            cMissionObjectiveCount].displayName = displayName;
-        cMissionObjectiveCount++;
+        aMissionObjectivesArray[
+            cMissionObjectiveCountValue].displayName = displayName;
+        cMissionObjectiveCountValue++;
     }
 
-    abFlightPath[flightPathCount] = -1;
-    aMissionObjectives[
-        cMissionObjectiveCount].type = -1;
-    cCurrentNavPointIndex = 0;
+    abFlightPathList[flightPathCount] = -1;
+    aMissionObjectivesArray[
+        cMissionObjectiveCountValue].type = -1;
+    cCurrentNavPtIdx = 0;
     cCurrentObjective = 0;
-    if (cMissionObjectiveCount != 0) {
+    if (cMissionObjectiveCountValue != 0) {
         while (set_new_objective(
-                   (short)cCurrentNavPointIndex) == 0)
-            cCurrentNavPointIndex++;
+                   (short)cCurrentNavPtIdx) == 0)
+            cCurrentNavPtIdx++;
     }
 }

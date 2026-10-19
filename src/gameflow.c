@@ -24,18 +24,18 @@ static unsigned short bSeriesFailed = 1; /* 0x004688ec */
 int bCampaignActive = 0; /* 0x004688f0 */
 
 /* Linker commons defined here; LINK orders them by identifier hash. */
-int nViewportAllocationCount; /* 0x005a7f0c */
+int nViewAllocTotal; /* 0x005a7f0c */
 unsigned char *apViewportAllocations[128]; /* 0x005a7f10 */
-int nFreeViewportCalls; /* 0x005a8110 */
-short nPendingCampaignIndex; /* 0x005a8114 */
-short nMissionMedalScore; /* 0x005a8116 */
+int nFreeViewCallsValue; /* 0x005a8110 */
+short nQueuedCampaignIndex; /* 0x005a8114 */
+short nMissionMedalScoreValue; /* 0x005a8116 */
 short nCampaignDataSet; /* 0x005a8118 */
 
 /* Function start: 0x40EFE0 */
 void add_statistics(short pilot, short missions, short kills)
 {
-    apWingmanPilots[pilot]->missions += missions;
-    apWingmanPilots[pilot]->kills += kills;
+    apWingmanPilotsList[pilot]->missions += missions;
+    apWingmanPilotsList[pilot]->kills += kills;
 }
 
 /* Function start: 0x40F010 */
@@ -46,11 +46,11 @@ void PostMission(void)
     short missions;
 
     oldKills = stCampaignState.currentPilot->kills;
-    if (oldKills < 5 && oldKills + nPlayerKillCount >= 5)
+    if (oldKills < 5 && oldKills + nPlayerKillTotal >= 5)
         stCampaignState.badges[
             CAMPAIGN_BADGE_FIVE_KILLS] = 1;
     else if (oldKills < 25 &&
-             oldKills + nPlayerKillCount >= 25)
+             oldKills + nPlayerKillTotal >= 25)
         stCampaignState.badges[
             CAMPAIGN_BADGE_TWENTY_FIVE_KILLS] = 1;
 
@@ -83,7 +83,7 @@ void PostMission(void)
     }
 
     stCampaignState.currentPilot->kills +=
-        nPlayerKillCount;
+        nPlayerKillTotal;
     if (oldKills <
         stCampaignState.currentPilot->kills / 5)
         stCampaignState.promotionScore++;
@@ -98,7 +98,7 @@ void PostMission(void)
             add_statistics(pilot, missions,
                            missions == 0 ? 0 :
                            (unsigned short)RandomInRange(
-                               0, nPlayerKillCount));
+                               0, nPlayerKillTotal));
         }
     }
 }
@@ -111,7 +111,7 @@ int FullMissionScore(void)
     short score;
 
     score = 0;
-    scores = (signed char *)(pMissionCampaignData +
+    scores = (signed char *)(pMissionCampaignInfo +
         (int)stCampaignState.currentMission * 0x14 +
         (int)stCampaignState.currentSeries * 0x5a - 0x50);
     objective = 0;
@@ -130,7 +130,7 @@ int PlayersMissionScore(void)
     short score;
 
     score = 0;
-    scores = (signed char *)(pMissionCampaignData +
+    scores = (signed char *)(pMissionCampaignInfo +
         (int)stCampaignState.currentSeries * 0x5a +
         (int)stCampaignState.currentMission * 0x14 - 0x50);
     for (objective = 0; objective < 16; objective++) {
@@ -148,9 +148,9 @@ unsigned int UpdateSeries(void)
     short playerScore;
 
     stSavedCampaignDate = *pCurrentCampaignDate;
-    seriesData = pMissionCampaignData +
+    seriesData = pMissionCampaignInfo +
         (int)stCampaignState.currentSeries * 0x5a - 0x5a;
-    medalData = (short *)(pMissionCampaignData +
+    medalData = (short *)(pMissionCampaignInfo +
         (int)stCampaignState.currentSeries * 0x5a +
         (int)stCampaignState.currentMission * 0x14 - 0x50);
 
@@ -192,7 +192,7 @@ unsigned int UpdateSeries(void)
         }
         stCampaignState.seriesScore = 0;
         stCampaignState.currentMission = 0;
-        if ((signed char)pMissionCampaignData[
+        if ((signed char)pMissionCampaignInfo[
                 (int)stCampaignState.currentSeries *
                 0x5a + 5] ==
                 nPostSeriesSequence &&
@@ -200,11 +200,11 @@ unsigned int UpdateSeries(void)
             nPostSeriesSequence = -1;
     }
 
-    if (nWingmanKilledThisMission != 0)
-        nMissionMedalScore =
+    if (nCurrentWingmanKilledThisMission != 0)
+        nMissionMedalScoreValue =
             MaxShort(0, (short)(
                 stCampaignState.missionScore - 15));
-    if (medalData[1] <= nMissionMedalScore &&
+    if (medalData[1] <= nMissionMedalScoreValue &&
         nPendingMedalIndex == -1) {
         stSavedCampaignDate =
             *pCurrentCampaignDate;
@@ -238,9 +238,9 @@ unsigned int StartNewCampaign(short campaign)
     nCampaignDataSet = campaign;
     bCampaignStartupMode = 0;
     LoadPacketIntoBuffer(asCampaignPilotFiles[campaign], 1,
-                         pMissionCampaignData);
+                         pMissionCampaignInfo);
     bPanRoomTransition = 0;
-    nPendingCampaignIndex = -1;
+    nQueuedCampaignIndex = -1;
     return 0;
 }
 
@@ -258,9 +258,9 @@ short GameFlow(void)
 
     launchMission = 0;
     FrameStartHook(0);
-    if (nPendingCampaignIndex != -1) {
-        stCampaignState.campaignIndex = nPendingCampaignIndex;
-        nCampaignDataSet = nPendingCampaignIndex;
+    if (nQueuedCampaignIndex != -1) {
+        stCampaignState.campaignIndex = nQueuedCampaignIndex;
+        nCampaignDataSet = nQueuedCampaignIndex;
     }
 
     bKeyEventQueueEnabled = 0;
@@ -290,14 +290,14 @@ short GameFlow(void)
 
     bKeyEventQueueEnabled = 1;
     nDebriefingPersonality = *(short *)(
-        pMissionCampaignData +
+        pMissionCampaignInfo +
         (short)stCampaignState.currentSeries * 0x5a - 0x5a);
     Briefing((short)stCampaignState.currentSeries,
              (short)stCampaignState.currentMission);
     PlayScrambleHangarScene();
     stCampaignState.playerShipType =
         aMissionShips[
-            stMissionHeader.playerMissionShip].type;
+            stCurrentMissionHeader.playerMissionShip].type;
     scramble();
     flownSeries = (short)stCampaignState.currentSeries;
     flownMission = (short)stCampaignState.currentMission;
@@ -401,7 +401,7 @@ short GameFlow(void)
         return 0;
     }
 
-    if (nWingmanKilledThisMission != 0)
+    if (nCurrentWingmanKilledThisMission != 0)
         funeral_sequence(0);
     if (bOfficeVisitPending == 1)
         Office();
@@ -427,14 +427,14 @@ void __stdcall free_viewport(Viewport *viewport)
     int i;
     int oldCount;
 
-    nFreeViewportCalls++;
+    nFreeViewCallsValue++;
     allocation = viewport->allocation;
     if (allocation != 0) {
         i = 0;
-        while (i < nViewportAllocationCount) {
+        while (i < nViewAllocTotal) {
             if (apViewportAllocations[i] == viewport->allocation) {
-                oldCount = nViewportAllocationCount;
-                nViewportAllocationCount--;
+                oldCount = nViewAllocTotal;
+                nViewAllocTotal--;
                 apViewportAllocations[i] =
                     apViewportAllocations[oldCount];
                 break;
@@ -452,10 +452,10 @@ void __stdcall free_viewport(Viewport *viewport)
         ReleasePacketHandle(allocation);
         viewport->pixels = 0;
         viewport->allocation = 0;
-        if (stScreen.pixels == allocation)
-            stScreen.pixels = 0;
-        if (stScreen.allocation == allocation)
-            stScreen.allocation = 0;
+        if (stScreenView.pixels == allocation)
+            stScreenView.pixels = 0;
+        if (stScreenView.allocation == allocation)
+            stScreenView.allocation = 0;
         if (stSceneBuffer.pixels == allocation)
             stSceneBuffer.pixels = 0;
         if (stSceneBuffer.allocation == allocation)

@@ -41,24 +41,13 @@ int bWindowMessagePumpActive = 0; /* 0x004650A8 */
 unsigned int bF1KeyLatch = 0; /* 0x004650AC */
 GuardedAllocation *pGuardedAllocationHead = 0; /* 0x004650B0 */
 
-/* Linker commons defined here; LINK orders them by identifier hash. */
-JOYINFO aJoystickInfo[2]; /* 0x005a8970 */
-int nHostMouseMessageX; /* 0x005a8990 */
-int nHostMouseMessageY; /* 0x005a8994 */
-int bHostPrimaryMouseButton; /* 0x005a8998 */
-int bHostSecondaryMouseButton; /* 0x005a899c */
-HWND hMainWindow; /* 0x005a89a0 */
-HANDLE hSingleInstanceSemaphore; /* 0x005a89a4 */
-unsigned long dwGameClockBase; /* 0x005a89a8 */
-GuardedAllocation *pGuardedAllocationTail; /* 0x005a89ac */
-char szMemoryUsage[0x80]; /* 0x005a89b0 */
 HDC hMainWindowDC; /* 0x005a8a30 */
-HCURSOR hPreviousCursor; /* 0x005a8a34 */
+HCURSOR hPrevPointer; /* 0x005a8a34 */
 unsigned int nSessionEndTime; /* 0x005a8a38 */
 int bMainWindowAlive; /* 0x005a8a3c */
-HINSTANCE hAppInstance; /* 0x005a8a40 */
+HINSTANCE hCurrentAppInstance; /* 0x005a8a40 */
 unsigned int nSessionStartTime; /* 0x005a8a44 */
-unsigned short awPaletteRgbWords[0x300]; /* 0x005a8a50 */
+unsigned short awPaletteRgbWordsList[0x300]; /* 0x005a8a50 */
 
 /* Function start: 0x401000 */
 void SaveGamePalette(void)
@@ -67,19 +56,19 @@ void SaveGamePalette(void)
     unsigned short *entry;
 
     index = 0;
-    entry = awPaletteRgbWords;
+    entry = awPaletteRgbWordsList;
     do {
         GetPaletteEntry((short)index, entry);
         entry += 3;
         index++;
-    } while (entry < awPaletteRgbWords + 0x300);
+    } while (entry < awPaletteRgbWordsList + 0x300);
 }
 
 /* Function start: 0x401020 */
 void RestoreGamePalette(void)
 {
     WaitForVerticalBlankThunk();
-    DIBwholePaletteFromWords(awPaletteRgbWords);
+    DIBwholePaletteFromWords(awPaletteRgbWordsList);
 }
 
 /* Function start: 0x401040 */
@@ -89,18 +78,18 @@ short easy2see(short obj)
     short x;
     short y;
 
-    x = asObjectScreenX[obj];
+    x = asObjectScreenXList[obj];
     if (x == (short)0x8001)
         return 0;
-    x = (short)(x + nViewCenterX);
-    y = (short)(asObjectScreenY[obj] + nViewCenterY);
+    x = (short)(x + nCurrentViewCenterPosX);
+    y = (short)(asObjectScreenYArray[obj] + nCurrentViewCenterPosY);
     return (short)GetTransformedShapeBounds(
-        &stSpaceBuffer, x, y,
-        apObjectShape[obj],
-        asObjectViewFrame[obj],
-        asObjectScreenAngle[obj],
-        asObjectScreenScale[obj],
-        asObjectFlip[obj], bounds);
+        &stSpaceBufferViewport, x, y,
+        apObjShapeArray[obj],
+        asObjectViewFrames[obj],
+        asObjScreenAngles[obj],
+        asObjScreenScalesArray[obj],
+        asObjectFlipArray[obj], bounds);
 }
 
 /* Function start: 0x4010C0 */
@@ -113,18 +102,18 @@ void make_shard(short asteroid, FixedVector direction)
     if (fragment == -1)
         return;
     set_objects_data(fragment, OBJECT_TYPE_ROCK_CHUNK, asteroid);
-    asObjectCounter[fragment] = 40;
-    acObjectOwner[fragment] = (signed char)asteroid;
+    asObjectCounterArray[fragment] = 40;
+    acObjOwnersTable[fragment] = (signed char)asteroid;
     SetVectorFixedPoint((unsigned int *)&direction,
                         (short)(asObjectCollisionRadius[asteroid] >> 1));
-    AddFixedVectors(&aShipPosition[asteroid], &direction,
-                    &aShipPosition[fragment]);
-    aShipForwardVector[fragment] = direction;
+    AddFixedVectors(&aShipPositionsArray[asteroid], &direction,
+                    &aShipPositionsArray[fragment]);
+    aShipFwdVec[fragment] = direction;
     fix_objects_ijk(fragment);
     alter_yaw(signed_random(20), fragment);
     alter_pitch(signed_random(20), fragment);
     aShipVelocity[fragment] =
-        aShipForwardVector[fragment];
+        aShipFwdVec[fragment];
     speed = (short)(real_velocity(asteroid) + RandomInRange(0, 5));
     SetVectorFixedPoint(
         (unsigned int *)&aShipVelocity[fragment], speed);
@@ -133,7 +122,7 @@ void make_shard(short asteroid, FixedVector direction)
 /* Function start: 0x4011D0 */
 void remove_hazard(signed char hazard)
 {
-    aiSoundEffectSourceActive[(short)hazard] = 0;
+    aiSoundEffectSourceActiveArray[(short)hazard] = 0;
     remove_object((short)hazard);
     nActiveHazards =
         MaxShort(0, (short)(nActiveHazards - 1));
@@ -172,20 +161,20 @@ void skew_randomly(short obj, short allowReverse)
     if (RandomBelow(100) < 50) {
         saved = aShipRightVector[obj];
         aShipRightVector[obj] =
-            aShipForwardVector[obj];
-        aShipForwardVector[obj] =
+            aShipFwdVec[obj];
+        aShipFwdVec[obj] =
             aShipUpVector[obj];
         aShipUpVector[obj] = saved;
     } else {
         saved = aShipUpVector[obj];
         aShipUpVector[obj] =
-            aShipForwardVector[obj];
-        aShipForwardVector[obj] =
+            aShipFwdVec[obj];
+        aShipFwdVec[obj] =
             aShipRightVector[obj];
         aShipRightVector[obj] = saved;
     }
     if (allowReverse != 0 && RandomBelow(100) < 50)
-        negate_vector(&aShipForwardVector[obj]);
+        negate_vector(&aShipFwdVec[obj]);
 }
 
 /* Function start: 0x401390 */
@@ -215,16 +204,16 @@ void init_hazard(short obj, FixedVector position, short moving)
     else
         type = OBJECT_TYPE_SPACE_MINE;
     set_objects_data(obj, type, -1);
-    aShipPosition[obj] = position;
+    aShipPositionsArray[obj] = position;
 
     if (type == OBJECT_TYPE_SPACE_MINE) {
-        point_at(obj, aShipPosition[0]);
+        point_at(obj, aShipPositionsArray[0]);
         skew_randomly(obj, 1);
         speed = 2;
         hazardMoves = 0;
     } else if (hazardMoves != 0) {
-        travelTime = (short)((cCockpitView < 4
-                                  ? acHazardTravelTimeByView[cCockpitView]
+        travelTime = (short)((cCurrentCockpitView < 4
+                                  ? acHazardTravelTimeByView[cCurrentCockpitView]
                                   : 65) +
                              RandomBelowOrEqual(15));
         if (bIntroSecondaryScene != 0) {
@@ -238,10 +227,10 @@ void init_hazard(short obj, FixedVector position, short moving)
         }
         ScaleFixedVector(&aShipVelocity[0],
                          (int)travelTime << 8, &vector);
-        AddFixedVectors(&aShipPosition[0], &vector, &vector);
+        AddFixedVectors(&aShipPositionsArray[0], &vector, &vector);
         point_at(obj, vector);
         speed = distance_between_points(
-            &vector, &aShipPosition[obj]);
+            &vector, &aShipPositionsArray[obj]);
         travelTime = MaxShort(3,
             (short)(travelTime - RandomBelow(5)));
         speed = (short)(speed / travelTime);
@@ -255,7 +244,7 @@ void init_hazard(short obj, FixedVector position, short moving)
     }
     if (kilrathi_near(0, 16000) != 0)
         speed = 0;
-    ScaleFixedVector(&aShipForwardVector[obj],
+    ScaleFixedVector(&aShipFwdVec[obj],
                      (int)speed << 8, &aShipVelocity[obj]);
 
     if (hazardMoves == 0) {
@@ -263,19 +252,19 @@ void init_hazard(short obj, FixedVector position, short moving)
             separation = 1500;
         else
             separation = RandomBelowOrEqual(1000) << 8;
-        ScaleFixedVector(&aShipForwardVector[obj],
+        ScaleFixedVector(&aShipFwdVec[obj],
                          separation, &vector);
-        SubtractFixedVectors(&aShipPosition[obj], &vector,
-                             &aShipPosition[obj]);
+        SubtractFixedVectors(&aShipPositionsArray[obj], &vector,
+                             &aShipPositionsArray[obj]);
     }
     if (type == OBJECT_TYPE_SPACE_MINE) {
-        align((short *)&aShipPosition[obj].x, 200);
-        align((short *)&aShipPosition[obj].y, 200);
-        align((short *)&aShipPosition[obj].z, 200);
+        align((short *)&aShipPositionsArray[obj].x, 200);
+        align((short *)&aShipPositionsArray[obj].y, 200);
+        align((short *)&aShipPositionsArray[obj].z, 200);
     }
     nActiveHazards++;
-    asObjectCounter[obj] = 0;
-    acObjectCollisionGraceTicks[obj] = 0;
+    asObjectCounterArray[obj] = 0;
+    acObjCollisionGraceTicks[obj] = 0;
 }
 
 /* Function start: 0x401680 */
@@ -301,18 +290,18 @@ short try_far_spot(FixedVector *spot, short *moving)
     unsigned short outsideRange;
 
     copy_frame(0, 63);
-    aShipPosition[63] = aShipPosition[0];
+    aShipPositionsArray[63] = aShipPositionsArray[0];
     pitch = signed_random(20);
     yaw = signed_random(35);
-    if (nCameraViewMode == 0 && cCockpitView <= 3) {
+    if (nCameraViewMode == 0 && cCurrentCockpitView <= 3) {
         signed char minimum;
         signed char maximum;
 
         minimum = acHazardPitchRange[
-            cCockpitView * 2];
+            cCurrentCockpitView * 2];
         if (pitch > minimum &&
             pitch < (maximum = acHazardPitchRange[
-                         cCockpitView * 2 + 1]) &&
+                         cCurrentCockpitView * 2 + 1]) &&
             abs(yaw) < 19 &&
             RandomBelow(100) < 60)
             *moving = 1;
@@ -326,16 +315,16 @@ short try_far_spot(FixedVector *spot, short *moving)
             *moving = 0;
     }
     pitch = (short)(pitch + find_ratio(
-        -15, 15, anObjectPitchRotation[0], -150, 150));
+        -15, 15, anObjPitchRot[0], -150, 150));
     yaw = (short)(yaw + find_ratio(
         -15, 15, anObjectYawRotation[0], -150, 150));
     rotate_about_j(yaw, &aShipRightVector[63],
-                   &aShipForwardVector[63]);
+                   &aShipFwdVec[63]);
     rotate_about_i(pitch, &aShipUpVector[63],
-                   &aShipForwardVector[63]);
+                   &aShipFwdVec[63]);
     position_relative_ijk(spot, 63, 0, 0, 3050);
     outsideRange = !(unsigned short)IsPointWithinRange(
-        &aShipPosition[0], spot, 3000);
+        &aShipPositionsArray[0], spot, 3000);
     return outsideRange != 0 &&
            within_field(pActiveHazardField, spot) != 0;
 }
@@ -352,10 +341,10 @@ short ok_hazard_spot(short obj)
 {
     int range = 4300;
 
-    if (asObjectScreenX[obj] == (short)0x8001)
+    if (asObjectScreenXList[obj] == (short)0x8001)
         range = rear_sphere();
-    return IsPointWithinRange(&aShipPosition[0],
-                              &aShipPosition[obj],
+    return IsPointWithinRange(&aShipPositionsArray[0],
+                              &aShipPositionsArray[obj],
                               (short)range);
 }
 
@@ -386,9 +375,9 @@ void approach(short obj)
     FixedVector offset;
 
     ScaleFixedVector(&aShipVelocity[0], 20 << 8, &offset);
-    AddFixedVectors(&aShipPosition[0], &offset, &offset);
+    AddFixedVectors(&aShipPositionsArray[0], &offset, &offset);
     point_at(obj, offset);
-    ScaleFixedVector(&aShipForwardVector[obj], 20 << 8,
+    ScaleFixedVector(&aShipFwdVec[obj], 20 << 8,
                      &offset);
     AddFixedVectors(&aShipVelocity[obj], &offset,
                     &aShipVelocity[obj]);
@@ -403,9 +392,9 @@ void manage_hazard(short obj, short slot)
         remove_hazard((signed char)obj);
         return;
     }
-    if (aeObjectType[obj] == OBJECT_TYPE_SPACE_MINE &&
-        asObjectScreenX[obj] != (short)0x8001 &&
-        (unsigned short)asObjectDistance[obj] > 1500 &&
+    if (aeObjectTypeList[obj] == OBJECT_TYPE_SPACE_MINE &&
+        asObjectScreenXList[obj] != (short)0x8001 &&
+        (unsigned short)asObjDistancesTable[obj] > 1500 &&
         real_velocity(obj) < 20)
         approach(obj);
 }
@@ -413,15 +402,15 @@ void manage_hazard(short obj, short slot)
 /* Function start: 0x401A60 */
 void match_ship_to_eye(void)
 {
-    aShipPosition[0] = aShipPosition[61];
+    aShipPositionsArray[0] = aShipPositionsArray[61];
     nHazardReferenceSpeed = 100;
     aShipRightVector[0] = aShipRightVector[61];
     aShipUpVector[0] = aShipUpVector[61];
-    aShipForwardVector[0] =
-        aShipForwardVector[61];
-    ScaleFixedVector(&aShipForwardVector[0], 100 << 8,
+    aShipFwdVec[0] =
+        aShipFwdVec[61];
+    ScaleFixedVector(&aShipFwdVec[0], 100 << 8,
                      &aShipVelocity[0]);
-    pActiveHazardField->center = aShipPosition[61];
+    pActiveHazardField->center = aShipPositionsArray[61];
 }
 
 /* Function start: 0x401B30 */
@@ -467,15 +456,15 @@ void add_hazard_field(enum ObjectType type, FixedVector center,
 {
     HazardField *field;
 
-    if (nHazardFieldCount >= 7)
+    if (nCurrentHazardFieldTotal >= 7)
         return;
-    field = &aHazardFields[nHazardFieldCount];
+    field = &aHazardFields[nCurrentHazardFieldTotal];
     field->type = type;
     field->center = center;
     field->outerRadius = radius;
     field->innerRadius = radius;
     field->density = density;
-    nHazardFieldCount++;
+    nCurrentHazardFieldTotal++;
 }
 
 /* Function start: 0x401C60 */
@@ -489,9 +478,9 @@ void check_hazards(void)
     if (pActiveHazardField == 0) {
         region = 0;
         field = aHazardFields;
-        while (region < nHazardFieldCount) {
+        while (region < nCurrentHazardFieldTotal) {
             if (field != pActiveHazardField &&
-                near_field(field, &aShipPosition[0]) != 0) {
+                near_field(field, &aShipPositionsArray[0]) != 0) {
                 start_hazard_field(region);
                 return;
             }
@@ -499,7 +488,7 @@ void check_hazards(void)
             field++;
         }
     } else if (near_field(pActiveHazardField,
-                          &aShipPosition[0]) == 0) {
+                          &aShipPositionsArray[0]) == 0) {
         remove_all_hazards();
     }
 }
@@ -636,7 +625,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous,
     CreateDebugOverlayConsole(instance, hMainWindow, 60, 20);
     nSessionStartTime = (unsigned int)time(0);
     ShowCursor(FALSE);
-    pEventManagerPump = 0;
+    pCurrentEventManagerPump = 0;
     clip.left = 0;
     clip.top = 0;
     clip.right = 320;
@@ -740,7 +729,7 @@ int CreateMainWindow(HINSTANCE instance, HINSTANCE previous,
 {
     WNDCLASSA windowClass;
 
-    hAppInstance = instance;
+    hCurrentAppInstance = instance;
     if (previous != 0)
         return 0;
 
@@ -761,7 +750,7 @@ int CreateMainWindow(HINSTANCE instance, HINSTANCE previous,
                                              szMainWindowTitle,
                                              WS_POPUP, 0, 0, 320, 200,
                                              0, 0,
-                                             hAppInstance, 0);
+                                             hCurrentAppInstance, 0);
     if (hMainWindow == 0) {
         GetLastError();
         return 0;
@@ -778,7 +767,7 @@ int CreateMainWindow(HINSTANCE instance, HINSTANCE previous,
         return 0;
     }
 
-    hPreviousCursor = SetCursor(0);
+    hPrevPointer = SetCursor(0);
     ShowWindow(hMainWindow, showCommand);
     UpdateWindow(hMainWindow);
     PumpWindowMessages();
@@ -805,8 +794,8 @@ unsigned int PumpWindowMessages(void)
     if (bWindowMessagePumpActive != 0)
         return 1;
     bWindowMessagePumpActive = 1;
-    if (pEventManagerPump != 0)
-        pEventManagerPump();
+    if (pCurrentEventManagerPump != 0)
+        pCurrentEventManagerPump();
 #ifdef SDL_PORT
     SdlPumpEvents();
 #else
@@ -942,7 +931,7 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
         }
         scanCode = ((unsigned long)lParam & 0xff0000) >> 16;
         if (scanCode == 1)
-            bEscapePressed = 1;
+            bEscapePressedFlag = 1;
         QueueInputEvent(3, 0, 0, (int)scanCode,
                         0, 0, 0);
         SetInputKeyState((int)scanCode, 1);
@@ -992,14 +981,14 @@ LRESULT CALLBACK MainWindowProc(HWND window, UINT message,
             return 0;
         break;
     case WM_MOUSEMOVE:
-        if (bPointerMovedByKeyboard == 0) {
+        if (bPtrMovedByKeyboardState == 0) {
             eventType = 13;
             QueueInputEvent(eventType, (int)mouseX,
                             (int)mouseY, 0,
                             primaryButton, secondaryButton, 0);
             mouseEvent = 1;
         } else {
-            bPointerMovedByKeyboard = 0;
+            bPtrMovedByKeyboardState = 0;
         }
         break;
     case WM_LBUTTONDOWN:
@@ -1048,14 +1037,14 @@ int __stdcall GetJoystickPosition(unsigned int *x, unsigned int *y,
     }
 #ifdef SDL_PORT
     if (SdlReadJoystick(
-            device, &aJoystickInfo[infoIndex]) != FALSE) {
+            device, &aJoystickInfos[infoIndex]) != FALSE) {
 #else
-    if (joyGetPos(device, &aJoystickInfo[infoIndex]) ==
+    if (joyGetPos(device, &aJoystickInfos[infoIndex]) ==
         JOYERR_NOERROR) {
 #endif
-        *x = aJoystickInfo[infoIndex].wXpos;
-        *y = aJoystickInfo[infoIndex].wYpos;
-        buttonState = aJoystickInfo[infoIndex].wButtons;
+        *x = aJoystickInfos[infoIndex].wXpos;
+        *y = aJoystickInfos[infoIndex].wYpos;
+        buttonState = aJoystickInfos[infoIndex].wButtons;
         *buttons = buttonState;
         if (joystick != 0)
             *buttons = buttonState >> 2;
@@ -1081,8 +1070,8 @@ int __stdcall GetJoystickPosition(unsigned int *x, unsigned int *y,
 /* Function start: 0x402AC0 */
 short GetJoystickButtons(void)
 {
-    return ((short)aJoystickInfo[1].wButtons << 2) |
-           (unsigned short)aJoystickInfo[0].wButtons;
+    return ((short)aJoystickInfos[1].wButtons << 2) |
+           (unsigned short)aJoystickInfos[0].wButtons;
 }
 
 /* Function start: 0x402AE0 */
@@ -1126,7 +1115,7 @@ void GetJoystickDevCaps(short joystick, short *xMin, short *xMax,
 /* Function start: 0x402B80 */
 HINSTANCE GetApplicationInstance(void)
 {
-    return hAppInstance;
+    return hCurrentAppInstance;
 }
 
 /* Function start: 0x402B90 */

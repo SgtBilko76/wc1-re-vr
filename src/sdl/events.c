@@ -371,7 +371,7 @@ static int SdlIsFullscreenShortcut(const SDL_KeyboardEvent *event)
 #else
     modifierPressed = (event->keysym.mod & KMOD_ALT) != 0 ||
         (SDL_GetModState() & KMOD_ALT) != 0 ||
-        abInputKeyState[0x38] != 0;
+        abInputKeyStateArray[0x38] != 0;
 #endif
     return enterPressed && modifierPressed;
 }
@@ -461,7 +461,7 @@ static int SdlHandleKeyboardEvent(const SDL_KeyboardEvent *event)
     if (event->keysym.scancode == SDL_SCANCODE_F1)
         bF1KeyLatch = pressed && event->repeat == 0;
     if (pressed && scanCode == 1)
-        bEscapePressed = 1;
+        bEscapePressedFlag = 1;
     if (scanCode != 0) {
         if (bKeyEventQueueEnabled != 0) {
             QueueInputEvent(pressed ? 3 : 4, 0, 0,
@@ -533,8 +533,8 @@ static void SdlHandleMouseEvent(const SDL_Event *event)
     secondaryButton = (buttons & SDL_BUTTON_RMASK) != 0;
 
     if (event->type == SDL_MOUSEMOTION) {
-        if (bPointerMovedByKeyboard != 0) {
-            bPointerMovedByKeyboard = 0;
+        if (bPtrMovedByKeyboardState != 0) {
+            bPtrMovedByKeyboardState = 0;
             return;
         }
         SdlQueueMouseMotion((unsigned short)mouseX,

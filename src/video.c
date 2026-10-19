@@ -8,8 +8,19 @@
 
 unsigned short nVideoMode = 0xffff; /* 0x0046b168 */
 
+
 /* Linker commons defined here; LINK orders them by identifier hash. */
-unsigned short awPaletteEntryAllocation[256]; /* 0x0059df80 */
+int aiPilotLevel[12]; /* 0x0059cf30 */
+short asTargetListRangesArray[16]; /* 0x0059cf60 */
+short asObjectDrawPosY[SPACE_OBJECT_COUNT]; /* 0x0059cf80 */
+short asObjectDrawPosX[SPACE_OBJECT_COUNT]; /* 0x0059d000 */
+short asPreviousObjectDistance[SPACE_OBJECT_COUNT]; /* 0x0059d080 */
+enum ObjectClass aeObjectClass[SPACE_OBJECT_COUNT]; /* 0x0059d100 */
+enum ShipObjective aeShipObjectiveList[12]; /* 0x0059d200 */
+short asObjectViewFrames[SPACE_OBJECT_COUNT]; /* 0x0059d230 */
+int nCurObjectiveRangeValue; /* 0x0059d2b0 */
+signed char acWingmanMessageStatesArray[16]; /* 0x0059d2c0 */
+short asCollisionDelayList[16]; /* 0x0059d2d0 */
 
 /* Function start: 0x4318F0 */
 void __stdcall ShutdownVideoHook(short mode)
@@ -28,7 +39,7 @@ short __stdcall ReserveContiguousPaletteEntries(short entryCount)
     entry = 0;
     firstEntry = 0;
     for (;;) {
-        if (awPaletteEntryAllocation[entry] != 0) {
+        if (awPalEntryAllocation[entry] != 0) {
             freeEntries = 0;
             firstEntry = (short)(entry + 1);
         } else
@@ -42,7 +53,7 @@ short __stdcall ReserveContiguousPaletteEntries(short entryCount)
 
     freeEntries = 0;
     while (freeEntries < entryCount) {
-        awPaletteEntryAllocation[firstEntry + freeEntries] =
+        awPalEntryAllocation[firstEntry + freeEntries] =
             entryCount;
         freeEntries++;
     }
@@ -56,9 +67,9 @@ void __stdcall ReleaseContiguousPaletteEntries(short firstEntry)
     short entryCount;
 
     entry = 0;
-    entryCount = awPaletteEntryAllocation[firstEntry];
+    entryCount = awPalEntryAllocation[firstEntry];
     while (entry < entryCount) {
-        awPaletteEntryAllocation[firstEntry + entry] = 0;
+        awPalEntryAllocation[firstEntry + entry] = 0;
         entry++;
     }
 }
@@ -76,7 +87,7 @@ void PrintPaletteAllocationMap(void)
         column = 0x40;
         do {
 #if !defined(SDL_PORT) || defined(SDL_PORT_LEGACY_DEBUG_OUTPUT)
-            printf("%c", awPaletteEntryAllocation[index++] < 1 ?
+            printf("%c", awPalEntryAllocation[index++] < 1 ?
                    '_' : '.');
 #else
             index++;

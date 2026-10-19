@@ -34,41 +34,41 @@ PacketResourceDescriptor aMissionResourceDescriptors[5] = {
     { 0, 0, 0 }
 }; /* 0x00469c20 */
 PacketResourceDescriptor aCockpitResourceDescriptors[19] = {
-    { &pTargetLockShape, 8, 0 },
-    { &pPilotHandShape, 2, 3 },
+    { &pTgtLockShapePtr, 8, 0 },
+    { &pCurrentPilotHandShapePtr, 2, 3 },
     { &pConfedCommBackground, 11, 0 },
     { &pCommStaticShape, 11, 11 },
     { &pKilrathiCommBackground, 11, 9 },
     { (unsigned char **)&pCockpitExplosionShape, 8, 5 },
     { &pCockpitIndicatorShape, 8, 4 },
-    { &pCinematicViewBackdrop, 8, 6 },
-    { &pRearViewBackdrop, 8, 7 },
-    { &apCommPortraitShapes[0], 11, 1 },
-    { &apCommPortraitShapes[1], 11, 2 },
-    { &apCommPortraitShapes[2], 11, 3 },
-    { &apCommPortraitShapes[3], 11, 4 },
-    { &apCommPortraitShapes[4], 11, 5 },
-    { &apCommPortraitShapes[5], 11, 6 },
-    { &apCommPortraitShapes[6], 11, 7 },
-    { &apCommPortraitShapes[7], 11, 8 },
-    { &apCommPortraitShapes[8], 11, 10 },
+    { &pCinematicViewBackdropPtr, 8, 6 },
+    { &pLogicRearViewBackdropPtr, 8, 7 },
+    { &apCommunicationPortraitShapesTable[0], 11, 1 },
+    { &apCommunicationPortraitShapesTable[1], 11, 2 },
+    { &apCommunicationPortraitShapesTable[2], 11, 3 },
+    { &apCommunicationPortraitShapesTable[3], 11, 4 },
+    { &apCommunicationPortraitShapesTable[4], 11, 5 },
+    { &apCommunicationPortraitShapesTable[5], 11, 6 },
+    { &apCommunicationPortraitShapesTable[6], 11, 7 },
+    { &apCommunicationPortraitShapesTable[7], 11, 8 },
+    { &apCommunicationPortraitShapesTable[8], 11, 10 },
     { 0, 0, 0 }
 }; /* 0x00469c48 */
 PacketResourceDescriptor aCockpitSecondaryResources[5] = {
     { &pCockpitDamageShape, -1, 7 },
-    { &pCockpitWeaponShape, -1, 9 },
+    { &pCockpitWeaponShapePtr, -1, 9 },
     { &pCockpitIndicatorShape, 8, 4 },
-    { &pTargetLockShape, 8, 0 },
+    { &pTgtLockShapePtr, 8, 0 },
     { 0, 0, 0 }
 }; /* 0x00469ce0 */
 PacketResourceDescriptor aCockpitPrimaryResources[8] = {
     { &pCockpitPilotShape, -1, 4 },
     { &pCockpitDamageShape, -1, 7 },
-    { &pCockpitWeaponShape, -1, 9 },
-    { &apCockpitShapes[0], -1, 0 },
-    { &apCockpitShapes[1], -1, 1 },
-    { &apCockpitShapes[2], -1, 2 },
-    { &apCockpitShapes[3], -1, 3 },
+    { &pCockpitWeaponShapePtr, -1, 9 },
+    { &apCockpitShapesList[0], -1, 0 },
+    { &apCockpitShapesList[1], -1, 1 },
+    { &apCockpitShapesList[2], -1, 2 },
+    { &apCockpitShapesList[3], -1, 3 },
     { 0, 0, 0 }
 }; /* 0x00469d08 */
 unsigned int bIntroSceneResourcesActive = 1; /* 0x00469d48 */
@@ -83,26 +83,20 @@ short asSceneAnimationLogicalFiles[8] = {
 short bSceneAnimationWaitCommand = 0; /* 0x00469d70 */
 
 /* Linker commons defined here; LINK orders them by identifier hash. */
-unsigned char *pSceneAnimationSceneData; /* 0x005a7c54 */
-unsigned char *pSceneAnimationPrimaryShape; /* 0x005a7c58 */
+unsigned char *pSceneAnimationSceneDataPtr; /* 0x005a7c54 */
+unsigned char *pCurrentSceneAnimationPrimaryShape; /* 0x005a7c58 */
 unsigned char *pSceneAnimationTextData; /* 0x005a7c5c */
-unsigned char *pSceneAnimationPacket; /* 0x005a7c60 */
+unsigned char *pSceneAnimationPacketPtr; /* 0x005a7c60 */
 SceneAnimationObject *pSceneAnimationObjects; /* 0x005a7c64 */
-short nSceneAnimationWaitFrames; /* 0x005a7c68 */
-unsigned char *pSceneAnimationDefinitions; /* 0x005a7c6c */
+short nSceneAnimationDelayFrames; /* 0x005a7c68 */
+unsigned char *pSceneAnimationDefinitionsPtr; /* 0x005a7c6c */
 unsigned char *pSceneAnimationSecondaryShape; /* 0x005a7c70 */
 signed char cCockpitLogicalFile; /* 0x005a7c74 */
-unsigned char *apCockpitShapes[4]; /* 0x005a7c80 */
-unsigned char *pCinematicViewBackdrop; /* 0x005a7c90 */
-unsigned char *pRearViewBackdrop; /* 0x005a7c94 */
-int bPlayerDestroyed; /* 0x005a7c98 */
-short nPlayerKillCount; /* 0x005a7c9c */
-short asCollisionTime[10]; /* 0x005a7ca0 */
-int nWingmanKilledThisMission; /* 0x005a7cb4 */
-short nWingmanKillCount; /* 0x005a7cb8 */
-short nLastFoundShip; /* 0x005a7cba */
-short asCollisionPartner[10]; /* 0x005a7cc0 */
-int nMemoryConfiguration; /* 0x005a7cd4 */
+unsigned char *apCockpitShapesList[4]; /* 0x005a7c80 */
+unsigned char *pCinematicViewBackdropPtr; /* 0x005a7c90 */
+unsigned char *pLogicRearViewBackdropPtr; /* 0x005a7c94 */
+int bCurrentPlayerDestroyed; /* 0x005a7c98 */
+short nPlayerKillTotal; /* 0x005a7c9c */
 
 /* Function start: 0x422010 */
 short ace_status(short ace, unsigned char bits)
@@ -181,19 +175,19 @@ unsigned short set_alert(short i, unsigned int bits)
 /* Function start: 0x422160 */
 void clear_alert(short i)
 {
-    asCollisionCountdown[i] = 0;
+    asCollisionDelayList[i] = 0;
     anShipAlertFlags[i] = 0;
-    abCollisionAlertTarget[i] = 0xff;
+    abCollisionAlertTargets[i] = 0xff;
 }
 
 /* Function start: 0x422180 */
 void start_collision_alert(short obj, short other)
 {
-    if ((short)(signed char)abCollisionAlertTarget[obj] != other) {
-        abCollisionAlertTarget[obj] = (unsigned char)other;
+    if ((short)(signed char)abCollisionAlertTargets[obj] != other) {
+        abCollisionAlertTargets[obj] = (unsigned char)other;
         steady_object(obj);
     }
-    asCollisionCountdown[obj] = 3;
+    asCollisionDelayList[obj] = 3;
     set_alert(obj, 1);
     asShipAfterburnerTimer[obj] = 0;
     set_special(obj, SPECIAL_MANEUVER_NONE);
@@ -202,8 +196,8 @@ void start_collision_alert(short obj, short other)
 /* Function start: 0x4221E0 */
 void try2end_collision_alert(short obj)
 {
-    asCollisionCountdown[obj]--;
-    if (asCollisionCountdown[obj] <= 0)
+    asCollisionDelayList[obj]--;
+    if (asCollisionDelayList[obj] <= 0)
         clear_alert(obj);
     else
         set_alert(obj, 2);
@@ -212,9 +206,9 @@ void try2end_collision_alert(short obj)
 /* Function start: 0x422220 */
 short normal_speed(short obj)
 {
-    if (aeSpecialManeuver[obj] !=
+    if (aeSpecialManeuvers[obj] !=
             SPECIAL_MANEUVER_AFTERBURNER &&
-        real_velocity(obj) <= asShipMaximumSpeed[obj])
+        real_velocity(obj) <= asShipMaximumSpeedArray[obj])
         return 1;
     return 0;
 }
@@ -239,8 +233,8 @@ short real_crash_time(short obj, short other)
     collisionRadius += asObjectCollisionRadius[other];
     collisionRadius += 30;
     collisionFound = 0;
-    ComputeVectorDelta(&aShipPosition[obj],
-                       &aShipPosition[other],
+    ComputeVectorDelta(&aShipPositionsArray[obj],
+                       &aShipPositionsArray[other],
                        &relativePosition);
     distance = Vector_magnitude(&relativePosition);
     if (((long)collisionRadius + 1500) * 0x100 < distance)
@@ -290,7 +284,7 @@ void clear_crash_cache(void)
     short i = 0;
 
     do {
-        asCollisionPartner[i] = -1;
+        asCollisionPartnerTable[i] = -1;
         i = i + 1;
     } while (i < 10);
 }
@@ -298,13 +292,13 @@ void clear_crash_cache(void)
 /* Function start: 0x422460 */
 short crash_time(short obj, short other)
 {
-    if (asCollisionPartner[obj] == other)
-        return asCollisionTime[obj];
-    if (other < 10 && asCollisionPartner[other] == obj)
-        return asCollisionTime[other];
+    if (asCollisionPartnerTable[obj] == other)
+        return asCollisionTimes[obj];
+    if (other < 10 && asCollisionPartnerTable[other] == obj)
+        return asCollisionTimes[other];
     if (aeObjectClass[other] == OBJECT_CLASS_ASTEROID &&
-        (asObjectScreenX[other] == -0x7fff ||
-         asObjectScreenX[obj] == -0x7fff))
+        (asObjectScreenXList[other] == -0x7fff ||
+         asObjectScreenXList[obj] == -0x7fff))
         return 0x7fff;
     return real_crash_time(obj, other);
 }
@@ -331,8 +325,8 @@ short detect_collisions(short obj)
         }
     }
     if (candidate != -1) {
-        asCollisionPartner[obj] = candidate;
-        asCollisionTime[obj] = closestTime;
+        asCollisionPartnerTable[obj] = candidate;
+        asCollisionTimes[obj] = closestTime;
     }
     return candidate;
 }
@@ -342,7 +336,7 @@ unsigned int unactive(short ship)
 {
     if (ship != -1 &&
         aeObjectClass[ship] >= OBJECT_CLASS_SHIP &&
-        aeShipManeuver[ship] != MANEUVER_HARD_BRAKE)
+        aeShipManeuversTable[ship] != MANEUVER_HARD_BRAKE)
         return 0;
     return 1;
 }
@@ -351,7 +345,7 @@ unsigned int unactive(short ship)
 int are_alive(short obj)
 {
     if (unactive(obj) == 0 &&
-        aeShipObjective[obj] != OBJECTIVE_WANDER)
+        aeShipObjectiveList[obj] != OBJECTIVE_WANDER)
         return 1;
     return 0;
 }
@@ -359,12 +353,12 @@ int are_alive(short obj)
 /* Function start: 0x4225C0 */
 int trim_goals(short obj, short amount)
 {
-    short goal = anYawGoal[obj];
+    short goal = anYawTarget[obj];
 
     if (amount < goal)
-        anYawGoal[obj] = amount;
+        anYawTarget[obj] = amount;
     else if (goal < -amount)
-        anYawGoal[obj] = -amount;
+        anYawTarget[obj] = -amount;
     goal = anPitchGoal[obj];
     if (amount < goal)
         anPitchGoal[obj] = amount;
@@ -380,7 +374,7 @@ int report_kilrathi_rout(int mode)
 
     for (obj = 0; obj < 10; obj++) {
         if (aeObjectClass[obj] < OBJECT_CLASS_SHIP ||
-            aeSpecialManeuver[obj] ==
+            aeSpecialManeuvers[obj] ==
                 SPECIAL_MANEUVER_UNKNOWN_9)
             continue;
         switch (mode) {
@@ -396,9 +390,9 @@ int report_kilrathi_rout(int mode)
             break;
         case 2:
             if (aeShipSide[obj] == SIDE_KILRATHI &&
-                (aeShipObjective[obj] ==
+                (aeShipObjectiveList[obj] ==
                      OBJECTIVE_ENGAGE_ENEMY ||
-                 aeShipObjective[obj] ==
+                 aeShipObjectiveList[obj] ==
                      OBJECTIVE_DESTROY_SHIP))
                 return 1;
             break;
@@ -414,15 +408,15 @@ short find_ship_index(short missionShip)
 {
     short obj;
 
-    nLastFoundShip = -1;
+    nLogicLastFoundShipValue = -1;
     if (missionShip != -1) {
         for (obj = 0; obj < 10; obj++) {
             if (((aeObjectClass[obj] >= OBJECT_CLASS_SHIP &&
-                  aeSpecialManeuver[obj] !=
+                  aeSpecialManeuvers[obj] !=
                       SPECIAL_MANEUVER_UNKNOWN_9) ||
                  aeObjectClass[obj] == OBJECT_CLASS_FUTURION) &&
                 nShipMissionIndices[obj] == missionShip) {
-                nLastFoundShip = obj;
+                nLogicLastFoundShipValue = obj;
                 return obj;
             }
         }
@@ -444,7 +438,7 @@ short try2rout(short obj)
         do {
             if (aeObjectClass[other] ==
                     OBJECT_CLASS_CAPITAL_SHIP &&
-                aeSpecialManeuver[other] !=
+                aeSpecialManeuvers[other] !=
                     SPECIAL_MANEUVER_UNKNOWN_9 &&
                 aeShipSide[obj] ==
                     aeShipSide[other])
@@ -453,7 +447,7 @@ short try2rout(short obj)
         } while (other < 10);
     }
     if (canContinue != 0) {
-        acShipStress[obj] = 0;
+        acShipStressList[obj] = 0;
         maneuver_complete(obj);
     } else {
         reset_mission_type(obj, MISSION_TYPE_ROUT);
@@ -466,7 +460,7 @@ short try2rout(short obj)
 /* Function start: 0x422830 */
 signed char no_goal(short ship)
 {
-    return (anYawGoal[ship] |
+    return (anYawTarget[ship] |
             anPitchGoal[ship] |
             anRollGoal[ship]) == 0;
 }
@@ -475,9 +469,9 @@ signed char no_goal(short ship)
 int being_tailed(short obj, short other)
 {
     ship_vs_ship(obj, other);
-    return nFacingToTarget < -60 &&
-           nTargetFacing > 85 &&
-           nTargetRange < 7000;
+    return nFacingToTargetValue < -60 &&
+           nTargetFacingValue > 85 &&
+           nTgtRange < 7000;
 }
 
 /* Function start: 0x4228A0 */
@@ -487,10 +481,10 @@ int any_enemy_tail(short obj)
 
     for (other = 0; other < 10; other++) {
         if (aeObjectClass[other] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[other] !=
+            aeSpecialManeuvers[other] !=
                 SPECIAL_MANEUVER_UNKNOWN_9 &&
             aeShipSide[obj] != aeShipSide[other] &&
-            acShipTarget[other] == obj &&
+            acShipTargetTable[other] == obj &&
             being_tailed(obj, other) != 0) {
             nTargetShip = other;
             return 1;
@@ -507,10 +501,10 @@ short detect_enemy_tail(short obj)
 
     for (other = 0; other < 10; other++) {
         if (aeObjectClass[other] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[other] !=
+            aeSpecialManeuvers[other] !=
                 SPECIAL_MANEUVER_UNKNOWN_9 &&
             aeShipSide[obj] != aeShipSide[other] &&
-            acShipTarget[other] == obj &&
+            acShipTargetTable[other] == obj &&
             being_tailed(obj, other) != 0)
             return other;
     }
@@ -520,7 +514,7 @@ short detect_enemy_tail(short obj)
 /* Function start: 0x4229B0 */
 int is_ship_tailing_player_target(short obj)
 {
-    short target = acShipTarget[0];
+    short target = acShipTargetTable[0];
 
     if (unactive(target) == 0 && being_tailed(target, obj) != 0)
         return 1;
@@ -534,7 +528,7 @@ int missile_on_tail(short obj)
 
     for (other = 0; other < 10; other++) {
         if (aeObjectClass[other] == OBJECT_CLASS_MISSILE &&
-            acShipTarget[other] == obj)
+            acShipTargetTable[other] == obj)
             return 1;
     }
     return 0;
@@ -564,12 +558,12 @@ unsigned int build_squad_list(short leader)
     short obj;
     short index = 1;
 
-    acFormationMemberList[0] = (signed char)leader;
-    acFormationMemberList[1] = -1;
+    acFormationMemberLists[0] = (signed char)leader;
+    acFormationMemberLists[1] = -1;
     for (obj = 0; obj < 10; obj++) {
-        if (asShipWingLeader[obj] == leader) {
-            acFormationMemberList[index++] = (signed char)obj;
-            acFormationMemberList[index] = -1;
+        if (asShipWingLeaderArray[obj] == leader) {
+            acFormationMemberLists[index++] = (signed char)obj;
+            acFormationMemberLists[index] = -1;
         }
     }
     return 0;
@@ -581,9 +575,9 @@ unsigned int find_squad_center(FixedVector *center)
     short count = 0;
 
     zero_vector(center);
-    while (acFormationMemberList[count] != -1) {
-        AddFixedVectors(center, &aShipPosition[
-                            (short)acFormationMemberList[count]],
+    while (acFormationMemberLists[count] != -1) {
+        AddFixedVectors(center, &aShipPositionsArray[
+                            (short)acFormationMemberLists[count]],
                         center);
         count++;
     }
@@ -603,17 +597,17 @@ unsigned int init_formation_burst(short obj)
     build_squad_list(obj);
     find_squad_center(&center);
     index = 0;
-    member = acFormationMemberList[0];
+    member = acFormationMemberLists[0];
     while (member != -1) {
-        destination = &aShipDestination[member];
-        ComputeVectorDelta(&center, &aShipPosition[member],
+        destination = &aShipDestinationsArray[member];
+        ComputeVectorDelta(&center, &aShipPositionsArray[member],
                            destination);
         ScaleFixedVector(destination, 0xa00, destination);
-        AddFixedVectors(destination, &aShipPosition[member],
+        AddFixedVectors(destination, &aShipPositionsArray[member],
                         destination);
         steady_object(member);
         reset_objective(member, OBJECTIVE_BREAK_FORMATION);
-        member = acFormationMemberList[++index];
+        member = acFormationMemberLists[++index];
     }
     return 0;
 }
@@ -634,7 +628,7 @@ unsigned int reset_mission_type(short obj,
 unsigned int change_mission_type(short obj,
                                  enum ShipMissionType missionType)
 {
-    if (aeShipObjective[obj] == OBJECTIVE_ENGAGE_ENEMY)
+    if (aeShipObjectiveList[obj] == OBJECTIVE_ENGAGE_ENEMY)
         aeShipMissionType[obj] = missionType;
     else
         reset_mission_type(obj, missionType);
@@ -646,7 +640,7 @@ unsigned int reset_objective(short ship, enum ShipObjective objective)
 {
     steady_object(ship);
     reset_tactic(ship, TACTIC_NONE);
-    aeShipObjective[ship] = objective;
+    aeShipObjectiveList[ship] = objective;
     return 0;
 }
 
@@ -655,7 +649,7 @@ unsigned int alter_objective(short ship, enum ShipObjective objective)
 {
     steady_object(ship);
     alter_tactic(ship, TACTIC_NONE);
-    aeShipObjective[ship] = objective;
+    aeShipObjectiveList[ship] = objective;
     return 0;
 }
 
@@ -663,8 +657,8 @@ unsigned int alter_objective(short ship, enum ShipObjective objective)
 unsigned int reset_tactic(short ship, enum ShipTactic tactic)
 {
     reset_maneuver(ship, MANEUVER_NONE);
-    aeShipTactic[ship] = tactic;
-    acShipTarget[ship] = -1;
+    aeShipTacticArray[ship] = tactic;
+    acShipTargetTable[ship] = -1;
     return 0;
 }
 
@@ -672,22 +666,22 @@ unsigned int reset_tactic(short ship, enum ShipTactic tactic)
 unsigned int alter_tactic(short ship, enum ShipTactic tactic)
 {
     reset_maneuver(ship, MANEUVER_NONE);
-    aeShipTactic[ship] = tactic;
+    aeShipTacticArray[ship] = tactic;
     return 0;
 }
 
 /* Function start: 0x422D30 */
 void reset_maneuver(short ship, short maneuver)
 {
-    aeShipManeuver[ship] = (enum ShipManeuver)maneuver;
-    asShipCount[ship] = 0;
+    aeShipManeuversTable[ship] = (enum ShipManeuver)maneuver;
+    asShipTotal[ship] = 0;
     acShipSequence[ship] = 0;
 }
 
 /* Function start: 0x422D60 */
 void try2reset_maneuver(short obj, short maneuver)
 {
-    if (aeShipManeuver[obj] != maneuver) {
+    if (aeShipManeuversTable[obj] != maneuver) {
         reset_maneuver(obj, maneuver);
         steady_object(obj);
     }
@@ -699,7 +693,7 @@ unsigned int set_special(short ship, enum SpecialManeuver special)
     enum SpecialManeuver *currentState;
     enum SpecialManeuver current;
 
-    currentState = &aeSpecialManeuver[ship];
+    currentState = &aeSpecialManeuvers[ship];
     current = *currentState;
     if (current < SPECIAL_MANEUVER_LOST_CONTROL || special > current)
         *currentState = special;
@@ -728,7 +722,7 @@ unsigned int approach_min_speed(short obj)
 unsigned int approach_half_speed(short obj)
 {
     short speed = aObjectTypeData[
-        aeObjectType[obj]].cruiseVelocity;
+        aeObjectTypeList[obj]].cruiseVelocity;
 
     approach_speed(obj, (int)(short)(speed & 0xfffe) << 7);
     return 0;
@@ -739,7 +733,7 @@ unsigned int approach_cruise_speed(short ship)
 {
     approach_speed(ship,
         (int)aObjectTypeData[
-            aeObjectType[ship]].cruiseVelocity << 8);
+            aeObjectTypeList[ship]].cruiseVelocity << 8);
     return 0;
 }
 
@@ -747,7 +741,7 @@ unsigned int approach_cruise_speed(short ship)
 unsigned int approach_full_speed(short ship)
 {
     approach_speed(ship,
-                      (int)asShipMaximumSpeed[ship] << 8);
+                      (int)asShipMaximumSpeedArray[ship] << 8);
     return 0;
 }
 
@@ -762,9 +756,9 @@ unsigned int approach_ship_speed(short obj, short other)
 unsigned int get_front_spot(short obj, unsigned short distance,
                             FixedVector *point)
 {
-    ScaleFixedVector(&aShipForwardVector[obj],
+    ScaleFixedVector(&aShipFwdVec[obj],
                      (int)distance << 8, point);
-    AddFixedVectors(&aShipPosition[obj], point, point);
+    AddFixedVectors(&aShipPositionsArray[obj], point, point);
     return 0;
 }
 
@@ -772,17 +766,17 @@ unsigned int get_front_spot(short obj, unsigned short distance,
 unsigned int get_rear_spot(short obj, unsigned short distance,
                            FixedVector *point)
 {
-    ScaleFixedVector(&aShipForwardVector[obj],
+    ScaleFixedVector(&aShipFwdVec[obj],
                      -((int)distance << 8), point);
-    AddFixedVectors(&aShipPosition[obj], point, point);
+    AddFixedVectors(&aShipPositionsArray[obj], point, point);
     return 0;
 }
 
 /* Function start: 0x422F60 */
 unsigned int close_behind(volatile short range)
 {
-    if (nTargetRange < range &&
-        nTargetFacing < -0x32)
+    if (nTgtRange < range &&
+        nTargetFacingValue < -0x32)
         return 1;
     return 0;
 }
@@ -794,25 +788,25 @@ short scan_for_enemy(short obj, unsigned short range)
     short distance;
 
     nTargetShip = -1;
-    nTargetRange = 0;
+    nTgtRange = 0;
     for (other = 0; other < 10; other++) {
         if (aeObjectClass[other] < OBJECT_CLASS_SHIP ||
-            aeSpecialManeuver[other] ==
+            aeSpecialManeuvers[other] ==
                 SPECIAL_MANEUVER_UNKNOWN_9)
             continue;
         if (aeShipSide[obj] == aeShipSide[other])
             continue;
-        distance = distance_from_point(other, &aShipPosition[obj]);
+        distance = distance_from_point(other, &aShipPositionsArray[obj]);
         if (distance < range &&
             (nTargetShip == -1 ||
-             nTargetRange > distance)) {
+             nTgtRange > distance)) {
             nTargetShip = other;
-            nTargetRange = distance;
+            nTgtRange = distance;
         }
     }
     if (nTargetShip != -1) {
         get_facing_range_from_object(obj, nTargetShip);
-        nTargetRange =
+        nTgtRange =
             distance_from_object(obj, nTargetShip);
     }
     return nTargetShip;
@@ -826,11 +820,11 @@ int any_enemy(short obj, short range)
     nTargetShip = -1;
     for (other = 0; other < 10; other++) {
         if (aeObjectClass[other] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[other] !=
+            aeSpecialManeuvers[other] !=
                 SPECIAL_MANEUVER_UNKNOWN_9 &&
             aeShipSide[obj] != aeShipSide[other]) {
-            nTargetRange = distance_from_object(obj, other);
-            if (nTargetRange < range) {
+            nTgtRange = distance_from_object(obj, other);
+            if (nTgtRange < range) {
                 nTargetShip = other;
                 return 1;
             }
@@ -850,7 +844,7 @@ short nearest_enemy_range(short obj)
     other = 0;
     do {
         if (aeObjectClass[other] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[other] !=
+            aeSpecialManeuvers[other] !=
                 SPECIAL_MANEUVER_UNKNOWN_9 &&
             aeShipSide[obj] != aeShipSide[other])
             range = MinShort(range, distance_from_object(obj, other));
@@ -867,12 +861,12 @@ int FindEnemyAimingWithinRange(short obj, short range)
 
     for (other = 0; other < 10; other++) {
         if (aeObjectClass[other] < OBJECT_CLASS_SHIP ||
-            aeSpecialManeuver[other] ==
+            aeSpecialManeuvers[other] ==
                 SPECIAL_MANEUVER_UNKNOWN_9 ||
             aeShipSide[obj] == aeShipSide[other])
             continue;
         get_facing_range_from_object(obj, other);
-        if (range > nTargetRange && nTargetFacing > 80) {
+        if (range > nTgtRange && nTargetFacingValue > 80) {
             nTargetShip = other;
             return 1;
         }
@@ -884,8 +878,8 @@ int FindEnemyAimingWithinRange(short obj, short range)
 /* Nothing in the shipped executable calls this function. */
 unsigned int FireOnAlternateTurns(short obj)
 {
-    if ((abShipTurn[obj] & 1) == 0)
-        fire(obj, acShipTarget[obj]);
+    if ((abShipTurnList[obj] & 1) == 0)
+        fire(obj, acShipTargetTable[obj]);
     return 0;
 }
 
@@ -896,10 +890,10 @@ void fire_when_ready(short obj, short aimed)
     if (nYourWingman == obj &&
         aiPilotLevel[obj] != 11) {
         ship_vs_ship(obj, 0);
-        if (nFacingToTarget > 80)
+        if (nFacingToTargetValue > 80)
             return;
     }
-    fire(obj, acShipTarget[obj]);
+    fire(obj, acShipTargetTable[obj]);
 }
 
 /* Function start: 0x423260 */
@@ -907,8 +901,8 @@ unsigned int ships_within_range(short obj, short other, short range)
 {
     FixedVector delta;
 
-    ComputeVectorDelta(&aShipPosition[obj],
-                       &aShipPosition[other], &delta);
+    ComputeVectorDelta(&aShipPositionsArray[obj],
+                       &aShipPositionsArray[other], &delta);
     return IsVectorWithinRange(&delta, range);
 }
 
@@ -919,12 +913,12 @@ int attacker_in_range(short obj, unsigned short range)
 
     for (other = 0; other < 10; other++) {
         if (aeObjectClass[other] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[other] !=
+            aeSpecialManeuvers[other] !=
                 SPECIAL_MANEUVER_UNKNOWN_9 &&
             aeShipSide[obj] != aeShipSide[other] &&
-            acShipTarget[other] == obj) {
-            nTargetRange = distance_from_object(other, obj);
-            if (range > nTargetRange) {
+            acShipTargetTable[other] == obj) {
+            nTgtRange = distance_from_object(other, obj);
+            if (range > nTgtRange) {
                 nTargetShip = other;
                 return 1;
             }
@@ -944,17 +938,17 @@ int in_danger(short obj)
     target = -1;
     for (other = 0; other < 10; other++) {
         if (aeObjectClass[other] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[other] !=
+            aeSpecialManeuvers[other] !=
                 SPECIAL_MANEUVER_UNKNOWN_9 &&
             aeShipSide[obj] != aeShipSide[other]) {
             nTargetShip = target;
-            if (acShipTarget[other] != obj)
+            if (acShipTargetTable[other] != obj)
                 continue;
             range = (unsigned short)distance_from_object(other, obj);
             target = nTargetShip;
-            if (target == -1 || range < nTargetRange) {
+            if (target == -1 || range < nTgtRange) {
                 target = other;
-                nTargetRange = (short)range;
+                nTgtRange = (short)range;
             }
         }
     }
@@ -965,7 +959,7 @@ int in_danger(short obj)
 /* Function start: 0x423400 */
 unsigned int target_within_range(short obj)
 {
-    short target = acShipTarget[obj];
+    short target = acShipTargetTable[obj];
 
     if (unactive(target) != 0)
         return 0;
@@ -982,19 +976,19 @@ short build_target_list(short obj, short range)
     count = 0;
     for (other = 0; other < 10; other++) {
         if (aeObjectClass[other] >= OBJECT_CLASS_SHIP &&
-            aeSpecialManeuver[other] !=
+            aeSpecialManeuvers[other] !=
                 SPECIAL_MANEUVER_UNKNOWN_9 &&
             aeShipSide[obj] != aeShipSide[other]) {
             distance = distance_from_object(obj, other);
             if (distance < range) {
-                acFormationMemberList[count] =
+                acFormationMemberLists[count] =
                     (signed char)other;
-                asTargetListRange[count] = distance;
+                asTargetListRangesArray[count] = distance;
                 count++;
             }
         }
     }
-    acFormationMemberList[count] = -1;
+    acFormationMemberLists[count] = -1;
     return count;
 }
 
@@ -1008,13 +1002,13 @@ int select_safe_target(short obj)
     index = -1;
     do {
         index++;
-        target = (short)acFormationMemberList[index];
+        target = (short)acFormationMemberLists[index];
         if (target == -1)
             break;
     } while (in_danger(target) != 0);
     if (target == -1 && index > 0) {
         index--;
-        target = (short)acFormationMemberList[
+        target = (short)acFormationMemberLists[
             RandomBelowOrEqual(index)];
     }
     nTargetShip = target;
@@ -1024,33 +1018,33 @@ int select_safe_target(short obj)
 /* Function start: 0x423530 */
 void inherit_leader_mission(short obj)
 {
-    short leader = asShipWingLeader[obj];
+    short leader = asShipWingLeaderArray[obj];
 
     if (leader != -1 &&
         aeObjectClass[obj] >= OBJECT_CLASS_SHIP) {
         aeShipMissionType[obj] =
             aeShipMissionType[leader];
-        anShipMissionShip[obj] =
-            anShipMissionShip[leader];
-        aShipMissionSpot[obj] =
-            aShipMissionSpot[leader];
-        asShipWingLeader[obj] = -1;
+        anShipMissionShips[obj] =
+            anShipMissionShips[leader];
+        aShipMissionSpotArray[obj] =
+            aShipMissionSpotArray[leader];
+        asShipWingLeaderArray[obj] = -1;
     }
 }
 
 /* Function start: 0x4235B0 */
 void inherit_leader(short obj)
 {
-    short leader = asShipWingLeader[obj];
+    short leader = asShipWingLeaderArray[obj];
     short other;
 
     if (leader == -1 || aeObjectClass[obj] < OBJECT_CLASS_SHIP)
         return;
     inherit_leader_mission(obj);
-    asShipWingLeader[obj] = asShipWingLeader[leader];
+    asShipWingLeaderArray[obj] = asShipWingLeaderArray[leader];
     for (other = 0; other < 10; other++) {
-        if (asShipWingLeader[other] == leader)
-            asShipWingLeader[other] = obj;
+        if (asShipWingLeaderArray[other] == leader)
+            asShipWingLeaderArray[other] = obj;
     }
 }
 
@@ -1135,7 +1129,7 @@ int locate_ship(short missionShip, FixedVector *point)
 
     obj = find_ship_index(missionShip);
     if (obj != -1) {
-        *point = aShipPosition[obj];
+        *point = aShipPositionsArray[obj];
         return 1;
     }
     if (dead_ship(missionShip) != 0)
@@ -1161,26 +1155,26 @@ unsigned int get_follow_point(short obj, FixedVector *point)
 
     if (aeShipSide[obj] == SIDE_KILRATHI) {
         *point = aMissionNavPoints[
-            anShipMissionShip[obj]].position;
+            anShipMissionShips[obj]].position;
         return 0;
     }
-    pathIndex = (short)abShipNavPointIndex[obj];
+    pathIndex = (short)abShipNavPtIdx[obj];
     while (++pathIndex < 16) {
-        objective = (short)abFlightPath[pathIndex];
-        type = aMissionObjectives[objective].type;
+        objective = (short)abFlightPathList[pathIndex];
+        type = aMissionObjectivesArray[objective].type;
         switch (type) {
         case 0:
-            *point = aMissionObjectives[objective].position;
-            abShipNavPointIndex[obj] = (signed char)pathIndex;
+            *point = aMissionObjectivesArray[objective].position;
+            abShipNavPtIdx[obj] = (signed char)pathIndex;
             return 0;
         case 1:
-            missionShip = (short)aMissionObjectives[objective].index;
+            missionShip = (short)aMissionObjectivesArray[objective].index;
             objective = find_ship_index(missionShip);
             if (objective == -1)
                 *point = aMissionNavPoints[missionShip].position;
             else
-                *point = aShipPosition[objective];
-            abShipNavPointIndex[obj] = (signed char)pathIndex;
+                *point = aShipPositionsArray[objective];
+            abShipNavPtIdx[obj] = (signed char)pathIndex;
             return 0;
         }
     }
@@ -1191,8 +1185,8 @@ unsigned int get_follow_point(short obj, FixedVector *point)
 unsigned int get_first_follow_point(short obj, FixedVector *point)
 {
     if (aeShipSide[obj] == SIDE_IMPERIAL)
-        abShipNavPointIndex[obj] =
-            cCurrentNavPointIndex - 1;
+        abShipNavPtIdx[obj] =
+            cCurrentNavPtIdx - 1;
     get_follow_point(obj, point);
     return 0;
 }
@@ -1219,11 +1213,11 @@ int abandoned(short obj, short other)
 {
     short navPoint;
 
-    if ((abShipTurn[obj] & 7) == 0 &&
+    if ((abShipTurnList[obj] & 7) == 0 &&
         aeShipSide[obj] != SIDE_KILRATHI &&
         RandomBelowOrEqual(8) == 0) {
         navPoint = FindNearestNavPoint(obj);
-        if (nCurrentNavPoint != navPoint &&
+        if (nCurrentNavigationPoint != navPoint &&
             hostile_sphere(obj, navPoint) != 0 &&
             distance_from_object(obj, other) > 10000) {
             explode(-1, obj);
@@ -1237,22 +1231,22 @@ int abandoned(short obj, short other)
 /* Function start: 0x423A50 */
 void engage(short obj, short target, enum ShipObjective objective)
 {
-    if (aeShipObjective[obj] != objective) {
+    if (aeShipObjectiveList[obj] != objective) {
         reset_objective(obj, objective);
         if (acShipRating[obj] > 8 &&
             ace_status(
                 (short)((short)aiPilotLevel[obj] - 14), 8) == 0)
             ace_greeting(obj);
     }
-    acShipTarget[obj] = target;
+    acShipTargetTable[obj] = target;
 }
 
 /* Function start: 0x423AC0 */
 int target_valid(short obj)
 {
-    return unactive(acShipTarget[obj]) == 0 &&
+    return unactive(acShipTargetTable[obj]) == 0 &&
            aeShipSide[
-               acShipTarget[obj]] !=
+               acShipTargetTable[obj]] !=
                aeShipSide[obj];
 }
 
@@ -1265,17 +1259,17 @@ unsigned int triumph(short obj)
     switch (aeShipMissionType[obj]) {
     case MISSION_TYPE_PATROL:
         objective = 0;
-        while (abFlightPath[objective] != -1 &&
+        while (abFlightPathList[objective] != -1 &&
                visited(
-                   (short)abFlightPath[objective]) != 0)
+                   (short)abFlightPathList[objective]) != 0)
             objective++;
         return 1;
     case MISSION_TYPE_ESCORT:
     case MISSION_TYPE_DEFEND:
     case MISSION_TYPE_WINGMAN:
-        return dead_ship(anShipMissionShip[obj]) == 0;
+        return dead_ship(anShipMissionShips[obj]) == 0;
     case MISSION_TYPE_STRIKE:
-        result = dead_ship(anShipMissionShip[obj]);
+        result = dead_ship(anShipMissionShips[obj]);
     }
     return result;
 }
@@ -1298,11 +1292,11 @@ short find_ratio(short inputMinimum, short inputMaximum,
 short evaluate_damage(short obj)
 {
     ObjectTypeData *typeData =
-        &aObjectTypeData[aeObjectType[obj]];
+        &aObjectTypeData[aeObjectTypeList[obj]];
 
     if (aeObjectClass[obj] < OBJECT_CLASS_SHIP)
         return 100;
-    return (short)((acShipDamage[obj] * -26) /
+    return (short)((acShipDmg[obj] * -26) /
                        typeData->damageCapacity +
                    (aasShipArmor[obj][1] * 27) /
                        typeData->armorRear +
@@ -1420,36 +1414,36 @@ unsigned int initialize_cockpit(int requestedMode)
 
     mode = (signed char)requestedMode;
 
-    if (bCockpitlessView == 0 && mode == cScreenViewportMode) {
-        if (stSpaceBuffer.pixels != 0)
-            ClearViewport(&stSpaceBuffer, cPrimaryViewBufferColour);
+    if (bCockpitlessView == 0 && mode == cScreenViewMode) {
+        if (stSpaceBufferViewport.pixels != 0)
+            ClearViewport(&stSpaceBufferViewport, cPrimaryViewBufferColour);
         else
             initialize_view_buffer();
         return 0;
     }
 
     GetScreenUpdateFlag();
-    savedScreen = stScreen;
-    stScreen.left = 0;
-    stScreen.top = 0;
-    stScreen.right = 319;
-    stScreen.bottom = 199;
-    ClearViewport(&stModalSourceViewport, cBlackColour);
+    savedScreen = stScreenView;
+    stScreenView.left = 0;
+    stScreenView.top = 0;
+    stScreenView.right = 319;
+    stScreenView.bottom = 199;
+    ClearViewport(&stModalSrcViewport, cBlackColour);
 
     cCockpitLogicalFile =
-        (unsigned char)(cCockpitView + 17);
-    cScreenViewportMode = mode;
+        (unsigned char)(cCurrentCockpitView + 17);
+    cScreenViewMode = mode;
     switch (mode) {
     case 0:
-        if (apCockpitShapes[0] != 0) {
+        if (apCockpitShapesList[0] != 0) {
             if (bCockpitlessView == 0)
-                DrawSpriteDefault(&stScreen, 0, 0,
-                                  apCockpitShapes[0], 0);
+                DrawSpriteDefault(&stScreenView, 0, 0,
+                                  apCockpitShapesList[0], 0);
         } else {
             backdrop = FetchDiskPacketRetrying(
                 (short)cCockpitLogicalFile, 0, 0);
             if (bCockpitlessView == 0)
-                DrawSpriteDefault(&stScreen, 0, 0, backdrop, 0);
+                DrawSpriteDefault(&stScreenView, 0, 0, backdrop, 0);
             ReleasePacketHandle(backdrop);
         }
         ResetCockpitPaletteEntries();
@@ -1465,52 +1459,52 @@ unsigned int initialize_cockpit(int requestedMode)
         set_up_screen_viewport(0);
         break;
     case 1:
-        if (apCockpitShapes[1] != 0) {
+        if (apCockpitShapesList[1] != 0) {
             if (bCockpitlessView == 0)
-                DrawSpriteDefault(&stScreen, 0, 0,
-                                  apCockpitShapes[1], 0);
+                DrawSpriteDefault(&stScreenView, 0, 0,
+                                  apCockpitShapesList[1], 0);
         } else {
             backdrop = FetchDiskPacketRetrying(
                 (short)cCockpitLogicalFile, 1, 0);
             if (bCockpitlessView == 0)
-                DrawSpriteDefault(&stScreen, 0, 0, backdrop, 0);
+                DrawSpriteDefault(&stScreenView, 0, 0, backdrop, 0);
             ReleasePacketHandle(backdrop);
         }
         set_up_screen_viewport(1);
         break;
     case 2:
-        if (apCockpitShapes[2] != 0) {
+        if (apCockpitShapesList[2] != 0) {
             if (bCockpitlessView == 0)
-                DrawSpriteDefault(&stScreen, 0, 0,
-                                  apCockpitShapes[2], 0);
+                DrawSpriteDefault(&stScreenView, 0, 0,
+                                  apCockpitShapesList[2], 0);
         } else {
             backdrop = FetchDiskPacketRetrying(
                 (short)cCockpitLogicalFile, 2, 0);
             if (bCockpitlessView == 0)
-                DrawSpriteDefault(&stScreen, 0, 0, backdrop, 0);
+                DrawSpriteDefault(&stScreenView, 0, 0, backdrop, 0);
             ReleasePacketHandle(backdrop);
         }
         set_up_screen_viewport(2);
         break;
     case 3:
-        if (apCockpitShapes[3] != 0) {
+        if (apCockpitShapesList[3] != 0) {
             if (bCockpitlessView == 0)
-                DrawSpriteDefault(&stScreen, 0, 0,
-                                  apCockpitShapes[3], 0);
+                DrawSpriteDefault(&stScreenView, 0, 0,
+                                  apCockpitShapesList[3], 0);
         } else {
             backdrop = FetchDiskPacketRetrying(
                 (short)cCockpitLogicalFile, 3, 0);
             if (bCockpitlessView == 0)
-                DrawSpriteDefault(&stScreen, 0, 0, backdrop, 0);
+                DrawSpriteDefault(&stScreenView, 0, 0, backdrop, 0);
             ReleasePacketHandle(backdrop);
         }
         set_up_screen_viewport(3);
         break;
     case 4:
         if (bIntroSceneResourcesActive == 1) {
-            if (pCinematicViewBackdrop != 0) {
-                DrawSpriteDefault(&stScreen, 0, 0,
-                                  pCinematicViewBackdrop, 0);
+            if (pCinematicViewBackdropPtr != 0) {
+                DrawSpriteDefault(&stScreenView, 0, 0,
+                                  pCinematicViewBackdropPtr, 0);
                 if (bCockpitlessView < 1) {
                     DIBslam();
                     DIBslamReal();
@@ -1518,7 +1512,7 @@ unsigned int initialize_cockpit(int requestedMode)
             } else {
                 backdrop = FetchDiskPacketRetrying(8, 6, 0);
                 if (backdrop != 0) {
-                    DrawSpriteDefault(&stScreen, 0, 0, backdrop, 0);
+                    DrawSpriteDefault(&stScreenView, 0, 0, backdrop, 0);
                     if (bCockpitlessView < 1) {
                         DIBslam();
                         DIBslamReal();
@@ -1536,14 +1530,14 @@ unsigned int initialize_cockpit(int requestedMode)
         set_up_screen_viewport(5);
         break;
     case 7:
-        if (pRearViewBackdrop != 0) {
+        if (pLogicRearViewBackdropPtr != 0) {
             if (bCockpitlessView == 0)
-                DrawSpriteDefault(&stScreen, 0, 0,
-                                  pRearViewBackdrop, 0);
+                DrawSpriteDefault(&stScreenView, 0, 0,
+                                  pLogicRearViewBackdropPtr, 0);
         } else {
             backdrop = FetchDiskPacketRetrying(8, 7, 0);
             if (bCockpitlessView == 0)
-                DrawSpriteDefault(&stScreen, 0, 0, backdrop, 0);
+                DrawSpriteDefault(&stScreenView, 0, 0, backdrop, 0);
             if (backdrop != 0)
                 ReleasePacketHandle(backdrop);
         }
@@ -1552,11 +1546,11 @@ unsigned int initialize_cockpit(int requestedMode)
     }
 
     bViewBufferEnabled = 1;
-    SetViewportRect(&stSpaceBuffer, 0, 0,
+    SetViewportRect(&stSpaceBufferViewport, 0, 0,
                     (unsigned short)(nScreenWidth - 1),
                     (unsigned short)(nScreenHeight - 1));
     result = initialize_view_buffer();
-    stScreen = savedScreen;
+    stScreenView = savedScreen;
     return result;
 }
 
@@ -1571,14 +1565,14 @@ unsigned int InitializeConstellationObject(
     alter_yaw((short)-definition->yaw, 63);
     alter_pitch((short)-definition->pitch, 63);
     alter_roll(definition->roll, 63);
-    ScaleFixedVector(&aShipForwardVector[63],
+    ScaleFixedVector(&aShipFwdVec[63],
                      0x753000, &position);
-    aShipPosition[object] = position;
-    asObjectScreenScale[object] = 0xff;
-    asObjectScreenAngle[object] = 0;
-    asObjectViewFrame[object] = 0;
-    aeObjectType[object] = OBJECT_TYPE_HORNET;
-    apObjectShape[object] =
+    aShipPositionsArray[object] = position;
+    asObjScreenScalesArray[object] = 0xff;
+    asObjScreenAngles[object] = 0;
+    asObjectViewFrames[object] = 0;
+    aeObjectTypeList[object] = OBJECT_TYPE_HORNET;
+    apObjShapeArray[object] =
         FetchDiskPacketRetrying(
             12, (short)(definition->shapePacket + 1), 0);
     return 0;
@@ -1587,7 +1581,7 @@ unsigned int InitializeConstellationObject(
 /* Function start: 0x4243B0 */
 unsigned int FreeConstellationObject(short object)
 {
-    FreePacketAndClear(&apObjectShape[object], 0);
+    FreePacketAndClear(&apObjShapeArray[object], 0);
     remove_object(object);
     return 0;
 }
@@ -1598,23 +1592,23 @@ unsigned int init_constellation(short scene)
     short slot;
     short object;
 
-    if (pConstellationShape != 0)
+    if (pCurrentConstellationShape != 0)
         return 0;
 
     scene--;
-    pConstellationShape =
+    pCurrentConstellationShape =
         FetchDiskPacketRetrying(12, 0, 0);
     if (nTrainSimActive != 0 || scene < 0)
         return;
 
     slot = 0;
     do {
-        if (pConstellationDefinitions[scene * 4 + slot].shapePacket !=
+        if (pConstellationDefinitionsPtr[scene * 4 + slot].shapePacket !=
             -1) {
             object = find_vacant_3d_object();
             if (object != -1) {
                 InitializeConstellationObject(
-                    &pConstellationDefinitions[scene * 4 + slot],
+                    &pConstellationDefinitionsPtr[scene * 4 + slot],
                     object);
             }
             asConstellationObjectIndices[slot] = object;
@@ -1633,7 +1627,7 @@ unsigned int free_constellation(void)
     short slot;
 
     slot = 0;
-    FreePacketAndClear(&pConstellationShape, 0);
+    FreePacketAndClear(&pCurrentConstellationShape, 0);
     do {
         object = asConstellationObjectIndices[slot];
         if (object != -1) {
@@ -1648,24 +1642,24 @@ unsigned int free_constellation(void)
 /* Function start: 0x4244E0 */
 void init_vdus(void)
 {
-    stRightVdu = stScreen;
-    stLeftVdu = stScreen;
+    stRightVduViewport = stScreenView;
+    stLeftVdu = stScreenView;
 
     InitializeTextContextFromFont(
         &stLeftVduTextContext, 2,
         cPrimaryTextColour,
         (signed char)cBlackColour);
     stLeftVduTextContext.viewport = &stLeftVdu;
-    stLeftVduTextContext.text = szDefaultTextBuffer;
+    stLeftVduTextContext.text = szDefaultTxtBuf;
     set_mode(0, 1);
     anVduModeCache[0] = 0;
 
     InitializeTextContextFromFont(
-        &stRightVduTextContext, 2,
+        &stRightVduTxtContext, 2,
         cPrimaryTextColour,
         (signed char)cBlackColour);
-    stRightVduTextContext.viewport = &stRightVdu;
-    stRightVduTextContext.text = szDefaultTextBuffer;
+    stRightVduTxtContext.viewport = &stRightVduViewport;
+    stRightVduTxtContext.text = szDefaultTxtBuf;
     set_mode(1, nTrainSimActive == 0 ? 5 : 3);
     anVduModeCache[1] = 0;
 }
@@ -1680,13 +1674,13 @@ unsigned int InitializeCockpitResources(signed char mode)
     short weapon;
 
     if (bCockpitResourcesActive == 1) {
-        if (mode == cCockpitView)
+        if (mode == cCurrentCockpitView)
             return 0;
         free_cockpit();
     }
 
     bCockpitResourcesActive = 1;
-    cCockpitView = mode;
+    cCurrentCockpitView = mode;
     cCockpitLogicalFile = (unsigned char)(mode + 17);
     clear_cockpit_damage();
     ClearHudGunReadouts();
@@ -1695,72 +1689,72 @@ unsigned int InitializeCockpitResources(signed char mode)
 
     LoadShapeSet(aCockpitPrimaryResources, 4,
                  (short)cCockpitLogicalFile);
-    pScreenViewportPacket =
+    pCurrentScreenViewportPkt =
         LoadPacketAllocated(
             (short)cCockpitLogicalFile, 6);
-    stCockpitBar = stScreen;
+    stCockpitBar = stScreenView;
     init_vdus();
 
     InitializeTextContextFromFont(
-        &stCockpitReadoutTextContext, 2,
+        &stCurrentCockpitReadoutTextCtx, 2,
         cPrimaryTextColour,
         (signed char)cBlackColour);
-    stCockpitReadoutTextContext.viewport = &stScreen;
-    SetTextContext(&stCockpitReadoutTextContext);
+    stCurrentCockpitReadoutTextCtx.viewport = &stScreenView;
+    SetTextContext(&stCurrentCockpitReadoutTextCtx);
 
     SetTextCursor(
-        (unsigned short)stCockpitLayout.readoutOrigins[0][(int)cCockpitView].x,
-        (unsigned short)stCockpitLayout.readoutOrigins[0][(int)cCockpitView].y);
-    InitializeCockpitReadout(4, &stCockpitReadoutTextContext);
+        (unsigned short)stCockpitLayout.readoutOrigins[0][(int)cCurrentCockpitView].x,
+        (unsigned short)stCockpitLayout.readoutOrigins[0][(int)cCurrentCockpitView].y);
+    InitializeCockpitReadout(4, &stCurrentCockpitReadoutTextCtx);
     SetTextCursor(
-        (unsigned short)stCockpitLayout.readoutOrigins[1][(int)cCockpitView].x,
-        (unsigned short)stCockpitLayout.readoutOrigins[1][(int)cCockpitView].y);
-    InitializeCockpitReadout(5, &stCockpitReadoutTextContext);
+        (unsigned short)stCockpitLayout.readoutOrigins[1][(int)cCurrentCockpitView].x,
+        (unsigned short)stCockpitLayout.readoutOrigins[1][(int)cCurrentCockpitView].y);
+    InitializeCockpitReadout(5, &stCurrentCockpitReadoutTextCtx);
     SetTextCursor(
-        (unsigned short)stCockpitLayout.readoutOrigins[2][(int)cCockpitView].x,
-        (unsigned short)stCockpitLayout.readoutOrigins[2][(int)cCockpitView].y);
-    InitializeCockpitReadout(2, &stCockpitReadoutTextContext);
+        (unsigned short)stCockpitLayout.readoutOrigins[2][(int)cCurrentCockpitView].x,
+        (unsigned short)stCockpitLayout.readoutOrigins[2][(int)cCurrentCockpitView].y);
+    InitializeCockpitReadout(2, &stCurrentCockpitReadoutTextCtx);
     SetTextCursor(
-        (unsigned short)stCockpitLayout.readoutOrigins[3][(int)cCockpitView].x,
-        (unsigned short)stCockpitLayout.readoutOrigins[3][(int)cCockpitView].y);
-    InitializeCockpitReadout(3, &stCockpitReadoutTextContext);
+        (unsigned short)stCockpitLayout.readoutOrigins[3][(int)cCurrentCockpitView].x,
+        (unsigned short)stCockpitLayout.readoutOrigins[3][(int)cCurrentCockpitView].y);
+    InitializeCockpitReadout(3, &stCurrentCockpitReadoutTextCtx);
 
     *(ShortRect *)&stLeftVdu.left =
-        stCockpitLayout.leftVduBounds[(int)cCockpitView];
-    *(ShortRect *)&stRightVdu.left =
-        stCockpitLayout.rightVduBounds[(int)cCockpitView];
+        stCockpitLayout.leftVduBounds[(int)cCurrentCockpitView];
+    *(ShortRect *)&stRightVduViewport.left =
+        stCockpitLayout.rightVduBounds[(int)cCurrentCockpitView];
 
-    if (pPilotHandShape != 0) {
-        stPilotHand = stScreen;
-        *(ShortRect *)&stPilotHand.left =
-            stCockpitLayout.pilotHandBounds[(int)cCockpitView];
+    if (pCurrentPilotHandShapePtr != 0) {
+        stPilotHandView = stScreenView;
+        *(ShortRect *)&stPilotHandView.left =
+            stCockpitLayout.pilotHandBounds[(int)cCurrentCockpitView];
         SetViewportRect(&stPilotHandComposite, 0, 0,
             (unsigned short)(
-                stCockpitLayout.pilotHandBounds[(int)cCockpitView].right -
-                stCockpitLayout.pilotHandBounds[(int)cCockpitView].left),
+                stCockpitLayout.pilotHandBounds[(int)cCurrentCockpitView].right -
+                stCockpitLayout.pilotHandBounds[(int)cCurrentCockpitView].left),
             (unsigned short)(
-                stCockpitLayout.pilotHandBounds[(int)cCockpitView].bottom -
-                stCockpitLayout.pilotHandBounds[(int)cCockpitView].top));
-        stPilotHandBackdrop = stPilotHandComposite;
+                stCockpitLayout.pilotHandBounds[(int)cCurrentCockpitView].bottom -
+                stCockpitLayout.pilotHandBounds[(int)cCurrentCockpitView].top));
+        stPilotHandBackdropView = stPilotHandComposite;
         AllocateViewport(&stPilotHandComposite, cBlackColour, 0);
-        AllocateViewport(&stPilotHandBackdrop, cBlackColour, 0);
+        AllocateViewport(&stPilotHandBackdropView, cBlackColour, 0);
     }
 
     LoadShapeSet(aCockpitSecondaryResources, 0,
                  (short)cCockpitLogicalFile);
-    pScannerMarkerBackground =
-        AllocateTaggedMemory(MeasureShapeFrameStorage(pTargetLockShape, 2), 0);
+    pRadarMarkerBackground =
+        AllocateTaggedMemory(MeasureShapeFrameStorage(pTgtLockShapePtr, 2), 0);
 
     pReleaseWeaponDisplayBackground = 0;
     maximumSize = 0;
     for (weapon = 0;
-         weapon < (signed char)aShipWeapons[0][0];
+         weapon < (signed char)aShipWeaponsTable[0][0];
          weapon++) {
-        if (aObjectTypeData[((ShipWeaponSlot *)&aShipWeapons[0][1])[weapon].type].objectClass ==
+        if (aObjectTypeData[((ShipWeaponSlot *)&aShipWeaponsTable[0][1])[weapon].type].objectClass ==
                 OBJECT_CLASS_MISSILE) {
             backgroundSize = MeasureShapeFrameStorage(
-                pCockpitWeaponShape,
-                (short)(((ShipWeaponSlot *)&aShipWeapons[0][1])[weapon].type * 2 - 0x2f));
+                pCockpitWeaponShapePtr,
+                (short)(((ShipWeaponSlot *)&aShipWeaponsTable[0][1])[weapon].type * 2 - 0x2f));
             maximumSize = MaxShort(maximumSize, (short)backgroundSize);
         }
     }
@@ -1786,7 +1780,7 @@ unsigned int InitializeCockpitResources(signed char mode)
     for (frame = 0; frame < 9; frame++) {
         /* The original passes an unused third zero to MaxShort. */
         maximumSize = MaxShort(maximumSize,
-            (short)MeasureShapeFrameStorage(pCockpitWeaponShape, frame), 0);
+            (short)MeasureShapeFrameStorage(pCockpitWeaponShapePtr, frame), 0);
     }
     if (maximumSize != 0)
         pDamageDisplayBackground =
@@ -1796,9 +1790,9 @@ unsigned int InitializeCockpitResources(signed char mode)
     result = init_personalities();
     nCockpitExplosionFrame = 8;
     bRadioSilence = 0;
-    if (nMemoryConfiguration == 2)
+    if (nMemoryConfig == 2)
         bCommVideoEnabled = 1;
-    else if (nSceneResourceBudget > 0x59d8)
+    else if (nSceneResourceBudgetValue > 0x59d8)
         bCommVideoEnabled = 1;
     else
         bCommVideoEnabled = 0;
@@ -1812,17 +1806,17 @@ unsigned int free_cockpit(void)
         return 0;
     bCockpitResourcesActive = 0;
     GetScreenUpdateFlag();
-    if (pScreenViewportPacket != 0) {
-        ReleasePacketHandle(pScreenViewportPacket);
-        pScreenViewportPacket = 0;
+    if (pCurrentScreenViewportPkt != 0) {
+        ReleasePacketHandle(pCurrentScreenViewportPkt);
+        pCurrentScreenViewportPkt = 0;
     }
     ReleaseTextFont(2);
-    if (pPilotHandShape != 0) {
+    if (pCurrentPilotHandShapePtr != 0) {
         free_viewport(&stPilotHandComposite);
-        free_viewport(&stPilotHandBackdrop);
+        free_viewport(&stPilotHandBackdropView);
     }
     cCockpitLogicalFile =
-        (signed char)(cCockpitView + 17);
+        (signed char)(cCurrentCockpitView + 17);
     FreeShapeSet(aCockpitPrimaryResources, 4);
     FreeShapeSet(aCockpitSecondaryResources, 0);
     FreePacketAndClear(&pCockpitPilotShape, 0);
@@ -1830,7 +1824,7 @@ unsigned int free_cockpit(void)
     FreePacketAndClear(&pCockpitExplosionBackground, 0);
     FreePacketAndClear(&pDamageDisplayBackground, 0);
     FreeCommDisplayResources();
-    ReleasePacketHandle(pScannerMarkerBackground);
+    ReleasePacketHandle(pRadarMarkerBackground);
 }
 
 /* Function start: 0x424A80 */
@@ -1841,18 +1835,18 @@ unsigned int init_3Space_objects(short scene)
     if (b3SpaceObjectsActive == 1)
         return 0;
     b3SpaceObjectsActive = 1;
-    cScreenViewportMode = -1;
+    cScreenViewMode = -1;
     remove_all_3d_objects();
     nExternalViewShip = -1;
     nRenderedSpaceFrame = 0;
     bScriptedView = 0;
-    nSpaceFrame = 0;
+    nCurrentSpaceFrameValue = 0;
     bMissileCameraEnabled = 0;
     nClosestVisibleObject = -1;
     nPlayerCollisionObject = -1;
     slot = 0;
     do {
-        aObjectResourceSlots[slot].type = -1;
+        aObjectResourceSlotsArray[slot].type = -1;
         slot++;
     } while (slot <= 3);
     init_constellation(scene);
@@ -1961,12 +1955,12 @@ unsigned int free_inflight_music(void)
     StopMusicUnlessSuppressed();
     nInFlightMusicActive = 0;
     if (nInFlightMusicSlotA != -1) {
-        record = (int *)(abSoundPlaybackSlots + nInFlightMusicSlotA * 6);
+        record = (int *)(abAudioPlaybackSlots + nInFlightMusicSlotA * 6);
         nInFlightMusicSlotA = -1;
         *record = 0;
     }
     if (nInFlightMusicSlotB != -1) {
-        record = (int *)(abSoundPlaybackSlots + nInFlightMusicSlotB * 6);
+        record = (int *)(abAudioPlaybackSlots + nInFlightMusicSlotB * 6);
         nInFlightMusicSlotB = -1;
         *record = 0;
     }
@@ -1994,9 +1988,9 @@ unsigned short LoadSceneAnimationResources(short scene, short variant)
     short logicalFile;
 
     logicalFile = asSceneAnimationLogicalFiles[scene];
-    pSceneAnimationPrimaryShape =
+    pCurrentSceneAnimationPrimaryShape =
         FetchDiskPacketRetrying(logicalFile, 0, 0);
-    pSceneAnimationDefinitions =
+    pSceneAnimationDefinitionsPtr =
         FetchDiskPacketRetrying(
             logicalFile, (short)(variant + 1), 0);
     pSceneAnimationSecondaryShape =
@@ -2004,23 +1998,23 @@ unsigned short LoadSceneAnimationResources(short scene, short variant)
             logicalFile, (short)(variant + 3), 0);
     packet = FetchDiskPacketRetrying(
         logicalFile, (short)(variant + 5), 0);
-    pSceneAnimationPacket = packet;
-    pSceneAnimationSceneData =
+    pSceneAnimationPacketPtr = packet;
+    pSceneAnimationSceneDataPtr =
         packet + *(unsigned int *)(packet + 0);
     pSceneAnimationTextData =
         packet + *(unsigned int *)(packet + 4);
     pSceneAnimationObjects =
-        (SceneAnimationObject *)(pSceneAnimationDefinitions + 2);
+        (SceneAnimationObject *)(pSceneAnimationDefinitionsPtr + 2);
     return 0;
 }
 
 /* Function start: 0x424DA0 */
 void ReleaseSceneAnimationResources(void)
 {
-    ReleasePacketHandle(pSceneAnimationPrimaryShape);
-    ReleasePacketHandle(pSceneAnimationPacket);
+    ReleasePacketHandle(pCurrentSceneAnimationPrimaryShape);
+    ReleasePacketHandle(pSceneAnimationPacketPtr);
     ReleasePacketHandle(pSceneAnimationSecondaryShape);
-    ReleasePacketHandle(pSceneAnimationDefinitions);
+    ReleasePacketHandle(pSceneAnimationDefinitionsPtr);
 }
 
 /* Function start: 0x424DE0 */
@@ -2285,7 +2279,7 @@ unsigned short __stdcall UpdateSceneAnimationObject(
             break;
 
         case 'R':
-            objectCount = *(short *)pSceneAnimationDefinitions;
+            objectCount = *(short *)pSceneAnimationDefinitionsPtr;
             objectSet = (short)*cursor++;
             objectIndex = (short)*cursor++;
             source = &pSceneAnimationObjects[
@@ -2298,7 +2292,7 @@ unsigned short __stdcall UpdateSceneAnimationObject(
             break;
 
         case 'W':
-            nSceneAnimationWaitFrames = *(short *)cursor;
+            nSceneAnimationDelayFrames = *(short *)cursor;
             cursor += 2;
             bSceneAnimationWaitCommand = 1;
             break;
@@ -2356,18 +2350,18 @@ void PlaySceneAnimation(char *text, short animation, short duration)
     short objectCount;
     short remaining;
 
-    nSceneAnimationWaitFrames = -1;
+    nSceneAnimationDelayFrames = -1;
     complete = 0;
     bSceneAnimationWaitCommand = 0;
     AddPCName(text);
-    ClearViewport(&stConversationTextViewport,
+    ClearViewport(&stCurrentConvTextViewport,
                   cBlackColour);
     FormatTextBufferFromStart("%X%Y%F%s%P",
                               0, 160,
-                              nConversationTextColour,
-                              szTextScratchBuffer);
+                              nConvTextColorValue,
+                              szTxtWorkspaceBuffer);
 
-    objectCount = *(short *)pSceneAnimationDefinitions;
+    objectCount = *(short *)pSceneAnimationDefinitionsPtr;
     objects = pSceneAnimationObjects +
         (short)(objectCount * animation);
     object = objects;
@@ -2375,10 +2369,10 @@ void PlaySceneAnimation(char *text, short animation, short duration)
         remaining = objectCount;
         do {
             if (object->layer == 0)
-                object->shape = pSceneAnimationPrimaryShape;
+                object->shape = pCurrentSceneAnimationPrimaryShape;
             else
                 object->shape = pSceneAnimationSecondaryShape;
-            object->scriptStart = (signed char *)pSceneAnimationDefinitions;
+            object->scriptStart = (signed char *)pSceneAnimationDefinitionsPtr;
             object->scriptStart += object->scriptOffset;
             object->scriptCursor = object->scriptStart;
             object++;
@@ -2386,7 +2380,7 @@ void PlaySceneAnimation(char *text, short animation, short duration)
     }
 
     nFrameSkipCounter = 1;
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     ClearInputKeyState();
     DIBslam();
     DIBslamReal();
@@ -2402,9 +2396,9 @@ void PlaySceneAnimation(char *text, short animation, short duration)
                     object++;
                 } while (--remaining != 0);
             }
-            if (nSceneAnimationWaitFrames != -1) {
-                if (nSceneAnimationWaitFrames != 0)
-                    nSceneAnimationWaitFrames--;
+            if (nSceneAnimationDelayFrames != -1) {
+                if (nSceneAnimationDelayFrames != 0)
+                    nSceneAnimationDelayFrames--;
                 else
                     complete++;
             }
@@ -2419,8 +2413,8 @@ void PlaySceneAnimation(char *text, short animation, short duration)
                     nFrameSkipCounter++;
             }
             if ((complete == 0 && CheckEscaped() != 0) ||
-                bEscapePressed != 0) {
-                if (nSceneAnimationWaitFrames == -1) {
+                bEscapePressedFlag != 0) {
+                if (nSceneAnimationDelayFrames == -1) {
                     while (complete == 0 &&
                            bSceneAnimationWaitCommand == 0) {
                         object = objects;
@@ -2435,16 +2429,16 @@ void PlaySceneAnimation(char *text, short animation, short duration)
                         }
                     }
                 }
-                nSceneAnimationWaitFrames = 0;
+                nSceneAnimationDelayFrames = 0;
             }
         } while (complete == 0);
 
-        if (nSceneAnimationWaitFrames == -1) {
+        if (nSceneAnimationDelayFrames == -1) {
             SetFrameTimerPeriodDirect((short)(duration / 2));
             do {
                 if ((short)IsFrameTickElapsed() != 0 || CheckEscaped() != 0)
                     break;
-            } while (bEscapePressed == 0);
+            } while (bEscapePressedFlag == 0);
         }
         if (complete != 0)
             return;

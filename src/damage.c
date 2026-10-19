@@ -40,17 +40,16 @@ static const char *apszDamageSeverityNames[5] = {
 
 static int nDisplayedComponentDamage; /* 0x00476554 */
 
+
 /* Linker commons defined here; LINK orders them by identifier hash. */
-short nDamageDisplayTicks; /* 0x005a7786 */
-short nWeaponDisplayOriginX; /* 0x005a7788 */
-short nWeaponDisplayOriginY; /* 0x005a778a */
-char szDamageStatusText[0x48]; /* 0x005a7790 */
-ShortPoint stDamageSpritePosition; /* 0x005a77d8 */
-signed char cDamageDisplayComponent; /* 0x005a77dc */
-signed char cDamageDisplayFrame; /* 0x005a77dd */
-signed char cDamagedComponentCount; /* 0x005a77de */
-int nDamageDisplayState; /* 0x005a77e0 */
-int nDamageDisplayPhase; /* 0x005a77e4 */
+short asInputButton2DoubleClick[2]; /* 0x0059e520 */
+void *apPacketHandlesList[0x1000]; /* 0x0059e530 */
+int aiPktHandleDeltas[0x1000]; /* 0x005a2530 */
+int nPacketHandleTotal; /* 0x005a6530 */
+Viewport *pAllocatedScreenViewport; /* 0x005a6534 */
+int *pFullScreenRecord; /* 0x005a6538 */
+unsigned short awScreenRowOffsets[202]; /* 0x005a6540 */
+ScreenAllocation stCurrentScreenAlloc; /* 0x005a66e0 */
 
 /* Function start: 0x42C800 */
 void show_damage_disp(void)
@@ -58,10 +57,10 @@ void show_damage_disp(void)
     signed char component;
     char message[40];
 
-    nDamageDisplayState = 0;
+    nDmgDispState = 0;
     cDamagedComponentCount = 0;
     for (component = 0; component < 9; component++) {
-        if (acPlayerComponentDamage[component] >= 1)
+        if (acPlayerComponentDamageList[component] >= 1)
             cDamagedComponentCount++;
     }
 
@@ -82,18 +81,18 @@ void show_damage_disp(void)
         return;
     }
 
-    component = cCockpitView;
-    nWeaponDisplayOriginX =
+    component = cCurrentCockpitView;
+    nWpnDispOriginX =
         (short)(aWeaponDisplayOrigins[component].x +
                 stLeftVdu.left);
-    nWeaponDisplayOriginY =
+    nWpnDisplayBaseY =
         (short)(aWeaponDisplayOrigins[component].y +
                 stLeftVdu.top);
     /* The original reloads X from memory for the sprite argument. */
     DrawSpriteDefault(&stLeftVdu,
-                      *(volatile short *)&nWeaponDisplayOriginX,
-                      nWeaponDisplayOriginY,
-                      pCockpitWeaponShape, 0);
+                      *(volatile short *)&nWpnDispOriginX,
+                      nWpnDisplayBaseY,
+                      pCockpitWeaponShapePtr, 0);
     sprintf(message, "%d Unit%c Damaged",
             (int)cDamagedComponentCount,
             (int)(signed char)(cDamagedComponentCount == 1 ? ' ' : 's'));
@@ -113,7 +112,7 @@ void UpdateDamageDisplay(void)
     previousComponentCount = cDamagedComponentCount;
     componentCount = 0;
     for (componentIndex = 0; componentIndex < 9; componentIndex++) {
-        if (acPlayerComponentDamage[componentIndex] >= 1)
+        if (acPlayerComponentDamageList[componentIndex] >= 1)
             componentCount++;
     }
 
@@ -127,104 +126,104 @@ void UpdateDamageDisplay(void)
         return;
 
     if (bCockpitlessView == 0) {
-        nDamageDisplayTicks--;
-        if (nDamageDisplayTicks > 0)
+        nCurrentDmgDispTicks--;
+        if (nCurrentDmgDispTicks > 0)
             return;
         if (nDamageDisplayPhase == 1) {
-            component = cDamageDisplayComponent;
+            component = cDamageDisplayComponentValue;
             attempts = 0;
-            nDamageDisplayTicks = 50;
+            nCurrentDmgDispTicks = 50;
             do {
                 component++;
                 if (component >= 9)
                     component = 0;
-                damage = acPlayerComponentDamage[component];
+                damage = acPlayerComponentDamageList[component];
                 nDisplayedComponentDamage = (int)damage;
                 if (nDisplayedComponentDamage >= 1) {
-                    cDamageDisplayComponent = component;
+                    cDamageDisplayComponentValue = component;
                     break;
                 }
                 attempts++;
             } while (attempts < 9);
 
             sprintf(
-                szDamageStatusText,
+                szDmgStateText,
                 "%s\nDamage: %s",
                 apszComponentNames[
-                    cDamageDisplayComponent],
+                    cDamageDisplayComponentValue],
                 apszDamageSeverityNames[(int)damage]);
             DrawTextAt(&stLeftVduTextContext,
                        (short)(stLeftVdu.left + 1),
                        (short)(stLeftVdu.top + 7),
-                       szDamageStatusText, 2);
+                       szDmgStateText, 2);
             cDamageDisplayFrame =
                 (signed char)abDamageDisplayFrames[
-                    cDamageDisplayComponent];
-            stDamageSpritePosition =
+                    cDamageDisplayComponentValue];
+            stDamageSpritePos =
                 aDamageDisplayPositions[
-                    cDamageDisplayComponent];
-            stDamageSpritePosition.x =
-                (short)(stDamageSpritePosition.x +
-                        nWeaponDisplayOriginX);
-            stDamageSpritePosition.y =
-                (short)(stDamageSpritePosition.y +
-                        nWeaponDisplayOriginY);
+                    cDamageDisplayComponentValue];
+            stDamageSpritePos.x =
+                (short)(stDamageSpritePos.x +
+                        nWpnDispOriginX);
+            stDamageSpritePos.y =
+                (short)(stDamageSpritePos.y +
+                        nWpnDisplayBaseY);
             CaptureSpriteBackground(
                 &stLeftVdu, pDamageDisplayBackground,
-                stDamageSpritePosition.x,
-                stDamageSpritePosition.y,
-                pCockpitWeaponShape,
+                stDamageSpritePos.x,
+                stDamageSpritePos.y,
+                pCockpitWeaponShapePtr,
                 (short)cDamageDisplayFrame);
             DrawViewportLine(
                 &stLeftVdu, (short)(stLeftVdu.left + 36),
                 (short)(stLeftVdu.top + 22),
-                stDamageSpritePosition.x,
-                stDamageSpritePosition.y,
+                stDamageSpritePos.x,
+                stDamageSpritePos.y,
                 0xa9);
             DrawSpriteDefault(
-                &stLeftVdu, stDamageSpritePosition.x,
-                stDamageSpritePosition.y,
-                pCockpitWeaponShape,
+                &stLeftVdu, stDamageSpritePos.x,
+                stDamageSpritePos.y,
+                pCockpitWeaponShapePtr,
                 (short)cDamageDisplayFrame);
         } else {
             RestoreSpriteBackground(
                 &stLeftVdu, pDamageDisplayBackground,
-                stDamageSpritePosition.x,
-                stDamageSpritePosition.y,
-                pCockpitWeaponShape,
+                stDamageSpritePos.x,
+                stDamageSpritePos.y,
+                pCockpitWeaponShapePtr,
                 (short)cDamageDisplayFrame);
             stLeftVduTextContext.colour = cBlackColour;
             DrawTextAt(&stLeftVduTextContext,
                        (short)(stLeftVdu.left + 1),
                        (short)(stLeftVdu.top + 7),
-                       szDamageStatusText, 2);
+                       szDmgStateText, 2);
             stLeftVduTextContext.colour = cPrimaryTextColour;
             DrawViewportLine(
                 &stLeftVdu, (short)(stLeftVdu.left + 36),
                 (short)(stLeftVdu.top + 22),
-                stDamageSpritePosition.x,
-                stDamageSpritePosition.y,
+                stDamageSpritePos.x,
+                stDamageSpritePos.y,
                 cBlackColour);
-            nDamageDisplayTicks = 2;
+            nCurrentDmgDispTicks = 2;
         }
         nDamageDisplayPhase =
             nDamageDisplayPhase == 0;
         return;
     }
 
-    nDamageDisplayTicks--;
-    if (nDamageDisplayTicks <= 0) {
-        component = cDamageDisplayComponent;
+    nCurrentDmgDispTicks--;
+    if (nCurrentDmgDispTicks <= 0) {
+        component = cDamageDisplayComponentValue;
         attempts = 0;
-        nDamageDisplayTicks = 50;
+        nCurrentDmgDispTicks = 50;
         for (;;) {
             component++;
             if (component >= 9)
                 component = 0;
             nDisplayedComponentDamage =
-                (int)acPlayerComponentDamage[component];
+                (int)acPlayerComponentDamageList[component];
             if (nDisplayedComponentDamage >= 1) {
-                cDamageDisplayComponent = component;
+                cDamageDisplayComponentValue = component;
                 return;
             }
             attempts++;
@@ -234,41 +233,41 @@ void UpdateDamageDisplay(void)
     }
 
     sprintf(
-        szDamageStatusText,
+        szDmgStateText,
         "%s\nDamage: %s",
-        apszComponentNames[cDamageDisplayComponent],
+        apszComponentNames[cDamageDisplayComponentValue],
         apszDamageSeverityNames[
             nDisplayedComponentDamage]);
     DrawTextAt(&stLeftVduTextContext, (short)(stLeftVdu.left + 1),
                (short)(stLeftVdu.top + 7),
-               szDamageStatusText, 2);
+               szDmgStateText, 2);
     cDamageDisplayFrame =
         (signed char)abDamageDisplayFrames[
-            cDamageDisplayComponent];
-    stDamageSpritePosition =
+            cDamageDisplayComponentValue];
+    stDamageSpritePos =
         aDamageDisplayPositions[
-            cDamageDisplayComponent];
-    stDamageSpritePosition.x =
-        (short)(stDamageSpritePosition.x +
-                nWeaponDisplayOriginX);
-    stDamageSpritePosition.y =
-        (short)(stDamageSpritePosition.y +
-                nWeaponDisplayOriginY);
+            cDamageDisplayComponentValue];
+    stDamageSpritePos.x =
+        (short)(stDamageSpritePos.x +
+                nWpnDispOriginX);
+    stDamageSpritePos.y =
+        (short)(stDamageSpritePos.y +
+                nWpnDisplayBaseY);
     CaptureSpriteBackground(
         &stLeftVdu, pDamageDisplayBackground,
-        stDamageSpritePosition.x,
-        stDamageSpritePosition.y,
-        pCockpitWeaponShape,
+        stDamageSpritePos.x,
+        stDamageSpritePos.y,
+        pCockpitWeaponShapePtr,
         (short)cDamageDisplayFrame);
     DrawViewportLine(&stLeftVdu,
                      (short)(stLeftVdu.left + 36),
                      (short)(stLeftVdu.top + 22),
-                     stDamageSpritePosition.x,
-                     stDamageSpritePosition.y, 0xa9);
+                     stDamageSpritePos.x,
+                     stDamageSpritePos.y, 0xa9);
     DrawSpriteDefault(&stLeftVdu,
-                      stDamageSpritePosition.x,
-                      stDamageSpritePosition.y,
-                      pCockpitWeaponShape,
+                      stDamageSpritePos.x,
+                      stDamageSpritePos.y,
+                      pCockpitWeaponShapePtr,
                       (short)cDamageDisplayFrame);
 }
 

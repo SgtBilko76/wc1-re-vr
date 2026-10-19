@@ -23,6 +23,10 @@ static const char *pStrandedMessage =
     "\nWith your carrier\ndestroyed, you drift\nendlessly through\n"
     "the void..."; /* 0x00465588 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+char szSoundDebugMsg[512]; /* 0x005a8760 */
+unsigned char *pIntroFont; /* 0x005a8960 */
+
 /* Function start: 0x4046A0 */
 unsigned int ejection_sequence(void)
 {
@@ -45,21 +49,21 @@ unsigned int ejection_sequence(void)
     ejectionShape = FetchDiskPacketRetrying(2, 1, 0);
     PlaySfxWaveFileByNumber(0x21, -1, 0);
     y = 199;
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     descentSpeed = 4;
     nFrameSkipCounter = 1;
     do {
         if (RefreshCockpitStatus() != 0) {
-            DrawSpriteDefault(&stSpaceBuffer, 0, 0, background, 0);
+            DrawSpriteDefault(&stSpaceBufferViewport, 0, 0, background, 0);
             spriteFrame = MinShort(frame, 4);
             DrawSpriteDefault(
-                &stSpaceBuffer, 160, y, ejectionShape,
+                &stSpaceBufferViewport, 160, y, ejectionShape,
                 asEjectionPrimaryFrames[spriteFrame]);
             if (asEjectionSecondaryFrames[spriteFrame] != -1)
                 DrawSpriteDefault(
-                    &stSpaceBuffer, 160, y, ejectionShape,
+                    &stSpaceBufferViewport, 160, y, ejectionShape,
                     asEjectionSecondaryFrames[spriteFrame]);
-            DrawSpriteDefault(&stSpaceBuffer, 160, (short)(y + 1),
+            DrawSpriteDefault(&stSpaceBufferViewport, 160, (short)(y + 1),
                               ejectionShape, 5);
             dump_buffer_to_screen();
         }
@@ -67,7 +71,7 @@ unsigned int ejection_sequence(void)
             y = (short)(y - descentSpeed);
             descentSpeed = MinShort((short)(descentSpeed + 4), 20);
         }
-        if (bEscapePressed == 1)
+        if (bEscapePressedFlag == 1)
             break;
         frame++;
         DIBslam();
@@ -77,28 +81,28 @@ unsigned int ejection_sequence(void)
     ReleasePacketHandle(ejectionShape);
     ReleasePacketHandle(background);
     GetScreenUpdateFlag();
-    if (bEscapePressed != 1) {
+    if (bEscapePressedFlag != 1) {
         PromptInsertNumberedDisk(8);
-        pScreenViewportPacket =
+        pCurrentScreenViewportPkt =
             AllocateTaggedMemory(
                 GetPacketSize(pDiskFileRecords[8].name, 8),
                 0x40);
-        if (pScreenViewportPacket == 0)
+        if (pCurrentScreenViewportPkt == 0)
             ReportOutOfMemoryAndExit("View Templates");
         else
             LoadPacketIntoBuffer(8, 8,
-                                 pScreenViewportPacket);
+                                 pCurrentScreenViewportPkt);
 
         aObjectTypeData[OBJECT_TYPE_EJECTED_PILOT].shapeSet =
             FetchDiskPacketRetrying(2, 2, 0);
         nEjectedPilotObject = find_vacant_3d_object();
         set_objects_data(nEjectedPilotObject,
                          OBJECT_TYPE_EJECTED_PILOT, -1);
-        asObjectCounter[nEjectedPilotObject] =
+        asObjectCounterArray[nEjectedPilotObject] =
             32000;
         copy_frame(0, nEjectedPilotObject);
-        aShipPosition[nEjectedPilotObject] =
-            aShipPosition[0];
+        aShipPositionsArray[nEjectedPilotObject] =
+            aShipPositionsArray[0];
         ScaleFixedVector(
             &aShipUpVector[nEjectedPilotObject],
             -0x500,
@@ -119,13 +123,13 @@ unsigned int ejection_sequence(void)
         nFrameSkipCounter = 1;
         do {
             if (RefreshCockpitStatus() != 0) {
-                DrawSpriteDefault(&stSpaceBuffer, 0, y,
+                DrawSpriteDefault(&stSpaceBufferViewport, 0, y,
                                   background, 0);
-                DrawSpriteDefault(&stSpaceBuffer, 0, (short)(y - 1),
+                DrawSpriteDefault(&stSpaceBufferViewport, 0, (short)(y - 1),
                                   ejectionShape, 0);
                 dump_buffer_to_screen();
             }
-            if (bEscapePressed == 1)
+            if (bEscapePressedFlag == 1)
                 break;
             y = (short)(y + descentSpeed);
             DIBslam();
@@ -135,22 +139,22 @@ unsigned int ejection_sequence(void)
 
         ReleasePacketHandle(ejectionShape);
         ReleasePacketHandle(background);
-        if (bEscapePressed != 1) {
+        if (bEscapePressedFlag != 1) {
             load_all_slots();
-            aShipForwardVector[EYE_OBJECT] =
+            aShipFwdVec[EYE_OBJECT] =
                 aShipUpVector[0];
             aShipRightVector[EYE_OBJECT] =
                 aShipRightVector[0];
             aShipUpVector[EYE_OBJECT] =
-                aShipForwardVector[0];
+                aShipFwdVec[0];
             negate_vector(&aShipUpVector[EYE_OBJECT]);
             ScaleFixedVector(
                 &aShipUpVector[nEjectedPilotObject],
                 -0x25800, &viewOffset);
             AddFixedVectors(
-                &aShipPosition[nEjectedPilotObject],
+                &aShipPositionsArray[nEjectedPilotObject],
                 &viewOffset,
-                &aShipPosition[EYE_OBJECT]);
+                &aShipPositionsArray[EYE_OBJECT]);
             nScriptedViewObject =
                 nEjectedPilotObject;
             initialize_scripted_view(asEjectionViewScript);
@@ -166,7 +170,7 @@ unsigned int ejection_sequence(void)
                     PlaySfxWaveFileByNumber(4, -1, 0);
                 }
                 frame++;
-                if (frame > 200 || bEscapePressed != 0)
+                if (frame > 200 || bEscapePressedFlag != 0)
                     break;
                 DIBslam();
                 DIBslamReal();
@@ -174,14 +178,14 @@ unsigned int ejection_sequence(void)
         }
     }
 
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     bScriptedView = 0;
-    if (pScreenViewportPacket != 0) {
-        ReleasePacketHandle(pScreenViewportPacket);
-        pScreenViewportPacket = 0;
+    if (pCurrentScreenViewportPkt != 0) {
+        ReleasePacketHandle(pCurrentScreenViewportPkt);
+        pCurrentScreenViewportPkt = 0;
     }
-    FadeViewportPaletteToColour(&stScreen, cBlackColour, 1);
-    ClearViewport(&stScreen, cBlackColour);
+    FadeViewportPaletteToColour(&stScreenView, cBlackColour, 1);
+    ClearViewport(&stScreenView, cBlackColour);
     DIBslam();
     DIBslamReal();
     RestoreGamePalette();
@@ -204,14 +208,14 @@ void stranded_sequence(void)
     do {
         if (RefreshCockpitStatus() != 0) {
             if (frame >= 300)
-                print_subtitle(&stSpaceBuffer, 56,
+                print_subtitle(&stSpaceBufferViewport, 56,
                                "THE END");
             else if (frame >= 160)
-                print_subtitle(&stSpaceBuffer, 50,
+                print_subtitle(&stSpaceBufferViewport, 50,
                                pStrandedMessage);
             dump_buffer_to_screen();
         }
-        if (bEscapePressed != 0)
+        if (bEscapePressedFlag != 0)
             break;
         frame++;
         DIBslam();
@@ -219,10 +223,10 @@ void stranded_sequence(void)
     } while (frame < 400);
     free_all_slots();
     FreePacketAndClear(&pIntroFont, 0);
-    stScreen.top = 0;
-    stScreen.bottom = 199;
-    FadeViewportPaletteToColour(&stScreen, cBlackColour, 1);
-    ClearViewport(&stScreen, cBlackColour);
+    stScreenView.top = 0;
+    stScreenView.bottom = 199;
+    FadeViewportPaletteToColour(&stScreenView, cBlackColour, 1);
+    ClearViewport(&stScreenView, cBlackColour);
     RestoreGamePalette();
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
 }

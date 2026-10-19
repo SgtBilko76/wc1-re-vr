@@ -3,8 +3,17 @@
  */
 #include "wc1.h"
 
+
 /* Linker commons defined here; LINK orders them by identifier hash. */
-unsigned int nFrameTimerId; /* 0x005a77ec */
+TextContext stLeftVduTextContext; /* 0x005a74f0 */
+Viewport stSpaceBufferViewport; /* 0x005a7510 */
+Viewport stRightVduViewport; /* 0x005a7530 */
+Viewport stPilotHandBackdropView; /* 0x005a7550 */
+unsigned char *pCockpitWeaponShapePtr; /* 0x005a7564 */
+Viewport stCurrentConvTextViewport; /* 0x005a7570 */
+char szDefaultTxtBuf[0xc8]; /* 0x005a7590 */
+unsigned char *pCockpitIndicatorShape; /* 0x005a7658 */
+unsigned char *pCurrentConstellationShape; /* 0x005a765c */
 
 /* Function start: 0x42AFA0 */
 void WaitForDebugStep(void)
@@ -21,7 +30,7 @@ void CALLBACK FrameTimerCallback(UINT timerId, UINT message,
     (void)user;
     (void)first;
     (void)second;
-    bFrameTickPending = 0;
+    bFrameTickPendingFlag = 0;
 }
 
 /* Function start: 0x42AFC0 */
@@ -30,18 +39,18 @@ void SetMultimediaTimerCallback(int period)
     int milliseconds = period * 1000 / 60;
 
     if (period == 0) {
-        bFrameTickPending = 0;
-        if (nFrameTimerId != 0) {
-            timeKillEvent(nFrameTimerId);
-            nFrameTimerId = 0;
+        bFrameTickPendingFlag = 0;
+        if (nCurrentFrameTimerIdValue != 0) {
+            timeKillEvent(nCurrentFrameTimerIdValue);
+            nCurrentFrameTimerIdValue = 0;
         }
     } else {
-        if (nFrameTimerId != 0) {
-            timeKillEvent(nFrameTimerId);
-            nFrameTimerId = 0;
+        if (nCurrentFrameTimerIdValue != 0) {
+            timeKillEvent(nCurrentFrameTimerIdValue);
+            nCurrentFrameTimerIdValue = 0;
         }
-        bFrameTickPending = 1;
-        nFrameTimerId = timeSetEvent(milliseconds, milliseconds,
+        bFrameTickPendingFlag = 1;
+        nCurrentFrameTimerIdValue = timeSetEvent(milliseconds, milliseconds,
                                     FrameTimerCallback, 0, 0);
     }
 }

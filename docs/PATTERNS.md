@@ -225,13 +225,13 @@ do not reject a recovered size solely because its positional count is larger.
   `ObjectTypeData.mass` at offset `0x0A`. Its only readers are the two
   force-application routines and `object_collision`: they zero-extend it
   before dividing force or computing mass ratios. The former `radarRadius`
-  name and signed type were misleading. `awObjectMass` preserves the original
+  name and signed type were misleading. `awObjMassArray` preserves the original
   storage while expressing those reads directly.
 - The runtime scale array at `0x0059DE40` is also unsigned. The original
   `house_keep_objects` halves it with a word `SHR`, and `animate_shape`
   uses `SHR` in both scale-command calculations. `transform_objects_to_your_view`,
   `ShowCarrierLaunchSequence`, `ShipExplosion`, and `reposition_fixed_child_objects`
-  zero-extend their scale reads. Declaring `awObjectScale` as unsigned short
+  zero-extend their scale reads. Declaring `awObjectScales` as unsigned short
   reproduces those logical shifts without per-use casts; a signed array
   incorrectly preserves the high bit while shifting. Its storage size and
   original address annotation stay unchanged. The full function report
@@ -427,7 +427,7 @@ do not reject a recovered size solely because its positional count is larger.
   makes this routine exact but enlarges `object_collision` by sixteen bytes,
   so it is not retained. Combining the timer decrement and condition leaves
   the four differences unchanged.
-- `object_intelligence` tests a signed remainder of `nSpaceFrame` divided by
+- `object_intelligence` tests a signed remainder of `nCurrentSpaceFrameValue` divided by
   four and narrows that result before the zero test. An absolute value and
   bit mask omit the original sign restoration and word test. Compare the
   canned-sequence class against `OBJECT_CLASS_SHIP` with `>=`, and promote
@@ -468,7 +468,7 @@ do not reject a recovered size solely because its positional count is larger.
   Qualifying the X store instead gives the same seven differences, while
   reversing the coordinate additions without a qualified access still
   omits the reload. These alternatives are not retained.
-  Indexing the origin table directly with `cCockpitView` also omits the
+  Indexing the origin table directly with `cCurrentCockpitView` also omits the
   reload. A qualified Y-coordinate read into the separate locals leaves
   the same seven differences and the following routine's six register
   differences; both further probes are reverted.
@@ -932,7 +932,7 @@ do not reject a recovered size solely because its positional count is larger.
   just written to the output buffer so CL retains the loaded byte instead
   of rereading the input after a potentially aliasing store. Preserve the
   original forward newline offset from the current output cursor. Index the
-  message origins directly with `cCockpitView` in each draw call. Caching
+  message origins directly with `cCurrentCockpitView` in each draw call. Caching
   that view in an int changes how CL shares the argument setup between the
   switch cases and the normal cockpit path. The direct accesses
   originally recovered 95.83% mnemonic similarity, but pointer/index allocation
@@ -1150,7 +1150,7 @@ do not reject a recovered size solely because its positional count is larger.
   original function size and 98.51% mnemonic similarity. The sorting address
   calculations and context-initialization scheduling still differ; cached
   score expressions, reversed comparisons, and extra cached indices did not
-  resolve them. Removing the viewport copy also removes the extra `stScreen`
+  resolve them. Removing the viewport copy also removes the extra `stScreenView`
   read reported by the global-access audit.
 - `CloseLook` shares one short counter between the scene-frame loop and
   the animation countdown. Initialize it before the finished flag, and
@@ -1177,7 +1177,7 @@ do not reject a recovered size solely because its positional count is larger.
 - `IsRoomMenuLabelEmpty` returns a byte: the original uses `SBB AL,AL`
   and `NEG AL`, and `RefreshRoomMenuLabel` tests AL after its call. Declare
   the predicate as returning `char`; its zero/one result does not establish
-  signedness. Read `stRoomMenu.currentLabel` through a volatile-qualified
+  signedness. Read `stCurrentRoomMenu.currentLabel` through a volatile-qualified
   pointer lvalue to produce the original direct memory comparison against
   one; the ordinary expression first loads EAX and compares that register.
   The predicate's complete 16-byte span and its caller's 48-byte span now
@@ -1347,7 +1347,7 @@ do not reject a recovered size solely because its positional count is larger.
   switches. This retains the zero-extended key for character classification
   and places Enter/Escape and uppercase/numeric branches after their defaults.
   Save the text pointer before the viewport pointer, then copy the viewport
-  through `pCurrentTextContext` after installing the input buffer. Using the
+  through `pCurTextContext` after installing the input buffer. Using the
   cached viewport pointer omits an original reload. The key itself holds the
   translated character; no separate character temporary is needed.
 - `UpdateSceneAnimationObject` returns a short and reads frame commands as
@@ -1403,7 +1403,7 @@ do not reject a recovered size solely because its positional count is larger.
   pointer. An int result leaves 70 differing encodings; a short declared
   after the record or inside the panel block leaves 23. The retained form
   matches the complete 336-byte span, including padding. Store
-  `nCampaignDataSet` before `nPendingCampaignIndex`, and use the dataset for
+  `nCampaignDataSet` before `nQueuedCampaignIndex`, and use the dataset for
   both pilot-file lookups. The original stores target `0x005A8118` then
   `0x005A8114`, and the reload after the first packet call targets
   `0x005A8118`. Address normalization alone cannot validate that ordering.
@@ -1785,7 +1785,7 @@ do not reject a recovered size solely because its positional count is larger.
   and loop indices preserve the other functions' allocation; reusing one
   local perturbed three neighbouring functions. Four scheduling differences
   remain, and fourteen instructions still differ at byte level.
-- `free_ship` indexes `aObjectResourceSlots` and `aObjectTypeData` directly
+- `free_ship` indexes `aObjectResourceSlotsArray` and `aObjectTypeData` directly
   instead of retaining pointers to their selected records. The original
   keeps the resource byte offset on its stack and the type byte offset in
   EDI, adding the array bases at each use. Direct typed subscripts reproduce
@@ -2110,7 +2110,7 @@ do not reject a recovered size solely because its positional count is larger.
 - Giving `objective_lost` an explicit mission-ship index, as either an int
   or a short, leaves its allocation unchanged. Reversing the command/opcode
   equality in `FindSceneAnimationCommand` likewise leaves its compared-byte
-  order unchanged. Saving `nTargetRange` in a short before `Mveer_away`'s
+  order unchanged. Saving `nTgtRange` in a short before `Mveer_away`'s
   proximity test does not change its reversed loads and comparison. These
   trials are not retained.
 
@@ -2387,9 +2387,9 @@ Windows 95 DirectDraw and DirectSound behavior.
   combinations across eligible core units. The room group's seven globals
   have 54 original relocated references; the conversation group's five have
   ten, all in their respective owners. Only the briefing exclusion above is
-  retained. Keep `pDebriefingSceneData` outside this experiment: some encoded
+  retained. Keep `pDebriefingSceneDataPtr` outside this experiment: some encoded
   operands point to its last byte because they address the following scratch
-  buffer through `szTextScratchBuffer - 1`. An encoded displacement inside
+  buffer through `szTxtWorkspaceBuffer - 1`. An encoded displacement inside
   a global's range does not by itself prove an access to that global.
 - A second seven-case matrix covers six mission map-bound globals, three
   navigation-label globals, and six simulator globals. Their twenty, 34,

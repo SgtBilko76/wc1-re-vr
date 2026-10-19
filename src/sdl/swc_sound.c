@@ -343,12 +343,12 @@ int SdlSwcSoundEffect(int sound, int object)
     if (object != -1) {
         if (object < 0 || object >= SPACE_OBJECT_COUNT)
             return 0;
-        ComputeVectorDelta(&aShipPosition[EYE_OBJECT], &aShipPosition[object], &delta);
+        ComputeVectorDelta(&aShipPositionsArray[EYE_OBJECT], &aShipPositionsArray[object], &delta);
         volume -= (Vector_magnitude(&delta) / 100) >> 8;
         if (volume < 10)
             return 1;
         if (sound == 8) {
-            int owner = acObjectOwner[object];
+            int owner = acObjOwnersTable[object];
 
             /* fire_weapon passes the projectile for attenuation, but the
                original selects the laser sample from the firing ship's side. */

@@ -6,6 +6,18 @@
  */
 #include "wc1.h"
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+signed char cScreenViewMode; /* 0x0059a9f2 */
+const ScreenViewportGeometry *pScreenViewGeometry; /* 0x0059a9f4 */
+int anSortedObjects[SPACE_OBJECT_COUNT]; /* 0x0059aa00 */
+short nPacketDecompressInputPositionValue; /* 0x0059ab00 */
+void *pPktDecompInput; /* 0x0059ab04 */
+unsigned short wCurrentInputModifiers; /* 0x0059ab08 */
+MouseCursorState stMouseCursorState; /* 0x0059ab10 */
+void (*pCurrentEventManagerPump)(void); /* 0x0059ab2c */
+int nPacketDecompressResult; /* 0x0059ab30 */
+short bCurrentRunningFromHardDiskFlag; /* 0x0059ab34 */
+
 /* Function start: 0x435410 */
 unsigned int __stdcall DosFarPtrToNear(void *v)
 {
@@ -110,7 +122,7 @@ void __stdcall EventManagerHook(void (*callback)(void))
 /* Function start: 0x4355D0 */
 void __stdcall SetEventManagerPump(void (*pump)(void))
 {
-    pEventManagerPump = pump;
+    pCurrentEventManagerPump = pump;
 }
 
 /* Function start: 0x4355E0 */

@@ -34,6 +34,6 @@ extern unsigned char bCurrentKey;     /* key code from PollKeyboardState */ /* 0
 extern signed char cPreviousKey; /* 0x0046c018 */
 extern unsigned char bMessageSpeed;   /* cycled (x+1)%5 */ /* 0x0046af68 */
 extern short nOriginDevUnlock;        /* argv element == "Origin" */ /* 0x00469ff4 */
-extern unsigned long dwGameClockBase; /* GetTickCount epoch, randomised at startup */ /* 0x005a89a8 */
+extern unsigned long dwGameClockBaseValue; /* GetTickCount epoch, randomised at startup */ /* 0x005a89a8 */
 
 #endif /* GAME_GLOBALS_H */

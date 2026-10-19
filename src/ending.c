@@ -35,6 +35,17 @@ static ShortVector aCampaignVictoryProjectileOrigins[4] = {
 static const char *pszTheEnd = "The End"; /* 0x0046adc8 */
 static const char *pszForNow = "For Now..."; /* 0x0046adcc */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+signed char acShipStressList[16]; /* 0x0059d620 */
+short anRollGoal[16]; /* 0x0059d630 */
+enum Side aeShipSide[12]; /* 0x0059d650 */
+signed char acShipAiCooldowns[16]; /* 0x0059d680 */
+FixedVector vCollisionDelta; /* 0x0059d690 */
+signed char acLastCollisionObjects[SPACE_OBJECT_COUNT]; /* 0x0059d6a0 */
+short aasShipMaximumShieldTable[10][2]; /* 0x0059d6e0 */
+short asObjectCollisionRadius[64]; /* 0x0059d710 */
+signed char acShipPointingModeList[16]; /* 0x0059d790 */
+
 /* Function start: 0x42FA90 */
 void *AllocateTaggedMemory(unsigned int size, unsigned short flags)
 {
@@ -110,15 +121,15 @@ void CreateCannedSceneObject(short *object, short yaw, short unusedPitch,
         aeObjectClass[*object] = OBJECT_CLASS_PLANET;
         init_ijk(63);
         alter_yaw(yaw, 63);
-        ScaleFixedVector(&aShipForwardVector[63],
+        ScaleFixedVector(&aShipFwdVec[63],
                          (int)distance << 8,
-                         &aShipPosition[*object]);
-        asObjectViewFrame[*object] = frame;
-        asObjectScreenAngle[*object] = type;
-        aeObjectType[*object] =
-            (enum ObjectType)asObjectScreenAngle[*object];
-        asObjectScreenScale[*object] = scale;
-        apObjectShape[*object] = shape;
+                         &aShipPositionsArray[*object]);
+        asObjectViewFrames[*object] = frame;
+        asObjScreenAngles[*object] = type;
+        aeObjectTypeList[*object] =
+            (enum ObjectType)asObjScreenAngles[*object];
+        asObjScreenScalesArray[*object] = scale;
+        apObjShapeArray[*object] = shape;
     }
 }
 
@@ -168,7 +179,7 @@ unsigned int ShowCampaignVictorySequence(void)
 
     planetDepth = -1500;
     frame = 0;
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     verticalOffset = -70000;
     nFrameSkipCounter = 1;
     do {
@@ -181,9 +192,9 @@ unsigned int ShowCampaignVictorySequence(void)
         else
             textIndex = -1;
         if (textIndex != -1) {
-            ClearViewport(&stConversationTextViewport,
+            ClearViewport(&stCurrentConvTextViewport,
                           cBlackColour);
-            SetTextContext(&stConversationTextContext);
+            SetTextContext(&stCurrentConvTxtCtx);
             FormatTextBufferFromStart(
                 "%X%Y%s%P", 0, 160,
                 apszCampaignVictoryText[textIndex]);
@@ -192,7 +203,7 @@ unsigned int ShowCampaignVictorySequence(void)
         Update_3Space();
         if (Draw_3Space_Frame() != 0) {
             if (frame > 90)
-                asObjectScreenScale[planetObject]++;
+                asObjScreenScalesArray[planetObject]++;
             if (asObjectCollisionRadius[61] < planetDepth) {
                 slot = 0;
                 projectile = projectiles;
@@ -209,11 +220,11 @@ unsigned int ShowCampaignVictorySequence(void)
                             projectile->scale = -1;
                         } else {
                             DrawSpriteScaled(
-                                &stSpaceBuffer,
+                                &stSpaceBufferViewport,
                                 (short)(projectile->screenX +
-                                        nViewCenterX),
+                                        nCurrentViewCenterPosX),
                                 (short)(projectile->screenY +
-                                        nViewCenterY),
+                                        nCurrentViewCenterPosY),
                                 projectileShape, 1, 0,
                                 (short)projectile->scale,
                                 projectile->flip);
@@ -272,8 +283,8 @@ unsigned int ShowCampaignVictorySequence(void)
 
                 planetScale = 0x40000L / planetDepth;
                 DrawSpriteScaled(
-                    &stSpaceBuffer, nViewCenterX,
-                    (short)(nViewCenterY +
+                    &stSpaceBufferViewport, nCurrentViewCenterPosX,
+                    (short)(nCurrentViewCenterPosY +
                             verticalOffset / planetDepth),
                     planetShape, 0, 0, (short)planetScale, 0);
                 verticalOffset += 200;
@@ -284,7 +295,7 @@ unsigned int ShowCampaignVictorySequence(void)
             DIBslamReal();
         }
         planetDepth += 15;
-        if (bEscapePressed == 1)
+        if (bEscapePressedFlag == 1)
             break;
         DIBslam();
         DIBslamReal();
@@ -296,23 +307,23 @@ unsigned int ShowCampaignVictorySequence(void)
     free_all_slots();
     ReleaseTextFont(0);
     free_3Space();
-    if (bEscapePressed != 1) {
+    if (bEscapePressedFlag != 1) {
         planetShape =
             FetchDiskPacketRetrying(9, 5, 0);
         animationFrame = 1;
-        ClearViewport(&stScreen, cBlackColour);
+        ClearViewport(&stScreenView, cBlackColour);
         WaitForVerticalBlankThunk();
-        DrawSpriteDefault(&stScreen, 0, 0, planetShape, 0);
+        DrawSpriteDefault(&stScreenView, 0, 0, planetShape, 0);
         elapsed = 0;
         WaitForSceneAdvance(14, 0);
         do {
             SetFrameTimerPeriodDirect(8);
-            DrawSpriteDefault(&stScreen, 0, 0, planetShape,
+            DrawSpriteDefault(&stScreenView, 0, 0, planetShape,
                               animationFrame++);
             if (animationFrame > 17)
                 animationFrame = 12;
             while ((short)IsFrameTickElapsed() == 0) {
-                if (bEscapePressed != 0 || CheckEscaped() != 0) {
+                if (bEscapePressedFlag != 0 || CheckEscaped() != 0) {
                     elapsed = 1000;
                     break;
                 }
@@ -322,24 +333,24 @@ unsigned int ShowCampaignVictorySequence(void)
             DIBslamReal();
         } while (elapsed < 40);
         ReleasePacketHandle(planetShape);
-        FadeViewportPaletteToColour(&stModalSourceViewport,
+        FadeViewportPaletteToColour(&stModalSrcViewport,
                                     cBlackColour, 1);
-        ClearViewport(&stModalSourceViewport,
+        ClearViewport(&stModalSrcViewport,
                       cBlackColour);
         DIBslam();
         DIBslamReal();
         RestoreGamePalette();
     }
 
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     StopMusicUnlessSuppressed();
     ReleaseMusicTrackHook(0x21);
     bScriptedView = 0;
     bIntroSceneResourcesActive = 1;
     nCannedSceneMode = 0;
-    FadeViewportPaletteToColour(&stModalSourceViewport,
+    FadeViewportPaletteToColour(&stModalSrcViewport,
                                 cBlackColour, 1);
-    ClearViewport(&stModalSourceViewport,
+    ClearViewport(&stModalSrcViewport,
                   cBlackColour);
     DIBslam();
     DIBslamReal();
@@ -376,14 +387,14 @@ unsigned int ShowTigerClawEscapeScene(void)
     }
     nScriptedViewObject = 1;
     initialize_scripted_view(asTigerClawEscapeViewScript);
-    ClearViewport(&stConversationTextViewport,
+    ClearViewport(&stCurrentConvTextViewport,
                   cBlackColour);
-    SetTextContext(&stConversationTextContext);
+    SetTextContext(&stCurrentConvTxtCtx);
     FormatTextBufferFromStart(
         "%X%Y%s%P", 0, 160,
         pszTigerClawEscapeOpening);
     nFrameSkipCounter = 1;
-    bEscapePressed = 0;
+    bEscapePressedFlag = 0;
     depth = -1000;
     verticalOffset = -70000;
     frame = 0;
@@ -393,8 +404,8 @@ unsigned int ShowTigerClawEscapeScene(void)
             if (asObjectCollisionRadius[61] < depth &&
                 frame < 198) {
                 DrawSpriteScaled(
-                    &stSpaceBuffer, nViewCenterX,
-                    (short)(nViewCenterY +
+                    &stSpaceBufferViewport, nCurrentViewCenterPosX,
+                    (short)(nCurrentViewCenterPosY +
                             verticalOffset / depth),
                     escapeShape, 0, 0, (short)(0x40000L / depth), 0);
             }
@@ -409,9 +420,9 @@ unsigned int ShowTigerClawEscapeScene(void)
 
         switch (frame) {
         case 150:
-            ClearViewport(&stConversationTextViewport,
+            ClearViewport(&stCurrentConvTextViewport,
                           cBlackColour);
-            SetTextContext(&stConversationTextContext);
+            SetTextContext(&stCurrentConvTxtCtx);
             FormatTextBufferFromStart(
                 "%X%Y%s%P", 0, 160,
                 pszTigerClawEscapeJump);
@@ -422,31 +433,31 @@ unsigned int ShowTigerClawEscapeScene(void)
                 set_objects_data(effect,
                                  OBJECT_TYPE_HYPERSPACE_JUMP_FLASH,
                                  -1);
-                ScaleFixedVector(&aShipForwardVector[61],
+                ScaleFixedVector(&aShipFwdVec[61],
                                  0x271000, &jumpOffset);
-                awObjectScale[effect] =
-                    (short)(awObjectScale[effect] << 2);
+                awObjectScales[effect] =
+                    (short)(awObjectScales[effect] << 2);
                 zero_vector(&aShipVelocity[effect]);
-                AddFixedVectors(&aShipPosition[61],
+                AddFixedVectors(&aShipPositionsArray[61],
                                 &jumpOffset,
-                                &aShipPosition[effect]);
+                                &aShipPositionsArray[effect]);
             }
             break;
         case 198:
-            ClearViewport(&stSpaceBuffer,
+            ClearViewport(&stSpaceBufferViewport,
                           cViewportClearColour);
             bViewportDirty = 1;
             break;
         case 210:
-            ClearViewport(&stConversationTextViewport,
+            ClearViewport(&stCurrentConvTextViewport,
                           cBlackColour);
-            SetTextContext(&stConversationTextContext);
+            SetTextContext(&stCurrentConvTxtCtx);
             FormatTextBufferFromStart(
                 "%X%Y%s%P", 0, 160,
                 pszTigerClawEscapeClosing);
             break;
         }
-        if (bEscapePressed == 1)
+        if (bEscapePressedFlag == 1)
             break;
         frame++;
         DIBslam();
@@ -461,7 +472,7 @@ unsigned int ShowTigerClawEscapeScene(void)
     free_all_slots();
     ReleaseTextFont(0);
     free_3Space();
-    ClearViewport(&stConversationTextViewport,
+    ClearViewport(&stCurrentConvTextViewport,
                   cBlackColour);
     StopMusicUnlessSuppressed();
     ReleaseMusicTrackHook(0x22);
@@ -485,7 +496,7 @@ unsigned int ShowTheEndScreen(short enableFireworks)
     InitializeConversationViewport();
     ViewMedals();
     ReleaseTextFont(0);
-    ClearViewport(&stModalSourceViewport, cBlackColour);
+    ClearViewport(&stModalSrcViewport, cBlackColour);
     ClearViewport(&stSceneBuffer, cBlackColour);
     InitializeFireworks();
     pFireworkShape =
@@ -493,8 +504,8 @@ unsigned int ShowTheEndScreen(short enableFireworks)
     pIntroFont =
         FetchDiskPacketRetrying(9, 1, 0);
     print_subtitle(&stSceneBuffer, 0x3a, pszTheEnd);
-    PanToScreen(&stSceneBuffer, &stScreen);
-    bEscapePressed = 0;
+    PanToScreen(&stSceneBuffer, &stScreenView);
+    bEscapePressedFlag = 0;
     frame = 0;
     nFrameSkipCounter = 1;
     do {
@@ -503,13 +514,13 @@ unsigned int ShowTheEndScreen(short enableFireworks)
             (RandomBelowOrEqual(100) < 40 || frame > 280)) {
             slot = 0;
             do {
-                if (aFireworks[slot].frame == -1) {
-                    aFireworks[slot].frame = 0;
-                    aFireworks[slot].x =
-                        RandomInRange(0, stSpaceBuffer.right);
-                    aFireworks[slot].y =
-                        RandomInRange(0, stSpaceBuffer.bottom);
-                    aFireworks[slot].variant = RandomInRange(0, 2);
+                if (aFireworksList[slot].frame == -1) {
+                    aFireworksList[slot].frame = 0;
+                    aFireworksList[slot].x =
+                        RandomInRange(0, stSpaceBufferViewport.right);
+                    aFireworksList[slot].y =
+                        RandomInRange(0, stSpaceBufferViewport.bottom);
+                    aFireworksList[slot].variant = RandomInRange(0, 2);
                     break;
                 }
                 slot++;

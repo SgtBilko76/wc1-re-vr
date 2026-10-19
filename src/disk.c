@@ -32,13 +32,13 @@ short nKeyboardPointerStep = 4; /* 0x004696a4 */
 
 /* Linker commons defined here; LINK orders them by identifier hash. */
 DiskFileRecord *pDiskFileRecords; /* 0x005a7cf0 */
-Viewport stDiskPromptBackgroundViewport; /* 0x005a7d00 */
+Viewport stDiskPromptBgView; /* 0x005a7d00 */
 /* GetShutdownErrorCode's buffer.  The prompt viewport that follows it at
  * 0x005A7D40 bounds it to 17-32 bytes; the DOS hook that filled it is an
  * empty stub, so its true length is unknown. */
-unsigned char abDiskPromptDriveState[0x20]; /* 0x005a7d20 */
+unsigned char abDiskPromptDriveStates[0x20]; /* 0x005a7d20 */
 Viewport stDiskPromptViewport; /* 0x005a7d40 */
-int bPointerMovedByKeyboard; /* 0x005a7d54 */
+int bPtrMovedByKeyboardState; /* 0x005a7d54 */
 TextContext stDiskPromptTextContext; /* 0x005a7d60 */
 ShortRect stDiskPromptBounds; /* 0x005a7d80 */
 
@@ -65,13 +65,13 @@ void ReportPacketLoadError(void *packet, short logicalFile,
         operation = pszPacketReadOperation;
     else
         operation = pszPacketAllocationOperation;
-    sprintf(szDefaultTextBuffer,
+    sprintf(szDefaultTxtBuf,
             pszPacketLoadErrorFormat,
             operation,
             pDiskFileRecords[logicalFile].name,
             (int)section, (int)error, packetSize,
             GetFixedOneMillionThunkAlt(retry), (int)retry, sourceTag);
-    FatalErrorAndExit(szDefaultTextBuffer);
+    FatalErrorAndExit(szDefaultTxtBuf);
 }
 
 /* Function start: 0x41D200 */
@@ -138,8 +138,8 @@ void *FetchDiskPacketRetrying(short logicalFile, short section,
             break;
     } while (nPacketError != 8);
 
-    if (packet == 0 && stSpaceBuffer.pixels != 0) {
-        free_viewport(&stSpaceBuffer);
+    if (packet == 0 && stSpaceBufferViewport.pixels != 0) {
+        free_viewport(&stSpaceBufferViewport);
         do {
             retries--;
             FreePacketAndClear(&packet, flags);
@@ -148,7 +148,7 @@ void *FetchDiskPacketRetrying(short logicalFile, short section,
             if (retries <= 0 || nPacketError == 0)
                 break;
         } while (nPacketError != 8);
-        if (AllocateViewport(&stSpaceBuffer,
+        if (AllocateViewport(&stSpaceBufferViewport,
                              (short)cPrimaryViewBufferColour, 0x20) == 0) {
             ReportPacketLoadError(0, logicalFile, flags, flags,
                                   "LP2");
@@ -240,7 +240,7 @@ unsigned int DrawTextAt(TextContext *context, short x, short y,
     DrawTextString(text);
     context->text = savedText;
     context->alignment = savedAlignment;
-    if (context->viewport->pixels == stScreen.pixels)
+    if (context->viewport->pixels == stScreenView.pixels)
         DIBslam();
     return 0;
 }
@@ -289,11 +289,11 @@ short OpenDiskDataFile(short logicalFile)
         CloseDataFile((unsigned short)file);
         return 1;
     }
-    if (bRunningFromHardDisk != 0)
+    if (bCurrentRunningFromHardDiskFlag != 0)
         return 1;
     if (GetCurrentDiskDriveHook() == 'A') {
         if (toupper((int)(signed char)
-                        abDiskPromptDriveState[1]) == 'B') {
+                        abDiskPromptDriveStates[1]) == 'B') {
             SelectDiskDriveHook('B');
         } else {
             return 0;
@@ -335,27 +335,27 @@ void __stdcall PromptInsertNumberedDisk(short logicalFile)
         return;
     }
 
-    savedTextContext = pCurrentTextContext;
+    savedTextContext = pCurTextContext;
     SetTextContext(&stDiskPromptTextContext);
-    *(ShortRect *)&stDiskPromptBackgroundViewport.left = stDiskPromptBounds;
+    *(ShortRect *)&stDiskPromptBgView.left = stDiskPromptBounds;
     *(ShortRect *)&stDiskPromptViewport.left = stDiskPromptBounds;
 
-    if (stSpaceBuffer.pixels != 0) {
-        stDiskPromptBackgroundViewport = stSpaceBuffer;
+    if (stSpaceBufferViewport.pixels != 0) {
+        stDiskPromptBgView = stSpaceBufferViewport;
         backgroundColour = (unsigned char)cPrimaryViewBufferColour;
     } else if (stSceneBuffer.pixels != 0) {
-        stDiskPromptBackgroundViewport = stSceneBuffer;
+        stDiskPromptBgView = stSceneBuffer;
         backgroundColour = (unsigned char)cBlackColour;
     } else {
         savedViewportMode = (signed char)AllocateViewport(
-            &stDiskPromptBackgroundViewport, -1, 0);
+            &stDiskPromptBgView, -1, 0);
         backgroundColour = (short)(unsigned int)savedTextContext;
     }
 
-    *(ShortRect *)&stDiskPromptBackgroundViewport.left = stDiskPromptBounds;
+    *(ShortRect *)&stDiskPromptBgView.left = stDiskPromptBounds;
     if (savedViewportMode != 0) {
         CopyViewportContents(&stDiskPromptViewport,
-                             &stDiskPromptBackgroundViewport);
+                             &stDiskPromptBgView);
     }
 
     do {
@@ -374,13 +374,13 @@ void __stdcall PromptInsertNumberedDisk(short logicalFile)
         FormatTextBufferFromStart(
             "Please insert disk %d\ninto any drive\nPress any key when ready.",
             (int)pDiskFileRecords[logicalFile].diskNumber);
-        DrawTextString(szTextScratchBuffer);
+        DrawTextString(szTxtWorkspaceBuffer);
         WaitForInputKey();
         if (OpenDiskDataFile(logicalFile) != 0)
             diskReady++;
         if (savedViewportMode != 0) {
             CopyViewportContents(
-                &stDiskPromptBackgroundViewport,
+                &stDiskPromptBgView,
                 &stDiskPromptViewport);
         } else {
             ClearViewport(&stDiskPromptViewport,
@@ -389,12 +389,12 @@ void __stdcall PromptInsertNumberedDisk(short logicalFile)
     } while (diskReady == 0);
 
     if (savedViewportMode == 1) {
-        free_viewport(&stDiskPromptBackgroundViewport);
+        free_viewport(&stDiskPromptBgView);
     } else if (savedViewportMode == 2) {
-        ClearViewport(&stDiskPromptBackgroundViewport,
+        ClearViewport(&stDiskPromptBgView,
                       backgroundColour);
     }
-    pCurrentTextContext = savedTextContext;
+    pCurTextContext = savedTextContext;
 }
 
 /* Function start: 0x41D9B0 */
@@ -456,8 +456,8 @@ short WaitForInputKey(void)
     if (nEventManagerActive == 0)
         return (signed char)PumpMessagesDuringWait();
 
-    savedMode = bInputMode;
-    bInputMode = 1;
+    savedMode = bInputModeState;
+    bInputModeState = 1;
     do {
         switch (PollInputEvent(&event, 0xff)) {
         case 2:
@@ -484,7 +484,7 @@ short WaitForInputKey(void)
         }
     } while (key == 0);
     ClearInputKeyStatePreservingModifiers();
-    bInputMode = savedMode;
+    bInputModeState = savedMode;
     FlushInputEvents();
     return key;
 }
@@ -500,8 +500,8 @@ void WaitForSceneAdvance(short duration, short unused)
 
     (void)unused;
     advanced = 0;
-    savedMode = bInputMode;
-    bInputMode = 1;
+    savedMode = bInputModeState;
+    bInputModeState = 1;
     if (duration != -1) {
         SetFrameTimerPeriodDirect(duration);
     } else {
@@ -521,7 +521,7 @@ void WaitForSceneAdvance(short duration, short unused)
         case 5:
         case 10:
             advanced++;
-            bInputMode = savedMode;
+            bInputModeState = savedMode;
             FlushInputEvents();
             do {
                 eventType = PollInputEvent(&event, 0xff);
@@ -594,7 +594,7 @@ clamp_pointer:
         QueueInputEvent(13, stMouseCursorState.x,
                         stMouseCursorState.y,
                         0, 0, 0, 0);
-        bPointerMovedByKeyboard = 1;
+        bPtrMovedByKeyboardState = 1;
         SetMousePosition(stHostMouseState.x,
                          stHostMouseState.y);
     }
@@ -609,25 +609,25 @@ void EraseLastTextInputCharacter(void)
     short length;
     short characterWidth;
 
-    text = pCurrentTextContext->text;
+    text = pCurTextContext->text;
     textWidth = MeasureTextPixelWidthClamped(text);
     length = DosStrlen(text);
     if (length != 0) {
         characterWidth = (short)GetFontCharWidth(text[length - 1]);
-        clearArea = *pCurrentTextContext->viewport;
+        clearArea = *pCurTextContext->viewport;
         clearArea.left = (short)(clearArea.left +
                                  textWidth - characterWidth);
         clearArea.right = (short)(clearArea.left + characterWidth - 1);
-        clearArea.top = pCurrentTextContext->cursorY;
+        clearArea.top = pCurTextContext->cursorY;
         clearArea.bottom = (short)(clearArea.top +
             ReadWord((unsigned short *)
-                pCurrentTextContext->font) - 1);
+                pCurTextContext->font) - 1);
         LeaveAllocationScope();
         ClearViewport(&clearArea,
-                      pCurrentTextContext->backgroundColour);
+                      pCurTextContext->backgroundColour);
         EnterAllocationScope();
-        pCurrentTextContext->cursorX = (short)(
-            pCurrentTextContext->cursorX - characterWidth);
+        pCurTextContext->cursorX = (short)(
+            pCurTextContext->cursorX - characterWidth);
     }
 }
 

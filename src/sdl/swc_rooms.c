@@ -1452,8 +1452,8 @@ static void SwcDrawRankings(SwcCarrier *carrier)
 
     for (index = 0; index < 9; index++) {
         for (other = index + 1; other < 9; other++) {
-            if (aPilotRecords[order[index]].kills * 1000 - aPilotRecords[order[index]].missions + 1 <
-                aPilotRecords[order[other]].kills * 1000 - aPilotRecords[order[other]].missions + 1) {
+            if (aPilotEntriesList[order[index]].kills * 1000 - aPilotEntriesList[order[index]].missions + 1 <
+                aPilotEntriesList[order[other]].kills * 1000 - aPilotEntriesList[order[other]].missions + 1) {
                 swap = order[index];
                 order[index] = order[other];
                 order[other] = swap;
@@ -1469,7 +1469,7 @@ static void SwcDrawRankings(SwcCarrier *carrier)
     if (carrier->drawResult == 0)
         carrier->drawResult = SdlDrawSwcText(carrier->renderer, carrier->font, 252, 34, ink, "K");
     for (index = 0; index < 9 && carrier->drawResult == 0; index++) {
-        pilot = &aPilotRecords[order[index]];
+        pilot = &aPilotEntriesList[order[index]];
         SDL_snprintf(text, sizeof(text), "%s %-14s", ranks[SDL_clamp(pilot->rank, 0, 4)], pilot->name);
         carrier->drawResult = SdlDrawSwcText(carrier->renderer, carrier->font, 46,
                                              rowY[index], ink, text);
@@ -1748,7 +1748,7 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
     SwcBuffer roster = {0};
     SwcBuffer campaign = {0};
     unsigned char campaignData[90] = {0};
-    unsigned char *savedCampaignData = pMissionCampaignData;
+    unsigned char *savedCampaignData = pMissionCampaignInfo;
     SwcRoomInput input;
     SwcRoomArt *art;
     SDL_Cursor *savedCursor = SDL_GetCursor();
@@ -1872,7 +1872,7 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
          * Supply WC1's corresponding first-mission score window so its
          * ParseTests cases 35/36 run unchanged. This is not a campaign loader. */
         memcpy(campaignData + 14, campaign.data + 40, 16);
-        pMissionCampaignData = campaignData;
+        pMissionCampaignInfo = campaignData;
         nDebriefingPersonality = 0;
         /* CODE_03 DeBriefing +0x13e4: the zero-score cue is a distinct
          * filename (DEBRIEF1), absent from the supplied demo. */
@@ -2118,7 +2118,7 @@ int SdlRunSwcCarrier(SDL_Window *window, SDL_Renderer *renderer,
     }
 done:
     SDL_strlcpy(failure, SDL_GetError(), sizeof(failure));
-    pMissionCampaignData = savedCampaignData;
+    pMissionCampaignInfo = savedCampaignData;
     SdlClearSwcPcm();
     SdlStopSwcMusic();
     SDL_SetCursor(savedCursor);

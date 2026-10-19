@@ -93,6 +93,21 @@ static int bPendingDIBSlam; /* 0x00486518 */
 static unsigned char abUnusedDIBRect[8]; /* 0x00486520 */
 static char szSpaceFlightFpsCapMessage[0x80]; /* 0x00486528 */
 
+/* Linker commons defined here; LINK orders them by identifier hash. */
+signed char cCurrentNavPtIdx; /* 0x0059c86c */
+short asObjectFlipArray[SPACE_OBJECT_COUNT]; /* 0x0059c870 */
+short nEyeRollTargetValue; /* 0x0059c8f0 */
+FixedVector vPreviousStarFieldMotion; /* 0x0059c900 */
+short nCurrentHazardFieldTotal; /* 0x0059c90c */
+signed char acPreviousAttackers[16]; /* 0x0059c910 */
+signed char acViableTargetList[16]; /* 0x0059c920 */
+short asActionCounts[10]; /* 0x0059c930 */
+short nEyeYawGoalValue; /* 0x0059c944 */
+short asObjScreenScalesArray[SPACE_OBJECT_COUNT]; /* 0x0059c950 */
+short asObjAfterburnerVelocities[SPACE_OBJECT_COUNT]; /* 0x0059c9d0 */
+CampaignState stCampaignState; /* 0x0059ca50 */
+unsigned char aShipWeaponsTable[10][0x47]; /* 0x0059cab0 */
+
 /* Function start: 0x431F00 */
 void ThrottleFrameAndDrawFps(HDC dc)
 {
@@ -512,8 +527,8 @@ void DIBmakeDIB(void)
     if (pDIBImage == 0)
         DIBerror("DIBmakeDIB", -1);
 #endif
-    stScreen.pixels = GetDIBPixelBuffer();
-    stScreen.allocation = stScreen.pixels;
+    stScreenView.pixels = GetDIBPixelBuffer();
+    stScreenView.allocation = stScreenView.pixels;
     memcpy(pDIBImage, abDIBPixelBackup,
            nDIBFrameWidth * nDIBFrameHeight);
 }
@@ -553,8 +568,8 @@ void DIBdestroyDIB(void)
     DAT_00476644 = 0;
     pDIBImage = 0;
 #ifdef SDL_PORT
-    stScreen.pixels = 0;
-    stScreen.allocation = 0;
+    stScreenView.pixels = 0;
+    stScreenView.allocation = 0;
 #endif
 }
 
@@ -841,11 +856,11 @@ unsigned int GetDIBHeight(void)
 /* Function start: 0x432E30 */
 void CachePaletteEntryFromWords(short index, unsigned short *rgb)
 {
-    awPaletteRgbWords[index * 3] =
+    awPaletteRgbWordsList[index * 3] =
         abDIBPaletteQuads[index * 4 + 2] = (unsigned char)rgb[0];
-    awPaletteRgbWords[index * 3 + 1] =
+    awPaletteRgbWordsList[index * 3 + 1] =
         abDIBPaletteQuads[index * 4 + 1] = (unsigned char)rgb[1];
-    awPaletteRgbWords[index * 3 + 2] =
+    awPaletteRgbWordsList[index * 3 + 2] =
         abDIBPaletteQuads[index * 4] = (unsigned char)rgb[2];
     abDIBPaletteQuads[index * 4 + 3] = 1;
 }
@@ -894,11 +909,11 @@ void DIBsetPalette(short index, short *rgb)
     if (abDIBPaletteQuads[cacheOffset + 2] != components[0] ||
         abDIBPaletteQuads[cacheOffset + 1] != components[1] ||
         abDIBPaletteQuads[cacheOffset] != components[2]) {
-        awPaletteRgbWords[index * 3] =
+        awPaletteRgbWordsList[index * 3] =
             abDIBPaletteQuads[cacheOffset + 2] = (unsigned char)components[0];
-        awPaletteRgbWords[index * 3 + 1] =
+        awPaletteRgbWordsList[index * 3 + 1] =
             abDIBPaletteQuads[cacheOffset + 1] = (unsigned char)components[1];
-        awPaletteRgbWords[index * 3 + 2] =
+        awPaletteRgbWordsList[index * 3 + 2] =
             abDIBPaletteQuads[cacheOffset] = (unsigned char)components[2];
         abDIBPaletteQuads[cacheOffset + 3] = 1;
 
@@ -906,9 +921,9 @@ void DIBsetPalette(short index, short *rgb)
            A DirectDraw palette entry update did not blit or wait for vertical
            blank, so flight fades must not submit additional SDL frames. */
 #ifndef SDL_PORT
-        entry.peRed = (unsigned char)awPaletteRgbWords[index * 3];
-        entry.peGreen = (unsigned char)awPaletteRgbWords[index * 3 + 1];
-        entry.peBlue = (unsigned char)awPaletteRgbWords[index * 3 + 2];
+        entry.peRed = (unsigned char)awPaletteRgbWordsList[index * 3];
+        entry.peGreen = (unsigned char)awPaletteRgbWordsList[index * 3 + 1];
+        entry.peBlue = (unsigned char)awPaletteRgbWordsList[index * 3 + 2];
         entry.peFlags = 0;
         result = IDirectDrawPalette_SetEntries(
             pDirectDrawPalette, 0, index, 1, &entry);

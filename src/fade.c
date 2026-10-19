@@ -9,10 +9,10 @@
 #include "wc1.h"
 
 short nPaletteTransitionInitialise = 1; /* 0x00469640 */
-short *pPaletteTransitionDirection; /* 0x005a7d88 */
+short *pPaletteTransDirection; /* 0x005a7d88 */
 short *pPaletteTransitionDelta; /* 0x005a7d8c */
-short nPaletteTransitionMaxDelta; /* 0x005a7d90 */
-short *pPaletteTransitionAccumulator; /* 0x005a7d94 */
+short nPaletteTransMaxDelta; /* 0x005a7d90 */
+short *pPaletteTransitionAccumulatorPtr; /* 0x005a7d94 */
 short nPaletteTransitionCountdown; /* 0x005a7d98 */
 
 /* Function start: 0x41C510 */
@@ -27,69 +27,69 @@ unsigned short __stdcall StepPaletteTransition(short *current,
 
     if (nPaletteTransitionInitialise != 0) {
         byteCount = (unsigned int)(componentCount * 2);
-        pPaletteTransitionAccumulator =
+        pPaletteTransitionAccumulatorPtr =
             AllocateTaggedMemory(byteCount, 0);
         pPaletteTransitionDelta =
             AllocateTaggedMemory(byteCount, 0);
-        pPaletteTransitionDirection =
+        pPaletteTransDirection =
             AllocateTaggedMemory(byteCount, 0);
-        if (pPaletteTransitionAccumulator == 0 ||
+        if (pPaletteTransitionAccumulatorPtr == 0 ||
             pPaletteTransitionDelta == 0 ||
-            pPaletteTransitionDirection == 0) {
-            if (pPaletteTransitionAccumulator != 0)
-                ReleasePacketHandle(pPaletteTransitionAccumulator);
+            pPaletteTransDirection == 0) {
+            if (pPaletteTransitionAccumulatorPtr != 0)
+                ReleasePacketHandle(pPaletteTransitionAccumulatorPtr);
             if (pPaletteTransitionDelta != 0)
                 ReleasePacketHandle(pPaletteTransitionDelta);
-            if (pPaletteTransitionDirection != 0)
-                ReleasePacketHandle(pPaletteTransitionDirection);
+            if (pPaletteTransDirection != 0)
+                ReleasePacketHandle(pPaletteTransDirection);
             return 0;
         }
 
-        nPaletteTransitionMaxDelta = 0;
+        nPaletteTransMaxDelta = 0;
         for (index = 0; index < componentCount; index++) {
             difference = (short)(current[index] - target[index]);
             if (difference < 0) {
                 difference = (short)-difference;
-                pPaletteTransitionDirection[index] = 4;
+                pPaletteTransDirection[index] = 4;
             } else {
-                pPaletteTransitionDirection[index] = -4;
+                pPaletteTransDirection[index] = -4;
             }
             pPaletteTransitionDelta[index] = difference;
-            if (nPaletteTransitionMaxDelta < difference)
-                nPaletteTransitionMaxDelta = difference;
+            if (nPaletteTransMaxDelta < difference)
+                nPaletteTransMaxDelta = difference;
         }
 
-        difference = (short)(nPaletteTransitionMaxDelta / 4);
+        difference = (short)(nPaletteTransMaxDelta / 4);
         for (index = 0; index < componentCount; index++) {
-            pPaletteTransitionAccumulator[index] = difference;
+            pPaletteTransitionAccumulatorPtr[index] = difference;
         }
         nPaletteTransitionInitialise = 0;
         nPaletteTransitionCountdown =
-            (short)(nPaletteTransitionMaxDelta / 4);
+            (short)(nPaletteTransMaxDelta / 4);
     }
 
     previousCountdown = nPaletteTransitionCountdown;
     nPaletteTransitionCountdown--;
     if (previousCountdown == 0) {
-        ReleasePacketHandle(pPaletteTransitionAccumulator);
+        ReleasePacketHandle(pPaletteTransitionAccumulatorPtr);
         ReleasePacketHandle(pPaletteTransitionDelta);
-        ReleasePacketHandle(pPaletteTransitionDirection);
+        ReleasePacketHandle(pPaletteTransDirection);
         nPaletteTransitionInitialise = 1;
         return 0;
     }
 
     for (index = 0; index < componentCount; index++) {
-        pPaletteTransitionAccumulator[index] =
-            (short)(pPaletteTransitionAccumulator[index] +
+        pPaletteTransitionAccumulatorPtr[index] =
+            (short)(pPaletteTransitionAccumulatorPtr[index] +
                     pPaletteTransitionDelta[index]);
-        if (pPaletteTransitionAccumulator[index] >
-            nPaletteTransitionMaxDelta) {
-            pPaletteTransitionAccumulator[index] =
-                (short)(pPaletteTransitionAccumulator[index] -
-                        nPaletteTransitionMaxDelta);
+        if (pPaletteTransitionAccumulatorPtr[index] >
+            nPaletteTransMaxDelta) {
+            pPaletteTransitionAccumulatorPtr[index] =
+                (short)(pPaletteTransitionAccumulatorPtr[index] -
+                        nPaletteTransMaxDelta);
             current[index] =
                 (short)(current[index] +
-                        pPaletteTransitionDirection[index]);
+                        pPaletteTransDirection[index]);
         }
     }
     return 1;

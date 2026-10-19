@@ -16,11 +16,21 @@ static char szTMDriverName[] = "TM.DRV";
 /* 0x0046b188 */
 static char szSuperTMDriverName[] = "SUPERTM.DRV";
 
+
 /* Linker commons defined here; LINK orders them by identifier hash. */
-int nJoystickCalibrationMinimumY; /* 0x0059df64 */
-int nJoystickCalibrationMinimumX; /* 0x0059df68 */
-int nJoystickCalibrationMaximumX; /* 0x0059df6c */
-int nJoystickCalibrationMaximumY; /* 0x0059df70 */
+signed char acShipRating[16]; /* 0x0059cd80 */
+short asObjScreenAngles[SPACE_OBJECT_COUNT]; /* 0x0059cd90 */
+short nTgtRange; /* 0x0059ce10 */
+unsigned int anVduModeCache[2]; /* 0x0059ce18 */
+signed char acObjOwnersTable[64]; /* 0x0059ce20 */
+signed char acShipTargetTable[16]; /* 0x0059ce60 */
+short nPrevPitchInputValue; /* 0x0059ce70 */
+short nPrevYawInput; /* 0x0059ce72 */
+short nPreviousRollInputValue; /* 0x0059ce74 */
+short anObjectYawRotation[SPACE_OBJECT_COUNT]; /* 0x0059ce80 */
+signed char acPilotHitPointsArray[16]; /* 0x0059cf00 */
+signed char acTurnRegulatorsArray[16]; /* 0x0059cf10 */
+unsigned char abCollisionAlertTargets[0x10]; /* 0x0059cf20 */
 
 /* Function start: 0x431A10 */
 void LoadJoystickCalibrationFile(short horizontalRange,
@@ -49,7 +59,7 @@ void LoadJoystickCalibrationFile(short horizontalRange,
         horizontalRange += (short)failed;
     if (verticalRange == 0)
         verticalRange++;
-    nJoystickFailureValue = -1;
+    nCurrentJoystickFailureValue = -1;
     SampleBothJoysticks(samples, -1);
     if (samples[0].x != -1 && samples[0].y != -1)
         activeDevice = 0;
@@ -101,41 +111,41 @@ void LoadJoystickCalibrationFile(short horizontalRange,
         }
         if (centreY > 10) {
             nJoystickCalibrationMinimumY = centreY - 10;
-            nJoystickCalibrationMaximumY = centreY + 10;
+            nJoystickCalibrationMaxY = centreY + 10;
         } else {
-            nJoystickCalibrationMaximumY = centreY;
+            nJoystickCalibrationMaxY = centreY;
             nJoystickCalibrationMinimumY = centreY;
         }
 
         rangeX = horizontalRange;
         rangeY = verticalRange;
-        nJoystickLeftScale = nJoystickCalibrationMinimumX / rangeX;
+        nCurrentJoystickLeftScale = nJoystickCalibrationMinimumX / rangeX;
         nJoystickUpScale = nJoystickCalibrationMinimumY / rangeY;
-        if (nJoystickLeftScale == 0)
-            nJoystickLeftScale++;
+        if (nCurrentJoystickLeftScale == 0)
+            nCurrentJoystickLeftScale++;
         if (nJoystickUpScale == 0)
             nJoystickUpScale++;
         nJoystickRightScale = nJoystickCalibrationMinimumX / rangeX;
         if (nJoystickRightScale == 0)
             nJoystickRightScale++;
-        nJoystickDownScale = nJoystickCalibrationMinimumY / rangeY;
-        if (nJoystickDownScale == 0)
-            nJoystickDownScale++;
+        nJoystickDownScaleValue = nJoystickCalibrationMinimumY / rangeY;
+        if (nJoystickDownScaleValue == 0)
+            nJoystickDownScaleValue++;
 
         nJoystickCentreX = centreX;
         nJoystickCentreY = centreY;
-        nJoystickMinimumX =
-            centreX - rangeX * nJoystickLeftScale;
-        nJoystickMinimumY =
+        nStickMinimumPositionX =
+            centreX - rangeX * nCurrentJoystickLeftScale;
+        nStickMinimumPositionY =
             centreY - rangeY * nJoystickUpScale;
-        nJoystickMaximumX =
-            rangeX * nJoystickLeftScale + centreX;
-        nJoystickMaximumY =
+        nStickMaxX =
+            rangeX * nCurrentJoystickLeftScale + centreX;
+        nStickMaxY =
             rangeY * nJoystickUpScale + centreY;
         nJoystickHorizontalDeadZone = horizontalDeadZone;
-        nJoystickVerticalDeadZone = verticalDeadZone;
+        nJoystickVertDeadZoneValue = verticalDeadZone;
     }
-    nActiveInputDevice = activeDevice;
+    nCurrentActiveInputDevice = activeDevice;
 }
 
 /* Function start: 0x431D20 */
@@ -152,39 +162,39 @@ short ReadCalibratedJoystick(void)
     short normalizedY;
     short device;
 
-    device = *(volatile short *)&nActiveInputDevice;
+    device = *(volatile short *)&nCurrentActiveInputDevice;
     if (device == -1)
         return 0;
-    sample = &aInputDeviceSamples[device];
+    sample = &aInputDevSamples[device];
     sampleResult = SampleJoystickDevice(
         sample, device,
-        nJoystickFailureValue);
+        nCurrentJoystickFailureValue);
     rawX = sample->x;
-    failureValue = *(volatile int *)&nJoystickFailureValue;
+    failureValue = *(volatile int *)&nCurrentJoystickFailureValue;
     if (rawX == failureValue ||
-        (rawY = aInputDeviceSamples[device].y) == failureValue ||
+        (rawY = aInputDevSamples[device].y) == failureValue ||
         sampleResult != 0) {
-        nActiveInputDevice = -1;
-        sample->x = aInputDeviceSamples[device].y =
-            aInputDeviceSamples[device].buttons = 0;
+        nCurrentActiveInputDevice = -1;
+        sample->x = aInputDevSamples[device].y =
+            aInputDevSamples[device].buttons = 0;
         return 0;
     }
 
-    minimumX = *(volatile int *)&nJoystickMinimumX;
-    nJoystickRawX = rawX;
-    nJoystickRawY = rawY;
+    minimumX = *(volatile int *)&nStickMinimumPositionX;
+    nCurrentJoystickRawCoordX = rawX;
+    nCurrentJoystickRawCoordY = rawY;
     if (minimumX > rawX)
         sample->x = minimumX;
-    if (sample->x > nJoystickMaximumX)
-        sample->x = nJoystickMaximumX;
-    if (aInputDeviceSamples[device].y <
-        nJoystickMinimumY)
-        aInputDeviceSamples[device].y =
-            nJoystickMinimumY;
-    if (aInputDeviceSamples[device].y >
-        nJoystickMaximumY)
-        aInputDeviceSamples[device].y =
-            nJoystickMaximumY;
+    if (sample->x > nStickMaxX)
+        sample->x = nStickMaxX;
+    if (aInputDevSamples[device].y <
+        nStickMinimumPositionY)
+        aInputDevSamples[device].y =
+            nStickMinimumPositionY;
+    if (aInputDevSamples[device].y >
+        nStickMaxY)
+        aInputDevSamples[device].y =
+            nStickMaxY;
 
     normalizedY = 0;
     normalizedX = 0;
@@ -192,7 +202,7 @@ short ReadCalibratedJoystick(void)
     centre = *(volatile int *)&nJoystickCentreX;
     if (centre > rawX) {
         rawX = centre - rawX;
-        rawX /= nJoystickLeftScale;
+        rawX /= nCurrentJoystickLeftScale;
         normalizedX = (short)rawX;
         if (nJoystickHorizontalDeadZone < normalizedX) {
             if (normalizedX != 0)
@@ -208,13 +218,13 @@ short ReadCalibratedJoystick(void)
             normalizedX = 0;
     }
 
-    rawY = aInputDeviceSamples[device].y;
+    rawY = aInputDevSamples[device].y;
     centre = *(volatile int *)&nJoystickCentreY;
     if (centre > rawY) {
         rawY = centre - rawY;
         rawY /= nJoystickUpScale;
         normalizedY = (short)rawY;
-        if (nJoystickVerticalDeadZone < normalizedY) {
+        if (nJoystickVertDeadZoneValue < normalizedY) {
             if (normalizedY != 0)
                 normalizedY = (short)-normalizedY;
         } else {
@@ -222,13 +232,13 @@ short ReadCalibratedJoystick(void)
         }
     } else if (centre < rawY) {
         rawY = rawY - centre;
-        rawY /= nJoystickDownScale;
+        rawY /= nJoystickDownScaleValue;
         normalizedY = (short)rawY;
-        if (normalizedY <= nJoystickVerticalDeadZone)
+        if (normalizedY <= nJoystickVertDeadZoneValue)
             normalizedY = 0;
     }
     sample->x = (int)normalizedX;
-    aInputDeviceSamples[device].y = (int)normalizedY;
+    aInputDevSamples[device].y = (int)normalizedY;
     return 1;
 }
 

@@ -53,38 +53,27 @@ static NavMapLabel aNavMapLabels[20];
 /* 0x00475f48 */
 static ShortRect aNavMapExclusionRects[21];
 
-/* Linker commons defined here; LINK orders them by identifier hash. */
-short nNavMapMaximumX; /* 0x005a812c */
-short nNavMapMinimumX; /* 0x005a812e */
-unsigned short awNavObjectiveLabelIndex[16]; /* 0x005a8130 */
-short nNavMapMaximumY; /* 0x005a8150 */
-short nNavMapCentreX; /* 0x005a8152 */
-short nNavMapMinimumY; /* 0x005a8154 */
-TextContext stNavMapTextContext; /* 0x005a8160 */
-short nNavMapCentreY; /* 0x005a817c */
-TextContext stNavLabelTextContext; /* 0x005a8180 */
-short nActiveInputDevice; /* 0x005a819c */
-int nJoystickVerticalDeadZone; /* 0x005a81a0 */
+short nNavMapCenterPositionY; /* 0x005a817c */
+TextContext stMapNavigationLabelTextContext; /* 0x005a8180 */
+short nCurrentActiveInputDevice; /* 0x005a819c */
+int nJoystickVertDeadZoneValue; /* 0x005a81a0 */
 int nJoystickHorizontalDeadZone; /* 0x005a81a4 */
 int nJoystickUpScale; /* 0x005a81a8 */
-int nJoystickLeftScale; /* 0x005a81ac */
-int nJoystickMaximumX; /* 0x005a81b0 */
-int nJoystickMaximumY; /* 0x005a81b4 */
-int nJoystickMinimumX; /* 0x005a81b8 */
-int nJoystickMinimumY; /* 0x005a81bc */
-int nJoystickRawX; /* 0x005a81c0 */
-int nJoystickRawY; /* 0x005a81c4 */
+int nCurrentJoystickLeftScale; /* 0x005a81ac */
+int nStickMaxX; /* 0x005a81b0 */
+int nStickMaxY; /* 0x005a81b4 */
+int nStickMinimumPositionX; /* 0x005a81b8 */
+int nStickMinimumPositionY; /* 0x005a81bc */
+int nCurrentJoystickRawCoordX; /* 0x005a81c0 */
+int nCurrentJoystickRawCoordY; /* 0x005a81c4 */
 int nJoystickVerticalRange; /* 0x005a81c8 */
-int nJoystickHorizontalRange; /* 0x005a81cc */
+int nJoystickHorizontalRangeValue; /* 0x005a81cc */
 int nJoystickRightScale; /* 0x005a81d0 */
-int nJoystickDownScale; /* 0x005a81d4 */
+int nJoystickDownScaleValue; /* 0x005a81d4 */
 int nJoystickCentreY; /* 0x005a81d8 */
 int nJoystickCentreX; /* 0x005a81dc */
-int nJoystickFailureValue; /* 0x005a81e0 */
-InputDeviceSample aInputDeviceSamples[2]; /* 0x005a81f0 */
-short nMenuInputRepeatDelay; /* 0x005a8208 */
-unsigned char abMissionAuxData[0x28]; /* 0x005a8210 */
-unsigned char abSeriesAuxData[0x28]; /* 0x005a8240 */
+int nCurrentJoystickFailureValue; /* 0x005a81e0 */
+InputDeviceSample aInputDevSamples[2]; /* 0x005a81f0 */
 
 /* Function start: 0x40D090 */
 short NavMapPointInsideReservedArea(short area, short x, short y)
@@ -227,7 +216,7 @@ void AddUniqueObjectiveNavLabel(short x, short y,
     }
     previous = 0;
     while (previous < objective) {
-        if (aMissionObjectives[previous].index == missionShip)
+        if (aMissionObjectivesArray[previous].index == missionShip)
             break;
         previous++;
     }
@@ -286,12 +275,12 @@ void DrawNavRectangleMarker(short x, short y, short size, short shadow,
                             unsigned short colour, short reserve)
 {
     if (shadow == 0)
-        DrawViewportEllipse(stNavLabelTextContext.viewport,
+        DrawViewportEllipse(stMapNavigationLabelTextContext.viewport,
                             x, y, size, (short)((size * 7) / 8),
                             (short)colour);
     else
         DrawViewportEllipseShadow(
-            stNavLabelTextContext.viewport,
+            stMapNavigationLabelTextContext.viewport,
             x, y, size, (short)((size * 7) / 8), (short)colour);
     if (reserve != 0 && size < 5)
         ReserveNavMapArea((short)(x - size), (short)(y - size),
@@ -313,17 +302,17 @@ void DrawNavSquareMarker(short x, short y, short size, short shadow,
                          short colour, short reserve)
 {
     if (size == 0) {
-        DrawViewportPixel(stNavLabelTextContext.viewport,
+        DrawViewportPixel(stMapNavigationLabelTextContext.viewport,
                           x, y, colour);
-        DrawViewportPixel(stNavLabelTextContext.viewport,
+        DrawViewportPixel(stMapNavigationLabelTextContext.viewport,
                           (short)(x + 1), y, colour);
-        DrawViewportPixel(stNavLabelTextContext.viewport,
+        DrawViewportPixel(stMapNavigationLabelTextContext.viewport,
                           x, (short)(y + 1), colour);
-        DrawViewportPixel(stNavLabelTextContext.viewport,
+        DrawViewportPixel(stMapNavigationLabelTextContext.viewport,
                           (short)(x + 1),
                           (short)(y + 1), colour);
     } else {
-        DrawNavSquareOutline(stNavLabelTextContext.viewport,
+        DrawNavSquareOutline(stMapNavigationLabelTextContext.viewport,
                              x, y, size,
                              (signed char)colour);
     }
@@ -350,7 +339,7 @@ void DrawNavTriangleOutline(Viewport *viewport, short x, short y,
 void DrawNavTriangleMarker(short x, short y, short size, short shadow,
                            unsigned short colour, short reserve)
 {
-    DrawNavTriangleOutline(stNavLabelTextContext.viewport,
+    DrawNavTriangleOutline(stMapNavigationLabelTextContext.viewport,
                            x, y, size,
                            (signed char)colour);
     if (reserve != 0 && size < 5)
@@ -364,11 +353,11 @@ void DrawNavTriangleMarker(short x, short y, short size, short shadow,
 void DrawNavCrossMarker(short x, short y, short size, short shadow,
                         unsigned short colour, short reserve)
 {
-    DrawViewportLine(stNavLabelTextContext.viewport,
+    DrawViewportLine(stMapNavigationLabelTextContext.viewport,
                      (short)(x - size), (short)(y - size),
                      (short)(x + size), (short)(y + size),
                      (short)colour);
-    DrawViewportLine(stNavLabelTextContext.viewport,
+    DrawViewportLine(stMapNavigationLabelTextContext.viewport,
                      (short)(x - size), (short)(y + size),
                      (short)(x + size), (short)(y - size),
                      (short)colour);
@@ -407,11 +396,11 @@ void DrawNavPlayerMarker(short colour, short reserve)
     short x;
     short y;
 
-    nav_getxy(&x, &y, aShipPosition[0].x,
-              aShipPosition[0].z);
-    x = (short)(x + stNavLabelTextContext.viewport->left);
-    y = (short)(y + stNavLabelTextContext.viewport->top);
-    DrawViewportPixel(stNavLabelTextContext.viewport,
+    nav_getxy(&x, &y, aShipPositionsArray[0].x,
+              aShipPositionsArray[0].z);
+    x = (short)(x + stMapNavigationLabelTextContext.viewport->left);
+    y = (short)(y + stMapNavigationLabelTextContext.viewport->top);
+    DrawViewportPixel(stMapNavigationLabelTextContext.viewport,
                       x, y, colour);
     DrawNavSquareMarker(x, y, 0, 0, colour, reserve);
 }
@@ -432,12 +421,12 @@ void BuildMap(short showPlayer)
     SetScreenClipRect(1, 1, 153, 138);
     DrawSpriteDefault(&stSceneBuffer, 1, 1, pNavMapShape, 0);
     SetScreenClipRect(2, 2, 152, 137);
-    stNavLabelTextContext.viewport = &stSceneBuffer;
-    stNavLabelTextContext.text = szDefaultTextBuffer;
-    InitializeTextContextFromFont(&stNavLabelTextContext,
+    stMapNavigationLabelTextContext.viewport = &stSceneBuffer;
+    stMapNavigationLabelTextContext.text = szDefaultTxtBuf;
+    InitializeTextContextFromFont(&stMapNavigationLabelTextContext,
                                   2, cPrimaryTextColour, -1);
-    stNavLabelTextContext.alignment = 0;
-    SetTextContext(&stNavLabelTextContext);
+    stMapNavigationLabelTextContext.alignment = 0;
+    SetTextContext(&stMapNavigationLabelTextContext);
     navPoint = aMissionNavPoints;
     ResetNavMapLabels();
     ResetNavMapReservedAreas();
@@ -470,19 +459,19 @@ void BuildMap(short showPlayer)
     }
 
     for (objectiveIndex = 0;
-         objectiveIndex < (short)cMissionObjectiveCount;
+         objectiveIndex < (short)cMissionObjectiveCountValue;
          objectiveIndex++) {
         if (mobile_objective(objectiveIndex) == 0 ||
             (aMissionShips[
-                 (signed char)aMissionObjectives[objectiveIndex].index]
+                 (signed char)aMissionObjectivesArray[objectiveIndex].index]
                      .state == 0 &&
              achieved(objectiveIndex) == 0)) {
             ScaleNavMapCoordinates(&x, &y,
-                                   aMissionObjectives[objectiveIndex].mapX,
-                                   aMissionObjectives[objectiveIndex].mapY);
+                                   aMissionObjectivesArray[objectiveIndex].mapX,
+                                   aMissionObjectivesArray[objectiveIndex].mapY);
             if (hidden_objective(objectiveIndex) == 0) {
                 style = &aNavMapObjectiveStyles[
-                    aMissionObjectives[objectiveIndex].type];
+                    aMissionObjectivesArray[objectiveIndex].type];
                 if (visited(objectiveIndex) == 0)
                     DrawViewportPixel(&stSceneBuffer, x, y,
                                       *style->unvisitedColour);
@@ -508,19 +497,19 @@ void BuildMap(short showPlayer)
                     labelColour = cYellowColour;
                 else
                     labelColour = *style->labelColour;
-                awNavObjectiveLabelIndex[objectiveIndex] =
+                awMapNavObjectiveLabelIndex[objectiveIndex] =
                     nNavMapLabelCount;
                 AddUniqueObjectiveNavLabel(
                     x, y, labelColour, objective_name(objectiveIndex),
                     objectiveIndex,
-                    (short)aMissionObjectives[objectiveIndex].index);
+                    (short)aMissionObjectivesArray[objectiveIndex].index);
             }
         }
     }
     if (showPlayer != 0) {
         DrawNavPlayerMarker(cViewportClearColour, 1);
-        nav_getxy(&x, &y, aShipPosition[0].x,
-                  aShipPosition[0].z);
+        nav_getxy(&x, &y, aShipPositionsArray[0].x,
+                  aShipPositionsArray[0].z);
         PlaceNavMapLabel(
             x, y, cLightGreyColour,
             stCampaignState.currentPilot->callsign);
@@ -535,25 +524,25 @@ void UpdateInflightNavText(short showColon)
     char time[12];
     short cursorX;
 
-    SetTextContext(&stNavMapTextContext);
+    SetTextContext(&stCurrentNavMapTxtCtx);
     sprintf(time, "%02d",
-            (int)((signed char *)pElapsedCampaignDate)[0]);
+            (int)((signed char *)pElapsedCampaignDatePtr)[0]);
     DrawFormattedText(
         "%X%YStandard time %s",
-        (int)(short)(stNavMapTextContext.viewport->left + 150),
-        (int)(short)(stNavMapTextContext.viewport->top + 140),
+        (int)(short)(stCurrentNavMapTxtCtx.viewport->left + 150),
+        (int)(short)(stCurrentNavMapTxtCtx.viewport->top + 140),
         time);
-    cursorX = stNavMapTextContext.cursorX;
+    cursorX = stCurrentNavMapTxtCtx.cursorX;
     if (showColon == 0) {
         DrawFormattedText(" ");
     } else {
-        stNavMapTextContext.cursorX =
-            (short)(stNavMapTextContext.cursorX + 4);
+        stCurrentNavMapTxtCtx.cursorX =
+            (short)(stCurrentNavMapTxtCtx.cursorX + 4);
     }
     sprintf(time, "%02d  ",
-            (int)((signed char *)pElapsedCampaignDate)[1]);
+            (int)((signed char *)pElapsedCampaignDatePtr)[1]);
     DrawFormattedText(time);
-    stNavMapTextContext.cursorX = cursorX;
+    stCurrentNavMapTxtCtx.cursorX = cursorX;
     if (showColon != 0)
         DrawFormattedText(":");
 }
@@ -571,7 +560,7 @@ void FormatNavCoordinates(unsigned char *out)
 /* Function start: 0x40DEA0 */
 void DrawSelectedNavLegendEntry(const char *text, short navPoint)
 {
-    if ((short)cCurrentNavPointIndex == navPoint) {
+    if ((short)cCurrentNavPtIdx == navPoint) {
         DrawNavTextLine(0, (unsigned short)cYellowColour, text);
         DrawNavTextLine(0, (unsigned short)cYellowColour,
                         "\n");
@@ -584,7 +573,7 @@ void DrawNavMapLegend(void)
     short objective;
 
     objective = 0;
-    while (objective < (short)cMissionObjectiveCount) {
+    while (objective < (short)cMissionObjectiveCountValue) {
         if (visited(objective) == 0 && hidden_objective(objective) == 0)
             break;
         objective++;
@@ -594,7 +583,7 @@ void DrawNavMapLegend(void)
                                objective);
     DrawSelectedNavLegendEntry(
         "HOME BASE",
-        (short)((short)cMissionObjectiveCount - 1));
+        (short)((short)cMissionObjectiveCountValue - 1));
 }
 
 /* Function start: 0x40DF50 */
@@ -602,7 +591,7 @@ char *nav_note(short objective)
 {
     char *note;
 
-    note = aMissionObjectives[objective].name;
+    note = aMissionObjectivesArray[objective].name;
     if (*note == '?')
         note++;
     return note;
@@ -615,14 +604,14 @@ void DrawNavLocationReadout(const char *title, short showFlightData)
 
     ClearViewport(&stSceneBuffer, cBlackColour);
     SetScreenClipRect(155, 2, 259, 155);
-    stNavMapTextContext.viewport = &stSceneBuffer;
-    stNavMapTextContext.text = szDefaultTextBuffer;
-    InitializeTextContextFromFont(&stNavMapTextContext,
+    stCurrentNavMapTxtCtx.viewport = &stSceneBuffer;
+    stCurrentNavMapTxtCtx.text = szDefaultTxtBuf;
+    InitializeTextContextFromFont(&stCurrentNavMapTxtCtx,
                                   1, cPrimaryTextColour, cBlackColour);
-    stNavMapTextContext.alignment = 0;
-    stNavMapTextContext.cursorX = 0;
-    stNavMapTextContext.cursorY = 0;
-    SetTextContext(&stNavMapTextContext);
+    stCurrentNavMapTxtCtx.alignment = 0;
+    stCurrentNavMapTxtCtx.cursorX = 0;
+    stCurrentNavMapTxtCtx.cursorY = 0;
+    SetTextContext(&stCurrentNavMapTxtCtx);
     DrawNavTextLine(0, cDefaultTextColour,
                     "\n");
     DrawNavTextLine(2, cDefaultTextColour,
@@ -637,7 +626,7 @@ void DrawNavLocationReadout(const char *title, short showFlightData)
                     "* %s *\n",
                     abMissionAuxData);
     playerMissionType = aMissionShips[
-        stMissionHeader.playerMissionShip].missionType;
+        stCurrentMissionHeader.playerMissionShip].missionType;
     DrawNavTextLine(2, cDefaultTextColour,
                     "* %s *\n",
                     apszShipMissionTypeNames[
@@ -652,15 +641,15 @@ void DrawNavLocationReadout(const char *title, short showFlightData)
     BuildMap(showFlightData);
     if (showFlightData != 0) {
         SetScreenClipRect(0, 0, 259, 155);
-        SetTextContext(&stNavMapTextContext);
+        SetTextContext(&stCurrentNavMapTxtCtx);
         DrawNavTextLine(0, cDefaultTextColour,
                         "%X%Y                         Location: %d.%d.%d",
                         8, 142,
-                        aShipPosition[0].x,
-                        aShipPosition[0].y,
-                        aShipPosition[0].z);
+                        aShipPositionsArray[0].x,
+                        aShipPositionsArray[0].y,
+                        aShipPositionsArray[0].z);
     }
-    CopyViewportContents(&stSceneBuffer, &stScreen);
+    CopyViewportContents(&stSceneBuffer, &stScreenView);
     DIBslam();
     DIBslamReal();
 }
@@ -677,7 +666,7 @@ void BriefingMap_LoadShapes(void)
                          (short)cBlackColour, 0) == 0)
         ReportOutOfMemoryAndExit("VSCREEN");
     objective = 0;
-    while (objective < (short)cMissionObjectiveCount) {
+    while (objective < (short)cMissionObjectiveCountValue) {
         LocateMobileObjective(objective);
         objective++;
     }
@@ -691,7 +680,7 @@ void BriefingMap_DisplayMap(void)
     savedViewport = stSceneBuffer;
     free_viewport(&stSceneBuffer);
     BriefingMap_LoadShapes();
-    stScreen.top = 4;
+    stScreenView.top = 4;
     DrawNavLocationReadout("Briefing Nav Map", 0);
     free_viewport(&stSceneBuffer);
     ReleasePacketHandle(pNavMapShape);
@@ -711,22 +700,22 @@ short SelectNavObjectiveAtPoint(short mouseX, short mouseY)
     short pathIndex;
     signed char objective;
 
-    oldNavPoint = (short)cCurrentNavPointIndex;
+    oldNavPoint = (short)cCurrentNavPtIdx;
     mouseX = (short)(mouseX - 30);
     mouseY = (short)(mouseY - 22);
     pathIndex = 0;
     selected = 0;
-    objective = abFlightPath[pathIndex];
+    objective = abFlightPathList[pathIndex];
     while (objective != -1) {
         if (hidden_objective((short)objective) == 0) {
             ScaleNavMapCoordinates(
                 &mapX, &mapY,
-                aMissionObjectives[objective].mapX,
-                aMissionObjectives[objective].mapY);
+                aMissionObjectivesArray[objective].mapX,
+                aMissionObjectivesArray[objective].mapY);
             if ((short)(abs((int)mouseX - mapX) +
                         abs((int)mouseY - mapY)) < 6 ||
                 IsPointInNavMapLabel(
-                    (short)awNavObjectiveLabelIndex[pathIndex],
+                    (short)awMapNavObjectiveLabelIndex[pathIndex],
                     mouseX, mouseY) != 0) {
                 selected = 1;
                 set_new_objective(pathIndex);
@@ -735,7 +724,7 @@ short SelectNavObjectiveAtPoint(short mouseX, short mouseY)
             }
         }
         pathIndex++;
-        objective = abFlightPath[pathIndex];
+        objective = abFlightPathList[pathIndex];
     }
     return selected;
 }
@@ -747,12 +736,12 @@ void CentreMouseOnCurrentNavObjective(void)
     short y;
     signed char objective;
 
-    objective = abFlightPath[
-        cCurrentNavPointIndex];
+    objective = abFlightPathList[
+        cCurrentNavPtIdx];
     ScaleNavMapCoordinates(
         &x, &y,
-        aMissionObjectives[objective].mapX,
-        aMissionObjectives[objective].mapY);
+        aMissionObjectivesArray[objective].mapX,
+        aMissionObjectivesArray[objective].mapY);
     x = (short)(x + 30);
     y = (short)(y + 22);
     LeaveAllocationScope();
@@ -763,11 +752,11 @@ void CentreMouseOnCurrentNavObjective(void)
 /* Function start: 0x40E430 */
 void ShowConfedNavScan(void)
 {
-    SetRectBounds(&stScreen, 30, 22, 289, 177);
+    SetRectBounds(&stScreenView, 30, 22, 289, 177);
     LeaveAllocationScope();
     DrawNavLocationReadout("ConFed Nav Scan", 1);
     EnterAllocationScope();
-    SetRectBounds(&stScreen, 0, 0, 319, 199);
+    SetRectBounds(&stScreenView, 0, 0, 319, 199);
 }
 
 /* Function start: 0x40E480 */
@@ -791,7 +780,7 @@ void InflightComputer(void)
     unsigned int savedInputState[7];
 #endif
 
-    savedNavPoint = (short)cCurrentNavPointIndex;
+    savedNavPoint = (short)cCurrentNavPtIdx;
     done = 0;
     hasObjectives = 0;
     displayedNavPoint = savedNavPoint;
@@ -808,22 +797,22 @@ void InflightComputer(void)
     if (message_showing() != 0)
         EndCommMenu();
     GetScreenUpdateFlag();
-    cScreenViewportMode = -1;
+    cScreenViewMode = -1;
     background = FetchDiskPacketRetrying(8, 1, 0);
-    ClearViewport(&stScreen, cBlackColour);
-    DrawSpriteDefault(&stScreen, 0, 0, background, 0);
+    ClearViewport(&stScreenView, cBlackColour);
+    DrawSpriteDefault(&stScreenView, 0, 0, background, 0);
     ReleasePacketHandle(background);
 
     objective = 0;
     BriefingMap_LoadShapes();
     ShowConfedNavScan();
-    if (cMissionObjectiveCount > 0) {
+    if (cMissionObjectiveCountValue > 0) {
         do {
             if (hidden_objective(objective) == 0)
                 hasObjectives = 1;
             objective++;
         } while (objective <
-                 (short)cMissionObjectiveCount);
+                 (short)cMissionObjectiveCountValue);
     }
 
     if (hasObjectives == 0) {
@@ -832,11 +821,11 @@ void InflightComputer(void)
         SetFrameTimerAndWait(20);
         SetEventManagerPump(get_player_input);
     } else {
-        pointerViewport = stScreen;
+        pointerViewport = stScreenView;
         SetRectBounds(&pointerViewport, 32, 24, 182, 159);
-        savedInputMode = (short)(signed char)bInputMode;
+        savedInputMode = (short)(signed char)bInputModeState;
         stMouseCursorState.viewport = &pointerViewport;
-        bInputMode = 1;
+        bInputModeState = 1;
         SetEventManagerPump(PollMenuInputDevices);
         EventManagerHook(ResetMouseCursorFrame);
         nMenuInputRepeatDelay = 6;
@@ -845,25 +834,25 @@ void InflightComputer(void)
 
         do {
             if (displayedNavPoint !=
-                (short)cCurrentNavPointIndex) {
+                (short)cCurrentNavPtIdx) {
                 displayedNavPoint =
-                    (short)cCurrentNavPointIndex;
+                    (short)cCurrentNavPtIdx;
                 PlaySfxWaveFileByNumber(0x19, -1, 0);
                 ShowConfedNavScan();
             }
-            SetRectBounds(&stScreen, 32, 24, 289, 177);
+            SetRectBounds(&stScreenView, 32, 24, 289, 177);
             SetMouseCursorShape(stMouseCursorState.shape, 0);
             FormatNavCoordinates(
-                (unsigned char *)pElapsedCampaignDate);
-            stNavLabelTextContext.viewport = &stScreen;
+                (unsigned char *)pElapsedCampaignDatePtr);
+            stMapNavigationLabelTextContext.viewport = &stScreenView;
             frame = nTickCount60Hz / 15;
             markerColour = cDarkGreyColour;
             if (frame % 2 != 0)
                 markerColour = cViewportClearColour;
             DrawNavPlayerMarker(markerColour, 0);
-            stNavMapTextContext.viewport = &stScreen;
+            stCurrentNavMapTxtCtx.viewport = &stScreenView;
             UpdateInflightNavText((short)((frame / 4) % 2));
-            SetRectBounds(&stScreen, 0, 0, 319, 199);
+            SetRectBounds(&stScreenView, 0, 0, 319, 199);
 
             eventType = PollInputEvent(&event, 0xff);
             switch (eventType) {
@@ -888,11 +877,11 @@ void InflightComputer(void)
                                       stMouseCursorState.y);
             DIBslam();
             DIBslamReal();
-        } while (done == 0 && bEscapePressed == 0);
+        } while (done == 0 && bEscapePressedFlag == 0);
 
-        if (bEscapePressed != 0) {
-            bEscapePressed = 0;
-            cCurrentNavPointIndex =
+        if (bEscapePressedFlag != 0) {
+            bEscapePressedFlag = 0;
+            cCurrentNavPtIdx =
                 (signed char)savedNavPoint;
             set_new_objective(savedNavPoint);
         }
@@ -900,11 +889,11 @@ void InflightComputer(void)
         LeaveAllocationScope();
         EventManagerHook(0);
         SetEventManagerPump(get_player_input);
-        bInputMode = (unsigned char)savedInputMode;
+        bInputModeState = (unsigned char)savedInputMode;
     }
 
     ReleasePacketHandle(pNavMapShape);
-    SetTextContext(&stDefaultTextContext);
+    SetTextContext(&stDefaultTxtContext);
     PlaySfxWaveFileByNumber(0x19, -1, 0);
 #ifdef SDL_PORT
     memcpy((void *)&stMouseCursorState,
@@ -920,14 +909,14 @@ void InflightComputer(void)
         force_view(0, 0);
     } else {
         GetScreenUpdateFlag();
-        SetViewportRect(&stSpaceBuffer, 0, 0,
+        SetViewportRect(&stSpaceBufferViewport, 0, 0,
                         (unsigned short)(nScreenWidth - 1),
                         (unsigned short)(nScreenHeight - 1));
         initialize_view_buffer();
         force_view(0, 0);
         bCockpitlessView = 1;
         GetScreenUpdateFlag();
-        SetViewportRect(&stSpaceBuffer, 0, 0, 319, 199);
+        SetViewportRect(&stSpaceBufferViewport, 0, 0, 319, 199);
         initialize_view_buffer();
     }
     bInflightComputerActive = 0;
