@@ -328,11 +328,11 @@ extern int nMouseCursorDamageTop; /* 0x0059ab60 */
 extern short DAT_0059ab64;
 extern int aiInputEventSlotUsed[0x100]; /* 0x0059ab70 */
 extern TextContext *pCurrentTextContext; /* 0x0059af8c */
-extern short DAT_0059ab34;
+extern short bRunningFromHardDisk; /* 0x0059ab34 */
 extern short nPacketDecompressPending; /* 0x0059ab36 */
 extern unsigned short wPacketDecompressInputSize; /* 0x0059ab38 */
 extern short nPacketDecompressWorkspaceSegment; /* 0x0059ab3a */
-extern int DAT_0059ab4c;
+extern int nSavedDosInterruptVector; /* 0x0059ab4c */
 extern unsigned char bEscapePressed; /* 0x0059ab58 */
 extern int anSortedObject[SPACE_OBJECT_COUNT]; /* 0x0059aa00 */
 extern FixedVector aObjectViewPosition[SPACE_OBJECT_COUNT]; /* 0x0059afa0 */
@@ -495,7 +495,7 @@ extern ScreenAllocation *pScreenAllocation; /* 0x005a66ec */
 extern int aiSoundEffectSourceActive[0x40]; /* 0x005a66f0 */
 extern unsigned char abSoundPlaybackSlots[0xf8]; /* 0x005a67f0 */
 extern int nPassingShipSoundCooldown; /* 0x005a68e8 */
-extern int *DAT_005a6538;
+extern int *pFullScreenRecord; /* 0x005a6538 */
 extern int nAllocateViewportCalls; /* 0x005a68ec */
 extern void *pLastPacketAllocation; /* 0x005a68f0 */
 extern FireworkState aFireworks[30]; /* 0x005a6900 */
@@ -621,7 +621,7 @@ extern volatile ShortPoint stCockpitExplosionPosition; /* 0x005a7e98 */
 extern short asScannerObjectX[11]; /* 0x005a7ea0 */
 extern short asScannerBackgroundColour[10]; /* 0x005a7ed0 */
 extern int nDamageAlarmSfxHandle; /* 0x005a7ec0 */
-extern unsigned short DAT_005a7f00;
+extern unsigned short nPendingHudMessageColour; /* 0x005a7f00 */
 extern short nExternalViewAngle; /* 0x005a7f06 */
 extern int nViewportAllocationCount; /* 0x005a7f0c */
 extern unsigned char *apViewportAllocations[128]; /* 0x005a7f10 */

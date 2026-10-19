@@ -91,7 +91,7 @@ short nArcadeStartupParameter; /* 0x005a7b8a */
 /* Function start: 0x4272F0 */
 short LogMemoryUsage(void)
 {
-    ShutdownHook(0x21, (void *)DAT_0059ab4c);
+    ShutdownHook(0x21, (void *)nSavedDosInterruptVector);
     EMShutDown();
     GetMessagePumpResult();
     chdir("..");
@@ -185,7 +185,7 @@ int main(short argc, char **argv)
     GetShutdownErrorCode(abDiskPromptDriveState);
     ExitCleanupHook();
     StartupHook(GetJoystickButtonEdge);
-    DAT_0059ab4c = GetStartupErrorCode(0x21);
+    nSavedDosInterruptVector = GetStartupErrorCode(0x21);
     ShutdownHook(0x21, DosInterruptHandlerHook);
 
     argumentCount = LoadWingCmdrCfgFile(argc, argv);
@@ -194,10 +194,10 @@ int main(short argc, char **argv)
     chdir("..");
 #ifdef SDL_PORT
     if (SdlUsingDosData())
-        DAT_0059ab34 = 1;
+        bRunningFromHardDisk = 1;
 #endif
     if (GetCurrentDiskDriveHook() > 'B')
-        DAT_0059ab34 = 1;
+        bRunningFromHardDisk = 1;
 
     SystemDebugPrintf("Loading WING COMMANDER.  Please wait...\n");
 #ifndef SDL_PORT

@@ -41,7 +41,7 @@ unsigned short wCurrentInputModifiers; /* 0x0059ab08 */
 MouseCursorState stMouseCursorState; /* 0x0059ab10 */
 void (*pEventManagerPump)(void); /* 0x0059ab2c */
 int nPacketDecompressResult; /* 0x0059ab30 */
-short DAT_0059ab34;
+short bRunningFromHardDisk; /* 0x0059ab34 */
 short nPacketDecompressPending; /* 0x0059ab36 */
 unsigned short wPacketDecompressInputSize; /* 0x0059ab38 */
 short nPacketDecompressWorkspaceSegment; /* 0x0059ab3a */
@@ -49,7 +49,7 @@ volatile int bFrameTickPending; /* 0x0059ab3c */
 int bMouseCursorDamagePending; /* 0x0059ab40 */
 int nMouseCursorDamageRight; /* 0x0059ab44 */
 int nMouseCursorDamageBottom; /* 0x0059ab48 */
-int DAT_0059ab4c;
+int nSavedDosInterruptVector; /* 0x0059ab4c */
 short nViewportOriginY; /* 0x0059ab50 */
 short nViewportOriginX; /* 0x0059ab52 */
 unsigned int nTickCount60Hz; /* 0x0059ab54 */

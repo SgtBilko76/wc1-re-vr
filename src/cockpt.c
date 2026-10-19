@@ -116,8 +116,7 @@ unsigned char abCockpitLightGoal[7]; /* 0x005a7eb8 */
 int nDamageAlarmSfxHandle; /* 0x005a7ec0 */
 short asScannerBackgroundColour[10]; /* 0x005a7ed0 */
 unsigned int anCockpitDamageState[4]; /* 0x005a7ef0 */
-unsigned short DAT_005a7f00;
-
+unsigned short nPendingHudMessageColour; /* 0x005a7f00 */
 /* Function start: 0x413A10 */
 void EmitTextString(void (__stdcall *writer)(int), const char *text)
 {
@@ -2318,7 +2317,7 @@ centered_sight:
 no_sight:
     DAT_0046c05c = 0;
     if (pszPendingHudMessage != 0)
-        ShowHudTextLine(pszPendingHudMessage, DAT_005a7f00);
+        ShowHudTextLine(pszPendingHudMessage, nPendingHudMessageColour);
     if (bMouseCursorVisible == 1) {
         nSavedMouseCursorX = stMouseCursorState.x;
         nSavedMouseCursorY = stMouseCursorState.y;
@@ -2399,7 +2398,7 @@ void SetHudMessageText(char *text, unsigned short colour,
         if (message_showing())
             SetHudTextColour(1);
         pszPendingHudMessage = text;
-        DAT_005a7f00 = colour;
+        nPendingHudMessageColour = colour;
         set_message_time(duration);
     }
 }

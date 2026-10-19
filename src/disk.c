@@ -289,7 +289,7 @@ short OpenDiskDataFile(short logicalFile)
         CloseDataFile((unsigned short)file);
         return 1;
     }
-    if (DAT_0059ab34 != 0)
+    if (bRunningFromHardDisk != 0)
         return 1;
     if (GetCurrentDiskDriveHook() == 'A') {
         if (toupper((int)(signed char)

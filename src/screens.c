@@ -1540,15 +1540,15 @@ void ShowOffscreenBuffer(void)
     case 7:
     case 9:
     case 0x13:
-        CopyViewportContents((Viewport *)DAT_005a6538,
+        CopyViewportContents((Viewport *)pFullScreenRecord,
                              pAllocatedScreenViewport);
         break;
     case 0xd:
-        pixels = (unsigned short)((Viewport *)DAT_005a6538)->pixels;
-        rowOffsets = ((Viewport *)DAT_005a6538)->rowOffsets;
-        ((Viewport *)DAT_005a6538)->pixels =
+        pixels = (unsigned short)((Viewport *)pFullScreenRecord)->pixels;
+        rowOffsets = ((Viewport *)pFullScreenRecord)->rowOffsets;
+        ((Viewport *)pFullScreenRecord)->pixels =
             pAllocatedScreenViewport->pixels;
-        ((Viewport *)DAT_005a6538)->rowOffsets =
+        ((Viewport *)pFullScreenRecord)->rowOffsets =
             pAllocatedScreenViewport->rowOffsets;
         pAllocatedScreenViewport->pixels = (unsigned char *)pixels;
         pAllocatedScreenViewport->rowOffsets = rowOffsets;

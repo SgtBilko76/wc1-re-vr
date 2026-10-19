@@ -10,7 +10,7 @@ void *apPacketHandles[0x1000]; /* 0x0059e530 */
 int aiPacketHandleOffsets[0x1000]; /* 0x005a2530 */
 int nPacketHandleCount; /* 0x005a6530 */
 Viewport *pAllocatedScreenViewport; /* 0x005a6534 */
-int *DAT_005a6538;
+int *pFullScreenRecord; /* 0x005a6538 */
 unsigned short awScreenRowOffsets[202]; /* 0x005a6540 */
 ScreenAllocation stScreenAllocation; /* 0x005a66e0 */
 ScreenAllocation *pScreenAllocation; /* 0x005a66ec */
@@ -346,7 +346,7 @@ void __stdcall InitFullScreenViewport(int *record, short arg)
 {
     Viewport *viewport = (Viewport *)record;
 
-    DAT_005a6538 = record;
+    pFullScreenRecord = record;
     viewport->left = 0;
     viewport->right = 319;
     viewport->bottom = 199;
