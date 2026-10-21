@@ -1280,10 +1280,13 @@ unsigned int IsVectorWithinRange(FixedVector *vector, short range)
 /* Function start: 0x436A30 */
 unsigned int shrink_vector(FixedVector *vector)
 {
-    while (shrink(&vector->x) |
-           shrink(&vector->y) |
-           shrink(&vector->z)) {
-    }
+    unsigned int shrinking;
+
+    do {
+        shrinking = shrink(&vector->x);
+        shrinking |= shrink(&vector->y);
+        shrinking |= shrink(&vector->z);
+    } while (shrinking != 0);
     return 0;
 }
 

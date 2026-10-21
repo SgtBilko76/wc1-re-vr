@@ -2944,3 +2944,53 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The post-verification executable retains its build hash:
   `48fe9cfc26a799dca18a207be0c9d84c29f129232e67a5b22a8293984ae94652`.
+- `DrawTextString` declares its right boundary before the accumulated line
+  width. This restores both comparison operand orders and their branches,
+  making the complete 416-byte span literally exact at its original position.
+  Moving the boundary earlier among the other declarations or into the loop
+  also works, but the adjacent declaration swap is sufficient. Reversing
+  the source comparisons alone leaves the four differing bytes unchanged.
+  The swap byte in `SortSignedByteValuesAscending` is declared first at
+  function scope and assigned inside the inner loop. Its swap comparison
+  now matches, raising mnemonic similarity from 95.35% to 97.67% and raw
+  matching from 108 to 110 of 112 bytes. The inner-loop entry comparison
+  retains two differing bytes. Other outer-local permutations, placing the
+  swap byte last or in the outer loop, and testing the saved next index do
+  not improve the retained result.
+  `shrink_vector` explicitly accumulates its three component-call results in
+  the original X/Y/Z order, repeating while any component shrinks. Its
+  64-byte span remains unchanged; mnemonic similarity rises from 92.31% to
+  100%, differing encodings fall from eleven to nine, and raw matching rises
+  from 50 to 55 bytes. Register allocation remains different. Local-scope
+  and loop-form probes in `RetainInputEventsOfType` leave its bytes unchanged.
+- The sound-system owner omits unused stream records, state and APIs, and
+  file-streaming records and APIs from its `ix.h` scope. Other owners retain
+  their declaration contexts. This restores the two sample-rate equality
+  comparisons in `ix_system_assign_voice`, removing its four normalized
+  differences. Raw matching rises from 544 to 548 of 551 bytes: three call
+  displacements still differ because the volume, frequency and bit-depth
+  routines remain shifted. Normalized exactness does not establish literal
+  equality of this span.
+  Other record/interface exclusions in stream, sound and system owners do
+  not improve on this result. Windows SDK lean-header profiles regress
+  literal matching; additionally disabling USER and GDI declarations fails
+  to build these owners. Voice-interface parameter-name removal and
+  address-order declarations leave output unchanged, while limiting its
+  API to the required forward declaration or omitting its own state externs
+  regresses matching. All unused or regressing probes are discarded; SDK
+  headers and compiler flags remain unchanged. These are measured compiler
+  contexts, not recovered original header text.
+  Only these four rows change in the full report: normalized exact functions
+  rise from 1,336 to 1,338 of 1,550, same-size differences fall from 207 to
+  205, and seven size differences remain. Mean mnemonic similarity remains
+  99.64%, with four functions below 90%. All function spans and compilation-
+  unit placements are unchanged.
+  Strict whole-file matching rises by fifteen positions, from 470,278 to
+  470,293 of 518,656 (90.6724% to 90.6753%); 48,363 positions still differ.
+  This counts equal positions throughout the file. The continuous matching
+  prefix remains 292 bytes, with the first difference at offset `0x124`.
+  Clean native and modern builds, source/address audits, the order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `119342bd62e36cf91eefacb0cec210b73a873f5214802b5210ac29c11cfb50de`.

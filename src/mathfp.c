@@ -243,8 +243,8 @@ void __stdcall DrawTextString(const char *text)
     const char *cursor;
     const char *lineStart;
     char value;
-    int lineWidth;
     int right;
+    int lineWidth;
     int wrapped;
     int savedX;
     int finished;

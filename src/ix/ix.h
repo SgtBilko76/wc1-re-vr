@@ -246,7 +246,8 @@ void ix_dspv_recalc_mix(int voice);                            /* 0x00446EBF */
  * Streams occupy voice slots AFTER the regular voices:
  * voice[voice_count + stream_index].
  * -------------------------------------------------------------------------- */
-#ifndef WC1_IX_DSPV_SOURCE
+/* Voice and sound-system controls do not use the stream records or APIs. */
+#if !defined(WC1_IX_DSPV_SOURCE) && !defined(WC1_IX_SYSTEM_SOURCE)
 enum IxStreamFlags {
     IX_STREAM_ALLOCATED = 0x01,
     IX_STREAM_PLAYING   = 0x02,
@@ -280,7 +281,7 @@ private:
 
 #endif
 
-#ifndef WC1_IX_SOUND_SOURCE
+#if !defined(WC1_IX_SOUND_SOURCE) && !defined(WC1_IX_SYSTEM_SOURCE)
 #ifndef WC1_IX_DSPV_SOURCE
 extern IxStream streams[];         /* 0x00598138 */
 #endif
@@ -301,7 +302,7 @@ extern int     nVoicesAllocated;   /* 0x00598604 */
 #endif
 
 #define IX_DSPS_FILE "D:\\rnd\\prj\\ix\\win95\\dsp\\dsps.cpp"
-#ifndef WC1_IX_DSPV_SOURCE
+#if !defined(WC1_IX_DSPV_SOURCE) && !defined(WC1_IX_SYSTEM_SOURCE)
 void ix_dsps_alloc(int stream, unsigned int size, int frequency,
                    int bitsPerSample, int channels); /* 0x004451B5 */
 void ix_dsps_free(int stream);                   /* 0x0044546B */
@@ -379,7 +380,7 @@ extern "C" int __fastcall ix_sound_is_playing(IxSound *sound); /* 0x00448678 */
  *   bit2 0x004 playing      bit3 0x008 paused
  *   bit7 0x080 has audio    bit10 0x400 request flag (meaning TBD)
  * -------------------------------------------------------------------------- */
-#ifndef WC1_IX_DSPV_SOURCE
+#if !defined(WC1_IX_DSPV_SOURCE) && !defined(WC1_IX_SYSTEM_SOURCE)
 enum IxStreamFileFlags {
     IX_STREAM_FILE_OPEN    = 0x01,
     IX_STREAM_FILE_READING = 0x02
