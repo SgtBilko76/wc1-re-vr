@@ -23,10 +23,10 @@ short nEyePitchTargetValue; /* 0x0059d61c */
 /* Function start: 0x430710 */
 short __stdcall UpdateInputDeviceTransitions(short raw)
 {
-    unsigned int now;
+    unsigned short previous;
     unsigned short buttons;
     unsigned short changed;
-    unsigned short previous;
+    unsigned int now;
     short device;
 
     device = nCurrentActiveInputDevice;

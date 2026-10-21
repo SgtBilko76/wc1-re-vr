@@ -987,8 +987,9 @@ void mine_intelligence(short obj)
 {
     short other;
     short distance;
+    int objectIndex = obj;
 
-    if (asObjectCounterArray[obj] != -1)
+    if (asObjectCounterArray[objectIndex] != -1)
         return;
     for (other = 0; other <= 9; other++) {
         if (other == obj || aeObjectClass[other] <
@@ -996,7 +997,7 @@ void mine_intelligence(short obj)
             continue;
         distance = distance_from_object(obj, other);
         if (distance < aObjectTypeData[
-                           aeObjectTypeList[obj]].collisionRadius ||
+                           aeObjectTypeList[objectIndex]].collisionRadius ||
             (distance < 50 && RandomBelowOrEqual(7) == 0)) {
             explode(obj, obj);
             return;

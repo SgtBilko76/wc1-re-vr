@@ -1041,10 +1041,10 @@ unsigned int funeral_wingman(char *text, short duration)
 unsigned int funeral_sequence(int playerFuneral)
 {
     int *packet;
-    unsigned char *followupSceneData;
-    unsigned char *followupTextData;
     unsigned char *sceneData;
     unsigned char *textData;
+    unsigned char *followupSceneData;
+    unsigned char *followupTextData;
     short frame;
     short volley;
     short particle;

@@ -1037,16 +1037,21 @@ void RemovePlayerReleaseWeapon(signed char weapon)
 void fire_computer_graphic_missile(void)
 {
     short visible;
+    unsigned char *background;
 
     if (cReleaseWeaponDisplayFrame == -1)
         return;
     visible = nCameraViewMode == 0 && get_mode(0) == 1;
-    if (cReleaseWeaponDisplayState != 0)
+    if (cReleaseWeaponDisplayState != 0) {
         RestoreSpriteBackground(&stLeftVdu, pReleaseWeaponDisplayBackground,
                                 stReleaseWeaponDisplayPosition.x,
                                 stReleaseWeaponDisplayPosition.y,
                                 pCockpitWeaponShapePtr,
                                 cReleaseWeaponDisplayFrame);
+        background = pReleaseWeaponDisplayBackground;
+    } else {
+        background = pReleaseWeaponDisplayBackground;
+    }
     if (stReleaseWeaponDisplayPosition.y > stLeftVdu.top - 10 &&
         stReleaseWeaponDisplayPosition.y < stLeftVdu.bottom) {
         if (eReleaseWpnDisplayType == OBJECT_TYPE_SPACE_MINE)
@@ -1056,7 +1061,7 @@ void fire_computer_graphic_missile(void)
         cReleaseWeaponDisplayTicks++;
         if (visible != 0) {
             CaptureSpriteBackground(&stLeftVdu,
-                                    pReleaseWeaponDisplayBackground,
+                                    background,
                                     stReleaseWeaponDisplayPosition.x,
                                     stReleaseWeaponDisplayPosition.y,
                                     pCockpitWeaponShapePtr,

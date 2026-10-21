@@ -3444,3 +3444,64 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `079ee72d4590f077a32ae540210ee4f7048db3bb01f0dd97f1fcc3a90535afb6`.
+- `funeral_sequence` declares its primary scene and text pointers before the
+  follow-up scene and text pointers. This restores EDI/EBP for the primary
+  pair and the two stack slots for the follow-up pair, including the original
+  scheduling while extracting their packet offsets. All 1,792 bytes now
+  match literally, up from 147; all 410 differing encodings disappear.
+  Interleaving the primary and follow-up declarations, moving only the
+  follow-up text pointer, or exchanging only the primary scene/text pointers
+  does not improve literal matching.
+- `mine_intelligence` captures its promoted object index in an int declared
+  after the two short locals. Use that index for the counter test and object
+  type lookup; keep the short object parameter for calls and comparisons.
+  This restores EBX for the promoted index and DI for the other-object
+  counter, matching all 144 bytes, up from 135. Declaring the promoted index
+  first leaves the mine routine unchanged. Both positions improve three
+  bytes in `heat_seeking_missile_intelligence`, from 295 to 298 of 320,
+  reducing its differing encodings from seventeen to fourteen.
+- `fire_computer_graphic_missile` captures its background pointer separately
+  on the two restore paths, after the restore call on the path that makes
+  one. Use the captured pointer for the later background capture. This
+  reproduces the original duplicated load and restores its missing HIGHLOW
+  relocation: 32 references now match the original count, up from 31.
+  All 336 bytes match literally, up from 125; all 58 differing encodings
+  disappear. An explicit frame local also matches this routine but disturbs
+  two exact neighbors. Keeping only the background local preserves those
+  matches. A separate shape local leaves seven differences and is discarded.
+  The retained compiler context loses four literal bytes in `get_color`,
+  from 216 to 212 of 224, while `draw_target_box` stays at 147 of 1,008.
+  The latter's mnemonic similarity rises from 93.54% to 94.22%, without
+  reducing its 267 differing encodings.
+- `UpdateInputDeviceTransitions` declares the previous button word first,
+  followed by buttons, changed bits, time and device. Literal matching rises
+  from 123 to 145 of 288 bytes, even though differing encodings rise from
+  45 to 51; mnemonic similarity improves from 90.91% to 92.42%.
+  Other tested declaration orders and a separate XOR assignment leave the
+  output unchanged. An explicit promoted device index regresses file matching.
+  A signed time local or qualified time read shortens the aligned function
+  by sixteen bytes and disturbs subsequent placement; neither is retained.
+  Swapping the mine's two short locals, swapping packet-release counters,
+  separating the return-to-master range assignment, capturing the barracks
+  menu-label pointer, and changing sound-list declaration/loop forms leave
+  their output unchanged. A promoted navigation-pointer index likewise does
+  not resolve that routine's missing saved register. These trials are not
+  retained.
+  Only seven function rows change in the full report. Normalized exact
+  functions rise from 1,351 to 1,354 of 1,550; same-size differences fall
+  from 194 to 191, and five size differences remain. Mean mnemonic
+  similarity is 99.68%, with three functions below 90%. No existing exact
+  function is lost, and function spans and compilation-unit placements are
+  unchanged.
+  Strict whole-file matching rises by 2,049 positions, from 484,701 to
+  486,750 of 518,656 (93.4533% to 93.8483%); 31,906 positions still differ.
+  Code gains 1,886 matching bytes and relocations gain 163. The `.rdata`,
+  `.data` and `.idata` sections remain literally exact. The continuous
+  matching prefix is still 544 bytes. Its first difference, at `0x220`,
+  is the relocation section's virtual-size field; the restored missile
+  reference reduces that size deficit from six bytes to four.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `15e00c14df7b85cfa3ebd386cbf0702c52f5d3477115f38482ffd49503bd779e`.
