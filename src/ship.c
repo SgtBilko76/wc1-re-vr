@@ -402,9 +402,9 @@ unsigned int check_for_lost_control(short obj)
         type = aeObjectTypeList[obj];
         if (skill_check(
                 obj,
-                (short)((short)(abs(anObjectRollRotationList[obj]) +
-                                abs(anObjectYawRotation[obj]) +
-                                abs(anObjPitchRot[obj])) /
+                (short)((short)(abs(anObjPitchRot[obj]) +
+                                abs(anObjectRollRotationList[obj]) +
+                                abs(anObjectYawRotation[obj])) /
                         (short)(aObjectTypeData[type].rollRate +
                                 aObjectTypeData[type].yawRate +
                                 aObjectTypeData[type].pitchRate))) ==
@@ -2375,13 +2375,13 @@ unsigned int replenish_weapon_energy_bank(short ship)
         return 0;
     energy = asShipWpnEnergyList[ship];
     if (energy < 100) {
-        shieldEnergy = aasShipShield[ship][1];
-        maximumShield = aasShipMaximumShieldTable[ship][1];
+        shieldEnergy = aasShipShield[ship][0];
+        maximumShield = aasShipMaximumShieldTable[ship][0];
         shieldEnergy =
-            (short)(shieldEnergy + aasShipShield[ship][0]);
+            (short)(shieldEnergy + aasShipShield[ship][1]);
         maximumShield =
             (short)(maximumShield +
-                    aasShipMaximumShieldTable[ship][0]);
+                    aasShipMaximumShieldTable[ship][1]);
         if (shieldEnergy < maximumShield) {
             asShipWpnEnergyList[ship] =
                 MinShort((short)(energy + 1), 100);

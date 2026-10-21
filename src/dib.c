@@ -527,8 +527,8 @@ void DIBmakeDIB(void)
     if (pDIBImage == 0)
         DIBerror("DIBmakeDIB", -1);
 #endif
-    stScreenView.pixels = GetDIBPixelBuffer();
-    stScreenView.allocation = stScreenView.pixels;
+    stScreenView.allocation = GetDIBPixelBuffer();
+    stScreenView.pixels = stScreenView.allocation;
     memcpy(pDIBImage, abDIBPixelBackup,
            nDIBFrameWidth * nDIBFrameHeight);
 }

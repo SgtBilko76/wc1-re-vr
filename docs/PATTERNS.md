@@ -2795,3 +2795,35 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `4652c92897708dc191aa338828128087e6714233ad1148f0a3fda81c00703946`.
+- Resolve three literal operand/store-order differences hidden by normalized
+  `EXACT`. `CopyTrainSimPilotViewToRightVdu` assigns the right edge before
+  the top edge, restoring the original two reads and stores across its
+  complete 160-byte span. `DIBmakeDIB` assigns the pixel-buffer result to
+  `stScreenView.allocation` before copying it to `pixels`, restoring both
+  stores and its complete 448-byte span. `replenish_weapon_energy_bank`
+  starts both shield sums at element zero and adds element one; CL commutes
+  these into the original element-one-first loads. Its full 160-byte span
+  is now literally exact as well.
+  Reordering `check_for_lost_control`'s absolute-value numerator reduces
+  its 192-byte span from eight literal differences to six. The sum remains
+  equivalent; its remaining axis and rate operands are still reordered.
+  All six axis-term permutations were checked in both rotation-goal routines
+  and the loss-of-control routine. Neither rotation-goal routine improves.
+  Reversed heap sums/subtractions, objective and pilot comparisons, and the
+  wave-index sum likewise leave the emitted bytes unchanged. Local-pointer
+  probes in the barracks-label and string-reset helpers, and declaration
+  swaps in rectangle-area and wave-entry removal, also have no effect.
+  These ineffective probes are discarded.
+  All 1,550 normalized report rows remain unchanged: 1,335 exact functions,
+  205 same-size differences, and ten size differences. Raw binary-comp
+  comparisons establish the improvements that normalization does not expose.
+  Strict whole-file matching rises by twelve positions, from 466,791 to
+  466,803 of 518,656 (90.0001% to 90.0024%); 51,853 positions still differ.
+  The continuous matching prefix remains 292 bytes, with the first difference
+  at file offset `0x124`. Compilation-unit ownership, shared declarations,
+  and link order remain unchanged.
+  Clean native and modern builds, source/address audits, the order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `6b94832b97d4e99507ebd5ae41c21d219c99d772c735b0b00f569bcff3f6eb1c`.

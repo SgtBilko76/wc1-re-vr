@@ -2601,8 +2601,8 @@ void CopyTrainSimPilotViewToRightVdu(void)
     if (stTrainSimVduSource.left == 0) {
         stTrainSimVduSource = stPilotHandView;
         stTrainSimVduSource.left = stRightVduViewport.left;
-        stTrainSimVduSource.top = stPilotHandView.top;
         stTrainSimVduSource.right = stPilotHandView.right;
+        stTrainSimVduSource.top = stPilotHandView.top;
         stTrainSimVduSource.bottom = stRightVduViewport.bottom;
     }
     destination.left = (short)(stTrainSimVduSource.left -
