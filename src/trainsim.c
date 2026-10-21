@@ -239,8 +239,8 @@ short IsHighScoreSlotUsed(short i)
 void AddRandomTrainSimHighScores(void)
 {
     short remaining;
-    short scale;
     short pilot;
+    short scale;
     short slot;
     int baseScore;
     int scoreRange;
@@ -251,7 +251,7 @@ void AddRandomTrainSimHighScores(void)
         do {
             pilot = RandomInRange(0, 14);
         } while (pilot == 8 ||
-                 (pilot < 9 &&
+                 (pilot <= 8 &&
                   stCampaignState
                           .personalityDeathMission[pilot] != 0) ||
                  (FindTrainSimHighScore(pilot) == -1 &&

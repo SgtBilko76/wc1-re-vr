@@ -43,18 +43,19 @@ unsigned int parse_view_script(void)
 {
     FixedVector vector;
     short obj;
-    short command;
+    short missionIndex;
 
     if (*pCurrentViewScriptPtr == 13)
-        return 0;
-    while (*pCurrentViewScriptPtr != 14) {
-        command = *pCurrentViewScriptPtr++;
-        if (command == -1) {
+        goto done;
+    for (;;) {
+        if (*pCurrentViewScriptPtr == -1) {
             bScriptedView = 0;
             nScriptedViewObject = -1;
             return 0;
         }
-        switch (command) {
+        if (*pCurrentViewScriptPtr == 14)
+            break;
+        switch (*pCurrentViewScriptPtr++) {
         case 0:
 #ifdef SDL_PORT
             aShipPositionsArray[61].x =
@@ -151,14 +152,14 @@ unsigned int parse_view_script(void)
             break;
         case 16:
             obj = 0;
+            missionIndex = *pCurrentViewScriptPtr;
             while (obj < 10) {
-                if (nShipMissionIndices[obj] ==
-                    *pCurrentViewScriptPtr)
+                if (nShipMissionIndices[obj] == missionIndex) {
+                    nScriptedViewObject = obj;
                     break;
+                }
                 obj++;
             }
-            if (obj < 10)
-                nScriptedViewObject = obj;
             pCurrentViewScriptPtr++;
             break;
         }
@@ -166,6 +167,7 @@ unsigned int parse_view_script(void)
             return 0;
     }
     asObjectCounterArray[61] = pCurrentViewScriptPtr[1];
+done:
     return 0;
 }
 

@@ -3336,3 +3336,58 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `b0e08a23e0f956e2c38d1d0ed64eef22c81ac293195b5bfe3db4b2bc1e852107`.
+- `AddRandomTrainSimHighScores` tests `pilot <= 8` after excluding pilot
+  eight. CL can then reuse the first comparison's flags for the original
+  `JE`/`JG` pair; spelling the bound as `< 9` emits another comparison.
+  Declare `pilot` before `scale` to recover their SI/DI allocation.
+  Differing encodings fall from 68 to 24, mnemonic similarity rises from
+  92.21% to 97.37%, and literal matching rises from 31 to 180 of 224 bytes.
+  The stack counter's offset and the base-score/divisor register swap remain.
+  Moving the counter or score declarations, initializing the counter in its
+  declaration, and making that counter unsigned leave the selected output
+  unchanged.
+- `someone_coming` captures the current navigation-point byte before its
+  search. The original already keeps that read in BL; the explicit local
+  also recovers CX for the ship counter and EAX for its scaled index.
+  Its complete 80-byte span now matches, up from 74. In
+  `update_objective_location`, declaring `range` before `object` restores
+  SI and BX respectively, matching all 224 bytes, up from 217.
+  Cockpit-light declaration changes and an explicit promoted object index
+  in `get_color` regress file matching. Reordering the target-box validity
+  and horizontal-center locals does not change its output. These probes
+  are not retained.
+- `parse_view_script` tests the end marker before advancing the script
+  pointer. The former source consumed `-1`; the original leaves the pointer
+  on that marker while clearing the scripted-view state. Dispatch directly
+  on the post-incremented script word, preserving the original reread after
+  the marker checks. For opcode sixteen, capture the mission index in a
+  short and assign the selected object inside the matching branch, without
+  a second range test after the search.
+  The initial hold-marker branch joins the return after the wait-counter
+  store; a hold reached after executing commands uses the earlier return.
+  The explicit exit label reproduces those original branch destinations
+  and the final store/epilogue schedule. A single loop guarded by the hold
+  marker leaves five differing encodings. With the shared exit, all 1,040
+  bytes match literally, up from 75, and all 235 differing encodings vanish.
+  Retaining the used short mission-index local also restores
+  `CalcRectangleArea`'s allocation, making its entire 64-byte span exact,
+  up from 60. Renaming that operand from `command` to `missionIndex` leaves
+  the executable identical. These compiler-context effects do not establish
+  the original local names.
+  Only these five function rows change in the full report. Normalized exact
+  functions rise from 1,346 to 1,350 of 1,550; same-size differences fall
+  from 199 to 195, and five size differences remain. Mean mnemonic
+  similarity is 99.68%, with three functions below 90%. No existing exact
+  function is lost, and function spans and compilation-unit placements are
+  unchanged.
+  Strict whole-file matching rises by 1,142 positions, from 482,818 to
+  483,960 of 518,656 (93.0902% to 93.3104%); 34,696 positions still differ.
+  Code gains 1,131 matching bytes and relocations gain eleven. The `.rdata`,
+  `.data` and `.idata` sections remain literally exact. The continuous
+  matching prefix is still 544 bytes, with the first difference at `0x220`.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. Relocation counts within all five changed functions are
+  unchanged. The clean-build and post-verification hashes agree:
+  `2b60896813798730068f1903dc6f9b2b90bea9df63745193e667b019ed7d0b15`.

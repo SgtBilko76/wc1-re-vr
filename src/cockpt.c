@@ -1337,11 +1337,13 @@ short LocateMobileObjective(short objective)
 unsigned int someone_coming(void)
 {
     short ship = 0;
+    signed char navPoint;
 
+    navPoint = cCurrentNavPtIdx;
     do {
         if (aeObjectClass[ship] >= OBJECT_CLASS_SHIP &&
             aeShipMissionType[ship] == MISSION_TYPE_COME_HOME &&
-            abShipNavPtIdx[ship] <= cCurrentNavPtIdx)
+            abShipNavPtIdx[ship] <= navPoint)
             return 1;
         ship = ship + 1;
     } while (ship < 10);
@@ -1441,8 +1443,8 @@ void check_visit(short objective, short range)
 void update_objective_location(short objective)
 {
     FixedVector delta;
-    short object;
     short range;
+    short object;
 
     object = LocateMobileObjective(objective);
     if (sighted(objective) != 0 && visited(objective) != 0 &&
