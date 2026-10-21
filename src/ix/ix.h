@@ -43,6 +43,13 @@ void ix_log_printf(const char *fmt, ...);      /* 0x004426A0 */
  * DSP voice.  Array at 0x005981A8, stride 32 bytes; count at 0x00598600.
  * Field offsets are confirmed from the accessor bodies.
  * -------------------------------------------------------------------------- */
+/* These owners retain their count declarations before the voice types. */
+#ifdef WC1_IX_DSPS_SOURCE
+extern int nStreamCount;          /* 0x00598130 */
+#elif defined(WC1_IX_DSPV_SOURCE)
+extern int nVoiceCount;           /* 0x00598600 */
+#endif
+
 enum IxVoiceFlags {
     IX_VOICE_ACTIVE   = 0x02,
     IX_VOICE_FLAG4    = 0x04,   /* set elsewhere; meaning not yet established */
@@ -203,7 +210,6 @@ extern CRITICAL_SECTION csMixer;    /* 0x005985E8 */
  * users see stream state first. Preserve this compilation-unit distinction. */
 #ifdef WC1_IX_DSPV_SOURCE
 extern IxVoice aVoices[];           /* 0x005981A8 */
-extern int     nVoiceCount;        /* 0x00598600 */
 extern int     nVoicesAllocated;   /* 0x00598604 */
 #endif
 
@@ -237,11 +243,6 @@ enum IxStreamFlags {
     IX_STREAM_PLAYING   = 0x02,
     IX_STREAM_LOCKED    = 0x04
 };
-
-#ifdef WC1_IX_DSPS_SOURCE
-/* The stream owner's bounds comparisons depend on this early declaration. */
-extern int      nStreamCount;      /* 0x00598130 */
-#endif
 
 struct IxStream {                       /* 0x38 bytes */
 private:
@@ -324,6 +325,8 @@ void *ix_dsp_copy(void *destination, const void *source,
                   unsigned int bytes);           /* 0x00445140 */
 void ix_dsp_free(void *memory);                  /* 0x00445164 */
 
+/* Stream and voice controls do not use these sound-system interfaces. */
+#if !defined(WC1_IX_DSPS_SOURCE) && !defined(WC1_IX_DSPV_SOURCE)
 extern "C" int  ix_system_init(void);            /* 0x00447200 */
 extern "C" void ix_system_service_sounds(void); /* 0x004472A7 */
 extern "C" void ix_system_shutdown(void);        /* 0x004473F3 */
@@ -351,6 +354,7 @@ extern "C" void __fastcall ix_sound_release(IxSound *sound); /* 0x0044801E */
 void __fastcall ix_sound_unlink_from_free_list(IxSound *sound); /* 0x00447B7A */
 extern "C" void __fastcall ix_sound_stop(IxSound *sound);   /* 0x004480CF */
 extern "C" int __fastcall ix_sound_is_playing(IxSound *sound); /* 0x00448678 */
+#endif
 
 /* --------------------------------------------------------------------------
  * Streamer.  Global state word at 0x00597CD0; wake event at 0x00597CD4.

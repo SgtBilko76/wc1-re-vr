@@ -2827,3 +2827,42 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `6b94832b97d4e99507ebd5ae41c21d219c99d772c735b0b00f569bcff3f6eb1c`.
+- Stream and voice controls omit the unused sound-system API prototypes from
+  their `ix.h` declaration scopes. Their respective `nStreamCount` and
+  `nVoiceCount` declarations precede the voice types. Other owners retain
+  their previous declarations. These are measured compiler contexts, not
+  recovered original header text; function bodies, types, storage, compiler flags,
+  and link order are unchanged.
+  `ix_dsps_free` and `ix_dsps_unlock` become exact over their complete 279-
+  and 292-byte spans. All ten stream-function sizes now agree. In voice
+  control, `ix_dspv_set_bits_per_sample` and `ix_dspv_recalc_mix` become exact
+  over 201 and 181 bytes, including the latter's original object-end padding.
+  Separate raw binary-comp comparisons verify literal equality at the
+  original file positions for all four routines.
+  Three normalized matches regress: `ix_dsps_alloc` has 116 differing
+  encodings, `ix_dsps_stop` has 51, and `ix_dspv_set_position` is one byte
+  short. The allocation and stop spans remain correct because their bounds
+  checks and voice-index sums change in opposite directions. These tradeoffs
+  replace displacement across many following routines with fewer literal
+  differences overall. At original file positions, stop improves from 233
+  differing bytes to 184, and voice-position setting from 108 to 26; allocation
+  regresses from literal equality to 405 differing bytes.
+  A raw audit of all 24 stream/voice routines finds twelve complete spans
+  literally exact, versus one before. The seven changed normalized report
+  rows gain one exact match overall, from 1,335 to 1,336 of 1,550. Same-size
+  differences rise from 205 to 207; size differences fall from ten to seven.
+  No other report row changes.
+  All seven combinations of unused DSP, system, and streamer API groups
+  were checked in the two control owners. Removing the streamer APIs from
+  the sound owner regresses literal matching. Eighteen count-declaration
+  positions per control owner and eight further stream-owner voice-count
+  positions were checked; none of the additional placements improves on the
+  retained result. Ineffective and regressing probes are discarded.
+  Strict whole-file matching rises by 3,030 positions, from 466,803 to
+  469,833 of 518,656 (90.0024% to 90.5866%); 48,823 positions still differ.
+  The identical prefix remains 292 bytes, with the first difference at
+  offset `0x124`. Clean native and modern builds, source/address audits,
+  the order report, and full verification pass. Both value checks cover
+  all 1,550 functions with zero mismatches or skips; existing call/global-access
+  diagnostics remain 11/56. Clean-build and post-verification hashes agree:
+  `55504d9fe3cb2774aca34a9c01d0d4ba3dfaff415573ea9a544411f1bf36687f`.
