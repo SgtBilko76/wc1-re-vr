@@ -2761,3 +2761,37 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `7209e0be09ccd451f325b8343dd1fe682fa473556b4dc3689a6a9c3e5d4602c0`.
+- `new_view` declares its temporary vector inside the view-selection switch,
+  where all its uses occur. This reverses the three vector-comparison loads
+  to the original order, removes two body bytes, and restores the jump-table
+  position. The normalized report becomes exact. A separate raw comparison
+  of the 1,776-byte span still finds six differing bytes: the pitch/roll
+  reset stores are reversed. Write both reset groups in roll, yaw, pitch
+  order, matching the original. Binary-comp then verifies literal equality
+  of all 1,776 bytes, including the jump table and padding. Normalized
+  `EXACT` alone does not establish literal address operands or store order.
+  Moving the up-vector global instead also fixes `new_view` but worsens
+  `set_eye_direction_and_position` from 120 to 420 differing encodings.
+  That declaration move is discarded. Swapping the two locals has no effect;
+  narrower vector scopes recover the comparison order without the regression.
+  Scramble-walk local and frame-counter declaration probes do not improve
+  literal file matching. A qualified escape read also disturbs later scene
+  sizes. The indexed and direct-table forms of `players_flight_dynamics`
+  reduce its differing encodings from 55 to nine, but their relocation
+  changes reduce whole-file matching, so those probes are also discarded.
+  Only `new_view` changes in the final report: normalized exact functions
+  rise from 1,334 to 1,335 of 1,550, with the same ten size differences.
+  Strict whole-file matching rises by 1,138 positions, from 465,653 to
+  466,791 of 518,656 (89.7807% to 90.0001%). There are still 51,865 differing
+  positions; complete executable equality remains unachieved. Compilation-unit
+  ownership, link order, and shared declarations are unchanged.
+  A raw audit of 1,130 normalized-exact C function spans finds fourteen that
+  still differ at their original file positions. Follow-up comparisons confirm
+  a one-byte audio-call address shift in `ReleaseFinishedSoundEntries` and
+  eight operand-address bytes from reordered axis-error terms in
+  `rotate_eye_to_goal`. These remain candidates for subsequent matching work.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `4652c92897708dc191aa338828128087e6714233ad1148f0a3fda81c00703946`.

@@ -476,7 +476,6 @@ unsigned int force_view(int view, short obj)
 /* Function start: 0x4117D0 */
 unsigned int new_view(int view, short obj)
 {
-    FixedVector vector;
     short carrier;
 
     if (nCameraViewMode == view) {
@@ -500,6 +499,8 @@ unsigned int new_view(int view, short obj)
     else
         asObjectCollisionRadius[EYE_OBJECT] = 10;
     switch (view) {
+        FixedVector vector;
+
     case 0:
         initialize_cockpit(0);
         break;
@@ -622,12 +623,12 @@ unsigned int new_view(int view, short obj)
     case 11:
     case 15:
         initialize_cockpit(4);
-        nEyePitchTargetValue = 0;
-        nEyeYawGoalValue = 0;
         nEyeRollTargetValue = 0;
-        nEyePitchRate = 1;
-        nEyeYawRate = 1;
+        nEyeYawGoalValue = 0;
+        nEyePitchTargetValue = 0;
         nEyeRollRate = 1;
+        nEyeYawRate = 1;
+        nEyePitchRate = 1;
         break;
     case 12:
         initialize_cockpit(4);
