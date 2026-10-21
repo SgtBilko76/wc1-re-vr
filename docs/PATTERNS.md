@@ -3107,3 +3107,41 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `9807fa4c8092c9023b84698a95b4a8c80f8e3ddf849a49c933363769f6cc42d5`.
+- The two changing-mode calls in `HandleSpaceFlightControls` need the same
+  explicit increment, signed-byte promotion and int subtraction already
+  recovered in `RunSpaceFlight`. The original increments and stores the
+  mode byte before promoting the updated value and subtracting one for
+  `initialize_cockpit`. A post-increment argument instead passes the old
+  byte and emits a different sequence. Separating those operations reduces
+  differing encodings from 781 to 593 and raises mnemonic similarity from
+  96.32% to 96.83%. Raw matching rises from 346 to 1,149 of the unchanged
+  3,184-byte span. No other function-report row changes.
+  Explicit wingman and selected-weapon captures, a qualified communication-
+  key guard, and a missile-camera value capture were also checked. Individual
+  captures either reduce whole-file matching or add sixteen aligned bytes.
+  Their combination with the mode correction improves only 32 file
+  positions and disturbs `FindNearestNavPoint` and `UpdateTrainSimMenuCursor`,
+  so the mode-only correction is retained. The handler still has 176 address
+  relocations versus the original 174.
+  In `LoadJoystickCalibrationFile`, a qualified minimum-Y reload, qualified
+  Y-bound accesses, and products retained in the two range locals with
+  qualified scale reloads all add sixteen aligned bytes, separately or in
+  combination. These probes are discarded. Reversing the square marker's
+  Y-plus-size expression, swapping the navigation-clock local declarations,
+  and reversing the first rectangle-union minimum expression leave their
+  output unchanged and are likewise discarded.
+  The full report retains 1,339 normalized exact functions of 1,550, with
+  204 same-size differences, seven size differences and 99.65% mean mnemonic
+  similarity. Four functions remain below 90%. Function spans and
+  compilation-unit placements remain unchanged.
+  Strict whole-file matching rises by 803 positions, from 479,955 to
+  480,758 of 518,656 (92.5382% to 92.6930%); 37,898 positions still differ.
+  All of the gain is in this handler's code. Relocation-section matching
+  remains 30,038 of 36,352 bytes, and `.rdata`, `.data` and `.idata` remain
+  literally exact. The continuous matching prefix is still 544 bytes,
+  with the first difference at file offset `0x220`.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `cda0f3c5bc8718e83ae7fad7f58eda2e3594a1dd91d054865b94333d588e3201`.

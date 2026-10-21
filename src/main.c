@@ -1557,8 +1557,8 @@ int HandleSpaceFlightControls(void)
                     GetScreenUpdateFlag();
                     if (bCockpitlessView != 0) {
                         SetViewportRect(&stSpaceBufferViewport, 0, 0, 319, 199);
-                        initialize_cockpit(
-                            cScreenViewMode++);
+                        cScreenViewMode++;
+                        initialize_cockpit((int)cScreenViewMode - 1);
                         SetMousePosition(
                             ((int)stSpaceBufferViewport.right -
                              (int)stSpaceBufferViewport.left) / 2 + 1,
@@ -1568,8 +1568,8 @@ int HandleSpaceFlightControls(void)
                             &stSpaceBufferViewport, 0, 0,
                             (short)(nScreenWidth - 1),
                             (short)(nScreenHeight - 1));
-                        initialize_cockpit(
-                            cScreenViewMode++);
+                        cScreenViewMode++;
+                        initialize_cockpit((int)cScreenViewMode - 1);
                         SetMousePosition(
                             ((int)stSpaceBufferViewport.right -
                              (int)stSpaceBufferViewport.left) / 2 + 1,
