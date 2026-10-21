@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.bilko.wc1vr'
+    compileSdk 34
+    ndkVersion '25.1.8937393'
+
+    defaultConfig {
+        applicationId 'com.bilko.wc1vr'
+        minSdk 29
+        targetSdk 32
+        versionCode 1
+        versionName '0.1.0-stage1'
+        ndk { abiFilters 'arm64-v8a' }
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-29'
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            jniDebuggable true
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path '../../CMakeLists.txt'
+            version '3.22.1'
+        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['../../third_party/openxr/lib']
+        }
+    }
+
+    packagingOptions {
+        jniLibs { useLegacyPackaging true }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}

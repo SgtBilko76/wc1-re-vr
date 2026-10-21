@@ -373,6 +373,14 @@ int SdlResolvePath(const char *path, char *resolved,
 #define VK_INSERT 0x2d
 #define VK_DELETE 0x2e
 
+#ifdef WC1_QUEST
+void SdlQuestInjectMouse(int x, int y, int primaryButton,
+                         int secondaryButton, int buttonEvent);
+int SdlQuestIsPiloting(void);
+void SdlQuestServiceInput(void);
+int SdlQuestIsQuestPad(int deviceIndex);
+#endif
+
 #ifndef _WIN32
 int SdlOpen(const char *path, int flags, ...);
 long SdlFileLength(int file);

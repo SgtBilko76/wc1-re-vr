@@ -1,6 +1,9 @@
 #include "wc1.h"
 
 #include "video_internal.h"
+#ifdef WC1_QUEST
+#include "../quest/quest_xr.h"
+#endif
 
 static SDL_Renderer *g_pSdlRenderer;
 static unsigned int g_dwSdlStaticNoiseSeed = 0x1f123bb5U;
@@ -74,6 +77,11 @@ void SdlEnableEgaDither(void)
 int SdlInitializeVideo(SDL_Window *window)
 {
     SdlShutdownVideo();
+#ifdef WC1_QUEST
+    /* The XR thread owns presentation; the Android window stays unused. */
+    (void)window;
+    return 1;
+#endif
     if (SdlUsingGlRenderer())
         return SdlGlRendererInitialize(window);
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
@@ -149,6 +157,12 @@ int SdlPresentIndexedFrame(const unsigned char *pixels,
         pixels = g_abEgaDitherPixels;
         palette = g_abEgaDitherPalette;
     }
+#ifdef WC1_QUEST
+    if (pixels == 0 || palette == 0)
+        return 0;
+    QuestXr_SubmitIndexedFrame(pixels, palette);
+    return 1;
+#endif
     if (SdlUsingGlRenderer())
         return SdlGlRendererPresent(pixels, palette);
     if (g_pSdlRenderer == 0 || g_pSdlFrameTexture == 0 || pixels == 0 ||
@@ -184,6 +198,11 @@ void SdlWaitForVerticalBlank(void)
 {
     SDL_Rect dest;
 
+#ifdef WC1_QUEST
+    (void)dest;
+    QuestXr_WaitForDisplayTick();
+    return;
+#endif
     if (SdlUsingGlRenderer()) {
         SdlGlRendererWaitForVerticalBlank();
         return;

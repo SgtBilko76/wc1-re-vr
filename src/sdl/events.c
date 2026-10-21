@@ -551,6 +551,39 @@ static void SdlHandleMouseEvent(const SDL_Event *event)
     bHostSecondaryMouseButton = secondaryButton;
 }
 
+#ifdef WC1_QUEST
+/* Laser pointer -> the same logical mouse path SdlHandleMouseEvent uses.
+ * buttonEvent: 0 = motion, 2 = button down, 1 = button up. */
+void SdlQuestInjectMouse(int x, int y, int primaryButton,
+                         int secondaryButton, int buttonEvent)
+{
+    if (x < 0)
+        x = 0;
+    else if (x > 319)
+        x = 319;
+    if (y < 0)
+        y = 0;
+    else if (y > 199)
+        y = 199;
+    if (buttonEvent == 0) {
+        if (bPtrMovedByKeyboardState != 0) {
+            bPtrMovedByKeyboardState = 0;
+            return;
+        }
+        SdlQueueMouseMotion((unsigned short)x, (unsigned short)y,
+                            primaryButton, secondaryButton);
+    } else {
+        QueueInputEvent((unsigned short)buttonEvent, (unsigned short)x,
+                        (unsigned short)y, 0, primaryButton,
+                        secondaryButton, 0);
+    }
+    nHostMouseMessageX = x;
+    nHostMouseMessageY = y;
+    bHostPrimaryMouseButton = primaryButton;
+    bHostSecondaryMouseButton = secondaryButton;
+}
+#endif
+
 void SdlStartEventPump(void)
 {
     bMainWindowAlive = 1;
@@ -566,6 +599,9 @@ void SdlPumpEvents(void)
         return;
 
     SdlServiceOriginFxMusic();
+#ifdef WC1_QUEST
+    SdlQuestServiceInput();
+#endif
     while (SDL_PollEvent(&event)) {
         SdlLogJoystickEvent(&event);
         switch (event.type) {

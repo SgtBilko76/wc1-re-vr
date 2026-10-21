@@ -2,6 +2,12 @@
 
 #include "video_internal.h"
 #include "slint/launcher_api.h"
+#ifdef WC1_QUEST
+#include "../quest/quest_xr.h"
+#include <android/log.h>
+int SdlQuestStartup(int *argumentCount, char ***arguments);
+void SdlQuestCreatePad(void);
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -202,6 +208,11 @@ int main(int argumentCount, char **arguments)
 #ifdef _WIN32
     ImmDisableIME((DWORD)-1);
 #endif
+#ifdef WC1_QUEST
+    /* Logging, data directory and Quest default options. */
+    if (!SdlQuestStartup(&argumentCount, &arguments))
+        return 1;
+#endif
     if (!SdlParsePortArguments(&argumentCount, arguments,
                                &useLauncherGui, &launcherOptions))
         return 1;
@@ -243,6 +254,14 @@ int main(int argumentCount, char **arguments)
         fprintf(stderr, "SDL initialization failed: %s\n", SDL_GetError());
         return 1;
     }
+#ifdef WC1_QUEST
+    if (!QuestXr_Start()) {
+        fprintf(stderr, "OpenXR start failed\n");
+        SDL_Quit();
+        return 1;
+    }
+    SdlQuestCreatePad();
+#endif
 
     windowFlags = SDL_WINDOW_RESIZABLE;
     if (!SdlConfigureVideoWindow(&windowFlags)) {
@@ -314,6 +333,9 @@ int main(int argumentCount, char **arguments)
     DIBunInstall();
     SdlShutdownJoysticks();
     SDL_DestroyWindow(window);
+#ifdef WC1_QUEST
+    QuestXr_Shutdown();
+#endif
     SDL_Quit();
     return gameResult;
 }
