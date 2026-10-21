@@ -3060,3 +3060,50 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `8dd267a6c12c7eb1cf5ccf3c99005da27364beec689de21ca761fa2a122eeb0c`.
+- `players_flight_dynamics` indexes `aObjectTypeData` with a captured object
+  type instead of retaining a pointer to the record. The original retains
+  the record's byte offset and uses absolute field displacements for pitch,
+  yaw and roll; the pointer form folds the table base into that offset.
+  Indexed access restores all 24 address relocations, versus 22 before,
+  and reduces differing encodings from 55 to nine. Raw matching rises from
+  56 to 231 of 256 bytes. Instruction scheduling still differs, so the
+  mnemonic score falls from 100% to 96.77% despite the improved bytes.
+  Int-index and direct-index spellings produce the same result. Earlier
+  rejection of the indexed form predates the intervening relocation-layout
+  corrections; its current whole-file effect is positive.
+- `your_internal_damage` qualifies the weapon-count guard as a volatile
+  signed-byte read. The original compares the byte in memory, then reloads
+  and sign-extends it when preparing the random weapon bound. An ordinary
+  read lets CL retain AL across the guard and omit the second absolute
+  reference. The qualification restores the original 30 relocations and
+  makes all 944 bytes of the function's aligned span literally exact,
+  improving from 606 matching bytes and 117 differing encodings. It
+  constrains the observed access sequence without establishing that the
+  original global declaration was volatile.
+  The other damage routine has a separate opportunity: a capital-ship
+  accumulated-damage pointer shared across both side branches eliminates
+  a duplicated address calculation. Combined with the original shield-store
+  order, signed-byte weapon count, narrowed random index and fall-through
+  return, it reduces differing encodings from 225 to 53. Removing its extra
+  relocation currently shifts later relocation blocks away from the
+  original; even paired with the player-damage correction, it loses 4,461
+  matching positions against the retained build. These probes are not
+  retained. In `animate_shape`, separate branch-local scale changes and
+  qualified scale stores leave the merged store and executable unchanged.
+  Only the two retained function rows change in the full report. Normalized
+  exact functions rise from 1,338 to 1,339 of 1,550, same-size differences
+  fall from 205 to 204, and seven size differences remain. Mean mnemonic
+  similarity stays 99.65%, with four functions below 90%. All function spans
+  and compilation-unit placements are unchanged.
+  Strict whole-file matching rises by 7,608 positions, from 472,347 to
+  479,955 of 518,656 (91.0713% to 92.5382%); 38,701 positions still differ.
+  Of the gain, 513 positions are in `.text`, 7,094 in `.reloc`, and one in
+  the PE headers. The `.rdata`, `.data` and `.idata` sections remain literally
+  exact. This counts equal positions throughout the file. The continuous
+  matching prefix grows from 292 to 544 bytes; the first difference is now
+  at file offset `0x220`.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `9807fa4c8092c9023b84698a95b4a8c80f8e3ddf849a49c933363769f6cc42d5`.

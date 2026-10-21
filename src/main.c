@@ -851,16 +851,15 @@ unsigned int fire_players_lasers(void)
 /* Function start: 0x4284D0 */
 unsigned int players_flight_dynamics(void)
 {
-    ObjectTypeData *typeData;
+    enum ObjectType type;
 
     if (aeSpecialManeuvers[0] ==
             SPECIAL_MANEUVER_BLOWING_UP) {
         if (asObjectCounterArray[0] == -1) {
-            typeData = &aObjectTypeData[
-                stCampaignState.playerShipType];
-            if (anObjectYawRotation[0] < typeData->pitchRate &&
-                anObjPitchRot[0] < typeData->yawRate &&
-                anObjectRollRotationList[0] < typeData->rollRate) {
+            type = stCampaignState.playerShipType;
+            if (anObjectYawRotation[0] < aObjectTypeData[type].pitchRate &&
+                anObjPitchRot[0] < aObjectTypeData[type].yawRate &&
+                anObjectRollRotationList[0] < aObjectTypeData[type].rollRate) {
                 aeSpecialManeuvers[0] = SPECIAL_MANEUVER_NONE;
             } else {
                 anObjectYawRotation[0] -= nYawInputValue;
@@ -870,14 +869,13 @@ unsigned int players_flight_dynamics(void)
         return 0;
     }
 
-    typeData = &aObjectTypeData[
-        stCampaignState.playerShipType];
+    type = stCampaignState.playerShipType;
     anObjPitchRot[0] =
-        (short)((typeData->yawRate * nPitchInput) / 8);
+        (short)((aObjectTypeData[type].yawRate * nPitchInput) / 8);
     anObjectYawRotation[0] =
-        (short)-((typeData->pitchRate * nYawInputValue) / 8);
+        (short)-((aObjectTypeData[type].pitchRate * nYawInputValue) / 8);
     anObjectRollRotationList[0] =
-        (short)-((typeData->rollRate * nCurrentRollInputValue) / 8);
+        (short)-((aObjectTypeData[type].rollRate * nCurrentRollInputValue) / 8);
     return 0;
 }
 

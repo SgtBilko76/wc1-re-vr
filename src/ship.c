@@ -922,7 +922,7 @@ int your_internal_damage(short attacker, short damage, short quadrant)
             if (quadrant != 0) {
                 events++;
             } else {
-                if ((signed char)aShipWeaponsTable[0][0] > 0) {
+                if (*(volatile signed char *)&aShipWeaponsTable[0][0] > 0) {
                     remove_weapon(0,
                         (signed char)RandomBelowOrEqual(
                             (short)((signed char)aShipWeaponsTable[0][0] - 1)));
