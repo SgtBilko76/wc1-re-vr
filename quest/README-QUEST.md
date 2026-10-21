@@ -97,3 +97,13 @@ look around with your head.  The cockpit art is a panel 0.9 m in front of you;
 HUD pixels in the canopy window (reticle, target brackets) are on a panel at
 8 m.  Tuning goes in `/sdcard/WingCommander/vr.cfg` (`world_scale=`,
 `dash_distance=`, `hud_distance=`, `stretch=`, `stereo=0` to disable).
+
+**3D cockpit:** the 2D cockpit art is projected from the pilot's eye onto a
+curved shell, so it matches the original pixel for pixel from the default
+head position. The console tilts down toward your lap (about 0.75 m to
+0.45 m away), the canopy frame arches away overhead (about 1 m), and the sides
+curve in. Where the window's bottom edge sits in each column decides what is
+console and what is canopy, so this works for every ship's cockpit. Outside the
+original art, the edges wrap around you and darken. `cockpit3d=0` brings back
+the flat panel; `cockpit_wrap=0` disables the wrap-around. `dash_distance=`
+scales the whole shell.

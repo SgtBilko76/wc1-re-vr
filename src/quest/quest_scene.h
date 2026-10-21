@@ -33,6 +33,11 @@ typedef struct QuestSceneHeader {
     float centreX, centreY, focal, stretch;
     float dashDistance, hudDistance;
     int hasDashboard;   /* 0: no cockpit art (external views, intro) */
+    /* 3D cockpit: per column, the first row below the canopy window (the
+     * console's top edge), smoothed.  cockpit3d 0 = flat dashboard panel. */
+    short consoleTop[320];
+    int cockpit3d;
+    int cockpitWrap;    /* extend the art around the pilot */
 } QuestSceneHeader;
 
 /* Game -> XR: one stereo frame (copied; caller keeps ownership).

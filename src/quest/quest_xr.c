@@ -230,6 +230,17 @@ static GLuint g_spriteVao, g_spriteVbo, g_starVao, g_starVbo;
 static int g_starCount;
 static XrView g_views[2];
 
+/* 3D cockpit shell: the dashboard art projected from the eye point onto a
+ * curved surface (console toward the lap, canopy frame arching away). */
+#define CP_STEP 4
+#define CP_WRAP_X 260
+#define CP_WRAP_Y 140
+static GLuint g_cockpitProgram, g_cockpitVao, g_cockpitVbo, g_cockpitIbo;
+static GLint g_cockpitViewProj, g_cockpitTex;
+static int g_cockpitIndexCount;
+static int g_cockpitBuilt;
+static QuestSceneHeader g_cockpitBuiltFor;
+
 /* Recentre anchor: head position + yaw. */
 static int g_anchorValid;
 static Vec3 g_anchorPos;
@@ -636,6 +647,32 @@ static const char g_starFs[] =
     "    o_colour = vec4(b * 0.9, b * 0.92, b, 1.0);\n"
     "}\n";
 
+static const char g_cockpitVs[] =
+    "#version 300 es\n"
+    "uniform mat4 u_viewProj;\n"
+    "layout(location = 0) in vec3 a_pos;\n"
+    "layout(location = 1) in vec3 a_tex;\n"
+    "out vec2 v_uv;\n"
+    "out float v_shade;\n"
+    "void main() {\n"
+    "    v_uv = a_tex.xy;\n"
+    "    v_shade = a_tex.z;\n"
+    "    gl_Position = u_viewProj * vec4(a_pos, 1.0);\n"
+    "}\n";
+static const char g_cockpitFs[] =
+    "#version 300 es\n"
+    "precision mediump float;\n"
+    "uniform sampler2D u_tex;\n"
+    "in vec2 v_uv;\n"
+    "in float v_shade;\n"
+    "out vec4 o_colour;\n"
+    "void main() {\n"
+    "    ivec2 c = clamp(ivec2(floor(v_uv)), ivec2(0), ivec2(319, 199));\n"
+    "    vec4 t = texelFetch(u_tex, c, 0);\n"
+    "    if (t.a < 0.5) discard;\n"
+    "    o_colour = vec4(t.rgb * v_shade, 1.0);\n"
+    "}\n";
+
 static GLuint CompileProgram(const char *vs, const char *fs)
 {
     GLuint shaders[2];
@@ -714,8 +751,11 @@ static int InitStereo(int64_t format)
 
     g_spriteProgram = CompileProgram(g_spriteVs, g_spriteFs);
     g_starProgram = CompileProgram(g_starVs, g_starFs);
-    if (g_spriteProgram == 0 || g_starProgram == 0)
+    g_cockpitProgram = CompileProgram(g_cockpitVs, g_cockpitFs);
+    if (g_spriteProgram == 0 || g_starProgram == 0 || g_cockpitProgram == 0)
         return 0;
+    g_cockpitViewProj = glGetUniformLocation(g_cockpitProgram, "u_viewProj");
+    g_cockpitTex = glGetUniformLocation(g_cockpitProgram, "u_tex");
     g_spriteViewProj = glGetUniformLocation(g_spriteProgram, "u_viewProj");
     g_spriteAtlas = glGetUniformLocation(g_spriteProgram, "u_atlas");
     g_spritePalette = glGetUniformLocation(g_spriteProgram, "u_palette");
@@ -867,6 +907,173 @@ static void MatProjection(float *m, XrFovf fov, float nearZ, float farZ)
     m[14] = -(2.0f * farZ * nearZ) / (farZ - nearZ);
 }
 
+
+static float Clampf(float v, float lo, float hi)
+{
+    return v < lo ? lo : v > hi ? hi : v;
+}
+
+/* Forward distance (metres) of the cockpit surface behind frame pixel
+ * (px, py): the console tilts from its top edge toward the pilot's lap, the
+ * canopy frame arches away above it, and the sides curve in like a tub. */
+static float CockpitDepth(const QuestSceneHeader *h, float px, float py)
+{
+    float d = h->dashDistance;
+    float zTop = 0.85f * d, zBottom = 0.5f * d, zCanopy = 1.15f * d;
+    int column = (int)Clampf(px, 0.0f, (float)(QUEST_FRAME_WIDTH - 1));
+    float top = (float)h->consoleTop[column];
+    float nx = (px - (float)QUEST_FRAME_WIDTH * 0.5f) /
+               ((float)QUEST_FRAME_WIDTH * 0.5f);
+    float z;
+
+    if (py >= top) {
+        float span = (float)QUEST_FRAME_HEIGHT - top;
+        float s = (py - top) / (span < 8.0f ? 8.0f : span);
+        z = zTop + (zBottom - zTop) * s;
+    } else {
+        float s = (top - py) / (top < 8.0f ? 8.0f : top);
+        z = zTop + (zCanopy - zTop) * s;
+    }
+    return z * (1.0f - 0.2f * nx * nx);
+}
+
+/* Vertex for virtual frame pixel (px, py).  Inside the 320x200 frame the
+ * vertex lies exactly on the pixel's view ray, so from the default head
+ * position the shell looks identical to the 2D cockpit.  Outside, the edge
+ * point is swung around the eye (wrap-around), darkening with angle. */
+static void CockpitVertex(const QuestSceneHeader *h, float px, float py,
+                          float *out)
+{
+    float cx = Clampf(px, 0.0f, (float)QUEST_FRAME_WIDTH);
+    float cy = Clampf(py, 0.0f, (float)QUEST_FRAME_HEIGHT);
+    float z = CockpitDepth(h, cx, cy);
+    float u = (cx - h->centreX) / h->focal;
+    float v = (cy - h->centreY) * h->stretch / h->focal;
+    float x = u * z, y = -v * z, w = -z;
+    float ax = (px - cx) / h->focal / (1.0f + u * u);
+    float ay = (py - cy) * h->stretch / h->focal / (1.0f + v * v);
+    float angle = sqrtf(ax * ax + ay * ay);
+    float c, s, ny, nz, nx;
+
+    /* Pitch: overflow below the frame swings down toward the lap. */
+    c = cosf(-ay);
+    s = sinf(-ay);
+    ny = y * c - w * s;
+    nz = y * s + w * c;
+    y = ny;
+    w = nz;
+    /* Yaw: overflow right of the frame swings to the right. */
+    c = cosf(-ax);
+    s = sinf(-ax);
+    nx = x * c + w * s;
+    nz = -x * s + w * c;
+    x = nx;
+    w = nz;
+
+    out[0] = x;
+    out[1] = y;
+    out[2] = w;
+    out[3] = Clampf(px, 0.0f, (float)QUEST_FRAME_WIDTH - 0.5f);
+    out[4] = Clampf(py, 0.0f, (float)QUEST_FRAME_HEIGHT - 0.5f);
+    out[5] = angle > 0.0f ? Clampf(0.85f - 0.75f * angle, 0.3f, 0.85f) : 1.0f;
+}
+
+static int CockpitNeedsRebuild(const QuestSceneHeader *h)
+{
+    const QuestSceneHeader *b = &g_cockpitBuiltFor;
+
+    return !g_cockpitBuilt || b->centreX != h->centreX ||
+           b->centreY != h->centreY || b->focal != h->focal ||
+           b->stretch != h->stretch || b->dashDistance != h->dashDistance ||
+           b->cockpitWrap != h->cockpitWrap ||
+           memcmp(b->consoleTop, h->consoleTop, sizeof(h->consoleTop)) != 0;
+}
+
+static void BuildCockpitMesh(const QuestSceneHeader *h)
+{
+    int wrapX = h->cockpitWrap ? CP_WRAP_X : 0;
+    int wrapY = h->cockpitWrap ? CP_WRAP_Y : 0;
+    int cols = (QUEST_FRAME_WIDTH + 2 * wrapX) / CP_STEP + 1;
+    int rows = (QUEST_FRAME_HEIGHT + 2 * wrapY) / CP_STEP + 1;
+    float *vertices;
+    unsigned short *indices;
+    int r, c, n = 0;
+
+    if (cols * rows > 65535)
+        return;
+    vertices = (float *)malloc((size_t)cols * rows * 6 * sizeof(float));
+    indices = (unsigned short *)malloc((size_t)(cols - 1) * (rows - 1) * 6 *
+                                       sizeof(unsigned short));
+    if (vertices == 0 || indices == 0) {
+        free(vertices);
+        free(indices);
+        return;
+    }
+    for (r = 0; r < rows; r++)
+        for (c = 0; c < cols; c++)
+            CockpitVertex(h, (float)(c * CP_STEP - wrapX),
+                          (float)(r * CP_STEP - wrapY),
+                          vertices + (r * cols + c) * 6);
+    for (r = 0; r + 1 < rows; r++)
+        for (c = 0; c + 1 < cols; c++) {
+            unsigned short a = (unsigned short)(r * cols + c);
+            unsigned short b = (unsigned short)(a + 1);
+            unsigned short d = (unsigned short)(a + cols);
+            unsigned short e = (unsigned short)(d + 1);
+            indices[n++] = a;
+            indices[n++] = d;
+            indices[n++] = b;
+            indices[n++] = b;
+            indices[n++] = d;
+            indices[n++] = e;
+        }
+    if (g_cockpitVao == 0) {
+        glGenVertexArrays(1, &g_cockpitVao);
+        glGenBuffers(1, &g_cockpitVbo);
+        glGenBuffers(1, &g_cockpitIbo);
+    }
+    glBindVertexArray(g_cockpitVao);
+    glBindBuffer(GL_ARRAY_BUFFER, g_cockpitVbo);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cols * rows * 6 * sizeof(float),
+                 vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                          (const void *)(3 * sizeof(float)));
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cockpitIbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)n * sizeof(unsigned short),
+                 indices, GL_STATIC_DRAW);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    free(vertices);
+    free(indices);
+    g_cockpitIndexCount = n;
+    g_cockpitBuiltFor = *h;
+    g_cockpitBuilt = 1;
+    LOGI("3D cockpit mesh %dx%d (%d triangles), console top at column 160: %d",
+         cols, rows, n / 3, (int)h->consoleTop[160]);
+}
+
+static void DrawCockpit(const float *viewProj)
+{
+    if (!g_xrHeader.hasDashboard || !g_xrHeader.cockpit3d ||
+        g_cockpitProgram == 0)
+        return;
+    if (CockpitNeedsRebuild(&g_xrHeader))
+        BuildCockpitMesh(&g_xrHeader);
+    if (g_cockpitIndexCount == 0)
+        return;
+    glUseProgram(g_cockpitProgram);
+    glUniformMatrix4fv(g_cockpitViewProj, 1, GL_FALSE, viewProj);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, g_dashTexture);
+    glUniform1i(g_cockpitTex, 0);
+    glBindVertexArray(g_cockpitVao);
+    glDrawElements(GL_TRIANGLES, g_cockpitIndexCount, GL_UNSIGNED_SHORT, 0);
+    glBindVertexArray(0);
+}
+
 /* Copies the newest stereo scene and performs pending GL uploads. */
 static void SyncStereoScene(void)
 {
@@ -976,6 +1183,9 @@ static void DrawEye(int eye, const float *anchorMatrix)
         glDrawArrays(GL_TRIANGLES, 0, g_xrHeader.quadCount * 6);
         glActiveTexture(GL_TEXTURE0);
     }
+    /* Nearer than every ship (those sit beyond their collision radius), so
+     * drawing last is enough; the shell is star-shaped around the eye. */
+    DrawCockpit(viewProj);
     glBindVertexArray(0);
     glUseProgram(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1803,7 +2013,7 @@ static void RunFrame(void)
         CockpitPanel(&hudPanel, g_xrHeader.hudDistance);
         FillQuadLayer(&screenLayer, &g_hudChain, &hudPanel, 1);
         layers[layerCount++] = (const XrCompositionLayerBaseHeader *)&screenLayer;
-        if (g_xrHeader.hasDashboard) {
+        if (g_xrHeader.hasDashboard && !g_xrHeader.cockpit3d) {
             BlitPanel(&g_dashChain, g_dashReadFbo);
             CockpitPanel(&dashPanel, g_xrHeader.dashDistance);
             FillQuadLayer(&dashLayer, &g_dashChain, &dashPanel, 1);

@@ -40,6 +40,8 @@ static float g_worldScale = 0.25f;  /* metres per game unit */
 static float g_dashDistance = 0.9f; /* metres */
 static float g_hudDistance = 8.0f;  /* metres */
 static float g_stretch = 1.2f;      /* 320x200 shown at 4:3 */
+static int g_cockpit3d = 1;
+static int g_cockpitWrap = 1;
 
 static void LoadConfig(void)
 {
@@ -70,14 +72,19 @@ static void LoadConfig(void)
                     g_stretch = value;
                 else if (sscanf(line, "stereo=%f", &value) == 1)
                     g_stereoEnabled = value != 0.0f;
+                else if (sscanf(line, "cockpit3d=%f", &value) == 1)
+                    g_cockpit3d = value != 0.0f;
+                else if (sscanf(line, "cockpit_wrap=%f", &value) == 1)
+                    g_cockpitWrap = value != 0.0f;
             }
             SDL_free(copy);
         }
         SDL_free(text);
     }
     printf("stereo config: enabled %d world_scale %.3f dash %.2f m hud %.2f m "
-           "stretch %.2f\n", g_stereoEnabled, g_worldScale, g_dashDistance,
-           g_hudDistance, g_stretch);
+           "stretch %.2f cockpit3d %d wrap %d\n", g_stereoEnabled,
+           g_worldScale, g_dashDistance, g_hudDistance, g_stretch,
+           g_cockpit3d, g_cockpitWrap);
 }
 
 /* ------------------------------------------------------------------ */
@@ -279,6 +286,56 @@ static void BuildMask(const ScreenViewportGeometry *geometry,
     }
 }
 
+/* Per column: first row below the canopy window.  Columns without window
+ * pixels take the nearest window column; then a box filter smooths jagged
+ * window edges so the console surface has no spikes. */
+static void ComputeConsoleTop(short *out)
+{
+    int raw[SDL_PORT_FRAME_WIDTH];
+    int x, y, any = 0;
+
+    for (x = 0; x < SDL_PORT_FRAME_WIDTH; x++) {
+        raw[x] = -1;
+        for (y = SDL_PORT_FRAME_HEIGHT - 1; y >= 0; y--)
+            if (g_mask[y * SDL_PORT_FRAME_WIDTH + x]) {
+                raw[x] = y + 1;
+                any = 1;
+                break;
+            }
+    }
+    if (!any) {
+        for (x = 0; x < SDL_PORT_FRAME_WIDTH; x++)
+            out[x] = (short)(SDL_PORT_FRAME_HEIGHT * 55 / 100);
+        return;
+    }
+    for (x = 0; x < SDL_PORT_FRAME_WIDTH; x++)
+        if (raw[x] < 0) {
+            int d;
+            for (d = 1; d < SDL_PORT_FRAME_WIDTH; d++) {
+                if (x - d >= 0 && raw[x - d] >= 0) {
+                    raw[x] = -2 - raw[x - d];
+                    break;
+                }
+                if (x + d < SDL_PORT_FRAME_WIDTH && raw[x + d] >= 0) {
+                    raw[x] = -2 - raw[x + d];
+                    break;
+                }
+            }
+        }
+    for (x = 0; x < SDL_PORT_FRAME_WIDTH; x++)
+        if (raw[x] < -1)
+            raw[x] = -2 - raw[x];
+    for (x = 0; x < SDL_PORT_FRAME_WIDTH; x++) {
+        int sum = 0, n = 0, k;
+        for (k = x - 12; k <= x + 12; k++)
+            if (k >= 0 && k < SDL_PORT_FRAME_WIDTH) {
+                sum += raw[k];
+                n++;
+            }
+        out[x] = (short)(sum / n);
+    }
+}
+
 static void Normalize3(float *v)
 {
     float l = sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
@@ -449,6 +506,10 @@ void SdlQuestCaptureSpaceFrame(const ScreenViewportGeometry *geometry,
     g_header.hudDistance = g_hudDistance;
     g_header.hasDashboard =
         !(fullViewportCopy || viewportMode == 5 || geometry == 0);
+    g_header.cockpit3d = g_cockpit3d;
+    g_header.cockpitWrap = g_cockpitWrap;
+    if (g_header.hasDashboard)
+        ComputeConsoleTop(g_header.consoleTop);
     for (i = 0; i < 3; i++) {
         g_header.worldToCockpit[0][i] =
             (float)(&aShipRightVector[EYE_OBJECT].x)[i] / 256.0f;
