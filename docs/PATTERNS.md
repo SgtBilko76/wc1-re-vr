@@ -2601,3 +2601,37 @@ Shapes recovered with this method:
   access diagnostics remain 11/56. The clean-build and post-verification
   hashes agree:
   `3d7f68a96b204b1c8cab112c70f9a75ec17819d64898c309a758aa3c1415b63c`.
+- `PlaceNavMapLabel` passes `offset == 12` directly at its four forced-placement
+  call sites. CL retains the same shared comparison and instructions; removing
+  the redundant `force` local changes the later symbol indices and makes all
+  55 instructions of `DrawNavTriangleOutline` exact. No other navigation
+  report row changes. A label pointer instead recovers the placement routine's
+  336-byte span but combines its two original absolute stores into one base
+  address calculation, so that version is not retained. An explicit label
+  index, wider force flag, and moving initialized storage after the first
+  helpers do not recover its original address calculation.
+- `detect_collisions` declares `candidate`, `other`, `time`, `closestTime` in
+  that order. Moving the minimum-time local last restores `CMP DI,AX` and
+  `JLE`, making the function exact; all other logic report rows are unchanged.
+- Further bounded size probes are discarded. Moving the calibration loader's
+  horizontal-range declaration through the other locals or scoping both ranges
+  to their calculations leaves its sixteen-byte excess. Joystick range/scale
+  declaration swaps can recover its 1,040-byte span, but leave register and
+  scheduling differences; the best permutation retaining the 1,024-byte span
+  improves mnemonic similarity while reducing literal file matching. Removing
+  launch's promoted object local likewise raises its mnemonic score but moves
+  its body from 2,046 to 2,041 bytes, further from the original 2,053, and loses
+  literal matches. Shape-pointer declaration permutations leave it unchanged.
+  Inlining the barracks row with an explicit short cast loses its recovered
+  sixteen bytes. A cached menu-label pointer does not fix its comparisons and
+  disturbs later barracks routines; the opcode scope and wave-list local-order
+  probes leave their one differing comparison unchanged.
+  The retained navigation and collision changes are the full report's only
+  changed rows: 1,327 of 1,550 functions are now normalized exact, with the
+  same eighteen size differences. Strict file matching rises by two positions
+  to 432,852 of 518,656 (83.4565%); 85,804 positions still differ. The clean
+  native and modern builds, source/address audits, order report, and full
+  verification pass. Both value checks have zero mismatches or skips across
+  all 1,550 functions; the existing call/global-access diagnostics remain
+  11/56. The executable hash is unchanged after verification:
+  `0d8b7cad8d0ecb5f1651098829584924a8553f3ec0d209a631ff469a87fa8d29`.

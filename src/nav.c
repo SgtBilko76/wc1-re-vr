@@ -167,7 +167,6 @@ void PlaceNavMapLabel(short x, short y, unsigned short colour,
 {
     short width;
     short offset;
-    short force;
 
     width = (short)(strlen(text) * 4 + 2);
     aNavMapLabels[
@@ -180,20 +179,19 @@ void PlaceNavMapLabel(short x, short y, unsigned short colour,
         if (TryPlaceNavMapLabel((short)(x + offset + 4), y,
                                 width, 0) != 0)
             break;
-        force = offset == 12;
         if (TryPlaceNavMapLabel((short)(x - width / 2),
                                 (short)(y + offset + 5),
-                                width, force) != 0)
+                                width, offset == 12) != 0)
             break;
         if (TryPlaceNavMapLabel((short)(x - offset - width - 3), y,
-                                width, force) != 0)
+                                width, offset == 12) != 0)
             break;
         if (TryPlaceNavMapLabel(x, (short)(y + offset + 5),
-                                width, force) != 0)
+                                width, offset == 12) != 0)
             break;
         if (TryPlaceNavMapLabel((short)(x - width / 2),
                                 (short)(y - offset - 9),
-                                width, force) != 0)
+                                width, offset == 12) != 0)
             break;
     } while (offset != 12);
     ReserveNavMapArea(

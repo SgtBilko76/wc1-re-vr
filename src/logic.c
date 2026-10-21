@@ -307,9 +307,9 @@ short crash_time(short obj, short other)
 short detect_collisions(short obj)
 {
     short candidate;
-    short closestTime;
     short other;
     short time;
+    short closestTime;
 
     candidate = -1;
     closestTime = 30;
