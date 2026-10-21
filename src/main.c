@@ -1511,13 +1511,13 @@ int HandleSpaceFlightControls(void)
             break;
         case 0x2e:
             if (notRepeated) {
-                if (message_showing() == 0) {
-                    if (get_mode(1) == 4)
-                        CloseCommChoiceMenu();
-                    else
-                        SelectCockpitVduMode(1, 4);
-                } else {
+                if (message_showing() != 0) {
                     EndCommMenu();
+                } else {
+                    if (get_mode(1) != 4)
+                        SelectCockpitVduMode(1, 4);
+                    else
+                        CloseCommChoiceMenu();
                 }
             }
             break;

@@ -120,7 +120,7 @@ void ix_dspv_set_position(int voice, int off)
 /* Function start: 0x446B18 */   /* source line 85 */
 void ix_dspv_set_volume(int voice, short vol)
 {
-    if (voice < 0 || voice >= nVoiceCount) {
+    if (voice < 0 || voice >= *(volatile int *)&nVoiceCount) {
         ix_log_printf("Fatal [%s - %d]:\n", IX_DSPV_FILE, 85);
         ix_log_printf("%d Invalid voice index!", voice);
         exit(-1);

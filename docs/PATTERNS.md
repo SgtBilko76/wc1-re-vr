@@ -3145,3 +3145,49 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `cda0f3c5bc8718e83ae7fad7f58eda2e3594a1dd91d054865b94333d588e3201`.
+- `HandleSpaceFlightControls` handles an existing communication message
+  before querying the VDU mode. With no message, it selects mode four on
+  the unequal path and closes the choice menu on equality. This recovers
+  the original call/branch ordering in key case `0x2e`. Mnemonic similarity
+  rises from 96.83% to 97.59%; the 593 differing encodings and 1,149 literal
+  matching bytes of its 3,184-byte span remain unchanged. Reversing only
+  the outer branch loses one matching file position; both branches are
+  retained together.
+- Qualifying `ix_dspv_set_volume`'s voice-count read as volatile changes
+  CL 4.20's later comparison choices without changing the setter's compared
+  bytes. In the resulting unit, `ix_dspv_set_pan` regains its missing byte
+  and `ix_dspv_set_bits_per_sample` loses its extra byte. Their complete
+  293- and 201-byte spans now match literally. The intervening frequency
+  setter returns to its original address and all 123 of its bytes match
+  as well. Raw matches rise from 45/293, 179/201 and 15/123 respectively.
+  Twelve of fourteen voice routines are now literally exact; the position
+  and volume setters still have compensating minus-one/plus-one size errors.
+  This qualification is a measured compiler-context choice. The original
+  global's volatile declaration is not established, and the global storage,
+  public declarations, calling conventions and flags remain unchanged.
+  Qualifying the position setter's upper-bound parameter read produces the
+  same improvement. Moving the count qualification earlier, into either
+  the position getter or buffer setter, makes the position setter exact
+  but leaves the volume setter's extra byte, shifting later code until the
+  final object's padding absorbs it. That alternative loses 915 matching
+  file positions and is discarded. Reversed guard operands, moving or
+  scoping the existing pointer declaration, and const or volatile pointer
+  qualifications do not improve the output. VC 4.20 rejects a volatile
+  parameter definition against its unchanged ordinary prototype; that
+  failed probe is also restored without changing the interface.
+  Only these three normalized report rows change. Exact functions rise
+  from 1,339 to 1,341 of 1,550, same-size differences remain 204, and size
+  differences fall from seven to five. Mean mnemonic similarity remains
+  99.65%, with four functions below 90%. Compilation-unit placements and
+  the total executable size remain unchanged.
+  Strict whole-file matching rises by 392 positions, from 480,758 to
+  481,150 of 518,656 (92.6930% to 92.7686%); 37,506 positions still differ.
+  The gain is 381 code bytes and eleven relocation bytes. The `.rdata`,
+  `.data` and `.idata` sections remain literally exact. The continuous
+  matching prefix remains 544 bytes, with the first difference at `0x220`.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree, including
+  after restoring the final discarded probes:
+  `87ed227524654c6cbd80de1ad701d9a4371bc8e42f264cbe8d81f17c26f87387`.
