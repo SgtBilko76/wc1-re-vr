@@ -3191,3 +3191,48 @@ Shapes recovered with this method:
   remain 11/56. The clean-build and post-verification hashes agree, including
   after restoring the final discarded probes:
   `87ed227524654c6cbd80de1ad701d9a4371bc8e42f264cbe8d81f17c26f87387`.
+- `LoadMissionData` copies the initial-ship words with post-increments in
+  the assignment. The original advances the source before storing through
+  the destination, then advances the destination. Keeping both increments
+  in a `for` update instead adds a displacement to the store and shifts
+  most of the remaining body by one byte. Declare `initialShip` before
+  `sourceInitialShip`, `ship` before `diskShip`, and `index` before
+  `diskObjective` to recover the original pointer and index registers.
+  These changes reduce differing encodings from 209 to 16 and raise
+  mnemonic similarity from 95.73% to 98.29%. Literal matching rises from
+  120 to 758 of the unchanged 784-byte span. The remaining differences
+  concern the preload-type loop's registers and instruction scheduling.
+- `FadeViewportPaletteToColour` skips the palette work when the video mode
+  differs from `0x13`, then calls both `DIBslam` and `DIBslamReal`. Its old
+  early return incorrectly skipped those calls. Enclose the palette work
+  in the mode-equality branch, retaining the separate allocation-failure
+  returns. Declaring `index` before `activeCount` also restores the original
+  loop-comparison directions. Mnemonic similarity rises from 96.95% to
+  98.17%; the 123 differing encodings and 137 literal matching bytes of
+  its 496-byte span remain unchanged. The initial variable-length memset
+  still emits an extra register copy, displacing the following code.
+  Inlining the byte-count expression, either everywhere or only at the
+  memset calls, adds sixteen aligned bytes and is discarded. Changing its
+  signedness or moving its declaration does not improve the output.
+  Reversing the mission loader's remaining loop updates slightly reduces
+  literal matching and is likewise discarded.
+  Bounded sound-reprioritization probes leave its compensating one-byte
+  size errors or lose matching bytes. Interactive-calibration declaration
+  changes and an explicit action-sphere class local regress the file;
+  wave-list declaration order and a complete bunk-row coordinate leave it
+  unchanged. None of these probes is retained.
+  Only the mission loader and palette routine change in the full report.
+  The totals remain 1,341 normalized exact functions of 1,550, 204 same-size
+  differences, five size differences and 99.65% mean mnemonic similarity.
+  Four functions remain below 90%. Compilation-unit placements, function
+  spans and relocation counts are unchanged.
+  Strict whole-file matching rises by 656 positions, from 481,150 to
+  481,806 of 518,656 (92.7686% to 92.8951%); 36,850 positions still differ.
+  The gain is 638 code bytes and eighteen relocation bytes. The `.rdata`,
+  `.data` and `.idata` sections remain literally exact. The continuous
+  matching prefix remains 544 bytes, with the first difference at `0x220`.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `35f0771b9a9547fb3e963562c0faa0026037ec661d76c2387c8dd5518bc89a96`.

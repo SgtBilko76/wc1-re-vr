@@ -2274,57 +2274,56 @@ void __stdcall FadeViewportPaletteToColour(Viewport *viewport,
     short *currentPalette;
     short *targetPalette;
     unsigned int paletteBytes;
-    short activeCount;
     short index;
+    short activeCount;
 
     (void)enabled;
-    if (nVideoMode != 0x13)
-        return;
-
-    indices = AllocateTaggedMemory(256, 0);
-    if (indices == 0)
-        return;
-    memset(indices, 0, 256);
-    activeCount = CollectActivePaletteIndices(viewport, indices, 256);
-    paletteBytes = (unsigned int)(activeCount * 6);
-    currentPalette = AllocateTaggedMemory(paletteBytes, 0);
-    if (currentPalette == 0) {
-        ReleasePacketHandle(indices);
-        return;
-    }
-    memset(currentPalette, 0, paletteBytes);
-    targetPalette = AllocateTaggedMemory(paletteBytes, 0);
-    if (targetPalette == 0) {
-        ReleasePacketHandle(indices);
-        ReleasePacketHandle(currentPalette);
-        return;
-    }
-    memset(targetPalette, 0, paletteBytes);
-
-    GetPaletteEntry((short)colour, target);
-    for (index = 0; index < activeCount; index++) {
-        GetPaletteEntry((short)indices[index],
-                        (unsigned short *)&currentPalette[index * 3]);
-        memcpy(&targetPalette[index * 3], target, 6);
-    }
-
-    while (StepPaletteTransition(
-               currentPalette, targetPalette,
-               (short)(activeCount * 3)) != 0) {
-        for (index = 0; index < activeCount; index++) {
-            abPaletteTripletsArray[indices[index]][0] =
-                (unsigned char)currentPalette[index * 3];
-            abPaletteTripletsArray[indices[index]][1] =
-                (unsigned char)currentPalette[index * 3 + 1];
-            abPaletteTripletsArray[indices[index]][2] =
-                (unsigned char)currentPalette[index * 3 + 2];
+    if (nVideoMode == 0x13) {
+        indices = AllocateTaggedMemory(256, 0);
+        if (indices == 0)
+            return;
+        memset(indices, 0, 256);
+        activeCount = CollectActivePaletteIndices(viewport, indices, 256);
+        paletteBytes = (unsigned int)(activeCount * 6);
+        currentPalette = AllocateTaggedMemory(paletteBytes, 0);
+        if (currentPalette == 0) {
+            ReleasePacketHandle(indices);
+            return;
         }
-        SetWholePaletteFromTriplets(&abPaletteTripletsArray[0][0]);
-    }
+        memset(currentPalette, 0, paletteBytes);
+        targetPalette = AllocateTaggedMemory(paletteBytes, 0);
+        if (targetPalette == 0) {
+            ReleasePacketHandle(indices);
+            ReleasePacketHandle(currentPalette);
+            return;
+        }
+        memset(targetPalette, 0, paletteBytes);
 
-    ReleasePacketHandle(targetPalette);
-    ReleasePacketHandle(currentPalette);
-    ReleasePacketHandle(indices);
+        GetPaletteEntry((short)colour, target);
+        for (index = 0; index < activeCount; index++) {
+            GetPaletteEntry((short)indices[index],
+                            (unsigned short *)&currentPalette[index * 3]);
+            memcpy(&targetPalette[index * 3], target, 6);
+        }
+
+        while (StepPaletteTransition(
+                   currentPalette, targetPalette,
+                   (short)(activeCount * 3)) != 0) {
+            for (index = 0; index < activeCount; index++) {
+                abPaletteTripletsArray[indices[index]][0] =
+                    (unsigned char)currentPalette[index * 3];
+                abPaletteTripletsArray[indices[index]][1] =
+                    (unsigned char)currentPalette[index * 3 + 1];
+                abPaletteTripletsArray[indices[index]][2] =
+                    (unsigned char)currentPalette[index * 3 + 2];
+            }
+            SetWholePaletteFromTriplets(&abPaletteTripletsArray[0][0]);
+        }
+
+        ReleasePacketHandle(targetPalette);
+        ReleasePacketHandle(currentPalette);
+        ReleasePacketHandle(indices);
+    }
     DIBslam();
     DIBslamReal();
 }

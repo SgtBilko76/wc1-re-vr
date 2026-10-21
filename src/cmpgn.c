@@ -589,12 +589,12 @@ unsigned int LoadMissionData(short series, short mission)
     unsigned char *packet;
     MissionHeaderDisk *header;
     MissionNavPointDisk *diskNav;
-    MissionObjectiveDisk *diskObjective;
-    MissionShipDisk *diskShip;
-    MissionShipRecord *ship;
-    short *sourceInitialShip;
-    short *initialShip;
     int index;
+    MissionObjectiveDisk *diskObjective;
+    MissionShipRecord *ship;
+    MissionShipDisk *diskShip;
+    short *initialShip;
+    short *sourceInitialShip;
     int item;
 
     logicalFile = asMissionDataFiles[nCampaignDataSet];
@@ -622,9 +622,8 @@ unsigned int LoadMissionData(short series, short mission)
     stCurrentMissionHeader.playerMissionShip = header->playerMissionShip;
     sourceInitialShip = header->initialMissionShips;
     initialShip = stCurrentMissionHeader.initialMissionShips;
-    for (; initialShip < &stCurrentMissionHeader.initialMissionShips[8];
-         initialShip++, sourceInitialShip++) {
-        *initialShip = *sourceInitialShip;
+    while (initialShip < &stCurrentMissionHeader.initialMissionShips[8]) {
+        *initialShip++ = *sourceInitialShip++;
     }
     stCurrentMissionHeader.field_16 = header->field_16;
     ReleasePacketHandle(packet);
