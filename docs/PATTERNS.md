@@ -3236,3 +3236,56 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `35f0771b9a9547fb3e963562c0faa0026037ec661d76c2387c8dd5518bc89a96`.
+- `select_new_release_weapon` captures the selected index once, tests that
+  register, and reloads the loadout count for both comparisons in its
+  preferred-type search. Qualify the initial selected-index read and those
+  two signed-byte count reads to retain the observed access sequence.
+  The count guard compares against the running index, already zero, rather
+  than a literal zero. Declare `weapon` before `weaponCount` to restore the
+  three remaining comparison pairs. The complete 336-byte span now matches
+  literally, up from 50 matching bytes and 85 differing encodings, and its
+  relocation count returns from fourteen to the original fifteen.
+  Qualifying only the index capture loses sixteen aligned bytes; qualifying
+  only the count comparisons leaves the index reload and worsens file
+  matching. The pair must be assessed together. These access qualifications
+  do not establish that the original global declarations were volatile.
+- `ReadPacketSectionData` declares `end` before `offset`. CL then retains
+  the destination in EAX and adds the data size into ECX, matching all 96
+  bytes of the routine, up from twelve matching bytes. Computing the end
+  first instead leaves seven differing encodings, while a separate data-
+  offset local leaves the old output unchanged; neither is retained.
+- `house_keep` captures the space-frame count and refreshes it after
+  `ReleaseStaleNavTarget`. Reuse that short for the later palette loop.
+  This recovers the original CX/CL reads and tests, making all 176 bytes
+  literal matches, up from 27. A separate frame local also makes this
+  routine exact but disturbs `UpdateTrainSimMenuCursor` and the palette
+  fade's loop comparisons. Reusing the existing counter preserves both
+  later routines and adds no local.
+  Declaring `weaponSlot` before `found` in `select_guns` restores their
+  original registers: differing encodings fall from fifteen to seven and
+  literal matching rises from 97 to 105 of 112 bytes. The other declaration
+  permutations do not finish that routine. Putting the slot initializer
+  first in `find_next_gun` regresses file matching and is discarded.
+  Declaring `entryCount` before `entry` in
+  `ReleaseContiguousPaletteEntries` gains one literal byte, from 55 to 56
+  of 64. Eight differing encodings remain, and mnemonic similarity falls
+  from 100% to 94.12%; the retained choice follows the literal-byte goal.
+  Animation-local declaration changes, rectangle-area declaration order,
+  an explicit first-left capture in the rectangle union, and an explicit
+  formatted-range exit do not improve their output and are discarded.
+  Only these five function rows change in the full report. Normalized exact
+  functions rise from 1,341 to 1,344 of 1,550; same-size differences fall
+  from 204 to 201, and five size differences remain. Mean mnemonic
+  similarity is 99.66%, with four functions below 90%. Function spans and
+  compilation-unit placements are unchanged.
+  Strict whole-file matching rises by 525 positions, from 481,806 to
+  482,331 of 518,656 (92.8951% to 92.9963%); 36,325 positions still differ.
+  Code gains 528 matching positions while relocation matching loses three.
+  The `.rdata`, `.data` and `.idata` sections remain literally exact.
+  The continuous matching prefix is still 544 bytes, with the first
+  difference at `0x220`.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `8c398f464042fe324011eb7ac153cc63e2cac7cd554120268ebfe32ce2ca7c51`.

@@ -566,24 +566,27 @@ unsigned int UpdateSpacePaletteFade(void)
 /* Function start: 0x427D40 */
 unsigned int house_keep(void)
 {
-    short palette;
+    short count;
 
     if (nCannedSceneMode == 0 &&
         nTrainSimActive == 0) {
-        if ((nCurrentSpaceFrameValue & 0x1f) == 0)
+        count = nCurrentSpaceFrameValue;
+        if ((count & 0x1f) == 0) {
             ReleaseStaleNavTarget();
+            count = nCurrentSpaceFrameValue;
+        }
         if (nCurrentHazardFieldTotal != 0 &&
-            (nCurrentSpaceFrameValue & 0xf) == 0)
+            (count & 0xf) == 0)
             check_hazards();
     }
     if (nCameraViewMode == 0) {
-        palette = 0;
+        count = 0;
         do {
-            FadeFlightPaletteEntry(aPaletteFadeEntries[palette]);
-            SetPaletteEntry((short)(palette + 0xb9),
-                            aPaletteFadeEntries[palette]);
-            palette++;
-        } while (palette < 6);
+            FadeFlightPaletteEntry(aPaletteFadeEntries[count]);
+            SetPaletteEntry((short)(count + 0xb9),
+                            aPaletteFadeEntries[count]);
+            count++;
+        } while (count < 6);
         return 0;
     }
     if (nCurrentDamageAlarmSfxHandle != 0) {

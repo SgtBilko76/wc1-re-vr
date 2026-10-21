@@ -63,8 +63,8 @@ short __stdcall ReserveContiguousPaletteEntries(short entryCount)
 /* Function start: 0x431970 */
 void __stdcall ReleaseContiguousPaletteEntries(short firstEntry)
 {
-    short entry;
     short entryCount;
+    short entry;
 
     entry = 0;
     entryCount = awPalEntryAllocation[firstEntry];

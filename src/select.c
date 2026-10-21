@@ -51,8 +51,8 @@ short find_next_gun(short obj, enum ObjectType currentGun)
 int select_guns(short obj, short selectedGun)
 {
     short weaponCount;
-    int found;
     ShipWeaponSlot *weaponSlot;
+    int found;
 
     (void)obj;
     weaponCount = (signed char)aShipWeaponsTable[0][0];
@@ -96,14 +96,14 @@ unsigned int select_new_gun(void)
 /* Function start: 0x42AE50 */
 unsigned int select_new_release_weapon(enum ObjectType preferredType)
 {
+    signed char weapon;
     signed char weaponCount;
     int currentWeapon;
     short firstWeapon;
-    signed char weapon;
     ShipWeaponSlot *weaponSlots;
 
     weaponCount = (signed char)aShipWeaponsTable[0][0];
-    currentWeapon = nSelectedReleaseWeaponIndex;
+    currentWeapon = *(volatile int *)&nSelectedReleaseWeaponIndex;
     weapon = (signed char)(currentWeapon + 1);
     weaponSlots = (ShipWeaponSlot *)&aShipWeaponsTable[0][1];
 
@@ -112,9 +112,9 @@ unsigned int select_new_release_weapon(enum ObjectType preferredType)
     if (currentWeapon == -1) {
         if (preferredType != -1) {
             weapon = 0;
-            if (weaponCount > 0) {
+            if (*(volatile signed char *)&aShipWeaponsTable[0][0] > weapon) {
                 for (; weapon <
-                           (signed char)aShipWeaponsTable[0][0];
+                           *(volatile signed char *)&aShipWeaponsTable[0][0];
                      weapon++) {
                     if (weaponSlots[weapon].type == preferredType) {
                         currentWeapon = weapon;

@@ -898,8 +898,8 @@ short __stdcall ReadPacketSectionData(PacketSectionHandle *handle,
                                       void *destination,
                                       unsigned int length)
 {
-    int offset;
     int end;
+    int offset;
 
     offset = (int)(handle->dataOffset + handle->position);
     end = (int)(handle->dataOffset + handle->dataSize);
