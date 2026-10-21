@@ -455,130 +455,132 @@ unsigned int DrawScrambleFrame(void)
     const ScrambleShipDetail *detail;
 
     nFrameSkipCounter--;
-    if (nFrameSkipCounter > 0)
-        return 0;
-    nFrameSkipCounter = nFrameSkip;
+    if (nFrameSkipCounter < 1) {
+        nFrameSkipCounter = nFrameSkip;
 
-    DrawSpriteDefault(&stSceneBuffer,
-                      (short)(nScrambleBackgroundRightCoordX - 1),
-                      nScrambleBackdropPositionY,
-                      pSceneScrambleBgShapePtr, 0);
-    DrawSpriteDefault(&stSceneBuffer,
-                      nScrambleBackgroundRightCoordX,
-                      nScrambleBackdropPositionY,
-                      pSceneScrambleBgShapePtr, 1);
-    DrawScrambleActor(0);
-    DrawScrambleActor(3);
-    DrawScrambleActor(4);
-    DrawScrambleActor(2);
+        DrawSpriteDefault(&stSceneBuffer,
+                          (short)(nScrambleBackgroundRightCoordX - 1),
+                          nScrambleBackdropPositionY,
+                          pSceneScrambleBgShapePtr, 0);
+        DrawSpriteDefault(&stSceneBuffer,
+                          nScrambleBackgroundRightCoordX,
+                          nScrambleBackdropPositionY,
+                          pSceneScrambleBgShapePtr, 1);
+        DrawScrambleActor(0);
+        DrawScrambleActor(3);
+        DrawScrambleActor(4);
+        DrawScrambleActor(2);
 
-    if (bScrambleCanopyClosed == 0) {
-        DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nCurrentScrambleShipPositionX + 40),
-                          (short)(nScrambleShipY - 40),
-                          pScrambleCanopyShape,
-                          nScrambleCanopyOffset);
-    }
-
-    switch (stCampaignState.playerShipType) {
-    case OBJECT_TYPE_HORNET:
-        DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nCurrentScrambleShipPositionX + 10),
-                          (short)(nScrambleShipY - 25),
-                          pScrambleShipShape,
-                          nSceneScrambleCanopyFrameValue);
-        DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
-                          nScrambleShipY,
-                          pScrambleCockpitShapePtr, 0);
-        DrawSpriteScaled(&stSceneBuffer,
-                         stScrambleCockpitDetail.x,
-                         stScrambleCockpitDetail.y,
-                         pScrambleCockpitShapePtr, 1, 0,
-                         nScrambleCockpitScale, 0);
-        break;
-    case OBJECT_TYPE_RAPIER:
-        DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nCurrentScrambleShipPositionX + 10),
-                          (short)(nScrambleShipY - 16),
-                          pScrambleShipShape,
-                          nSceneScrambleCanopyFrameValue);
-        DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
-                          nScrambleShipY,
-                          pScrambleCockpitShapePtr, 0);
-        DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nCurrentScrambleShipPositionX + 153),
-                          (short)(nScrambleShipY + 5),
-                          pScrambleCockpitShapePtr, 2);
-        DrawSpriteDefault(&stSceneBuffer,
-                          stScrambleCockpitDetail.x,
-                          stScrambleCockpitDetail.y,
-                          pScrambleCockpitShapePtr, 1);
-        break;
-    case OBJECT_TYPE_SCIMITAR:
-        DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nCurrentScrambleShipPositionX + 10),
-                          (short)(nScrambleShipY - 15),
-                          pScrambleShipShape,
-                          nSceneScrambleCanopyFrameValue);
-        DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
-                          nScrambleShipY,
-                          pScrambleCockpitShapePtr, 0);
-        DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nCurrentScrambleShipPositionX + 148),
-                          nScrambleShipY,
-                          pScrambleCockpitShapePtr, 2);
-        DrawSpriteDefault(&stSceneBuffer,
-                          stScrambleCockpitDetail.x,
-                          stScrambleCockpitDetail.y,
-                          pScrambleCockpitShapePtr, 1);
-        break;
-    case OBJECT_TYPE_RAPTOR:
-        DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nCurrentScrambleShipPositionX + 10),
-                          (short)(nScrambleShipY - 11),
-                          pScrambleShipShape,
-                          nSceneScrambleCanopyFrameValue);
-        DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
-                          nScrambleShipY,
-                          pScrambleCockpitShapePtr, 0);
-        DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nCurrentScrambleShipPositionX + 158),
-                          (short)(nScrambleShipY + 6),
-                          pScrambleCockpitShapePtr, 2);
-        DrawSpriteDefault(&stSceneBuffer,
-                          stScrambleCockpitDetail.x,
-                          stScrambleCockpitDetail.y,
-                          pScrambleCockpitShapePtr, 1);
-        break;
-    }
-
-    for (detailIndex = 0;
-         detailIndex < nSceneScrambleShipDetailCountValue;
-         detailIndex++) {
-        detailSlot = acScrambleShipDetailSlots[detailIndex];
-        detail = &aaScrambleShipDetails[
-            stCampaignState.playerShipType][detailSlot];
-        DrawSpriteDefault(&stSceneBuffer,
-                          (short)(nCurrentScrambleShipPositionX + detail->x),
-                          (short)(nScrambleShipY + detail->y),
-                          pScrambleDetailShape,
-                          detail->frame);
-    }
-
-    if (bScrambleCanopyClosed == 1) {
-        if (stScrambleOverlay.x != -1000) {
+        if (bScrambleCanopyClosed == 0) {
             DrawSpriteDefault(&stSceneBuffer,
-                              stScrambleOverlay.x,
-                              stScrambleOverlay.y,
-                              pScrambleOverlayShape, 0);
+                              (short)(nCurrentScrambleShipPositionX + 40),
+                              (short)(nScrambleShipY - 40),
+                              pScrambleCanopyShape,
+                              nScrambleCanopyOffset);
         }
-        DrawSpriteDefault(&stSceneBuffer, 100, 127,
-                          pScrambleCanopyShape,
-                          nScrambleCanopyOffset);
+
+        switch (stCampaignState.playerShipType) {
+        case OBJECT_TYPE_HORNET:
+            DrawSpriteDefault(&stSceneBuffer,
+                              (short)(nCurrentScrambleShipPositionX + 10),
+                              (short)(nScrambleShipY - 25),
+                              pScrambleShipShape,
+                              nSceneScrambleCanopyFrameValue);
+            DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
+                              nScrambleShipY,
+                              pScrambleCockpitShapePtr, 0);
+            DrawSpriteScaled(&stSceneBuffer,
+                             stScrambleCockpitDetail.x,
+                             stScrambleCockpitDetail.y,
+                             pScrambleCockpitShapePtr, 1,
+                             nScrambleCockpitAngle, 255, 0);
+            break;
+        case OBJECT_TYPE_RAPIER:
+            DrawSpriteDefault(&stSceneBuffer,
+                              (short)(nCurrentScrambleShipPositionX + 10),
+                              (short)(nScrambleShipY - 16),
+                              pScrambleShipShape,
+                              nSceneScrambleCanopyFrameValue);
+            DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
+                              nScrambleShipY,
+                              pScrambleCockpitShapePtr, 0);
+            DrawSpriteDefault(&stSceneBuffer,
+                              (short)(nCurrentScrambleShipPositionX + 153),
+                              (short)(nScrambleShipY + 5),
+                              pScrambleCockpitShapePtr, 2);
+            DrawSpriteDefault(&stSceneBuffer,
+                              stScrambleCockpitDetail.x,
+                              stScrambleCockpitDetail.y,
+                              pScrambleCockpitShapePtr, 1);
+            break;
+        case OBJECT_TYPE_SCIMITAR:
+            DrawSpriteDefault(&stSceneBuffer,
+                              (short)(nCurrentScrambleShipPositionX + 10),
+                              (short)(nScrambleShipY - 15),
+                              pScrambleShipShape,
+                              nSceneScrambleCanopyFrameValue);
+            DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
+                              nScrambleShipY,
+                              pScrambleCockpitShapePtr, 0);
+            DrawSpriteDefault(&stSceneBuffer,
+                              (short)(nCurrentScrambleShipPositionX + 148),
+                              nScrambleShipY,
+                              pScrambleCockpitShapePtr, 2);
+            DrawSpriteDefault(&stSceneBuffer,
+                              stScrambleCockpitDetail.x,
+                              stScrambleCockpitDetail.y,
+                              pScrambleCockpitShapePtr, 1);
+            break;
+        case OBJECT_TYPE_RAPTOR:
+            DrawSpriteDefault(&stSceneBuffer,
+                              (short)(nCurrentScrambleShipPositionX + 10),
+                              (short)(nScrambleShipY - 11),
+                              pScrambleShipShape,
+                              nSceneScrambleCanopyFrameValue);
+            DrawSpriteDefault(&stSceneBuffer, nCurrentScrambleShipPositionX,
+                              nScrambleShipY,
+                              pScrambleCockpitShapePtr, 0);
+            DrawSpriteDefault(&stSceneBuffer,
+                              (short)(nCurrentScrambleShipPositionX + 158),
+                              (short)(nScrambleShipY + 6),
+                              pScrambleCockpitShapePtr, 2);
+            DrawSpriteDefault(&stSceneBuffer,
+                              stScrambleCockpitDetail.x,
+                              stScrambleCockpitDetail.y,
+                              pScrambleCockpitShapePtr, 1);
+            break;
+        }
+
+        if (nSceneScrambleShipDetailCountValue > 0) {
+            detailIndex = 0;
+            do {
+                detailSlot = acScrambleShipDetailSlots[detailIndex];
+                detail = &aaScrambleShipDetails[
+                    stCampaignState.playerShipType][detailSlot];
+                DrawSpriteDefault(&stSceneBuffer,
+                                  (short)(nCurrentScrambleShipPositionX + detail->x),
+                                  (short)(nScrambleShipY + detail->y),
+                                  pScrambleDetailShape,
+                                  detail->frame);
+                detailIndex++;
+            } while (detailIndex < nSceneScrambleShipDetailCountValue);
+        }
+
+        if (bScrambleCanopyClosed == 1) {
+            if (stScrambleOverlay.x != -1000) {
+                DrawSpriteDefault(&stSceneBuffer,
+                                  stScrambleOverlay.x,
+                                  stScrambleOverlay.y,
+                                  pScrambleOverlayShape, 0);
+            }
+            DrawSpriteDefault(&stSceneBuffer, 100, 127,
+                              pScrambleCanopyShape,
+                              nScrambleCanopyOffset);
+        }
+        RefreshMemoryStatusOverlay();
+        DIBslam();
+        DIBslamReal();
     }
-    RefreshMemoryStatusOverlay();
-    DIBslam();
-    DIBslamReal();
     return 0;
 }
 
@@ -631,7 +633,7 @@ unsigned int scramble(void)
             nScrambleShipY = 96;
             stScrambleCockpitDetail.x = -95;
             stScrambleCockpitDetail.y = 71;
-            nScrambleCockpitScale = 316;
+            nScrambleCockpitAngle = 316;
             break;
         case OBJECT_TYPE_RAPIER:
             nCurrentScrambleShipPositionX = -30;
@@ -700,8 +702,8 @@ unsigned int scramble(void)
                 DrawScrambleFrame();
                 switch (stCampaignState.playerShipType) {
                 case OBJECT_TYPE_HORNET:
-                    nScrambleCockpitScale =
-                        (short)(nScrambleCockpitScale + 2);
+                    nScrambleCockpitAngle =
+                        (short)(nScrambleCockpitAngle + 2);
                     break;
                 case OBJECT_TYPE_RAPIER:
                 case OBJECT_TYPE_RAPTOR:
@@ -815,7 +817,7 @@ unsigned int landing(signed char damageLevel)
         nScrambleShipY = 140;
         stScrambleCockpitDetail.x = 69;
         stScrambleCockpitDetail.y = 115;
-        nScrambleCockpitScale = 360;
+        nScrambleCockpitAngle = 360;
         break;
     case OBJECT_TYPE_RAPIER:
         nCurrentScrambleShipPositionX = 124;
@@ -880,8 +882,8 @@ unsigned int landing(signed char damageLevel)
                 (short)(stScrambleOverlay.x - 4);
             switch (stCampaignState.playerShipType) {
             case OBJECT_TYPE_HORNET:
-                nScrambleCockpitScale =
-                    (short)(nScrambleCockpitScale - 2);
+                nScrambleCockpitAngle =
+                    (short)(nScrambleCockpitAngle - 2);
                 break;
             case OBJECT_TYPE_RAPIER:
             case OBJECT_TYPE_RAPTOR:

@@ -9,7 +9,7 @@ short nEnemySighting = 0x7fff; /* 0x00465c7c */
 
 /* Linker commons defined here; LINK orders them by identifier hash. */
 unsigned char *pScrambleDetailShape; /* 0x005a86bc */
-short nScrambleCockpitScale; /* 0x005a86c0 */
+short nScrambleCockpitAngle; /* 0x005a86c0 */
 ShortPoint stScrambleCockpitDetail; /* 0x005a86c4 */
 short nFuneralCasketPositionX; /* 0x005a86c8 */
 short nFuneralCasketPosY; /* 0x005a86ca */

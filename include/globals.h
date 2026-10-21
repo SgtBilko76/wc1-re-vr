@@ -672,7 +672,7 @@ extern ShortPoint aFuneralParticlesArray[7]; /* 0x005a86f0 */
 extern Viewport *pScrambleView; /* 0x005a86b4 */
 extern short nSceneScrambleCanopyFrameValue; /* 0x005a86b8 */
 extern unsigned char *pScrambleDetailShape; /* 0x005a86bc */
-extern short nScrambleCockpitScale; /* 0x005a86c0 */
+extern short nScrambleCockpitAngle; /* 0x005a86c0 */
 extern ShortPoint stScrambleCockpitDetail; /* 0x005a86c4 */
 extern unsigned char *pCurrentConversationSpecialShape; /* 0x005a86ec */
 extern short nFuneralCasketPositionX; /* 0x005a86c8 */

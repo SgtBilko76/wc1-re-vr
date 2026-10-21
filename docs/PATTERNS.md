@@ -3391,3 +3391,56 @@ Shapes recovered with this method:
   remain 11/56. Relocation counts within all five changed functions are
   unchanged. The clean-build and post-verification hashes agree:
   `2b60896813798730068f1903dc6f9b2b90bea9df63745193e667b019ed7d0b15`.
+- `DrawScrambleFrame` draws when the decremented frame-skip counter is less
+  than one, then reaches the unconditional return. The positive drawing
+  guard recovers the original compare-to-one and forward `JGE`; an early
+  return for a positive counter emits a different branch sequence.
+  The Hornet cockpit-detail call passes the word at `0x005a86c0` as its
+  angle and literal 255 as its scale. The former reconstruction passed
+  angle zero and used that word as scale. Both the original pushes and
+  `DrawSpriteScaled`'s argument reads establish the correct order.
+  Rename the word to `nScrambleCockpitAngle`, retaining its declaration,
+  definition, type and address annotations. The old and new common-symbol
+  hash keys, 424 and 398, both sort between `pScrambleDetailShape` (105)
+  and `stScrambleCockpitDetail` (473), preserving its storage position.
+  A clean rebuild proves the rename alone leaves the executable identical.
+  Guard the detail loop with its positive count before initializing the
+  index, then use a do/while loop. Together these changes reduce differing
+  encodings from 177 to two, raise mnemonic similarity from 96.55% to
+  99.61%, and raise literal matching from 345 to 1,006 of 1,008 bytes.
+  The remaining comparison reverses its operands and uses `JG` instead of
+  `JL`; moving the detail locals does not change it. The unit's compiler
+  context also gains three literal bytes in `funeral_sequence`, from 144
+  to 147 of 1,792; its differing encodings fall from 411 to 410 and its
+  mnemonic similarity rises from 96.80% to 97.71%.
+- In `EmitTextString`, spell the guarded character loop as an explicit
+  nonzero test followed by do/while. Its own 48 bytes are unchanged, but
+  this restores one encoding in the later scanner. Declaring `row` first
+  and `grid` after `object` in `draw_3d_scanner` restores ESI for the row
+  and EDI for the grid pointer. Together they make all 736 scanner bytes
+  exact, up from 724. Moving only the grid declaration leaves one byte
+  different. Cursor/callback locals in the text emitter provide no further
+  improvement and are discarded.
+  Qualified escape reads and a delayed second escape read in
+  `AnimateScrambleWalk` regress layout or literal matching. An explicit
+  decremented-counter local does not improve that routine and loses two
+  file positions when combined with the selected renderer. Qualifying its
+  counter read also regresses the file. None of these trials is retained.
+  All other declaration permutations in `ReserveContiguousPaletteEntries`
+  either leave its output unchanged or lose six matching bytes.
+  Only three function rows change in the full report. Normalized exact
+  functions rise from 1,350 to 1,351 of 1,550; same-size differences fall
+  from 195 to 194, and five size differences remain. Mean mnemonic
+  similarity is 99.68%, with three functions below 90%. No existing exact
+  function is lost, and function spans and compilation-unit placements are
+  unchanged. Relocation counts within the affected functions are unchanged.
+  Strict whole-file matching rises by 741 positions, from 483,960 to
+  484,701 of 518,656 (93.3104% to 93.4533%); 33,955 positions still differ.
+  Code gains 676 matching bytes and relocations gain 65. The `.rdata`,
+  `.data` and `.idata` sections remain literally exact. The continuous
+  matching prefix is still 544 bytes, with the first difference at `0x220`.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `079ee72d4590f077a32ae540210ee4f7048db3bb01f0dd97f1fcc3a90535afb6`.

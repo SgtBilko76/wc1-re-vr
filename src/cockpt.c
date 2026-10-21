@@ -112,9 +112,11 @@ void EmitTextString(void (__stdcall *writer)(int), const char *text)
     short character;
 
     character = (signed char)*text++;
-    while (character != 0) {
-        writer((short)character);
-        character = (signed char)*text++;
+    if (character != 0) {
+        do {
+            writer((short)character);
+            character = (signed char)*text++;
+        } while (character != 0);
     }
 }
 
@@ -1677,11 +1679,11 @@ short get_color(short object, unsigned short *colour)
 /* Function start: 0x415CE0 */
 unsigned int draw_3d_scanner(void)
 {
-    const int *grid;
+    int row;
     SphericalVector spherical;
     unsigned short colour;
     short object;
-    int row;
+    const int *grid;
     int gridValue;
 
     if (bCockpitlessView != 0) {
