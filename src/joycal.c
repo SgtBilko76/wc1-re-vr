@@ -52,6 +52,8 @@ void LoadJoystickCalibrationFile(short horizontalRange,
     unsigned short minimumX;
     unsigned short maximumY;
     int rangeX;
+    int leftScale;
+    int upScale;
 
     activeDevice = -1;
     failed = 1;
@@ -119,16 +121,18 @@ void LoadJoystickCalibrationFile(short horizontalRange,
 
         rangeX = horizontalRange;
         rangeY = verticalRange;
-        nCurrentJoystickLeftScale = nJoystickCalibrationMinimumX / rangeX;
-        nJoystickUpScale = nJoystickCalibrationMinimumY / rangeY;
+        leftScale = nJoystickCalibrationMinimumX / rangeX;
+        upScale = nJoystickCalibrationMinimumY / rangeY;
+        nCurrentJoystickLeftScale = leftScale;
+        nJoystickUpScale = upScale;
         if (nCurrentJoystickLeftScale == 0)
             nCurrentJoystickLeftScale++;
         if (nJoystickUpScale == 0)
             nJoystickUpScale++;
-        nJoystickRightScale = nJoystickCalibrationMinimumX / rangeX;
+        nJoystickRightScale = leftScale;
         if (nJoystickRightScale == 0)
             nJoystickRightScale++;
-        nJoystickDownScaleValue = nJoystickCalibrationMinimumY / rangeY;
+        nJoystickDownScaleValue = upScale;
         if (nJoystickDownScaleValue == 0)
             nJoystickDownScaleValue++;
 

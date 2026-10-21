@@ -165,10 +165,10 @@ unsigned int ShowCarrierLaunchSequence(signed char sceneObject)
     unsigned char *carrierShape;
     unsigned char *actorShape;
     unsigned char *fighterShape;
+    short fighterScreenY;
     short approachScale;
     short approachDistance;
     short fighterScreenX;
-    short fighterScreenY;
     short carrierScreenX;
     short actorX;
     short actorY;

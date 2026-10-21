@@ -2730,3 +2730,34 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `d58c403989c82c5d1f8991fb8d9b9110fe2a0759700b9a47e76514fd5da319fb`.
+- Recover launch and calibration-loader sizes as another pair. Declaring
+  `fighterScreenY` before `approachScale` restores
+  `ShowCarrierLaunchSequence`'s 2,064-byte aligned span, with 95.98% mnemonic
+  similarity. In `LoadJoystickCalibrationFile`, capture the two division
+  results as `leftScale` and `upScale`, declared after `rangeX`. Publish them
+  as the left/up scales, and reuse the unadjusted results for the right/down
+  scales before their separate zero corrections, as the original does.
+  This restores its 784-byte span, although mnemonic similarity falls to
+  93.90%. The declaration-count change also improves `ReadCalibratedJoystick`
+  from 92.56% to 96.69% and from 74 differing encodings to 73.
+  These are the full report's only three changed rows. All 1,334 normalized
+  exact matches remain, and size differences fall from twelve to ten; all
+  remaining reported size differences are in the audio library, including
+  the documented 26-byte sample-converter/import boundary artifact.
+  Moving the left-scale global among seventeen nearby declaration positions
+  leaves the loader's size error. Qualified conditional scale stores and
+  explicit scaled ranges likewise leave the excess; those probes are not
+  retained. Launch frame-local moves can also restore its aligned size, but
+  leave more differing encodings than the retained fighter-Y declaration.
+  Strict whole-file matching rises by 19,339 positions, from 446,314 to
+  465,653 of 518,656 (86.0520% to 89.7807%). The remaining 53,003 differences
+  comprise 38,955 in `.text`, 14,046 in `.reloc`, and two in the headers.
+  The code section now matches at 90.2954%; `.rdata`, `.data`, and `.idata`
+  remain literally exact. All raw section sizes still agree; the relocation
+  section's virtual size is now two bytes short. Compilation-unit ownership
+  and link order are unchanged.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `7209e0be09ccd451f325b8343dd1fe682fa473556b4dc3689a6a9c3e5d4602c0`.
