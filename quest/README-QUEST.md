@@ -1,14 +1,19 @@
-# Wing Commander VR (Meta Quest) — stage 1
+# Wing Commander VR (Meta Quest 3) — 1.0.0
 
 Standalone Quest build of the wc1-re reconstruction (SDL2 port of the 1990 DOS
-original).  Stage 1 shows the game on a large world-fixed screen in the
-headset, with a laser pointer for menus, a VR keyboard for names, and the Touch
-controllers as a flight stick.  Stereo 3D space and head-look come in stage 2.
+original).  Space flight is in stereo 3D with head-look: ships are placed at
+their real depth, stars sit at infinity, and the original cockpit art is wrapped
+onto a 3D cockpit shell around you.  Menus, rooms and briefings appear on a big
+floating screen with a laser pointer, there is a VR keyboard for names, and the
+Touch controllers are the flight stick.
+
+The game data is **not** included; you need your own copy of the DOS game
+(GOG *Wing Commander*).
 
 ## Install
 
-1. Install the APK:
-   `adb install -r WingCommanderVR.apk`
+1. Install the APK (SideQuest, or):
+   `adb install -r WingCommanderVR-1.0.0.apk`
 2. Copy the game data. Use the GOG *Wing Commander* (DOS) installer and unpack
    it on the PC, e.g. `innoextract setup_wing_commander_1.0_(28045).exe`.
    Copy `WC.EXE` and the whole `GAMEDAT` folder to the headset:

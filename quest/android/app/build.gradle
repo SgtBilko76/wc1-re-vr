@@ -11,8 +11,8 @@ android {
         applicationId 'com.bilko.wc1vr'
         minSdk 29
         targetSdk 32
-        versionCode 1
-        versionName '0.1.0-stage1'
+        versionCode 2
+        versionName '1.0.0'
         ndk { abiFilters 'arm64-v8a' }
         externalNativeBuild {
             cmake {
