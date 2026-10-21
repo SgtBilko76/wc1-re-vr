@@ -2897,3 +2897,50 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. Clean-build and post-verification hashes agree:
   `43fdbe15ecaad4ccb7fc8903fc8eb3e16be769b600b69d209a88bcde9c7945df`.
+- The logic owner declares `nTgtRange` immediately before `nTargetShip`.
+  Other owners retain their previous declaration order. This restores
+  `in_danger`'s complete 176-byte span, improves `attacker_in_range` from
+  85.42% to 95.83% mnemonic similarity and from 36 differing encodings to
+  eleven, and reduces `scan_for_enemy` from four differing encodings to two.
+  `close_behind` regresses from exact to two differing bytes in its unchanged
+  32-byte span. Raw matches across these four routines increase by 75:
+  32 to 30, 232 to 238, 83 to 144, and 166 to 176 bytes respectively for
+  close-behind, enemy scanning, attacker range, and danger detection.
+  Twelve range-declaration positions in the maneuver owner and twenty-four
+  in logic were checked. The closest alternative gains 71 positions without
+  regressing close-behind, but the retained placement matches four more file
+  positions overall. Removing close-behind's volatile parameter qualifier,
+  or replacing it with const, adds sixteen bytes; neither probe is retained.
+- Voice control omits unused sample/sound records and state, stream records
+  and interfaces, and file-streaming records, interfaces, and state from its
+  `ix.h` scope. It retains the stream count used by mix recalculation. Other
+  owners retain their previous declarations; function bodies, record layouts,
+  storage, flags, and link order are unchanged. These are measured compiler
+  contexts, not recovered original header text.
+  `ix_dspv_set_active` loses its excess byte, restoring the original positions
+  of the first seven voice routines. Raw binary-comp comparisons establish
+  literal equality of all seven complete spans, the consecutive 731 bytes
+  at `0x004467C5`–`0x00446A9F`. Exact voice spans increase from four to
+  nine of fourteen. There are tradeoffs: bit-depth setting gains one byte,
+  and position, pan, frequency, and bit-depth setting lose literal matches.
+  Frequency still reports normalized exact despite its shifted position.
+  The voice change adds 307 matching file positions overall.
+  All seven combinations of the unused declaration groups and eighteen
+  further voice-count declaration positions were checked. None improves on
+  the retained combination. Separate dot-product expression permutations
+  leave its call order unchanged. A staged sum makes that routine exact but
+  disturbs two rotations; their local-order permutations do not recover a
+  whole-file gain. Scoping the scene-command opcode inside its loop also
+  leaves its output unchanged. These body probes are discarded.
+  The combined report changes only six rows: 1,336 of 1,550 normalized exact
+  functions, 207 same-size differences, and seven size differences remain.
+  Mean mnemonic similarity rises to 99.64%; four functions remain below 90%.
+  Strict whole-file matching rises by 382 positions, from 469,896 to 470,278
+  of 518,656 (90.5988% to 90.6724%); 48,378 positions still differ. The
+  continuous matching prefix remains 292 bytes and the first difference
+  remains at file offset `0x124`.
+  Clean native and modern builds, source/address audits, the order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The post-verification executable retains its build hash:
+  `48fe9cfc26a799dca18a207be0c9d84c29f129232e67a5b22a8293984ae94652`.

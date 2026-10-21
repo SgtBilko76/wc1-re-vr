@@ -103,6 +103,9 @@ private:
     friend int ix_dsps_get_buffer_free(int);
 };
 
+/* Voice control retains its own records and shared counts, without the
+ * unused sound, stream, and file-streaming declarations below. */
+#ifndef WC1_IX_DSPV_SOURCE
 /* Sample and sound layouts are fixed by system.cpp/sound.cpp field accesses. */
 struct IxSample {
     unsigned int flags;           /* +0x00 */
@@ -176,6 +179,8 @@ struct IxSound {
     void ix_sound_set_delete_on_stop(int enabled);
 };
 
+#endif
+
 /* Keep each owner's unused external state out of its declaration scope:
  * VC++ 4.20's code selection also depends on these declarations and their
  * order. Sound uses only the two voice counts and three list heads here. */
@@ -187,6 +192,7 @@ extern IxSound *pIdleSoundList;               /* 0x0059860C */
 extern IxSound *pPlayingSoundList;            /* 0x0059861C */
 extern IxSound *pQueuedSoundList;             /* 0x00598620 */
 #else
+#ifndef WC1_IX_DSPV_SOURCE
 extern unsigned int dwSoundStateFlags;       /* 0x00598608 */
 extern IxSound *pIdleSoundList;               /* 0x0059860C */
 extern IxSample *pSamples;                   /* 0x00598610 */
@@ -194,6 +200,8 @@ extern int nActiveVoices;                    /* 0x00598614 */
 extern int nSystemVoices;                    /* 0x00598618 */
 extern IxSound *pPlayingSoundList;            /* 0x0059861C */
 extern IxSound *pQueuedSoundList;             /* 0x00598620 */
+#endif
+
 extern void *(__cdecl *pIxMalloc)(unsigned int);
 extern void (__cdecl *pIxFree)(void *);
 
@@ -238,6 +246,7 @@ void ix_dspv_recalc_mix(int voice);                            /* 0x00446EBF */
  * Streams occupy voice slots AFTER the regular voices:
  * voice[voice_count + stream_index].
  * -------------------------------------------------------------------------- */
+#ifndef WC1_IX_DSPV_SOURCE
 enum IxStreamFlags {
     IX_STREAM_ALLOCATED = 0x01,
     IX_STREAM_PLAYING   = 0x02,
@@ -269,12 +278,18 @@ private:
     friend void ix_dsps_unlock(int);
 };
 
+#endif
+
 #ifndef WC1_IX_SOUND_SOURCE
+#ifndef WC1_IX_DSPV_SOURCE
 extern IxStream streams[];         /* 0x00598138 */
+#endif
 #ifndef WC1_IX_DSPS_SOURCE
 extern int      nStreamCount;      /* 0x00598130 */
 #endif
+#ifndef WC1_IX_DSPV_SOURCE
 extern int      nAllocatedStreams; /* 0x00598134 */
+#endif
 #endif
 
 #if !defined(WC1_IX_DSPV_SOURCE) && !defined(WC1_IX_SOUND_SOURCE)
@@ -286,6 +301,7 @@ extern int     nVoicesAllocated;   /* 0x00598604 */
 #endif
 
 #define IX_DSPS_FILE "D:\\rnd\\prj\\ix\\win95\\dsp\\dsps.cpp"
+#ifndef WC1_IX_DSPV_SOURCE
 void ix_dsps_alloc(int stream, unsigned int size, int frequency,
                    int bitsPerSample, int channels); /* 0x004451B5 */
 void ix_dsps_free(int stream);                   /* 0x0044546B */
@@ -298,6 +314,8 @@ int  ix_dsps_get_buffer_free(int stream);        /* 0x00445A6F */
 void ix_dsps_lock(int stream, unsigned int requestedBytes,
                   unsigned char **buffer, unsigned int *lockedBytes); /* 0x00445CDB */
 void ix_dsps_unlock(int stream);                 /* 0x00445E3C */
+
+#endif
 
 /* --------------------------------------------------------------------------
  * Mixer (DirectSound), DSP core, system, sound, sample.
@@ -361,6 +379,7 @@ extern "C" int __fastcall ix_sound_is_playing(IxSound *sound); /* 0x00448678 */
  *   bit2 0x004 playing      bit3 0x008 paused
  *   bit7 0x080 has audio    bit10 0x400 request flag (meaning TBD)
  * -------------------------------------------------------------------------- */
+#ifndef WC1_IX_DSPV_SOURCE
 enum IxStreamFileFlags {
     IX_STREAM_FILE_OPEN    = 0x01,
     IX_STREAM_FILE_READING = 0x02
@@ -525,9 +544,11 @@ extern "C" unsigned int ix_file_write(FILE *file, const void *source,
                                        unsigned int bytes); /* 0x0046173E */
 extern "C" long ix_file_size(FILE *file);        /* 0x00461764 */
 
-/* Sound-system voice allocation does not use streamer state. */
+#endif
+
+/* Voice control and sound-system voice allocation do not use streamer state. */
 #if !defined(WC1_IX_DSPS_SOURCE) && !defined(WC1_IX_SOUND_SOURCE) && \
-    !defined(WC1_IX_SYSTEM_SOURCE)
+    !defined(WC1_IX_SYSTEM_SOURCE) && !defined(WC1_IX_DSPV_SOURCE)
 extern unsigned int *pStreamerPacketOffsetTable;
 extern unsigned int dwStreamThreadTick;
 extern FILE *pStreamerPackFile;
