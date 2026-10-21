@@ -2593,7 +2593,7 @@ Shapes recovered with this method:
   normalized exact functions rise from 1,324 to 1,325 out of 1,550, and size
   differences fall from 20 to 18. Strict whole-file matching rises from
   355,656 to 432,850 positions out of 518,656 (68.5726% to 83.4561%).
-  The code section and entry point remain exact; the relocation section is
+  The code section size and entry point remain exact; the relocation section is
   still four bytes too large, and 85,806 file positions still differ.
   The clean native build, modern build, source/address audits, order report,
   collector tests, and `make verify` pass. Both value checks cover all 1,550
