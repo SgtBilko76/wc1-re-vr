@@ -238,6 +238,11 @@ enum IxStreamFlags {
     IX_STREAM_LOCKED    = 0x04
 };
 
+#ifdef WC1_IX_DSPS_SOURCE
+/* The stream owner's bounds comparisons depend on this early declaration. */
+extern int      nStreamCount;      /* 0x00598130 */
+#endif
+
 struct IxStream {                       /* 0x38 bytes */
 private:
     unsigned int   flags;               /* +0x00 */
@@ -265,14 +270,10 @@ private:
 
 #ifndef WC1_IX_SOUND_SOURCE
 extern IxStream streams[];         /* 0x00598138 */
-/* The stream owner needs its allocation count declared before its limit. */
-#ifdef WC1_IX_DSPS_SOURCE
-extern int      nAllocatedStreams; /* 0x00598134 */
+#ifndef WC1_IX_DSPS_SOURCE
 extern int      nStreamCount;      /* 0x00598130 */
-#else
-extern int      nStreamCount;      /* 0x00598130 */
-extern int      nAllocatedStreams; /* 0x00598134 */
 #endif
+extern int      nAllocatedStreams; /* 0x00598134 */
 #endif
 
 #if !defined(WC1_IX_DSPV_SOURCE) && !defined(WC1_IX_SOUND_SOURCE)
@@ -538,6 +539,8 @@ extern IxStreamerFileEntry *pStreamFileEntries;
 extern IxStreamerHeader *pStreamerPackageInfo;
 extern IxStreamerAudioChunk *pStreamedMusicAudioChunks;
 extern IxStreamerBranch *pMusicStreamBranchList;
+/* This order preserves thread.cpp's cached-chunk comparison operands. */
+extern unsigned int nIxStreamerCurrentFileChunk; /* 0x00597CD8 */
 extern IxStreamerFileChunk *pStreamFileBlocks;
 extern CRITICAL_SECTION csStreamerFileList;
 extern CRITICAL_SECTION csIxStreamerThread;
@@ -545,7 +548,6 @@ extern unsigned int nStreamerAudioBlock;
 extern DWORD dwIxStreamerThreadId;
 extern "C" unsigned int dwIxStreamerStatus;
 extern HANDLE hStreamerWakeupEvent;
-extern unsigned int nIxStreamerCurrentFileChunk;
 extern unsigned int dwStreamBytesPerSecond;
 extern unsigned short nStreamerVolume;
 extern char cStreamerBranchTag;

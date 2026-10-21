@@ -2635,3 +2635,32 @@ Shapes recovered with this method:
   all 1,550 functions; the existing call/global-access diagnostics remain
   11/56. The executable hash is unchanged after verification:
   `0d8b7cad8d0ecb5f1651098829584924a8553f3ec0d209a631ff469a87fa8d29`.
+- Declare `nIxStreamerCurrentFileChunk` immediately before the file-chunk
+  table it indexes. This makes the cached-chunk comparison load the global
+  before comparing the local, recovering `ix_thread_handle_file_chunk`'s
+  original one-byte-shorter body. The unit's final padding grows by that byte,
+  so `ix_thread_get_audio_chunk_size` also becomes exact. Moving this shared
+  declaration changes no other function's report row.
+- For the stream owner, declare `nStreamCount` before `IxStream`. This keeps
+  the six earlier exact stream routines and additionally matches
+  `ix_dsps_get_buffer_free` and `ix_dsps_lock`. The unlock routine's remaining
+  excess falls from three bytes to one. This supersedes the earlier placement
+  after `nAllocatedStreams`; storage definitions, types, and addresses stay
+  unchanged. Moving the count before the voice types instead fixes release
+  but loses allocation's exact bounds check; moving its voice-pointer local
+  into the allocation body does not recover that check.
+  Voice-count declaration moves trade existing exact bounds checks for others,
+  and unnamed voice prototype parameters do not change those results. All
+  six local declaration orders leave `ix_thread_service_streams`' three
+  differing encodings unchanged. These probes are not retained.
+  The full report changes only those five stream/thread rows: normalized
+  exact functions rise from 1,327 to 1,331 out of 1,550, and size differences
+  fall from eighteen to fourteen. Strict whole-file matching rises from
+  432,852 to 434,707 positions out of 518,656 (83.4565% to 83.8141%);
+  83,949 positions still differ. Compilation-unit ownership and link order
+  are unchanged.
+  The clean native and modern builds, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `c3c9bd31a7dc96bb10e78f5e67bb9fb4e79821192e398c1630e22dcc24d906de`.
