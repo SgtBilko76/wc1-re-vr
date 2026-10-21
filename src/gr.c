@@ -1179,17 +1179,18 @@ typedef struct ShapeFrameExtents {
 void GetShapeFrameCorners(unsigned char *shape, int frame, int x, int y,
                           ShortPoint *corners, int *cornerCount)
 {
-    ShapeFrameExtents *extents;
     int frameOffset;
-    int left;
-    int right;
-    int top;
-    int bottom;
 
     *cornerCount = 0;
     CheckHeapBlockSignature(shape);
     frameOffset = frame * 4 + 4;
     if ((int)*(unsigned short *)(shape + 4) >= frameOffset) {
+        ShapeFrameExtents *extents;
+        int left;
+        int right;
+        int top;
+        int bottom;
+
         shape += *(int *)(shape + frameOffset);
         extents = (ShapeFrameExtents *)shape;
         left = extents->left;
@@ -1238,22 +1239,8 @@ short GetTransformedShapeBounds(Viewport *viewport, short x, short y,
                               short angle, short scale, short flip,
                               short *bounds)
 {
-    ShapeFrameExtents *frameData;
-    int frameOffset;
-    int leftExtent;
-    int rightExtent;
-    int topExtent;
-    int bottomExtent;
     int absoluteCosine;
-    int absoluteSine;
-    int horizontalSpan;
-    int verticalSpan;
-    int transformedHeight;
-    int transformedWidth;
-    int left;
-    short top;
-    short right;
-    short bottom;
+    int frameOffset;
     int intersects = 0;
 
     if (shape == 0) {
@@ -1264,6 +1251,21 @@ short GetTransformedShapeBounds(Viewport *viewport, short x, short y,
     CheckHeapBlockSignature(shape);
     frameOffset = frame * 4 + 4;
     if (frameOffset <= (int)*(unsigned short *)(shape + 4)) {
+        ShapeFrameExtents *frameData;
+        int leftExtent;
+        int rightExtent;
+        int topExtent;
+        int bottomExtent;
+        int absoluteSine;
+        int horizontalSpan;
+        int verticalSpan;
+        int transformedHeight;
+        int transformedWidth;
+        int left;
+        short top;
+        short right;
+        short bottom;
+
         frameData = (ShapeFrameExtents *)(
             shape + *(int *)(shape + frameOffset));
         leftExtent = frameData->left;

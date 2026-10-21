@@ -2866,3 +2866,34 @@ Shapes recovered with this method:
   all 1,550 functions with zero mismatches or skips; existing call/global-access
   diagnostics remain 11/56. Clean-build and post-verification hashes agree:
   `55504d9fe3cb2774aca34a9c01d0d4ba3dfaff415573ea9a544411f1bf36687f`.
+- Narrow the shape-frame locals to the valid-frame branch in
+  `GetShapeFrameCorners`. In `GetTransformedShapeBounds`, retain
+  `absoluteCosine`, `frameOffset`, and `intersects` at function scope in
+  that order, and move the remaining frame locals into the valid-frame
+  branch. These measured declaration scopes improve register allocation;
+  they do not establish the original source spelling. Types, expressions,
+  calls, compilation-unit ownership, and link order remain unchanged.
+  Frame-corner mnemonic similarity rises from 90.70% to 92.86%, retaining
+  26 differing encodings and its 144-byte span. Transformed bounds rises
+  from 86.58% to 95.30%, reducing differing encodings from 108 to 101 and
+  retaining its 432-byte span. Separate raw binary-comp comparisons at the
+  original positions improve from 68 to 71 equal bytes for frame corners
+  and from 141 to 201 for transformed bounds. Neither span is literally
+  exact; the normalized mnemonic percentages measure a different property.
+  Other extent, coefficient, dimension, pointer, and local-scope permutations
+  do not improve on these candidates. A separate `AllocateViewport` probe
+  combines the original signed pretest loop, row-table reload, and earlier
+  offset initialization with eight local layouts. All eight add sixteen
+  bytes and regress whole-file matching, so those probes are discarded.
+  Only the two shape-function rows change in the full report. Normalized
+  exact matches remain 1,336 of 1,550, with 207 same-size differences and
+  seven size differences. Functions below 90% fall from five to four.
+  Strict whole-file matching rises by 63 positions, from 469,833 to
+  469,896 of 518,656 (90.5866% to 90.5988%); 48,760 positions still differ.
+  This counts equal positions throughout the file. The continuous matching
+  prefix remains 292 bytes, with the first difference at offset `0x124`.
+  Clean native and modern builds, source/address audits, the order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. Clean-build and post-verification hashes agree:
+  `43fdbe15ecaad4ccb7fc8903fc8eb3e16be769b600b69d209a88bcde9c7945df`.
