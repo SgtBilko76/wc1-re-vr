@@ -23,7 +23,10 @@
 #include "wc1.h"
 #include "../quest/quest_xr.h"
 
+#include "../quest/quest_keyboard_layout.h"
+
 #include <android/log.h>
+#include <zlib.h>
 #include <pthread.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -164,8 +167,62 @@ static int SDLCALL QuestPadRumble(void *userdata, Uint16 low, Uint16 high)
     return 0;
 }
 
+static void QuestLoadKeyboard(void)
+{
+    uLongf size = (uLongf)QUEST_KEYBOARD_WIDTH * QUEST_KEYBOARD_HEIGHT * 4;
+    unsigned char *pixels;
+    void *packed;
+    size_t packedSize = 0;
+
+    packed = SDL_LoadFile("keyboard.rgba.z", &packedSize);
+    if (packed == 0) {
+        fprintf(stderr, "keyboard asset missing: %s\n", SDL_GetError());
+        return;
+    }
+    pixels = (unsigned char *)SDL_malloc(size);
+    if (pixels != 0 &&
+        uncompress(pixels, &size, (const Bytef *)packed, (uLong)packedSize) == Z_OK &&
+        size == (uLongf)QUEST_KEYBOARD_WIDTH * QUEST_KEYBOARD_HEIGHT * 4) {
+        QuestXr_SetKeyboardImage(pixels);
+        printf("keyboard loaded\n");
+    } else {
+        fprintf(stderr, "keyboard asset corrupt\n");
+    }
+    SDL_free(pixels);
+    SDL_free(packed);
+}
+
+static int g_textInputDepth;
+/* One-shot shift: on at the start of a field and after a space, so names
+ * come out capitalised.  ReadTextInput (trainsim.c) consumes it when it
+ * decides the case of a letter. */
+static int g_shiftOneShot;
+
+int SdlQuestTakeShift(void)
+{
+    int active = g_textInputDepth > 0 && g_shiftOneShot;
+
+    if (active) {
+        g_shiftOneShot = 0;
+        QuestXr_SetKeyboardShift(0);
+    }
+    return active;
+}
+
+void SdlQuestSetTextInput(int active)
+{
+    g_textInputDepth += active ? 1 : -1;
+    if (g_textInputDepth < 0)
+        g_textInputDepth = 0;
+    g_shiftOneShot = g_textInputDepth > 0;
+    QuestXr_SetKeyboardShift(g_shiftOneShot);
+    QuestXr_SetKeyboardVisible(g_textInputDepth > 0);
+    printf("text input %s\n", g_textInputDepth > 0 ? "on" : "off");
+}
+
 void SdlQuestCreatePad(void)
 {
+    QuestLoadKeyboard();
     SDL_VirtualJoystickDesc desc;
 
     SDL_zero(desc);
@@ -239,6 +296,155 @@ static void TapKey(SDL_Keycode key)
     PushKey(key, 0);
 }
 
+/* Text keys go through a FIFO released one per 60 ms: the game's key wait
+ * (WaitForInputKey) keeps the first key of a pump and drains the rest. */
+static SDL_Keycode g_typeQueue[256];
+static int g_typeHead, g_typeTail;
+static Uint32 g_typeNext;
+
+static void QueueTypedKey(SDL_Keycode key)
+{
+    int next = (g_typeTail + 1) % 256;
+    if (next != g_typeHead) {
+        g_typeQueue[g_typeTail] = key;
+        g_typeTail = next;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Developer command file: drive menus headless over adb.               */
+/*   adb shell "echo 'click 160 100' > /sdcard/WingCommander/vrcmd"      */
+/* One command runs every 400 ms: click X Y | rclick X Y | key NAME |    */
+/* type TEXT | wait.  The file is deleted once read.                     */
+/* ------------------------------------------------------------------ */
+
+static char g_devCommands[2048];
+static size_t g_devCommandPos;
+static Uint32 g_devNextPoll;
+static Uint32 g_devNextCommand;
+static int g_devReleaseX = -1, g_devReleaseY, g_devReleaseButton;
+/* "fake FIELD VALUE MS": simulated controller input for self-tests. */
+static float g_fakeValue[12];
+static Uint32 g_fakeUntil[12];
+static const char *const g_fakeNames[12] = {
+    "lsx", "lsy", "rsx", "rsy", "rt", "lt", "rg", "lg", "a", "b", "x", "y"
+};
+
+static void DevApplyFake(QuestXrControllers *c, Uint32 now)
+{
+    float *fields[12];
+    int i;
+
+    fields[0] = &c->leftStickX; fields[1] = &c->leftStickY;
+    fields[2] = &c->rightStickX; fields[3] = &c->rightStickY;
+    fields[4] = &c->rightTrigger; fields[5] = &c->leftTrigger;
+    fields[6] = &c->rightGrip; fields[7] = &c->leftGrip;
+    for (i = 0; i < 12; i++) {
+        if (g_fakeUntil[i] == 0 || now >= g_fakeUntil[i]) {
+            g_fakeUntil[i] = 0;
+            continue;
+        }
+        if (i < 8)
+            *fields[i] = g_fakeValue[i];
+        else if (i == 8)
+            c->a = g_fakeValue[i] > 0.5f;
+        else if (i == 9)
+            c->b = g_fakeValue[i] > 0.5f;
+        else if (i == 10)
+            c->x = g_fakeValue[i] > 0.5f;
+        else
+            c->y = g_fakeValue[i] > 0.5f;
+    }
+}
+
+static void DevRunCommand(const char *line)
+{
+    int x, y;
+    char word[64];
+
+    if (sscanf(line, "click %d %d", &x, &y) == 2 ||
+        sscanf(line, "rclick %d %d", &x, &y) == 2) {
+        int right = line[0] == 'r';
+        SdlQuestInjectMouse(x, y, 0, 0, 0);
+        SdlQuestInjectMouse(x, y, !right, right, 2);
+        g_devReleaseX = x;
+        g_devReleaseY = y;
+        g_devReleaseButton = right;
+    } else if (sscanf(line, "move %d %d", &x, &y) == 2) {
+        SdlQuestInjectMouse(x, y, 0, 0, 0);
+    } else if (sscanf(line, "key %63s", word) == 1) {
+        SDL_Keycode key = SDL_GetKeyFromName(word);
+        if (key != SDLK_UNKNOWN)
+            TapKey(key);
+    } else if (sscanf(line, "fake %63s %d %d", word, &x, &y) == 3) {
+        int i;
+        for (i = 0; i < 12; i++) {
+            if (strcmp(word, g_fakeNames[i]) == 0) {
+                g_fakeValue[i] = x / 100.0f;
+                g_fakeUntil[i] = SDL_GetTicks() + (Uint32)y;
+            }
+        }
+    } else if (strncmp(line, "type ", 5) == 0) {
+        const char *c;
+        for (c = line + 5; *c; c++) {
+            if (*c >= 'a' && *c <= 'z')
+                QueueTypedKey((SDL_Keycode)*c);
+            else if (*c >= 'A' && *c <= 'Z')
+                QueueTypedKey((SDL_Keycode)(*c - 'A' + 'a'));
+            else if (*c == '^')
+                QueueTypedKey(SDLK_LSHIFT);
+            else if (*c >= '0' && *c <= '9')
+                QueueTypedKey((SDL_Keycode)*c);
+            else if (*c == ' ')
+                QueueTypedKey(SDLK_SPACE);
+        }
+    }
+    printf("devcmd: %s\n", line);
+}
+
+static void DevServiceCommands(Uint32 now)
+{
+    if (g_devReleaseX >= 0) {
+        SdlQuestInjectMouse(g_devReleaseX, g_devReleaseY, 0, 0, 1);
+        g_devReleaseX = -1;
+    }
+    if (g_devCommands[g_devCommandPos] == 0 && now >= g_devNextPoll) {
+        size_t size = 0;
+        char *text;
+
+        g_devNextPoll = now + 500;
+        text = (char *)SDL_LoadFile("/sdcard/WingCommander/vrcmd", &size);
+        if (text != 0) {
+            remove("/sdcard/WingCommander/vrcmd");
+            if (size >= sizeof(g_devCommands))
+                size = sizeof(g_devCommands) - 1;
+            memcpy(g_devCommands, text, size);
+            g_devCommands[size] = 0;
+            g_devCommandPos = 0;
+            SDL_free(text);
+        }
+    }
+    if (g_devCommands[g_devCommandPos] != 0 && now >= g_devNextCommand) {
+        char line[256];
+        size_t n = 0;
+
+        while (g_devCommands[g_devCommandPos] != 0 &&
+               g_devCommands[g_devCommandPos] != '\n' && n < sizeof(line) - 1)
+            line[n++] = g_devCommands[g_devCommandPos++];
+        line[n] = 0;
+        while (g_devCommands[g_devCommandPos] == '\n' ||
+               g_devCommands[g_devCommandPos] == '\r')
+            g_devCommandPos++;
+        if (g_devCommands[g_devCommandPos] == 0) {
+            g_devCommands[0] = 0;
+            g_devCommandPos = 0;
+        }
+        g_devNextCommand = now + 400;
+        if (n > 0)
+            DevRunCommand(line);
+    }
+}
+
 void SdlQuestServiceInput(void)
 {
     QuestXrControllers c;
@@ -250,7 +456,9 @@ void SdlQuestServiceInput(void)
     int i;
     Uint32 now = SDL_GetTicks();
 
+    DevServiceCommands(now);
     QuestXr_GetControllers(&c);
+    DevApplyFake(&c, now);
     QuestXr_GetPointer(&p);
     piloting = SdlQuestIsPiloting();
     QuestXr_SetPiloting(piloting);
@@ -270,6 +478,7 @@ void SdlQuestServiceInput(void)
     /* A button held across a flight <-> menu switch stays masked until it
      * is released, so one press never acts in both modes. */
     if (piloting != g_prevMode) {
+        printf("controls: %s\n", piloting ? "flight" : "menus/laser");
         for (i = 0; i < PHYS_COUNT; i++)
             g_latched[i] = phys[i];
         g_prevMode = piloting;
@@ -340,6 +549,26 @@ void SdlQuestServiceInput(void)
             SDL_JoystickSetVirtualButton(pad, i, (Uint8)b[i]);
     }
 
+    {
+        int keycode;
+        while ((keycode = QuestXr_PopKeyboardKey()) != 0)
+            QueueTypedKey((SDL_Keycode)keycode);
+        if (g_typeHead != g_typeTail && now >= g_typeNext) {
+            SDL_Keycode key = g_typeQueue[g_typeHead];
+
+            g_typeHead = (g_typeHead + 1) % 256;
+            if (key == SDLK_LSHIFT) {
+                g_shiftOneShot = !g_shiftOneShot;
+            } else {
+                g_typeNext = now + 60;
+                TapKey(key);
+                if (key == SDLK_SPACE)
+                    g_shiftOneShot = 1;
+            }
+            QuestXr_SetKeyboardShift(g_shiftOneShot);
+        }
+    }
+
     if (!piloting) {
         if (edge[PHYS_A])
             TapKey(SDLK_RETURN);
@@ -375,6 +604,17 @@ void SdlQuestServiceInput(void)
         g_prevSecondary = 0;
     }
 
+    if (piloting && (c.leftStickX != 0.0f || c.leftStickY != 0.0f ||
+                     c.rightTrigger > 0.5f)) {
+        static Uint32 lastLog;
+        if (now - lastLog > 1000) {
+            lastLog = now;
+            printf("flight input: stick %.2f %.2f trig %.2f -> yaw %d pitch %d roll %d\n",
+                   c.leftStickX, c.leftStickY, c.rightTrigger,
+                   (int)nYawInputValue, (int)nPitchInput,
+                   (int)nCurrentRollInputValue);
+        }
+    }
     for (i = 0; i < PHYS_COUNT; i++)
         g_prevPhys[i] = phys[i];
 }

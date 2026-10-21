@@ -67,10 +67,21 @@ void QuestXr_ShowErrorColour(unsigned int rgb);
 /* Short haptic pulse on the right (hand=1) or left (hand=0) controller. */
 void QuestXr_Haptic(int hand, float amplitude, float seconds);
 
+/* On-screen keyboard (pilot names, callsigns, saved-game names).
+ * rgba: QUEST_KEYBOARD_WIDTH x HEIGHT premultiplied pixels, top row first. */
+void QuestXr_SetKeyboardImage(const unsigned char *rgba);
+void QuestXr_SetKeyboardVisible(int visible);
+/* Lights the Shift key (one-shot shift state owned by the game side). */
+void QuestXr_SetKeyboardShift(int shift);
+/* Next key typed on the keyboard (SDL keycode), 0 when none. */
+int QuestXr_PopKeyboardKey(void);
+
 /* Glue implemented by the game side (src/sdl, WC1_QUEST builds). */
 int SdlQuestIsPiloting(void);
 void SdlQuestServiceInput(void);
 int SdlQuestIsQuestPad(int deviceIndex);
+void SdlQuestSetTextInput(int active);
+int SdlQuestTakeShift(void);
 
 #ifdef __cplusplus
 }

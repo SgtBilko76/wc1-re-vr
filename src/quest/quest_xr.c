@@ -2,6 +2,7 @@
  * OpenXR render thread for the Wing Commander Quest port.  See quest_xr.h.
  */
 #include "quest_xr.h"
+#include "quest_keyboard_layout.h"
 
 #include <android/log.h>
 #include <jni.h>
@@ -39,6 +40,13 @@
 #define SCREEN_PIXELS_H 1200
 #define BEAM_WIDTH_M 0.004f
 #define BEAM_MAX_M 6.0f
+/* On-screen keyboard: tilted panel between the player and the screen. */
+#define KEYBOARD_WIDTH_M 1.0f
+#define KEYBOARD_HEIGHT_M (KEYBOARD_WIDTH_M * QUEST_KEYBOARD_HEIGHT / QUEST_KEYBOARD_WIDTH)
+#define KEYBOARD_DISTANCE 0.9f
+#define KEYBOARD_DROP_M 0.5f
+#define KEYBOARD_TILT_RAD 0.7f
+#define KEY_QUEUE_SIZE 16
 
 typedef struct Vec3 { float x, y, z; } Vec3;
 
@@ -130,6 +138,14 @@ static volatile int g_piloting;
 static float g_hapticAmplitude[2];
 static float g_hapticSeconds[2];
 
+static unsigned char *g_kbImage;      /* premultiplied RGBA, set once */
+static unsigned char *g_kbScratch;
+static volatile int g_kbVisible;
+static volatile int g_kbShift;
+static int g_kbUploadedShift = -1;
+static int g_kbQueue[KEY_QUEUE_SIZE];
+static int g_kbQueueHead, g_kbQueueTail;
+
 /* ------------------------------------------------------------------ */
 /* XR thread state                                                      */
 /* ------------------------------------------------------------------ */
@@ -168,6 +184,10 @@ static XrSpace g_aimSpace[2];
 
 static Swapchain g_screenChain;
 static Swapchain g_beamChain;
+static Swapchain g_kbChain;
+static int g_kbHover = -1;
+static int g_kbUploadedHover = -2;
+static int g_kbPrevTrigger;
 static int g_srgb;
 static GLuint g_frameTexture;
 static GLuint g_frameReadFbo;
@@ -525,7 +545,7 @@ static int InitSession(void)
     XrGraphicsBindingOpenGLESAndroidKHR binding;
     XrSessionCreateInfo sessionInfo;
     XrReferenceSpaceCreateInfo spaceInfo;
-    int64_t formats[64];
+    int64_t formats[128];
     uint32_t formatCount = 0;
     int64_t chosen = GL_RGBA8;
     uint32_t i;
@@ -564,7 +584,10 @@ static int InitSession(void)
     if (!InitActions())
         return 0;
 
-    XR_CHECK(xrEnumerateSwapchainFormats(g_session, 64, &formatCount,
+    XR_CHECK(xrEnumerateSwapchainFormats(g_session, 0, &formatCount, 0));
+    if (formatCount > 128)
+        formatCount = 128;
+    XR_CHECK(xrEnumerateSwapchainFormats(g_session, formatCount, &formatCount,
                                          formats));
     for (i = 0; i < formatCount; i++) {
         if (formats[i] == GL_SRGB8_ALPHA8) {
@@ -576,7 +599,9 @@ static int InitSession(void)
     LOGI("swapchain format 0x%llx (srgb=%d)", (long long)chosen, g_srgb);
     if (!CreateSwapchain(&g_screenChain, SCREEN_PIXELS_W, SCREEN_PIXELS_H,
                          chosen) ||
-        !CreateSwapchain(&g_beamChain, 16, 16, chosen))
+        !CreateSwapchain(&g_beamChain, 16, 16, chosen) ||
+        !CreateSwapchain(&g_kbChain, QUEST_KEYBOARD_WIDTH,
+                         QUEST_KEYBOARD_HEIGHT, chosen))
         return 0;
 
     /* The beam image never changes: fill it once. */
@@ -782,6 +807,57 @@ static void ScreenFrame(Vec3 *centre, Vec3 *right, Vec3 *up, Vec3 *normal,
                           v3(0, -SCREEN_DROP_M, 0)));
 }
 
+static void KeyboardFrame(Vec3 *centre, Vec3 *right, Vec3 *up, Vec3 *normal,
+                          XrQuaternionf *orientation)
+{
+    XrQuaternionf yaw = quatYaw(g_anchorYaw);
+    XrQuaternionf pitch = { -sinf(KEYBOARD_TILT_RAD * 0.5f), 0.0f, 0.0f,
+                            cosf(KEYBOARD_TILT_RAD * 0.5f) };
+    XrQuaternionf q;
+
+    /* q = yaw * pitch */
+    q.w = yaw.w * pitch.w - yaw.x * pitch.x - yaw.y * pitch.y - yaw.z * pitch.z;
+    q.x = yaw.w * pitch.x + yaw.x * pitch.w + yaw.y * pitch.z - yaw.z * pitch.y;
+    q.y = yaw.w * pitch.y - yaw.x * pitch.z + yaw.y * pitch.w + yaw.z * pitch.x;
+    q.z = yaw.w * pitch.z + yaw.x * pitch.y - yaw.y * pitch.x + yaw.z * pitch.w;
+    *orientation = q;
+    *right = quatRotate(q, v3(1, 0, 0));
+    *up = quatRotate(q, v3(0, 1, 0));
+    *normal = quatRotate(q, v3(0, 0, 1));
+    *centre = v3add(g_anchorPos,
+                    v3add(quatRotate(yaw, v3(0, 0, -KEYBOARD_DISTANCE)),
+                          v3(0, -KEYBOARD_DROP_M, 0)));
+}
+
+/* Ray vs. rectangle: returns 1 with u,v in 0..1 (v down) and distance t. */
+static int RayQuad(Vec3 origin, Vec3 dir, Vec3 centre, Vec3 right, Vec3 up,
+                   Vec3 normal, float width, float height, float *u,
+                   float *v, float *t)
+{
+    float denom = v3dot(dir, normal);
+    Vec3 rel;
+
+    if (denom > -1e-4f)
+        return 0;
+    *t = v3dot(v3sub(centre, origin), normal) / denom;
+    if (*t <= 0.0f)
+        return 0;
+    rel = v3sub(v3add(origin, v3scale(dir, *t)), centre);
+    *u = v3dot(rel, right) / width + 0.5f;
+    *v = 0.5f - v3dot(rel, up) / height;
+    return *u >= 0.0f && *u < 1.0f && *v >= 0.0f && *v < 1.0f;
+}
+
+static void QueueKeyboardKey(int keycode)
+{
+    pthread_mutex_lock(&g_lock);
+    if ((g_kbQueueTail + 1) % KEY_QUEUE_SIZE != g_kbQueueHead) {
+        g_kbQueue[g_kbQueueTail] = keycode;
+        g_kbQueueTail = (g_kbQueueTail + 1) % KEY_QUEUE_SIZE;
+    }
+    pthread_mutex_unlock(&g_lock);
+}
+
 static void UpdateInput(XrTime time, XrPosef *headPose, int headValid,
                         XrCompositionLayerQuad *beamLayer, int *beamVisible)
 {
@@ -873,25 +949,46 @@ static void UpdateInput(XrTime time, XrPosef *headPose, int headValid,
         Vec3 origin = fromXr(aim[g_aimHand].position);
         Vec3 dir = quatRotate(aim[g_aimHand].orientation, v3(0, 0, -1));
         float length = BEAM_MAX_M;
-        float denom;
+        float u, v, t;
+        int onKeyboard = 0;
+        int trigger = g_aimHand == 1 ? c.rightTrigger > 0.55f
+                                     : c.leftTrigger > 0.55f;
 
-        ScreenFrame(&centre, &right, &up, &normal, &screenQ);
-        denom = v3dot(dir, normal);
-        if (denom < -1e-4f) {
-            float t = v3dot(v3sub(centre, origin), normal) / denom;
-            if (t > 0.0f) {
-                Vec3 hit = v3add(origin, v3scale(dir, t));
-                Vec3 rel = v3sub(hit, centre);
-                float u = v3dot(rel, right) / SCREEN_WIDTH_M + 0.5f;
-                float v = 0.5f - v3dot(rel, up) / SCREEN_HEIGHT_M;
+        g_kbHover = -1;
+        if (g_kbVisible && g_kbImage != 0) {
+            KeyboardFrame(&centre, &right, &up, &normal, &screenQ);
+            if (RayQuad(origin, dir, centre, right, up, normal,
+                        KEYBOARD_WIDTH_M, KEYBOARD_HEIGHT_M, &u, &v, &t)) {
+                int px = (int)(u * QUEST_KEYBOARD_WIDTH);
+                int py = (int)(v * QUEST_KEYBOARD_HEIGHT);
+                int k;
 
-                if (u >= 0.0f && u < 1.0f && v >= 0.0f && v < 1.0f) {
-                    p.onScreen = 1;
-                    p.x = (int)(u * QUEST_FRAME_WIDTH);
-                    p.y = (int)(v * QUEST_FRAME_HEIGHT);
-                    length = t;
+                onKeyboard = 1;
+                length = t;
+                for (k = 0; k < QUEST_KEYBOARD_KEY_COUNT; k++) {
+                    const QuestKeyboardKey *key = &g_questKeyboardKeys[k];
+                    if (px >= key->x0 && px < key->x1 && py >= key->y0 &&
+                        py < key->y1) {
+                        g_kbHover = k;
+                        break;
+                    }
+                }
+                if (trigger && !g_kbPrevTrigger && g_kbHover >= 0) {
+                    QueueKeyboardKey(g_questKeyboardKeys[g_kbHover].keycode);
+                    g_hapticAmplitude[g_aimHand] = 0.4f;
+                    g_hapticSeconds[g_aimHand] = 0.03f;
                 }
             }
+        }
+        g_kbPrevTrigger = trigger;
+        ScreenFrame(&centre, &right, &up, &normal, &screenQ);
+        if (!onKeyboard &&
+            RayQuad(origin, dir, centre, right, up, normal, SCREEN_WIDTH_M,
+                    SCREEN_HEIGHT_M, &u, &v, &t)) {
+            p.onScreen = 1;
+            p.x = (int)(u * QUEST_FRAME_WIDTH);
+            p.y = (int)(v * QUEST_FRAME_HEIGHT);
+            length = t;
         }
         if (g_aimHand == 1) {
             p.primary = c.rightTrigger > 0.55f;
@@ -973,6 +1070,80 @@ static void DrawScreen(uint32_t index)
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
+static int DrawKeyboard(XrCompositionLayerQuad *layer)
+{
+    Vec3 centre, right, up, normal;
+    XrQuaternionf q;
+    uint32_t index;
+
+    if (!AcquireImage(&g_kbChain, &index))
+        return 0;
+    /* Swapchain images rotate, so every image is redrawn; the CPU copy is
+     * rebuilt only when the hovered key changes. */
+    if (g_kbHover != g_kbUploadedHover || g_kbShift != g_kbUploadedShift) {
+        int k;
+
+        memcpy(g_kbScratch, g_kbImage,
+               QUEST_KEYBOARD_WIDTH * QUEST_KEYBOARD_HEIGHT * 4);
+        for (k = 0; g_kbShift && k < QUEST_KEYBOARD_KEY_COUNT; k++) {
+            const QuestKeyboardKey *key = &g_questKeyboardKeys[k];
+            int x, y;
+            if (key->keycode != SDLK_LSHIFT)
+                continue;
+            for (y = key->y0 + 2; y < key->y1 - 2; y++) {
+                unsigned char *row =
+                    g_kbScratch + (size_t)(QUEST_KEYBOARD_HEIGHT - 1 - y) *
+                                      QUEST_KEYBOARD_WIDTH * 4;
+                for (x = key->x0 + 2; x < key->x1 - 2; x++) {
+                    unsigned char *px = row + x * 4;
+                    px[0] = (unsigned char)(px[0] / 2 + 20);
+                    px[1] = (unsigned char)(px[1] / 2 + 110);
+                    px[2] = (unsigned char)(px[2] / 2 + 30);
+                }
+            }
+        }
+        g_kbUploadedShift = g_kbShift;
+        if (g_kbHover >= 0) {
+            const QuestKeyboardKey *key = &g_questKeyboardKeys[g_kbHover];
+            int x, y;
+            for (y = key->y0 + 2; y < key->y1 - 2; y++) {
+                unsigned char *row =
+                    g_kbScratch + (size_t)(QUEST_KEYBOARD_HEIGHT - 1 - y) *
+                                      QUEST_KEYBOARD_WIDTH * 4;
+                for (x = key->x0 + 2; x < key->x1 - 2; x++) {
+                    unsigned char *px = row + x * 4;
+                    px[0] = (unsigned char)(px[0] / 2 + 40);
+                    px[1] = (unsigned char)(px[1] / 2 + 100);
+                    px[2] = (unsigned char)(px[2] / 2 + 127);
+                }
+            }
+        }
+        g_kbUploadedHover = g_kbHover;
+    }
+    glBindTexture(GL_TEXTURE_2D, g_kbChain.images[index].image);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, QUEST_KEYBOARD_WIDTH,
+                    QUEST_KEYBOARD_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE,
+                    g_kbScratch);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    ReleaseImage(&g_kbChain);
+
+    KeyboardFrame(&centre, &right, &up, &normal, &q);
+    memset(layer, 0, sizeof(*layer));
+    layer->type = XR_TYPE_COMPOSITION_LAYER_QUAD;
+    layer->layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
+    layer->space = g_localSpace;
+    layer->eyeVisibility = XR_EYE_VISIBILITY_BOTH;
+    layer->subImage.swapchain = g_kbChain.handle;
+    layer->subImage.imageRect.extent.width = QUEST_KEYBOARD_WIDTH;
+    layer->subImage.imageRect.extent.height = QUEST_KEYBOARD_HEIGHT;
+    layer->pose.orientation = q;
+    layer->pose.position = toXr(centre);
+    layer->size.width = KEYBOARD_WIDTH_M;
+    layer->size.height = KEYBOARD_HEIGHT_M;
+    return 1;
+}
+
 static void RunFrame(void)
 {
     XrFrameWaitInfo waitInfo = { XR_TYPE_FRAME_WAIT_INFO };
@@ -981,7 +1152,8 @@ static void RunFrame(void)
     XrFrameEndInfo endInfo = { XR_TYPE_FRAME_END_INFO };
     XrCompositionLayerQuad screenLayer;
     XrCompositionLayerQuad beamLayer;
-    const XrCompositionLayerBaseHeader *layers[2];
+    XrCompositionLayerQuad keyboardLayer;
+    const XrCompositionLayerBaseHeader *layers[3];
     uint32_t layerCount = 0;
     XrPosef headPose;
     int headValid;
@@ -1018,6 +1190,9 @@ static void RunFrame(void)
         screenLayer.size.width = SCREEN_WIDTH_M;
         screenLayer.size.height = SCREEN_HEIGHT_M;
         layers[layerCount++] = (const XrCompositionLayerBaseHeader *)&screenLayer;
+        if (g_kbVisible && g_kbImage != 0 && DrawKeyboard(&keyboardLayer))
+            layers[layerCount++] =
+                (const XrCompositionLayerBaseHeader *)&keyboardLayer;
         if (beamVisible)
             layers[layerCount++] =
                 (const XrCompositionLayerBaseHeader *)&beamLayer;
@@ -1199,4 +1374,57 @@ void QuestXr_Haptic(int hand, float amplitude, float seconds)
     g_hapticAmplitude[hand] = amplitude;
     g_hapticSeconds[hand] = seconds;
     pthread_mutex_unlock(&g_lock);
+}
+
+void QuestXr_SetKeyboardImage(const unsigned char *rgba)
+{
+    size_t size = (size_t)QUEST_KEYBOARD_WIDTH * QUEST_KEYBOARD_HEIGHT * 4;
+    unsigned char *image = (unsigned char *)malloc(size);
+    unsigned char *scratch = (unsigned char *)malloc(size);
+    int y;
+
+    if (image == 0 || scratch == 0) {
+        free(image);
+        free(scratch);
+        return;
+    }
+    /* Store bottom row first: GL swapchain images have a bottom-left origin
+     * while key rectangles use a top-left origin. */
+    for (y = 0; y < QUEST_KEYBOARD_HEIGHT; y++)
+        memcpy(image + (size_t)(QUEST_KEYBOARD_HEIGHT - 1 - y) *
+                           QUEST_KEYBOARD_WIDTH * 4,
+               rgba + (size_t)y * QUEST_KEYBOARD_WIDTH * 4,
+               QUEST_KEYBOARD_WIDTH * 4);
+    memcpy(scratch, image, size);
+    g_kbScratch = scratch;
+    g_kbImage = image;
+}
+
+void QuestXr_SetKeyboardVisible(int visible)
+{
+    if (!visible) {
+        g_kbHover = -1;
+        pthread_mutex_lock(&g_lock);
+        g_kbQueueHead = g_kbQueueTail = 0;
+        pthread_mutex_unlock(&g_lock);
+    }
+    g_kbVisible = visible ? 1 : 0;
+}
+
+int QuestXr_PopKeyboardKey(void)
+{
+    int keycode = 0;
+
+    pthread_mutex_lock(&g_lock);
+    if (g_kbQueueHead != g_kbQueueTail) {
+        keycode = g_kbQueue[g_kbQueueHead];
+        g_kbQueueHead = (g_kbQueueHead + 1) % KEY_QUEUE_SIZE;
+    }
+    pthread_mutex_unlock(&g_lock);
+    return keycode;
+}
+
+void QuestXr_SetKeyboardShift(int shift)
+{
+    g_kbShift = shift ? 1 : 0;
 }

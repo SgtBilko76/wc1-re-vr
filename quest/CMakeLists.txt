@@ -98,5 +98,5 @@ target_compile_options(main PRIVATE ${COMMON_FLAGS}
 set_source_files_properties(${WC1_ROOT}/src/pilot.cpp PROPERTIES
     COMPILE_OPTIONS "-fexceptions")
 
-target_link_libraries(main PRIVATE SDL2 openxr_loader EGL GLESv3 android log
+target_link_libraries(main PRIVATE SDL2 openxr_loader EGL GLESv3 android log z
     -Wl,--gc-sections)

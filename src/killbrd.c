@@ -153,12 +153,26 @@ static TitleMenuRegion aRecRoomMenuRegions[7] = {
     { 1, 0, 100, 120, 190 },
     { -1, 0, 0, 0, 0 }
 };
+#ifdef SDL_PORT
+/* RecRoom sprintf()s the wingmen's callsigns into these labels.  MSVC 4.20
+ * kept string literals writable; host compilers place them in read-only
+ * memory, so the SDL port gives them writable storage of the same size. */
+static char szRecRoomBaseLabel0[] = "Talk to SHOTGLASS.";
+static char szRecRoomBaseLabel1[] = "Talk to ??????????????";
+static char szRecRoomBaseLabel2[] = "Talk to ??????????????";
+static char *apszRecRoomBaseLabels[3] = {
+    szRecRoomBaseLabel0,
+    szRecRoomBaseLabel1,
+    szRecRoomBaseLabel2
+};
+#else
 /* 0x004704e8 */
 static char *apszRecRoomBaseLabels[3] = {
     "Talk to SHOTGLASS.",
     "Talk to ??????????????",
     "Talk to ??????????????"
 };
+#endif
 /* 0x004704f8 */
 static char *apszRecRoomMenuLabels[6] = {
     0, 0, 0,

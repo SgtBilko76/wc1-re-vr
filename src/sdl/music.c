@@ -45,6 +45,9 @@ static unsigned char *SdlLoadDosMusicFile(
             fileData = (unsigned char *)SDL_LoadFile(resolved, fileSize);
             if (fileData != 0)
                 return fileData;
+#ifdef WC1_QUEST
+            fprintf(stderr, "music load %s: %s\n", resolved, SDL_GetError());
+#endif
         }
         candidateIndex++;
     }

@@ -379,6 +379,8 @@ void SdlQuestInjectMouse(int x, int y, int primaryButton,
 int SdlQuestIsPiloting(void);
 void SdlQuestServiceInput(void);
 int SdlQuestIsQuestPad(int deviceIndex);
+void SdlQuestSetTextInput(int active);
+int SdlQuestTakeShift(void);
 #endif
 
 #ifndef _WIN32

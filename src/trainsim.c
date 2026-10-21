@@ -321,6 +321,23 @@ void ClearNextTextInputCharacter(short character)
     pCurTextContext->cursorX = savedX;
 }
 
+#ifdef WC1_QUEST
+/* Quest: show the VR keyboard for exactly the duration of a text prompt. */
+static short ReadTextInputBody(char *destination, short maximumLength,
+                               short mode);
+
+short ReadTextInput(char *destination, short maximumLength, short mode)
+{
+    short result;
+
+    SdlQuestSetTextInput(1);
+    result = ReadTextInputBody(destination, maximumLength, mode);
+    SdlQuestSetTextInput(0);
+    return result;
+}
+#define ReadTextInput ReadTextInputBody
+#endif
+
 /* Function start: 0x426200 */
 short ReadTextInput(char *destination, short maximumLength,
                     short mode)
@@ -427,6 +444,10 @@ short ReadTextInput(char *destination, short maximumLength,
                                     : (_pctype[key] & _ALPHA)) {
 #endif
                                 key = (unsigned char)(key | 0x20);
+#ifdef WC1_QUEST
+                                if (SdlQuestTakeShift())
+                                    key &= 0xdf;
+#endif
                                 if (GetShiftKeyState() != 0)
                                     key &= 0xdf;
                             }
@@ -459,6 +480,9 @@ redraw:
     pCurTextContext->backgroundColour = savedBackground;
     return 1;
 }
+#ifdef WC1_QUEST
+#undef ReadTextInput
+#endif
 
 /* Function start: 0x4265A0 */
 void ReadRequiredPilotField(short x, short y, const char *label,
