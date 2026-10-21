@@ -2460,8 +2460,8 @@ Shapes recovered with this method:
 - `explosion_shock_wave` passes `the_creator(obj)` directly as
   `inflict_damage`'s first argument. Without the attacker local, CL keeps the
   ship-class constant in EBX as the original does.
-- `DrawBarracksBunks`, `PromptForTextInput`, and `ReadRequiredPilotField`
-  compute their row, width, and cursor arguments inline; the named
+- `PromptForTextInput` and `ReadRequiredPilotField`
+  compute their width and cursor arguments inline; the named
   temporaries of the earlier reconstruction changed scheduling or kept the
   sum in the wrong register.
 - `AllocateFontWorkspace` is a one-entry `for` loop over the workspace array;
@@ -2535,9 +2535,14 @@ Shapes recovered with this method:
   the original registers and the routine regains its 16-byte alignment span.
 - `DrawFontGlyph`'s recovered local order gives the original 512-byte size;
   its inner loops still differ in register choice.
-- `DrawBarracksBunks` declares `frame` before `bunk`; the routine is exact once
-  `barracks.c` reaches its original declaration count (probe offsets 17
-  to 26).
+- `DrawBarracksBunks` declares `frame`, `bunk`, then the short `row` used for
+  `bunk / 2`. Keeping the division result short restores the original
+  16-bit multiply and the 192-byte span, replacing the 176-byte inline
+  expression. Only the scheduling of `PUSH ECX` against `SUB EAX,EDX`
+  differs; mnemonic similarity rises from 89.55% to 97.01%. All six local
+  declaration orders produce the same result, and the other barracks
+  routines are unchanged. Earlier synthetic declaration offsets could make
+  the inline expression exact, but that did not hold at the real offset.
 - `GetShipAccelerationRate` indexes the type and rating arrays with its short
   `ship` parameter. The explicit promoted `shipIndex` temporary emitted no
   additional instructions, but shifted the later geometry routines' symbol
@@ -2568,3 +2573,31 @@ Shapes recovered with this method:
   differing encodings in the actual 378-byte body. Use explicit ends at
   `DirectSoundCreate` when checking it with binary-comp; the report's
   documented 26-byte import-stub excess is unrelated to those differences.
+- `explosion_shock_wave` declares `other` before its two vectors. This changes
+  its remaining comparison from `CMP SI,DI` to the original `CMP DI,SI`,
+  making the routine exact without changing any other ship report row.
+- `auto.c` defines its private initialized formation count immediately before
+  `auto_position`, its first user. This changes the register tie with
+  `nYourWingman` in `auto_pilot_sequence`, eliminating a one-byte body excess
+  and sixteen aligned bytes. Moving the definition before any of the three
+  earlier functions leaves that excess. The sequence's final four short
+  locals are `nearestShipRange`, `other`, `cruiseSpeed`, `destinationRange`;
+  this removes four further differing encodings. Its span is now the original
+  1,472 bytes, with 17 differing encodings and 98.81% mnemonic similarity.
+  The other five autopilot-unit routines remain exact. Together with the
+  barracks row correction, this fixes two size errors that previously
+  canceled in the total code length. The private count retains its original
+  owner, type, initialization, and address; the audit collector now preserves
+  addressed storage declared between functions.
+  These three source edits are the only changed rows in the full report:
+  normalized exact functions rise from 1,324 to 1,325 out of 1,550, and size
+  differences fall from 20 to 18. Strict whole-file matching rises from
+  355,656 to 432,850 positions out of 518,656 (68.5726% to 83.4561%).
+  The code section and entry point remain exact; the relocation section is
+  still four bytes too large, and 85,806 file positions still differ.
+  The clean native build, modern build, source/address audits, order report,
+  collector tests, and `make verify` pass. Both value checks cover all 1,550
+  functions with zero mismatches or skips; the existing nonfatal call/global
+  access diagnostics remain 11/56. The clean-build and post-verification
+  hashes agree:
+  `3d7f68a96b204b1c8cab112c70f9a75ec17819d64898c309a758aa3c1415b63c`.

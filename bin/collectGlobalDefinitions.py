@@ -186,6 +186,33 @@ def without_unreferenced_statics(block: str, text: str) -> str:
     return UNREFERENCED_STATIC_RE.sub(keep, block)
 
 
+def later_definitions(text: str, function_at: int) -> str:
+    """Keep addressed file-scope storage declared after the first function."""
+    from binary_comp.source.cpp import make_cpp_parser, sanitize_source, walk
+    from binary_comp.source.globals import DECL_RE, address_from_comment, address_from_name
+
+    source = text.encode("utf-8")
+    tree = make_cpp_parser().parse(sanitize_source(source))
+    functions = [
+        (node.start_byte, node.end_byte)
+        for node in walk(tree.root_node)
+        if node.type == "function_definition"
+    ]
+    blocks: list[str] = []
+    for match in DECL_RE.finditer(text):
+        start = match.start("type")
+        if start < function_at:
+            continue
+        byte_start = len(text[:start].encode("utf-8"))
+        if any(first <= byte_start < last for first, last in functions):
+            continue
+        if (address_from_name(match.group("name")) is not None or
+                address_from_comment(match.group("trailing") or "") is not None or
+                address_from_comment(match.group("leading") or "") is not None):
+            blocks.append(match.group(0).strip() + "\n")
+    return "".join(blocks)
+
+
 def definition_block(path: Path) -> str:
     text = path.read_text(encoding="utf-8")
     if path.name == "globals.c":
@@ -201,6 +228,8 @@ def definition_block(path: Path) -> str:
         raise ValueError(f"cannot locate global-definition block in {path}")
     declarations_at = text.find("\n", include_at) + 1
     block = text[declarations_at:function_at].strip() + "\n"
+    if function_at < len(text):
+        block += later_definitions(text, function_at)
     return without_unreferenced_statics(block, text)
 
 

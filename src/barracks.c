@@ -785,6 +785,7 @@ void DrawBarracksBunks(Viewport *viewport, unsigned char *shape,
 {
     short frame;
     short bunk;
+    short row;
 
     DrawSpriteDefault(viewport, 0, 0, shape, 0);
     bunk = 0;
@@ -797,9 +798,10 @@ void DrawBarracksBunks(Viewport *viewport, unsigned char *shape,
                 shape, (short)(bunk + 1));
             frame = 9;
         }
+        row = (short)(bunk / 2);
         DrawSpriteDefault(viewport,
                           (short)((bunk % 2) * 31 + 143),
-                          (short)((bunk / 2) * 5 + 167),
+                          (short)(row * 5 + 167),
                           shape, frame);
         bunk++;
     } while (bunk < 8);

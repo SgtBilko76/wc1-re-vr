@@ -223,6 +223,13 @@ declarations extend from the owner include to the end of the file. Their
 `.data` sizes and pointers are verified by the same strict unit gate as the
 other owners.
 
+The collector also retains addressed file-scope definitions between functions,
+including the private autopilot formation count immediately before its first
+user. It uses binary-comp's parser to exclude function bodies while preserving
+initializers and address comments. The declaration inventory is unchanged;
+`python3 bin/testCollectGlobalDefinitions.py` checks interleaved storage, local
+exclusion, unused statics, and data-only owners.
+
 Three explicitly marked partial-section checks cover `game.c`: two scalar
 state runs of 112 and 21 bytes, and the 6,652-byte run of scripts, mission
 records, maneuver tables, and display literals. Each permits only one address

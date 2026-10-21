@@ -9,8 +9,6 @@
  */
 #include "wc1.h"
 
-static short nAutopilotFormationShipCount = 0; /* 0x00465544 */
-
 /* Linker commons defined here; LINK orders them by identifier hash. */
 unsigned int nSystemKeyDown; /* 0x005a8964 */
 JOYINFO aJoystickInfos[2]; /* 0x005a8970 */
@@ -66,6 +64,8 @@ void set_speed(short obj, short speed)
     fix_velocity(obj);
 }
 
+static short nAutopilotFormationShipCount = 0; /* 0x00465544 */
+
 /* Function start: 0x403F40 */
 void auto_position(short obj, short *formationSlot)
 {
@@ -116,10 +116,10 @@ void auto_pilot_sequence(void)
     FixedVector travelStep;
     short ship;
     short initialDistance;
-    short destinationRange;
     short nearestShipRange;
-    short cruiseSpeed;
     short other;
+    short cruiseSpeed;
+    short destinationRange;
 #ifdef SDL_PORT
     FixedVector previousPosition;
 #endif

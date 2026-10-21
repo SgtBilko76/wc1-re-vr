@@ -1362,9 +1362,9 @@ short the_creator(short obj)
 /* Function start: 0x41FEE0 */
 int explosion_shock_wave(short obj, short blastDamage)
 {
+    short other;
     FixedVector delta;
     FixedVector force;
-    short other;
     short distance;
     short divisor;
     short damage;
