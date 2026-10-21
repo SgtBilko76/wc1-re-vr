@@ -160,6 +160,8 @@ int SdlPresentIndexedFrame(const unsigned char *pixels,
 #ifdef WC1_QUEST
     if (pixels == 0 || palette == 0)
         return 0;
+    if (SdlQuestPresentStereo(pixels, palette))
+        return 1;
     QuestXr_SubmitIndexedFrame(pixels, palette);
     return 1;
 #endif
@@ -224,6 +226,10 @@ void SdlBeginSpaceFrame(
     const struct ScreenViewportGeometry *geometry, int viewportMode,
     int fullViewportCopy, unsigned char clearColour)
 {
+#ifdef WC1_QUEST
+    SdlQuestCaptureSpaceFrame(geometry, viewportMode, fullViewportCopy,
+                              clearColour);
+#endif
     if (SdlUsingGlRenderer()) {
         SdlGlRendererBeginSpaceFrame(
             geometry, viewportMode, fullViewportCopy, clearColour);
@@ -240,6 +246,9 @@ void SdlCancelSpaceFrame(void)
 {
     /* RunSpaceFlight calls this when the spaceflight session ends. */
     SdlEndJoystickSpaceflight();
+#ifdef WC1_QUEST
+    SdlQuestCancelStereo();
+#endif
     if (SdlUsingGlRenderer())
         SdlGlRendererCancelSpaceFrame();
 }

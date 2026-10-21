@@ -51,6 +51,7 @@ list(APPEND SRCS_C
     ${WC1_ROOT}/src/sdl/music.c ${WC1_ROOT}/src/sdl/video.c
     ${WC1_ROOT}/src/sdl/launcher.c
     ${WC1_ROOT}/src/quest/quest_xr.c ${WC1_ROOT}/src/quest/quest_input.c
+    ${WC1_ROOT}/src/quest/quest_stereo.c
     ${QUEST_DIR}/third_party/minilzo/minilzo.c)
 
 set(SRCS_GAME_CXX ${WC1_ROOT}/src/debug.cpp ${WC1_ROOT}/src/pilot.cpp)

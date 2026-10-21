@@ -3,6 +3,7 @@
  */
 #include "quest_xr.h"
 #include "quest_keyboard_layout.h"
+#include "quest_scene.h"
 
 #include <android/log.h>
 #include <jni.h>
@@ -146,6 +147,22 @@ static int g_kbUploadedShift = -1;
 static int g_kbQueue[KEY_QUEUE_SIZE];
 static int g_kbQueueHead, g_kbQueueTail;
 
+/* Stereo scene (game thread -> XR thread, under g_lock). */
+typedef struct AtlasUpload {
+    struct AtlasUpload *next;
+    int layer, x, y, width, height;
+    unsigned char *pixels;
+} AtlasUpload;
+
+static int g_stereoMode;
+static unsigned int g_sceneSerial;
+static QuestSceneHeader g_sceneHeader;
+static QuestSceneQuad g_sceneQuads[QUEST_SCENE_MAX_QUADS];
+static unsigned char g_sceneHud[QUEST_FRAME_WIDTH * QUEST_FRAME_HEIGHT * 4];
+static unsigned char g_sceneDash[QUEST_FRAME_WIDTH * QUEST_FRAME_HEIGHT * 4];
+static unsigned char g_scenePalette[256 * 4];
+static AtlasUpload *g_uploadHead, *g_uploadTail;
+
 /* ------------------------------------------------------------------ */
 /* XR thread state                                                      */
 /* ------------------------------------------------------------------ */
@@ -193,6 +210,25 @@ static int g_srgb;
 static GLuint g_frameTexture;
 static GLuint g_frameReadFbo;
 static unsigned int g_uploadedSerial = ~0U;
+
+/* XR-thread copies and GL objects for stereo frames. */
+static int g_xrStereo;
+static unsigned int g_xrSceneSerial = ~0U;
+static QuestSceneHeader g_xrHeader;
+static QuestSceneQuad g_xrQuads[QUEST_SCENE_MAX_QUADS];
+static unsigned char g_xrHud[QUEST_FRAME_WIDTH * QUEST_FRAME_HEIGHT * 4];
+static unsigned char g_xrDash[QUEST_FRAME_WIDTH * QUEST_FRAME_HEIGHT * 4];
+static unsigned char g_xrPalette[256 * 4];
+static Swapchain g_eyeChain[2];
+static Swapchain g_hudChain, g_dashChain;
+static GLuint g_atlasTexture, g_paletteTexture;
+static GLuint g_hudTexture, g_dashTexture, g_hudReadFbo, g_dashReadFbo;
+static GLuint g_spriteProgram, g_starProgram;
+static GLint g_spriteViewProj, g_spriteAtlas, g_spritePalette;
+static GLint g_starViewProj, g_starRot;
+static GLuint g_spriteVao, g_spriteVbo, g_starVao, g_starVbo;
+static int g_starCount;
+static XrView g_views[2];
 
 /* Recentre anchor: head position + yaw. */
 static int g_anchorValid;
@@ -547,6 +583,448 @@ static void ReleaseImage(Swapchain *chain)
     xrReleaseSwapchainImage(chain->handle, &release);
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Stereo renderer                                                      */
+/* ------------------------------------------------------------------ */
+
+static const char g_spriteVs[] =
+    "#version 300 es\n"
+    "uniform mat4 u_viewProj;\n"
+    "layout(location = 0) in vec3 a_pos;\n"
+    "layout(location = 1) in vec3 a_tex;\n"
+    "out vec3 v_tex;\n"
+    "void main() {\n"
+    "    v_tex = a_tex;\n"
+    "    gl_Position = u_viewProj * vec4(a_pos, 1.0);\n"
+    "}\n";
+static const char g_spriteFs[] =
+    "#version 300 es\n"
+    "precision highp float;\n"
+    "precision highp int;\n"
+    "precision highp sampler2DArray;\n"
+    "uniform sampler2DArray u_atlas;\n"
+    "uniform sampler2D u_palette;\n"
+    "in vec3 v_tex;\n"
+    "out vec4 o_colour;\n"
+    "void main() {\n"
+    "    ivec3 c = ivec3(int(floor(v_tex.x)), int(floor(v_tex.y)),\n"
+    "                    int(v_tex.z + 0.5));\n"
+    "    int index = int(texelFetch(u_atlas, c, 0).r * 255.0 + 0.5);\n"
+    "    if (index == 255) discard;\n"
+    "    o_colour = vec4(texelFetch(u_palette, ivec2(index, 0), 0).rgb, 1.0);\n"
+    "}\n";
+static const char g_starVs[] =
+    "#version 300 es\n"
+    "uniform mat4 u_viewProj;\n"
+    "uniform mat3 u_rot;\n"
+    "layout(location = 0) in vec4 a_star;\n"
+    "out float v_bright;\n"
+    "void main() {\n"
+    "    vec3 d = normalize(u_rot * a_star.xyz);\n"
+    "    v_bright = a_star.w;\n"
+    "    gl_PointSize = a_star.w > 0.8 ? 3.0 : 2.0;\n"
+    "    gl_Position = u_viewProj * vec4(d * 50000.0, 1.0);\n"
+    "}\n";
+static const char g_starFs[] =
+    "#version 300 es\n"
+    "precision mediump float;\n"
+    "in float v_bright;\n"
+    "out vec4 o_colour;\n"
+    "void main() {\n"
+    "    float b = v_bright * v_bright;\n"
+    "    o_colour = vec4(b * 0.9, b * 0.92, b, 1.0);\n"
+    "}\n";
+
+static GLuint CompileProgram(const char *vs, const char *fs)
+{
+    GLuint shaders[2];
+    const char *sources[2] = { vs, fs };
+    GLenum types[2] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER };
+    GLuint program = glCreateProgram();
+    GLint ok = 0;
+    char log[1024];
+    int i;
+
+    for (i = 0; i < 2; i++) {
+        shaders[i] = glCreateShader(types[i]);
+        glShaderSource(shaders[i], 1, &sources[i], 0);
+        glCompileShader(shaders[i]);
+        glGetShaderiv(shaders[i], GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            glGetShaderInfoLog(shaders[i], sizeof(log), 0, log);
+            LOGE("shader compile failed: %s", log);
+            return 0;
+        }
+        glAttachShader(program, shaders[i]);
+    }
+    glLinkProgram(program);
+    glGetProgramiv(program, GL_LINK_STATUS, &ok);
+    if (!ok) {
+        glGetProgramInfoLog(program, sizeof(log), 0, log);
+        LOGE("program link failed: %s", log);
+        return 0;
+    }
+    glDeleteShader(shaders[0]);
+    glDeleteShader(shaders[1]);
+    return program;
+}
+
+static GLuint MakePanelTexture(GLuint *readFbo)
+{
+    GLuint texture;
+
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexStorage2D(GL_TEXTURE_2D, 1, g_srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8,
+                   QUEST_FRAME_WIDTH, QUEST_FRAME_HEIGHT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glGenFramebuffers(1, readFbo);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, *readFbo);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, texture, 0);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    return texture;
+}
+
+static int InitStereo(int64_t format)
+{
+    XrViewConfigurationView viewConfigs[2];
+    uint32_t count = 0;
+    unsigned char *blank;
+    float *stars;
+    unsigned int seed = 0x5eed1234U;
+    int i;
+
+    memset(viewConfigs, 0, sizeof(viewConfigs));
+    viewConfigs[0].type = XR_TYPE_VIEW_CONFIGURATION_VIEW;
+    viewConfigs[1].type = XR_TYPE_VIEW_CONFIGURATION_VIEW;
+    XR_CHECK(xrEnumerateViewConfigurationViews(
+        g_instance, g_system, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 2,
+        &count, viewConfigs));
+    for (i = 0; i < 2; i++) {
+        int w = (int)viewConfigs[i].recommendedImageRectWidth;
+        int h = (int)viewConfigs[i].recommendedImageRectHeight;
+        if (!CreateSwapchain(&g_eyeChain[i], w, h, format))
+            return 0;
+        g_views[i].type = XR_TYPE_VIEW;
+    }
+    LOGI("eye swapchains %dx%d", g_eyeChain[0].width, g_eyeChain[0].height);
+
+    g_spriteProgram = CompileProgram(g_spriteVs, g_spriteFs);
+    g_starProgram = CompileProgram(g_starVs, g_starFs);
+    if (g_spriteProgram == 0 || g_starProgram == 0)
+        return 0;
+    g_spriteViewProj = glGetUniformLocation(g_spriteProgram, "u_viewProj");
+    g_spriteAtlas = glGetUniformLocation(g_spriteProgram, "u_atlas");
+    g_spritePalette = glGetUniformLocation(g_spriteProgram, "u_palette");
+    g_starViewProj = glGetUniformLocation(g_starProgram, "u_viewProj");
+    g_starRot = glGetUniformLocation(g_starProgram, "u_rot");
+
+    /* Sprite atlas: indexed pixels, 255 = transparent. */
+    glGenTextures(1, &g_atlasTexture);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, g_atlasTexture);
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_R8, QUEST_ATLAS_SIZE,
+                   QUEST_ATLAS_SIZE, QUEST_ATLAS_LAYERS);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    blank = (unsigned char *)malloc(QUEST_ATLAS_SIZE * QUEST_ATLAS_SIZE);
+    if (blank == 0)
+        return 0;
+    memset(blank, 0xff, QUEST_ATLAS_SIZE * QUEST_ATLAS_SIZE);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    for (i = 0; i < QUEST_ATLAS_LAYERS; i++)
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, QUEST_ATLAS_SIZE,
+                        QUEST_ATLAS_SIZE, 1, GL_RED, GL_UNSIGNED_BYTE, blank);
+    free(blank);
+
+    /* Palette: sRGB so the sRGB eye images reproduce the game colours. */
+    glGenTextures(1, &g_paletteTexture);
+    glBindTexture(GL_TEXTURE_2D, g_paletteTexture);
+    glTexStorage2D(GL_TEXTURE_2D, 1, g_srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8, 256,
+                   1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    g_hudTexture = MakePanelTexture(&g_hudReadFbo);
+    g_dashTexture = MakePanelTexture(&g_dashReadFbo);
+
+    glGenVertexArrays(1, &g_spriteVao);
+    glGenBuffers(1, &g_spriteVbo);
+    glBindVertexArray(g_spriteVao);
+    glBindBuffer(GL_ARRAY_BUFFER, g_spriteVbo);
+    glBufferData(GL_ARRAY_BUFFER, QUEST_SCENE_MAX_QUADS * 6 * 6 * sizeof(float),
+                 0, GL_STREAM_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                          (const void *)(3 * sizeof(float)));
+
+    /* Star sphere, fixed in the game world. */
+    g_starCount = 2500;
+    stars = (float *)malloc((size_t)g_starCount * 4 * sizeof(float));
+    if (stars == 0)
+        return 0;
+    for (i = 0; i < g_starCount; i++) {
+        float x, y, z, l, b;
+        do {
+            seed = seed * 1664525U + 1013904223U;
+            x = (float)((seed >> 8) & 0xffff) / 32768.0f - 1.0f;
+            seed = seed * 1664525U + 1013904223U;
+            y = (float)((seed >> 8) & 0xffff) / 32768.0f - 1.0f;
+            seed = seed * 1664525U + 1013904223U;
+            z = (float)((seed >> 8) & 0xffff) / 32768.0f - 1.0f;
+            l = x * x + y * y + z * z;
+        } while (l > 1.0f || l < 0.01f);
+        l = sqrtf(l);
+        seed = seed * 1664525U + 1013904223U;
+        b = (float)((seed >> 8) & 0xffff) / 65536.0f;
+        stars[i * 4 + 0] = x / l;
+        stars[i * 4 + 1] = y / l;
+        stars[i * 4 + 2] = z / l;
+        stars[i * 4 + 3] = 0.35f + 0.65f * b * b * b;
+    }
+    glGenVertexArrays(1, &g_starVao);
+    glGenBuffers(1, &g_starVbo);
+    glBindVertexArray(g_starVao);
+    glBindBuffer(GL_ARRAY_BUFFER, g_starVbo);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)g_starCount * 4 * sizeof(float),
+                 stars, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glBindVertexArray(0);
+    free(stars);
+    return 1;
+}
+
+/* Column-major 4x4 helpers. */
+static void MatMul(float *out, const float *a, const float *b)
+{
+    float r[16];
+    int c, row, k;
+
+    for (c = 0; c < 4; c++)
+        for (row = 0; row < 4; row++) {
+            float s = 0.0f;
+            for (k = 0; k < 4; k++)
+                s += a[k * 4 + row] * b[c * 4 + k];
+            r[c * 4 + row] = s;
+        }
+    memcpy(out, r, sizeof(r));
+}
+
+static void MatFromPose(float *m, Vec3 pos, XrQuaternionf q)
+{
+    float x = q.x, y = q.y, z = q.z, w = q.w;
+
+    m[0] = 1 - 2 * (y * y + z * z);
+    m[1] = 2 * (x * y + z * w);
+    m[2] = 2 * (x * z - y * w);
+    m[3] = 0;
+    m[4] = 2 * (x * y - z * w);
+    m[5] = 1 - 2 * (x * x + z * z);
+    m[6] = 2 * (y * z + x * w);
+    m[7] = 0;
+    m[8] = 2 * (x * z + y * w);
+    m[9] = 2 * (y * z - x * w);
+    m[10] = 1 - 2 * (x * x + y * y);
+    m[11] = 0;
+    m[12] = pos.x;
+    m[13] = pos.y;
+    m[14] = pos.z;
+    m[15] = 1;
+}
+
+static void MatInverseRigid(float *out, const float *m)
+{
+    int i, j;
+
+    for (i = 0; i < 3; i++)
+        for (j = 0; j < 3; j++)
+            out[i * 4 + j] = m[j * 4 + i];
+    out[3] = out[7] = out[11] = 0.0f;
+    for (i = 0; i < 3; i++)
+        out[12 + i] = -(out[i] * m[12] + out[4 + i] * m[13] +
+                        out[8 + i] * m[14]);
+    out[15] = 1.0f;
+}
+
+static void MatProjection(float *m, XrFovf fov, float nearZ, float farZ)
+{
+    float l = tanf(fov.angleLeft), r = tanf(fov.angleRight);
+    float u = tanf(fov.angleUp), d = tanf(fov.angleDown);
+    float w = r - l, h = u - d;
+
+    memset(m, 0, 16 * sizeof(float));
+    m[0] = 2.0f / w;
+    m[5] = 2.0f / h;
+    m[8] = (r + l) / w;
+    m[9] = (u + d) / h;
+    m[10] = -(farZ + nearZ) / (farZ - nearZ);
+    m[11] = -1.0f;
+    m[14] = -(2.0f * farZ * nearZ) / (farZ - nearZ);
+}
+
+/* Copies the newest stereo scene and performs pending GL uploads. */
+static void SyncStereoScene(void)
+{
+    AtlasUpload *uploads;
+    int newScene = 0;
+
+    pthread_mutex_lock(&g_lock);
+    g_xrStereo = g_stereoMode;
+    uploads = g_uploadHead;
+    g_uploadHead = g_uploadTail = 0;
+    if (g_sceneSerial != g_xrSceneSerial) {
+        g_xrSceneSerial = g_sceneSerial;
+        g_xrHeader = g_sceneHeader;
+        memcpy(g_xrQuads, g_sceneQuads,
+               sizeof(QuestSceneQuad) * (size_t)g_sceneHeader.quadCount);
+        memcpy(g_xrHud, g_sceneHud, sizeof(g_xrHud));
+        memcpy(g_xrDash, g_sceneDash, sizeof(g_xrDash));
+        memcpy(g_xrPalette, g_scenePalette, sizeof(g_xrPalette));
+        newScene = 1;
+    }
+    pthread_mutex_unlock(&g_lock);
+
+    if (uploads != 0) {
+        glBindTexture(GL_TEXTURE_2D_ARRAY, g_atlasTexture);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        while (uploads != 0) {
+            AtlasUpload *next = uploads->next;
+            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, uploads->x, uploads->y,
+                            uploads->layer, uploads->width, uploads->height, 1,
+                            GL_RED, GL_UNSIGNED_BYTE, uploads->pixels);
+            free(uploads->pixels);
+            free(uploads);
+            uploads = next;
+        }
+    }
+    if (newScene) {
+        unsigned char rgba[256 * 4];
+        int i;
+
+        for (i = 0; i < 256; i++) {
+            rgba[i * 4 + 0] = g_xrPalette[i * 4 + 2];
+            rgba[i * 4 + 1] = g_xrPalette[i * 4 + 1];
+            rgba[i * 4 + 2] = g_xrPalette[i * 4 + 0];
+            rgba[i * 4 + 3] = 255;
+        }
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        glBindTexture(GL_TEXTURE_2D, g_paletteTexture);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 1, GL_RGBA,
+                        GL_UNSIGNED_BYTE, rgba);
+        glBindTexture(GL_TEXTURE_2D, g_hudTexture);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, QUEST_FRAME_WIDTH,
+                        QUEST_FRAME_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE,
+                        g_xrHud);
+        glBindTexture(GL_TEXTURE_2D, g_dashTexture);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, QUEST_FRAME_WIDTH,
+                        QUEST_FRAME_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE,
+                        g_xrDash);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+}
+
+static void DrawEye(int eye, const float *anchorMatrix)
+{
+    float eyeMatrix[16], view[16], proj[16], viewProj[16];
+    float rot[9];
+    Swapchain *chain = &g_eyeChain[eye];
+    uint32_t index;
+    int i, r, c;
+
+    if (!AcquireImage(chain, &index))
+        return;
+    MatFromPose(eyeMatrix, fromXr(g_views[eye].pose.position),
+                g_views[eye].pose.orientation);
+    MatInverseRigid(view, eyeMatrix);
+    MatMul(view, view, anchorMatrix);
+    MatProjection(proj, g_views[eye].fov, 0.05f, 100000.0f);
+    MatMul(viewProj, proj, view);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, chain->framebuffers[index]);
+    glViewport(0, 0, chain->width, chain->height);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glDisable(GL_CULL_FACE);
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    /* GLSL mat3 is column-major: column c = row c of worldToCockpit^T. */
+    for (r = 0; r < 3; r++)
+        for (c = 0; c < 3; c++)
+            rot[c * 3 + r] = g_xrHeader.worldToCockpit[r][c];
+    glUseProgram(g_starProgram);
+    glUniformMatrix4fv(g_starViewProj, 1, GL_FALSE, viewProj);
+    glUniformMatrix3fv(g_starRot, 1, GL_FALSE, rot);
+    glBindVertexArray(g_starVao);
+    glDrawArrays(GL_POINTS, 0, g_starCount);
+
+    if (g_xrHeader.quadCount > 0) {
+        glUseProgram(g_spriteProgram);
+        glUniformMatrix4fv(g_spriteViewProj, 1, GL_FALSE, viewProj);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, g_atlasTexture);
+        glUniform1i(g_spriteAtlas, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, g_paletteTexture);
+        glUniform1i(g_spritePalette, 1);
+        glBindVertexArray(g_spriteVao);
+        glDrawArrays(GL_TRIANGLES, 0, g_xrHeader.quadCount * 6);
+        glActiveTexture(GL_TEXTURE0);
+    }
+    glBindVertexArray(0);
+    glUseProgram(0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    ReleaseImage(chain);
+    (void)i;
+}
+
+static void UploadSpriteVertices(void)
+{
+    static float vertices[QUEST_SCENE_MAX_QUADS * 6 * 6];
+    static const int order[6] = { 0, 1, 2, 2, 1, 3 };
+    int q, v;
+
+    for (q = 0; q < g_xrHeader.quadCount; q++) {
+        const QuestSceneQuad *quad = &g_xrQuads[q];
+        for (v = 0; v < 6; v++) {
+            float *out = vertices + (q * 6 + v) * 6;
+            int corner = order[v];
+            out[0] = quad->p[corner][0];
+            out[1] = quad->p[corner][1];
+            out[2] = quad->p[corner][2];
+            out[3] = quad->uv[corner][0];
+            out[4] = quad->uv[corner][1];
+            out[5] = quad->layer;
+        }
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, g_spriteVbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0,
+                    (GLsizeiptr)g_xrHeader.quadCount * 6 * 6 * sizeof(float),
+                    vertices);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+static void BlitPanel(Swapchain *chain, GLuint readFbo)
+{
+    uint32_t index;
+
+    if (!AcquireImage(chain, &index))
+        return;
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, chain->framebuffers[index]);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
+    glBlitFramebuffer(0, 0, QUEST_FRAME_WIDTH, QUEST_FRAME_HEIGHT, 0,
+                      SCREEN_PIXELS_H, SCREEN_PIXELS_W, 0, GL_COLOR_BUFFER_BIT,
+                      GL_NEAREST);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    ReleaseImage(chain);
+}
+
 static int InitSession(void)
 {
     PFN_xrGetOpenGLESGraphicsRequirementsKHR getRequirements = 0;
@@ -610,7 +1088,13 @@ static int InitSession(void)
                          chosen) ||
         !CreateSwapchain(&g_beamChain, 16, 16, chosen) ||
         !CreateSwapchain(&g_kbChain, QUEST_KEYBOARD_WIDTH,
-                         QUEST_KEYBOARD_HEIGHT, chosen))
+                         QUEST_KEYBOARD_HEIGHT, chosen) ||
+        !CreateSwapchain(&g_hudChain, SCREEN_PIXELS_W, SCREEN_PIXELS_H,
+                         chosen) ||
+        !CreateSwapchain(&g_dashChain, SCREEN_PIXELS_W, SCREEN_PIXELS_H,
+                         chosen))
+        return 0;
+    if (!InitStereo(chosen))
         return 0;
 
     /* The beam image never changes: fill it once. */
@@ -835,6 +1319,46 @@ static void ScreenFrame(Vec3 *centre, Vec3 *right, Vec3 *up, Vec3 *normal,
                           v3(0, -SCREEN_DROP_M, 0)));
 }
 
+typedef struct Panel {
+    Vec3 centre, right, up, normal;
+    float width, height;
+    XrQuaternionf q;
+} Panel;
+
+/* Cockpit panel: the 320x200 frame at `distance`, subtending exactly the
+ * engine's projection (pixel centreX/Y straight ahead). */
+static void CockpitPanel(Panel *panel, float distance)
+{
+    const QuestSceneHeader *h = &g_xrHeader;
+    XrQuaternionf q = quatYaw(g_anchorYaw);
+    float perPixel = distance / h->focal;
+    Vec3 offset;
+
+    offset = v3(((float)QUEST_FRAME_WIDTH * 0.5f - h->centreX) * perPixel,
+                -((float)QUEST_FRAME_HEIGHT * 0.5f - h->centreY) * perPixel *
+                    h->stretch,
+                -distance);
+    panel->q = q;
+    panel->right = quatRotate(q, v3(1, 0, 0));
+    panel->up = v3(0, 1, 0);
+    panel->normal = quatRotate(q, v3(0, 0, 1));
+    panel->centre = v3add(g_anchorPos, quatRotate(q, offset));
+    panel->width = (float)QUEST_FRAME_WIDTH * perPixel;
+    panel->height = (float)QUEST_FRAME_HEIGHT * perPixel * h->stretch;
+}
+
+static void PointerPanel(Panel *panel)
+{
+    if (g_xrStereo) {
+        CockpitPanel(panel, g_xrHeader.dashDistance);
+        return;
+    }
+    ScreenFrame(&panel->centre, &panel->right, &panel->up, &panel->normal,
+                &panel->q);
+    panel->width = SCREEN_WIDTH_M;
+    panel->height = SCREEN_HEIGHT_M;
+}
+
 static void KeyboardFrame(Vec3 *centre, Vec3 *right, Vec3 *up, Vec3 *normal,
                           XrQuaternionf *orientation)
 {
@@ -1010,10 +1534,20 @@ static void UpdateInput(XrTime time, XrPosef *headPose, int headValid,
             }
         }
         g_kbPrevTrigger = trigger;
-        ScreenFrame(&centre, &right, &up, &normal, &screenQ);
-        if (!onKeyboard &&
-            RayQuad(origin, dir, centre, right, up, normal, SCREEN_WIDTH_M,
-                    SCREEN_HEIGHT_M, &u, &v, &t)) {
+        {
+            Panel panel;
+            PointerPanel(&panel);
+            centre = panel.centre;
+            right = panel.right;
+            up = panel.up;
+            normal = panel.normal;
+            screenQ = panel.q;
+            if (!onKeyboard &&
+                RayQuad(origin, dir, centre, right, up, normal, panel.width,
+                        panel.height, &u, &v, &t))
+                onKeyboard = 2;
+        }
+        if (onKeyboard == 2) {
             p.onScreen = 1;
             p.x = (int)(u * QUEST_FRAME_WIDTH);
             p.y = (int)(v * QUEST_FRAME_HEIGHT);
@@ -1173,6 +1707,41 @@ static int DrawKeyboard(XrCompositionLayerQuad *layer)
     return 1;
 }
 
+static void FillQuadLayer(XrCompositionLayerQuad *layer, Swapchain *chain,
+                          const Panel *panel, int alpha)
+{
+    memset(layer, 0, sizeof(*layer));
+    layer->type = XR_TYPE_COMPOSITION_LAYER_QUAD;
+    layer->layerFlags = alpha ? XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT
+                              : 0;
+    layer->space = g_localSpace;
+    layer->eyeVisibility = XR_EYE_VISIBILITY_BOTH;
+    layer->subImage.swapchain = chain->handle;
+    layer->subImage.imageRect.extent.width = chain->width;
+    layer->subImage.imageRect.extent.height = chain->height;
+    layer->pose.orientation = panel->q;
+    layer->pose.position = toXr(panel->centre);
+    layer->size.width = panel->width;
+    layer->size.height = panel->height;
+}
+
+static int LocateEyes(XrTime time)
+{
+    XrViewLocateInfo info = { XR_TYPE_VIEW_LOCATE_INFO };
+    XrViewState state = { XR_TYPE_VIEW_STATE };
+    uint32_t count = 0;
+
+    info.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+    info.displayTime = time;
+    info.space = g_localSpace;
+    g_views[0].type = XR_TYPE_VIEW;
+    g_views[1].type = XR_TYPE_VIEW;
+    if (XR_FAILED(xrLocateViews(g_session, &info, &state, 2, &count,
+                                g_views)) || count != 2)
+        return 0;
+    return (state.viewStateFlags & XR_VIEW_STATE_ORIENTATION_VALID_BIT) != 0;
+}
+
 static void RunFrame(void)
 {
     XrFrameWaitInfo waitInfo = { XR_TYPE_FRAME_WAIT_INFO };
@@ -1182,7 +1751,10 @@ static void RunFrame(void)
     XrCompositionLayerQuad screenLayer;
     XrCompositionLayerQuad beamLayer;
     XrCompositionLayerQuad keyboardLayer;
-    const XrCompositionLayerBaseHeader *layers[3];
+    XrCompositionLayerQuad dashLayer;
+    XrCompositionLayerProjection projLayer;
+    XrCompositionLayerProjectionView projViews[2];
+    const XrCompositionLayerBaseHeader *layers[6];
     uint32_t layerCount = 0;
     XrPosef headPose;
     int headValid;
@@ -1194,30 +1766,64 @@ static void RunFrame(void)
     if (XR_FAILED(xrBeginFrame(g_session, &beginInfo)))
         return;
 
+    SyncStereoScene();
     headValid = LocatePose(g_viewSpace, frameState.predictedDisplayTime,
                            &headPose);
     UpdateInput(frameState.predictedDisplayTime, &headPose, headValid,
                 &beamLayer, &beamVisible);
 
-    if (frameState.shouldRender && g_anchorValid &&
+    if (frameState.shouldRender && g_anchorValid && g_xrStereo &&
+        LocateEyes(frameState.predictedDisplayTime)) {
+        float anchorMatrix[16];
+        Panel hudPanel, dashPanel;
+        int eye;
+
+        MatFromPose(anchorMatrix, g_anchorPos, quatYaw(g_anchorYaw));
+        UploadSpriteVertices();
+        for (eye = 0; eye < 2; eye++) {
+            DrawEye(eye, anchorMatrix);
+            memset(&projViews[eye], 0, sizeof(projViews[eye]));
+            projViews[eye].type = XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
+            projViews[eye].pose = g_views[eye].pose;
+            projViews[eye].fov = g_views[eye].fov;
+            projViews[eye].subImage.swapchain = g_eyeChain[eye].handle;
+            projViews[eye].subImage.imageRect.extent.width =
+                g_eyeChain[eye].width;
+            projViews[eye].subImage.imageRect.extent.height =
+                g_eyeChain[eye].height;
+        }
+        memset(&projLayer, 0, sizeof(projLayer));
+        projLayer.type = XR_TYPE_COMPOSITION_LAYER_PROJECTION;
+        projLayer.space = g_localSpace;
+        projLayer.viewCount = 2;
+        projLayer.views = projViews;
+        layers[layerCount++] = (const XrCompositionLayerBaseHeader *)&projLayer;
+
+        BlitPanel(&g_hudChain, g_hudReadFbo);
+        CockpitPanel(&hudPanel, g_xrHeader.hudDistance);
+        FillQuadLayer(&screenLayer, &g_hudChain, &hudPanel, 1);
+        layers[layerCount++] = (const XrCompositionLayerBaseHeader *)&screenLayer;
+        if (g_xrHeader.hasDashboard) {
+            BlitPanel(&g_dashChain, g_dashReadFbo);
+            CockpitPanel(&dashPanel, g_xrHeader.dashDistance);
+            FillQuadLayer(&dashLayer, &g_dashChain, &dashPanel, 1);
+            layers[layerCount++] =
+                (const XrCompositionLayerBaseHeader *)&dashLayer;
+        }
+        if (g_kbVisible && g_kbImage != 0 && DrawKeyboard(&keyboardLayer))
+            layers[layerCount++] =
+                (const XrCompositionLayerBaseHeader *)&keyboardLayer;
+        if (beamVisible)
+            layers[layerCount++] =
+                (const XrCompositionLayerBaseHeader *)&beamLayer;
+    } else if (frameState.shouldRender && g_anchorValid && !g_xrStereo &&
         AcquireImage(&g_screenChain, &index)) {
-        Vec3 centre, right, up, normal;
-        XrQuaternionf q;
+        Panel flat;
 
         DrawScreen(index);
         ReleaseImage(&g_screenChain);
-        ScreenFrame(&centre, &right, &up, &normal, &q);
-        memset(&screenLayer, 0, sizeof(screenLayer));
-        screenLayer.type = XR_TYPE_COMPOSITION_LAYER_QUAD;
-        screenLayer.space = g_localSpace;
-        screenLayer.eyeVisibility = XR_EYE_VISIBILITY_BOTH;
-        screenLayer.subImage.swapchain = g_screenChain.handle;
-        screenLayer.subImage.imageRect.extent.width = SCREEN_PIXELS_W;
-        screenLayer.subImage.imageRect.extent.height = SCREEN_PIXELS_H;
-        screenLayer.pose.orientation = q;
-        screenLayer.pose.position = toXr(centre);
-        screenLayer.size.width = SCREEN_WIDTH_M;
-        screenLayer.size.height = SCREEN_HEIGHT_M;
+        PointerPanel(&flat);
+        FillQuadLayer(&screenLayer, &g_screenChain, &flat, 0);
         layers[layerCount++] = (const XrCompositionLayerBaseHeader *)&screenLayer;
         if (g_kbVisible && g_kbImage != 0 && DrawKeyboard(&keyboardLayer))
             layers[layerCount++] =
@@ -1345,6 +1951,7 @@ void QuestXr_SubmitIndexedFrame(const unsigned char *pixels,
         out += 4;
     }
     g_frameSerial++;
+    g_stereoMode = 0;
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -1456,4 +2063,51 @@ int QuestXr_PopKeyboardKey(void)
 void QuestXr_SetKeyboardShift(int shift)
 {
     g_kbShift = shift ? 1 : 0;
+}
+
+void QuestXr_SubmitStereoFrame(const QuestSceneHeader *header,
+                               const QuestSceneQuad *quads,
+                               const unsigned char *hudRgba,
+                               const unsigned char *dashRgba,
+                               const unsigned char *palette)
+{
+    int count = header->quadCount;
+
+    if (count > QUEST_SCENE_MAX_QUADS)
+        count = QUEST_SCENE_MAX_QUADS;
+    pthread_mutex_lock(&g_lock);
+    g_sceneHeader = *header;
+    g_sceneHeader.quadCount = count;
+    memcpy(g_sceneQuads, quads, sizeof(QuestSceneQuad) * (size_t)count);
+    memcpy(g_sceneHud, hudRgba, sizeof(g_sceneHud));
+    memcpy(g_sceneDash, dashRgba, sizeof(g_sceneDash));
+    memcpy(g_scenePalette, palette, sizeof(g_scenePalette));
+    g_sceneSerial++;
+    g_stereoMode = 1;
+    pthread_mutex_unlock(&g_lock);
+}
+
+void QuestXr_QueueAtlasUpload(int layer, int x, int y, int width, int height,
+                              unsigned char *pixels)
+{
+    AtlasUpload *upload = (AtlasUpload *)malloc(sizeof(*upload));
+
+    if (upload == 0) {
+        free(pixels);
+        return;
+    }
+    upload->next = 0;
+    upload->layer = layer;
+    upload->x = x;
+    upload->y = y;
+    upload->width = width;
+    upload->height = height;
+    upload->pixels = pixels;
+    pthread_mutex_lock(&g_lock);
+    if (g_uploadTail != 0)
+        g_uploadTail->next = upload;
+    else
+        g_uploadHead = upload;
+    g_uploadTail = upload;
+    pthread_mutex_unlock(&g_lock);
 }

@@ -166,12 +166,18 @@ short ShowModalTextPanel(short fontIndex, const char *format, ...)
     DrawModalTextPanel(pModalTextPanel, 0, 6, 2, text);
     DIBslam();
     DIBslamReal();
+#ifdef WC1_QUEST
+    SdlQuestSetYesNoPrompt(strstr(text, "(Y/N)") != 0);
+#endif
     return 1;
 }
 
 /* Function start: 0x41AD10 */
 void ReleaseModalTextPanel(void)
 {
+#ifdef WC1_QUEST
+    SdlQuestSetYesNoPrompt(0);
+#endif
     if (pModalTextPanel != 0) {
         RestoreModalTextPanel(pModalTextPanel);
         ReleasePacketHandle(pModalTextPanel);

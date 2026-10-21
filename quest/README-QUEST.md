@@ -36,6 +36,7 @@ as in the DOS game.
 | A | Enter |
 | B or Menu | Escape |
 | Y / X | Answer "Y" / "N" |
+| A / B in a "(Y/N)" prompt (load, save, quit) | Yes / No |
 | Hold left stick click 1 s | Recentre the screen in front of you |
 
 Text prompts (name, callsign, saved games) open a keyboard below the screen:
@@ -87,3 +88,12 @@ developer command file `/sdcard/WingCommander/vrcmd` (`click X Y`, `move X Y`,
 * `#ifdef WC1_QUEST` hooks in `src/sdl/{video,events,joystick,launcher,compat}.c`
   and `src/trainsim.c` (`ReadTextInput` shows the keyboard).
 * `quest/CMakeLists.txt`, `quest/android/` — NDK/Gradle build.
+
+## Stage 2: stereo space
+
+In flight, space is rendered per eye: ships, missiles and dust are billboards at
+their real 3D position, stars sit on a fixed sphere at infinity, and you can
+look around with your head.  The cockpit art is a panel 0.9 m in front of you;
+HUD pixels in the canopy window (reticle, target brackets) are on a panel at
+8 m.  Tuning goes in `/sdcard/WingCommander/vr.cfg` (`world_scale=`,
+`dash_distance=`, `hud_distance=`, `stretch=`, `stereo=0` to disable).

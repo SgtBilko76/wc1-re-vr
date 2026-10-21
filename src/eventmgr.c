@@ -957,6 +957,11 @@ void draw_sorted_objects_to_buffer(void)
                 asObjectDrawPosX[obj] = screenX;
                 screenY = (short)(screenY + nCurrentViewCenterPosY);
                 asObjectDrawPosY[obj] = screenY;
+#ifdef WC1_QUEST
+                /* Drawn in 3D by the VR renderer instead. */
+                if (SdlQuestStereoOwnsObject(obj))
+                    break;
+#endif
                 if (shape != 0) {
 #ifdef SDL_PORT
                     if (!SdlRecordSpaceSprite(
@@ -993,6 +998,14 @@ void draw_sorted_objects_to_buffer(void)
                     shape = apObjShapeArray[obj];
                 else
                     shape = pCurrentConstellationShape;
+#ifdef WC1_QUEST
+                /* Stars come from the VR star sphere; dust is 3D. */
+                if (specialObject != obj &&
+                    (objectClass == OBJECT_CLASS_STAR ||
+                     SdlQuestStereoOwnsObject(obj)) &&
+                    SdlQuestStereoOwnsObject(-2))
+                    break;
+#endif
 #ifdef SDL_PORT
                 if (!SdlRecordSpaceSprite(
                         &stSpaceBufferViewport, enhancedScreenX,

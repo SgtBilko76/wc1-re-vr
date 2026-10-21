@@ -155,4 +155,84 @@ edit("include/wc1sdl.h",
      "#endif\n\n"
      "#ifndef _WIN32\nint SdlOpen(",
      "void SdlQuestInjectMouse(int x")
+# --- stage 2: stereo capture --------------------------------------------------
+edit("src/sdl/video.c",
+     "    int fullViewportCopy, unsigned char clearColour)\n{\n    if (SdlUsingGlRenderer()) {\n        SdlGlRendererBeginSpaceFrame(\n",
+     "    int fullViewportCopy, unsigned char clearColour)\n{\n"
+     "#ifdef WC1_QUEST\n"
+     "    SdlQuestCaptureSpaceFrame(geometry, viewportMode, fullViewportCopy,\n"
+     "                              clearColour);\n"
+     "#endif\n"
+     "    if (SdlUsingGlRenderer()) {\n        SdlGlRendererBeginSpaceFrame(\n",
+     "SdlQuestCaptureSpaceFrame(geometry")
+edit("src/sdl/video.c",
+     "    SdlEndJoystickSpaceflight();\n    if (SdlUsingGlRenderer())\n        SdlGlRendererCancelSpaceFrame();\n",
+     "    SdlEndJoystickSpaceflight();\n"
+     "#ifdef WC1_QUEST\n    SdlQuestCancelStereo();\n#endif\n"
+     "    if (SdlUsingGlRenderer())\n        SdlGlRendererCancelSpaceFrame();\n",
+     "SdlQuestCancelStereo();")
+edit("src/sdl/video.c",
+     "    QuestXr_SubmitIndexedFrame(pixels, palette);\n    return 1;\n",
+     "    if (SdlQuestPresentStereo(pixels, palette))\n        return 1;\n"
+     "    QuestXr_SubmitIndexedFrame(pixels, palette);\n    return 1;\n",
+     "SdlQuestPresentStereo(pixels, palette)")
+edit("src/eventmgr.c",
+     "                screenY = (short)(screenY + nCurrentViewCenterPosY);\n"
+     "                asObjectDrawPosY[obj] = screenY;\n"
+     "                if (shape != 0) {\n",
+     "                screenY = (short)(screenY + nCurrentViewCenterPosY);\n"
+     "                asObjectDrawPosY[obj] = screenY;\n"
+     "#ifdef WC1_QUEST\n"
+     "                /* Drawn in 3D by the VR renderer instead. */\n"
+     "                if (SdlQuestStereoOwnsObject(obj))\n"
+     "                    break;\n"
+     "#endif\n"
+     "                if (shape != 0) {\n",
+     "Drawn in 3D by the VR renderer instead.")
+edit("src/eventmgr.c",
+     "                if (specialObject == obj)\n"
+     "                    shape = apObjShapeArray[obj];\n"
+     "                else\n"
+     "                    shape = pCurrentConstellationShape;\n",
+     "                if (specialObject == obj)\n"
+     "                    shape = apObjShapeArray[obj];\n"
+     "                else\n"
+     "                    shape = pCurrentConstellationShape;\n"
+     "#ifdef WC1_QUEST\n"
+     "                /* Stars come from the VR star sphere; dust is 3D. */\n"
+     "                if (specialObject != obj &&\n"
+     "                    (objectClass == OBJECT_CLASS_STAR ||\n"
+     "                     SdlQuestStereoOwnsObject(obj)) &&\n"
+     "                    SdlQuestStereoOwnsObject(-2))\n"
+     "                    break;\n"
+     "#endif\n",
+     "Stars come from the VR star sphere")
+edit("include/wc1sdl.h",
+     "int SdlQuestTakeShift(void);\n#endif",
+     "int SdlQuestTakeShift(void);\n"
+     "struct ScreenViewportGeometry;\n"
+     "void SdlQuestCaptureSpaceFrame(const struct ScreenViewportGeometry *geometry,\n"
+     "                               int viewportMode, int fullViewportCopy,\n"
+     "                               unsigned char clearColour);\n"
+     "int SdlQuestStereoOwnsObject(int obj);\n"
+     "void SdlQuestCancelStereo(void);\n"
+     "int SdlQuestPresentStereo(const unsigned char *pixels,\n"
+     "                          const unsigned char *palette);\n"
+     "#endif",
+     "int SdlQuestStereoOwnsObject(int obj);")
+# --- Yes/No prompts: A = yes, B = no on Touch -------------------------------
+edit("src/barracks.c",
+     "    DrawModalTextPanel(pModalTextPanel, 0, 6, 2, text);\n    DIBslam();\n    DIBslamReal();\n    return 1;\n",
+     "    DrawModalTextPanel(pModalTextPanel, 0, 6, 2, text);\n    DIBslam();\n    DIBslamReal();\n"
+     "#ifdef WC1_QUEST\n    SdlQuestSetYesNoPrompt(strstr(text, \"(Y/N)\") != 0);\n#endif\n"
+     "    return 1;\n",
+     "SdlQuestSetYesNoPrompt(strstr(text")
+edit("src/barracks.c",
+     "void ReleaseModalTextPanel(void)\n{\n",
+     "void ReleaseModalTextPanel(void)\n{\n#ifdef WC1_QUEST\n    SdlQuestSetYesNoPrompt(0);\n#endif\n",
+     "SdlQuestSetYesNoPrompt(0);")
+edit("include/wc1sdl.h",
+     "int SdlQuestStereoOwnsObject(int obj);\n",
+     "int SdlQuestStereoOwnsObject(int obj);\nvoid SdlQuestSetYesNoPrompt(int active);\n",
+     "void SdlQuestSetYesNoPrompt(int active);")
 print("done")

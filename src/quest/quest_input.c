@@ -17,7 +17,8 @@
  *
  * Outside flight the pad is neutral; the laser drives the mouse
  * (trigger = left click, grip = right click), B / menu = Escape,
- * Y = "Y", X = "N", A = Enter.
+ * Y = "Y", X = "N", A = Enter.  In Yes/No prompts (load, save, quit):
+ * A = yes, B = no.
  * Hold the left stick click for one second to recentre the screen.
  */
 #include "wc1.h"
@@ -193,6 +194,14 @@ static void QuestLoadKeyboard(void)
 }
 
 static int g_textInputDepth;
+static int g_yesNoPrompt;
+
+void SdlQuestSetYesNoPrompt(int active)
+{
+    if (active != g_yesNoPrompt)
+        printf("yes/no prompt %s\n", active ? "on (A = yes, B = no)" : "off");
+    g_yesNoPrompt = active;
+}
 /* One-shot shift: on at the start of a field and after a space, so names
  * come out capitalised.  ReadTextInput (trainsim.c) consumes it when it
  * decides the case of a letter. */
@@ -541,8 +550,8 @@ void SdlQuestServiceInput(void)
                 SDL_JoystickSetVirtualAxis(pad, axis,
                                            axis >= SDL_CONTROLLER_AXIS_TRIGGERLEFT
                                                ? -32768 : 0);
-            b[SDL_CONTROLLER_BUTTON_BACK] = phys[PHYS_B] || phys[PHYS_MENU];
-            b[SDL_CONTROLLER_BUTTON_Y] = phys[PHYS_Y];
+            b[SDL_CONTROLLER_BUTTON_BACK] =
+                (phys[PHYS_B] && !g_yesNoPrompt) || phys[PHYS_MENU];
             g_navPulse = 0;
         }
         for (i = 0; i < SDL_CONTROLLER_BUTTON_MAX; i++)
@@ -570,10 +579,21 @@ void SdlQuestServiceInput(void)
     }
 
     if (!piloting) {
-        if (edge[PHYS_A])
-            TapKey(SDLK_RETURN);
-        if (edge[PHYS_X])
-            TapKey(SDLK_n);
+        /* Yes/No prompts (load, save, quit): A = yes, B = no.  Elsewhere
+         * A = Enter, B = Escape (via the pad's Back button). */
+        if (g_yesNoPrompt) {
+            if (edge[PHYS_A] || edge[PHYS_Y])
+                TapKey(SDLK_y);
+            if (edge[PHYS_B] || edge[PHYS_X])
+                TapKey(SDLK_n);
+        } else {
+            if (edge[PHYS_A])
+                TapKey(SDLK_RETURN);
+            if (edge[PHYS_X])
+                TapKey(SDLK_n);
+            if (edge[PHYS_Y])
+                TapKey(SDLK_y);
+        }
 
         /* Laser pointer -> mouse. */
         if (p.onScreen) {

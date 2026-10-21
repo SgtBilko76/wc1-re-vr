@@ -381,6 +381,15 @@ void SdlQuestServiceInput(void);
 int SdlQuestIsQuestPad(int deviceIndex);
 void SdlQuestSetTextInput(int active);
 int SdlQuestTakeShift(void);
+struct ScreenViewportGeometry;
+void SdlQuestCaptureSpaceFrame(const struct ScreenViewportGeometry *geometry,
+                               int viewportMode, int fullViewportCopy,
+                               unsigned char clearColour);
+int SdlQuestStereoOwnsObject(int obj);
+void SdlQuestSetYesNoPrompt(int active);
+void SdlQuestCancelStereo(void);
+int SdlQuestPresentStereo(const unsigned char *pixels,
+                          const unsigned char *palette);
 #endif
 
 #ifndef _WIN32
