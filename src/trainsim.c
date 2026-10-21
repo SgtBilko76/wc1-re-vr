@@ -479,8 +479,8 @@ void PromptForPilotField(short x, short y, const char *label,
                          const char *defaultText)
 {
     stTrainSimTxtContext.alignment = 0;
-    SetTextCursor((unsigned short)(stTrainSimPanelViewport.left + x),
-                  (unsigned short)y);
+    x += stTrainSimPanelViewport.left;
+    SetTextCursor((unsigned short)x, (unsigned short)y);
     DrawFormattedText(label);
     do {
         DosStrcpy(destination, defaultText);
@@ -658,13 +658,13 @@ void ShowTrainSimHighScores(void)
     AllocateViewport(&stTrainSimulatorHighScoreBufView,
                      cBlackColour, 0);
     stTrainSimHighScoreDisplayViewport = stScreenView;
-    lineHeight = (short)(lineHeight + 3);
     stTrainSimHighScoreTextContext.viewport =
         &stTrainSimulatorHighScoreBufView;
     stTrainSimHighScoreTextContext.text =
         szDefaultTxtBuf;
     *(ShortRect *)&stTrainSimHighScoreDisplayViewport.left =
         stTrainSimPanelBounds;
+    lineHeight = (short)(lineHeight + 3);
     SetTextContext(&stTrainSimHighScoreTextContext);
     ResetStringBuilder(&stTrainSimHighScoreTextContext);
     EraseTextContextBackground(&stTrainSimHighScoreTextContext);
@@ -717,15 +717,14 @@ short SelectTrainSimMission(short *mission)
     InputEventState event;
     Viewport menuViewport;
     ShortPoint positions[4];
-    unsigned char *topLeftShape;
-    unsigned char *bottomLeftShape;
-    unsigned char *topRightShape;
-    unsigned char *bottomRightShape;
-    short cancelled;
+    unsigned char *shapes[4];
+    unsigned short cancelled;
     short savedInputMode;
     short eventType;
+    int key;
     signed char selection;
     signed char region;
+    int regionIndex;
     unsigned char activate;
 
     cancelled = 0;
@@ -748,52 +747,52 @@ short SelectTrainSimMission(short *mission)
 
     menuViewport = stScreenView;
     *(ShortRect *)&menuViewport.left = stTrainSimPanelBounds;
-    topLeftShape = LoadTrainSimOpponentShape(9);
-    bottomLeftShape = LoadTrainSimOpponentShape(10);
-    topRightShape = LoadTrainSimOpponentShape(11);
-    bottomRightShape = LoadTrainSimOpponentShape(12);
+    shapes[0] = LoadTrainSimOpponentShape(9);
+    shapes[1] = LoadTrainSimOpponentShape(10);
+    shapes[2] = LoadTrainSimOpponentShape(11);
+    shapes[3] = LoadTrainSimOpponentShape(12);
 
     AlignSpriteFrameToRectCorner(
         &stTrainSimPanelBounds, &positions[0], 0,
-        topLeftShape, 0);
+        shapes[0], 0);
     GetShapeFrameBounds(
         &aTrainSimMissionRegions[0].left,
-        positions[0].x, positions[0].y, topLeftShape, 0);
+        positions[0].x, positions[0].y, shapes[0], 0);
     AlignSpriteFrameToRectCorner(
         &stTrainSimPanelBounds, &positions[1], 2,
-        bottomLeftShape, 0);
+        shapes[1], 0);
     GetShapeFrameBounds(
         &aTrainSimMissionRegions[1].left,
-        positions[1].x, positions[1].y, bottomLeftShape, 0);
+        positions[1].x, positions[1].y, shapes[1], 0);
     AlignSpriteFrameToRectCorner(
         &stTrainSimPanelBounds, &positions[2], 1,
-        topRightShape, 0);
+        shapes[2], 0);
     GetShapeFrameBounds(
         &aTrainSimMissionRegions[2].left,
-        positions[2].x, positions[2].y, topRightShape, 0);
+        positions[2].x, positions[2].y, shapes[2], 0);
     AlignSpriteFrameToRectCorner(
         &stTrainSimPanelBounds, &positions[3], 3,
-        bottomRightShape, 0);
+        shapes[3], 0);
     GetShapeFrameBounds(
         &aTrainSimMissionRegions[3].left,
-        positions[3].x, positions[3].y, bottomRightShape, 0);
+        positions[3].x, positions[3].y, shapes[3], 0);
 
     DrawSpriteDefault(&menuViewport, positions[0].x, positions[0].y,
-                      topLeftShape, 0);
+                      shapes[0], 0);
     DrawSpriteDefault(&menuViewport, positions[0].x, positions[0].y,
-                      topLeftShape, 2);
+                      shapes[0], 2);
     DrawSpriteDefault(&menuViewport, positions[1].x, positions[1].y,
-                      bottomLeftShape, 0);
+                      shapes[1], 0);
     DrawSpriteDefault(&menuViewport, positions[1].x, positions[1].y,
-                      bottomLeftShape, 2);
+                      shapes[1], 2);
     DrawSpriteDefault(&menuViewport, positions[2].x, positions[2].y,
-                      topRightShape, 0);
+                      shapes[2], 0);
     DrawSpriteDefault(&menuViewport, positions[2].x, positions[2].y,
-                      topRightShape, 2);
+                      shapes[2], 2);
     DrawSpriteDefault(&menuViewport, positions[3].x, positions[3].y,
-                      bottomRightShape, 0);
+                      shapes[3], 0);
     DrawSpriteDefault(&menuViewport, positions[3].x, positions[3].y,
-                      bottomRightShape, 2);
+                      shapes[3], 2);
 
     stMouseCursorState.viewport = &stCurrentTrainSimTitleDisplayViewport;
     SetEventManagerPump(PollMenuInputDevices);
@@ -814,15 +813,16 @@ select_region:
             region = (signed char)FindMenuRegionAtPoint(
                 event.x, event.y,
                 aTrainSimMissionRegions);
-            if (region >= 0 && region < 4)
+            regionIndex = region;
+            if (regionIndex >= 0 && regionIndex <= 3)
                 selection = (signed char)(region + 1);
             break;
         case 3:
         case 5:
             ClearInputKeyStatePreservingModifiers();
             activate = 0;
-            if ((short)event.value == 0x1c ||
-                (short)event.value == 0x39) {
+            key = (short)event.value;
+            if (key == 0x1c || key == 0x39) {
                 activate = 1;
             } else {
                 MoveMenuPointerFromKeyboard(&event);
@@ -840,17 +840,17 @@ select_region:
 
     if (bEscapePressedFlag != 0)
         cancelled = 1;
-    ReleasePacketHandle(topLeftShape);
-    ReleasePacketHandle(bottomLeftShape);
-    ReleasePacketHandle(topRightShape);
-    ReleasePacketHandle(bottomRightShape);
+    ReleasePacketHandle(shapes[0]);
+    ReleasePacketHandle(shapes[1]);
+    ReleasePacketHandle(shapes[2]);
+    ReleasePacketHandle(shapes[3]);
     bInputModeState = (unsigned char)savedInputMode;
     SetEventManagerPump(0);
     EventManagerHook(0);
     LeaveAllocationScope();
     ReleaseTextFont(1);
     *mission = (short)(selection - 1);
-    return cancelled < 1;
+    return cancelled == 0;
 }
 
 /* Function start: 0x427080 */

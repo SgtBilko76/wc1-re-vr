@@ -77,9 +77,9 @@ void __stdcall ReleaseContiguousPaletteEntries(short firstEntry)
 /* Function start: 0x4319B0 */
 void PrintPaletteAllocationMap(void)
 {
-    short index;
     short row;
     short column;
+    short index;
 
     index = 0;
     row = 4;

@@ -3289,3 +3289,50 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `8c398f464042fe324011eb7ac153cc63e2cac7cd554120268ebfe32ce2ca7c51`.
+- `SelectTrainSimMission` keeps its four opponent shapes in a pointer array,
+  ordered top left, bottom left, top right, bottom right. Three elements
+  remain in registers and the third spills at stack offset `0x44`; the
+  complete array explains the twelve bytes missing from the previous
+  `0x40` frame. The rebuilt frame now matches the original `0x4c` allocation.
+  Promote the signed-short key value to an int before its two comparisons.
+  Likewise, retain the returned signed-byte region for the selection update
+  while comparing its promoted int against zero and three. This preserves
+  the original EAX result and separate ECX range check. An unsigned-short
+  cancellation flag tested for equality to zero recovers the final SBB/NEG
+  boolean sequence. All 1,040 bytes now match literally, up from 585;
+  differing encodings fall from 168 to zero. Promoting the region without
+  the key adds sixteen aligned bytes, so the related changes must be
+  assessed together. Reusing the key local for the promoted region also
+  matches, but separate names describe their uses more clearly.
+- `PrintPaletteAllocationMap` declares row, column, then index. This assigns
+  DI, BX and SI respectively, matching all 96 bytes, up from 84. The other
+  declaration permutations leave differing registers.
+  In `ShowTrainSimHighScores`, advance the line height after setting the
+  display bounds. CL then schedules that addition after the viewport copy,
+  as in the original. Differing encodings fall from 109 to 103, mnemonic
+  similarity rises from 97.79% to 98.67%, and literal matching rises from
+  501 to 520 of 880 bytes. Its two-byte displacement after the bounds copy
+  remains. Advancing the pilot prompt's X parameter before passing it to
+  `SetTextCursor` restores the parameter-first addition and gains one byte,
+  from 68 to 69 of 96; eight differing encodings remain.
+  An unsigned animation-scale temporary leaves its output unchanged.
+  Explicit component-index and damage-byte locals, a captured goal limit,
+  and earlier high-score context setup regress file matching. Reversing
+  the prompt's addition operands or qualifying its viewport-left read does
+  not improve it. These trials are not retained.
+  Only these four function rows change in the full report. Normalized exact
+  functions rise from 1,344 to 1,346 of 1,550; same-size differences fall
+  from 201 to 199, and five size differences remain. Mean mnemonic
+  similarity is 99.67%, with three functions below 90%. Function spans,
+  relocation counts and compilation-unit placements are unchanged.
+  Strict whole-file matching rises by 487 positions, from 482,331 to
+  482,818 of 518,656 (92.9963% to 93.0902%); 35,838 positions still differ.
+  All gains are in code. The `.rdata`, `.data` and `.idata` sections remain
+  literally exact, and relocation-section matching remains 30,064 of
+  36,352 bytes. The continuous matching prefix is still 544 bytes, with
+  the first difference at `0x220`.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `b0e08a23e0f956e2c38d1d0ed64eef22c81ac293195b5bfe3db4b2bc1e852107`.
