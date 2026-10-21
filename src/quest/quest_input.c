@@ -605,14 +605,17 @@ void SdlQuestServiceInput(void)
     }
 
     if (piloting && (c.leftStickX != 0.0f || c.leftStickY != 0.0f ||
+                     c.rightStickX != 0.0f || c.rightStickY != 0.0f ||
                      c.rightTrigger > 0.5f)) {
         static Uint32 lastLog;
         if (now - lastLog > 1000) {
             lastLog = now;
-            printf("flight input: stick %.2f %.2f trig %.2f -> yaw %d pitch %d roll %d\n",
-                   c.leftStickX, c.leftStickY, c.rightTrigger,
-                   (int)nYawInputValue, (int)nPitchInput,
-                   (int)nCurrentRollInputValue);
+            printf("flight input: L %.2f %.2f R %.2f %.2f trig %.2f -> "
+                   "yaw %d pitch %d roll %d dev %d\n",
+                   c.leftStickX, c.leftStickY, c.rightStickX, c.rightStickY,
+                   c.rightTrigger, (int)nYawInputValue, (int)nPitchInput,
+                   (int)nCurrentRollInputValue,
+                   (int)nCurrentActiveInputDevice);
         }
     }
     for (i = 0; i < PHYS_COUNT; i++)

@@ -176,6 +176,7 @@ static int g_sessionRunning;
 static int g_hasRefreshRateExt;
 
 static XrActionSet g_actionSet;
+static XrAction g_stickXAction, g_stickYAction;
 static XrAction g_aimAction, g_triggerAction, g_gripAction, g_stickAction,
     g_stickClickAction, g_aAction, g_bAction, g_xAction, g_yAction,
     g_menuAction, g_hapticAction;
@@ -417,6 +418,10 @@ static int InitActions(void)
         !CreateAction(&g_gripAction, "grip", XR_ACTION_TYPE_FLOAT_INPUT, 1) ||
         !CreateAction(&g_stickAction, "stick",
                       XR_ACTION_TYPE_VECTOR2F_INPUT, 1) ||
+        !CreateAction(&g_stickXAction, "stick_x",
+                      XR_ACTION_TYPE_FLOAT_INPUT, 1) ||
+        !CreateAction(&g_stickYAction, "stick_y",
+                      XR_ACTION_TYPE_FLOAT_INPUT, 1) ||
         !CreateAction(&g_stickClickAction, "stick_click",
                       XR_ACTION_TYPE_BOOLEAN_INPUT, 1) ||
         !CreateAction(&g_aAction, "a", XR_ACTION_TYPE_BOOLEAN_INPUT, 0) ||
@@ -442,6 +447,10 @@ static int InitActions(void)
     BIND(g_gripAction, "/user/hand/right/input/squeeze/value");
     BIND(g_stickAction, "/user/hand/left/input/thumbstick");
     BIND(g_stickAction, "/user/hand/right/input/thumbstick");
+    BIND(g_stickXAction, "/user/hand/left/input/thumbstick/x");
+    BIND(g_stickXAction, "/user/hand/right/input/thumbstick/x");
+    BIND(g_stickYAction, "/user/hand/left/input/thumbstick/y");
+    BIND(g_stickYAction, "/user/hand/right/input/thumbstick/y");
     BIND(g_stickClickAction, "/user/hand/left/input/thumbstick/click");
     BIND(g_stickClickAction, "/user/hand/right/input/thumbstick/click");
     BIND(g_aAction, "/user/hand/right/input/a/click");
@@ -737,6 +746,9 @@ static int GetBool(XrAction action, int hand)
     return state.currentState ? 1 : 0;
 }
 
+static XrResult g_stickResult[2];
+static int g_stickActive[2];
+
 static XrVector2f GetVec2(XrAction action, int hand)
 {
     XrActionStateGetInfo info = { XR_TYPE_ACTION_STATE_GET_INFO };
@@ -745,10 +757,26 @@ static XrVector2f GetVec2(XrAction action, int hand)
 
     info.action = action;
     info.subactionPath = g_handPath[hand];
-    if (XR_FAILED(xrGetActionStateVector2f(g_session, &info, &state)) ||
-        !state.isActive)
+    g_stickResult[hand] = xrGetActionStateVector2f(g_session, &info, &state);
+    g_stickActive[hand] = state.isActive ? 1 : 0;
+    if (XR_FAILED(g_stickResult[hand]) || !state.isActive)
         return zero;
     return state.currentState;
+}
+
+/* Thumbstick: vector action, with the x/y float components as fallback. */
+static XrVector2f GetStick(int hand, XrVector2f *vectorValue,
+                           XrVector2f *componentValue)
+{
+    XrVector2f result;
+
+    *vectorValue = GetVec2(g_stickAction, hand);
+    componentValue->x = GetFloat(g_stickXAction, hand);
+    componentValue->y = GetFloat(g_stickYAction, hand);
+    result = *vectorValue;
+    if (result.x == 0.0f && result.y == 0.0f)
+        result = *componentValue;
+    return result;
 }
 
 static void ApplyHaptics(void)
@@ -885,8 +913,9 @@ static void UpdateInput(XrTime time, XrPosef *headPose, int headValid,
         xrSyncActions(g_session, &sync);
 
         {
-            XrVector2f left = GetVec2(g_stickAction, 0);
-            XrVector2f right = GetVec2(g_stickAction, 1);
+            XrVector2f lv, lc, rv, rc;
+            XrVector2f left = GetStick(0, &lv, &lc);
+            XrVector2f right = GetStick(1, &rv, &rc);
             c.leftStickX = left.x;
             c.leftStickY = left.y;
             c.rightStickX = right.x;
