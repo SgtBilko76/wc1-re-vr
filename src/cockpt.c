@@ -1072,12 +1072,12 @@ void fire_computer_graphic_missile(void)
 /* Function start: 0x414EA0 */
 void show_weapon_disp(void)
 {
+    signed char count;
     ShipWeaponSlot *weapons;
     ShipWeaponSlot *selectedWeapon;
     const char *releaseName;
     const char *gunName;
     enum ObjectType selectedGunType;
-    signed char count;
     short frame;
 
     selectedWeapon =
@@ -1842,8 +1842,8 @@ short decrement_lock_time(short screenX)
 void target_locking(signed char target)
 {
     enum ObjectType weaponType;
-    short y;
     short x;
+    short y;
     short countdown;
     int radiusSquared;
 

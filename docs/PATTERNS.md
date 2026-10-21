@@ -2664,3 +2664,42 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `c3c9bd31a7dc96bb10e78f5e67bb9fb4e79821192e398c1630e22dcc24d906de`.
+- `show_weapon_disp` declares its signed-byte loop counter before the other
+  locals. This restores the original `CMP BL,[0x0059CAB0]` and `JL` at the loop
+  tail, making the routine exact. `target_locking` declares `x` before `y`;
+  its squared-distance calculation then sign-extends the coordinates into
+  the original registers. No other cockpit report row changes. Moving the
+  squared-radius local through the declarations instead leaves that routine
+  unchanged.
+- `ship.c` and `brains.c` see `nYourWingman` after the targeting-state
+  declarations, immediately before `bEngageAllowed`. This makes
+  `send_appropriate_message` and `analyze_kill` exact, and reduces
+  `imperial_formation` from 107 differing encodings to three at its unchanged
+  span. `cruise_home` and `inflict_damage` each lose one differing encoding.
+  Moving the shared declaration for every unit instead regresses `try2rout`
+  and `new_space_music_changes`, so the retained order is specific to these
+  two owners. Storage, linkage, types, and the other owners' declaration
+  order stay unchanged. These are measured matching contexts, not recovered
+  original header text.
+  Moving the private maneuver-proximity limit among the existing file-scope
+  declarations does not repair `Mveer_away`; those probes are discarded.
+  Moving the sound owner's playing-list declaration to later type/prototype
+  boundaries likewise leaves its remaining comparison unchanged or regresses
+  the start/stop routines; the sound header is unchanged.
+  These are the only seven changed rows in the full report: normalized exact
+  functions rise from 1,331 to 1,335 out of 1,550, with fourteen size
+  differences remaining. Strict whole-file matching rises from 434,707 to
+  435,090 positions out of 518,656 (83.8141% to 83.8880%); 83,566 positions
+  still differ. No exact match is lost, and compilation-unit boundaries and
+  link order are unchanged.
+  Binary-comp comparisons of the raw PE sections, whose file offsets and
+  sizes agree, establish exact equality for `.rdata` (7,168 bytes), `.data`
+  (68,608), and `.idata` (4,096). The remaining differing file positions are
+  67,139 in `.text`, 16,425 in `.reloc`, and two in the headers. The final
+  106,040 raw bytes of `.text` already match continuously. These are literal
+  file comparisons, separate from normalized function matching.
+  The clean native and modern builds, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `ec32b209895cdaf557c9ad4cd678318167882616330a2b20faf5b55b6eec628b`.

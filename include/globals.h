@@ -175,7 +175,9 @@ extern short nEjectedPilotObject; /* 0x0046c044 */
 extern short nClosestVisibleObject; /* 0x0046c048 */
 extern short nPlayerCollisionObject; /* 0x0046c050 */
 extern enum ObjectType eSelectedGunType; /* 0x0046c054 */
+#if !defined(WC1_SHIP_SOURCE) && !defined(WC1_BRAINS_SOURCE)
 extern short nYourWingman; /* 0x0046c04c */
+#endif
 extern int nSelectedReleaseWeaponIndex; /* 0x0046c058 */
 extern short DAT_0046c05c; /* 0x0046c05c */
 extern short bTargetLockReadoutDirty; /* 0x0046c060 */
@@ -186,6 +188,10 @@ extern signed char cTargetDisplayObject; /* 0x0046c06c */
 extern int bTargetLockAcquired; /* 0x0046c074 */
 extern short nTargetLockMode; /* 0x0046c078 */
 extern int bMissileCameraEnabled; /* 0x0046c07c */
+#if defined(WC1_SHIP_SOURCE) || defined(WC1_BRAINS_SOURCE)
+/* These units need the wingman declaration after the targeting state. */
+extern short nYourWingman; /* 0x0046c04c */
+#endif
 extern int bEngageAllowed; /* 0x0046c080 */
 extern short nAutoEngageTimer; /* 0x0046c084 */
 extern MissionNavPoint aMissionNavPoints[MISSION_NAV_POINT_COUNT]; /* 0x0046c2f0 */

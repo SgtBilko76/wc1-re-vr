@@ -6,6 +6,7 @@
  *  Boundary evidence: the Mac `ship` symbols, initialize_object through
  *  your_afterburner, map in order onto this Win32 run.
  */
+#define WC1_SHIP_SOURCE
 #include "wc1.h"
 
 short asPlayerDamageSystemTable[50] = {
