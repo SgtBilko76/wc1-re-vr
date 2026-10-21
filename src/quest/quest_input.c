@@ -278,6 +278,71 @@ static int g_navPulse;
 static int g_prevPointerX = -1, g_prevPointerY = -1;
 static int g_prevPrimary, g_prevSecondary;
 
+/* Flight stick shaping (/sdcard/WingCommander/vr.cfg):
+ *   stick_deadzone=0.10   ignore small deflections (rescaled, no jump)
+ *   stick_expo=0.65       0 = linear, 1 = cubic: fine aim near centre,
+ *                         full deflection still gives the full turn rate
+ *   stick_sensitivity=1.0 overall scale for pitch / yaw / roll */
+static int g_stickConfigLoaded;
+static float g_stickDeadzone = 0.10f;
+static float g_stickExpo = 0.65f;
+static float g_stickSensitivity = 1.0f;
+
+static void LoadStickConfig(void)
+{
+    char *text;
+    size_t size = 0;
+
+    g_stickConfigLoaded = 1;
+    text = (char *)SDL_LoadFile("/sdcard/WingCommander/vr.cfg", &size);
+    if (text != 0) {
+        char *line = text;
+        char *end = text + size;
+
+        while (line < end) {
+            char buffer[128];
+            size_t n = 0;
+            float value;
+
+            while (line < end && *line != '\n' && n + 1 < sizeof(buffer))
+                buffer[n++] = *line++;
+            while (line < end && *line != '\n')
+                line++;
+            line++;
+            buffer[n] = 0;
+            if (sscanf(buffer, "stick_deadzone=%f", &value) == 1 &&
+                value >= 0.0f && value < 0.9f)
+                g_stickDeadzone = value;
+            else if (sscanf(buffer, "stick_expo=%f", &value) == 1 &&
+                     value >= 0.0f && value <= 1.0f)
+                g_stickExpo = value;
+            else if (sscanf(buffer, "stick_sensitivity=%f", &value) == 1 &&
+                     value > 0.05f && value <= 2.0f)
+                g_stickSensitivity = value;
+        }
+        SDL_free(text);
+    }
+    printf("stick config: deadzone %.2f expo %.2f sensitivity %.2f\n",
+           g_stickDeadzone, g_stickExpo, g_stickSensitivity);
+}
+
+static float ShapeStick(float v)
+{
+    float a, sign;
+
+    if (!g_stickConfigLoaded)
+        LoadStickConfig();
+    sign = v < 0.0f ? -1.0f : 1.0f;
+    a = v * sign;
+    if (a > 1.0f)
+        a = 1.0f;
+    if (a <= g_stickDeadzone)
+        return 0.0f;
+    a = (a - g_stickDeadzone) / (1.0f - g_stickDeadzone);
+    a = (1.0f - g_stickExpo) * a + g_stickExpo * a * a * a;
+    return sign * a * g_stickSensitivity;
+}
+
 static Sint16 AxisValue(float v)
 {
     if (v > 1.0f)
@@ -517,11 +582,11 @@ void SdlQuestServiceInput(void)
         SDL_zeroa(b);
         if (piloting) {
             SDL_JoystickSetVirtualAxis(pad, SDL_CONTROLLER_AXIS_LEFTX,
-                                       AxisValue(c.leftStickX));
+                                       AxisValue(ShapeStick(c.leftStickX)));
             SDL_JoystickSetVirtualAxis(pad, SDL_CONTROLLER_AXIS_LEFTY,
-                                       AxisValue(-c.leftStickY));
+                                       AxisValue(ShapeStick(-c.leftStickY)));
             SDL_JoystickSetVirtualAxis(pad, SDL_CONTROLLER_AXIS_RIGHTX,
-                                       AxisValue(c.rightStickX));
+                                       AxisValue(ShapeStick(c.rightStickX)));
             SDL_JoystickSetVirtualAxis(pad, SDL_CONTROLLER_AXIS_RIGHTY,
                                        AxisValue(-c.rightStickY));
             b[SDL_CONTROLLER_BUTTON_A] = phys[PHYS_RTRIG];

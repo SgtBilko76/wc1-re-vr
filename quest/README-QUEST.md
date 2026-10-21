@@ -107,3 +107,10 @@ console and what is canopy, so this works for every ship's cockpit. Outside the
 original art, the edges wrap around you and darken. `cockpit3d=0` brings back
 the flat panel; `cockpit_wrap=0` disables the wrap-around. `dash_distance=`
 scales the whole shell.
+
+## Flight stick tuning
+
+Pitch, yaw and roll go through a dead zone and an expo curve, for precise aim
+near the centre while full deflection keeps the full turn rate. Defaults are
+in `quest/vr.cfg.example` (copied to `/sdcard/WingCommander/vr.cfg`):
+`stick_sensitivity=1.0`, `stick_expo=0.65`, `stick_deadzone=0.10`.
