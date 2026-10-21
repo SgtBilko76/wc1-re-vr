@@ -140,14 +140,14 @@ unsigned int ShowCampaignVictorySequence(void)
     unsigned char *planetShape;
     unsigned char *projectileShape;
     const ShortVector *origin;
-    CampaignVictoryProjectile *projectile;
     short planetObject;
     short spawnCountdown;
     short vacant[2];
     short vacantCount;
     short textIndex;
     short slot;
-    volatile short frame;
+    CampaignVictoryProjectile *projectile;
+    short frame;
     short animationFrame;
     short elapsed;
     int planetScale;
@@ -183,14 +183,20 @@ unsigned int ShowCampaignVictorySequence(void)
     verticalOffset = -70000;
     nFrameSkipCounter = 1;
     do {
-        if (frame == 0)
+        switch (frame) {
+        case 0:
             textIndex = 0;
-        else if (frame == 100)
+            break;
+        case 100:
             textIndex = 1;
-        else if (frame == 180)
+            break;
+        case 180:
             textIndex = 2;
-        else
+            break;
+        default:
             textIndex = -1;
+            break;
+        }
         if (textIndex != -1) {
             ClearViewport(&stCurrentConvTextViewport,
                           cBlackColour);
@@ -286,7 +292,7 @@ unsigned int ShowCampaignVictorySequence(void)
                     &stSpaceBufferViewport, nCurrentViewCenterPosX,
                     (short)(nCurrentViewCenterPosY +
                             verticalOffset / planetDepth),
-                    planetShape, 0, 0, (short)planetScale, 0);
+                    projectileShape, 0, 0, (short)planetScale, 0);
                 verticalOffset += 200;
             }
             dump_buffer_to_screen();

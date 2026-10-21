@@ -2128,23 +2128,23 @@ int RunSpaceFlight(short entryNavPoint)
         }
         ReadPerformanceCounter(&liFlightFrameEndCounter);
         nFlightPresentDelta =
-            (int)(liFlightFrameEndCounter.LowPart -
-                  liFlightAfterCockpitCounter.LowPart);
+            (int)((unsigned int)liFlightFrameEndCounter.QuadPart -
+                  (unsigned int)liFlightAfterCockpitCounter.QuadPart);
         nHudDelta =
-            (int)(liFlightAfterCockpitCounter.LowPart -
-                  liRenderDoneCounter.LowPart);
+            (int)((unsigned int)liFlightAfterCockpitCounter.QuadPart -
+                  (unsigned int)liRenderDoneCounter.QuadPart);
         nDrawDelta =
-            (int)(liRenderDoneCounter.LowPart -
-                  liSimulationDone.LowPart);
+            (int)((unsigned int)liRenderDoneCounter.QuadPart -
+                  (unsigned int)liSimulationDone.QuadPart);
         nSimulationDelta =
-            (int)(liSimulationDone.LowPart -
-                  liFlightAfterInputCounter.LowPart);
+            (int)((unsigned int)liSimulationDone.QuadPart -
+                  (unsigned int)liFlightAfterInputCounter.QuadPart);
         nInputTicks =
-            (int)(liFlightAfterInputCounter.LowPart -
-                  liFrameStart.LowPart);
+            (int)((unsigned int)liFlightAfterInputCounter.QuadPart -
+                  (unsigned int)liFrameStart.QuadPart);
         nFlightFrameTicks =
-            (int)(liFlightFrameEndCounter.LowPart -
-                  liFrameStart.LowPart);
+            (int)((unsigned int)liFlightFrameEndCounter.QuadPart -
+                  (unsigned int)liFrameStart.QuadPart);
         nUnusedFlightProfileTicksA = 0;
         nUnusedFlightProfileTicksB = 0;
         nUnusedFlightProfileTicksC = 0;

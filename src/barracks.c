@@ -1015,12 +1015,12 @@ short BarracksScreen(void)
 {
     InputEventState event;
     BarracksAnimationState animation;
-    unsigned char *background;
     int lastMedalsTick;
     short clicked;
+    short result;
+    unsigned char *background;
     short eventType;
     short region;
-    short result;
 
     result = 0;
     lastMedalsTick = 0;

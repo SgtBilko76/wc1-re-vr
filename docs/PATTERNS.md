@@ -2994,3 +2994,69 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `119342bd62e36cf91eefacb0cec210b73a873f5214802b5210ac29c11cfb50de`.
+- `BarracksScreen` declares its scalar locals as `lastMedalsTick`, `clicked`,
+  `result`, `background`, `eventType`, and `region`, following its two records.
+  This restores the original allocation of the four values live across calls.
+  Its shared activation label and switch bodies remain unchanged. Mnemonic
+  similarity rises from 95.54% to 97.76%, differing encodings fall from 219
+  to 30, and raw matching rises from 93 to 831 of 928 bytes. Duplicating the
+  click assignment instead of sharing the label adds sixteen aligned bytes;
+  moving the cursor case does not help. Those switch probes are discarded.
+- `RunSpaceFlight` converts each timestamp's `QuadPart` to `unsigned int`
+  before subtracting it. This preserves the existing low-32-bit subtraction
+  and wrap behavior, while allowing CL to reuse the low words between the
+  six delta stores. Reading the `LowPart` union members separately instead
+  leaves six redundant absolute loads. The routine now has the original
+  74 address relocations, down from 80, with its 912-byte span unchanged.
+  Mnemonic similarity rises from 96.89% to 99.11%, differing encodings fall
+  from 77 to 61, and raw matching rises from 638 to 697 bytes. Plain local
+  captures do not recover this reuse and disturb the following cursor helper;
+  signed/unsigned-long casts and swapping the two existing locals do not
+  improve the retained result. These alternatives are discarded.
+- `ShowCampaignVictorySequence` selects subtitle indices through a switch
+  on its short frame counter, matching the original's single promoted read
+  and case branches. The former volatile qualification is unnecessary.
+  Its projectile pointer follows `slot` in the declarations, improving the
+  initialization and rendering loops' register allocation. The planet-overlay
+  draw uses `projectileShape`, the packet loaded from file 9, item 2: the
+  original pushes that pointer from ESI. `planetShape`, from item 3, remains
+  the shape passed to `CreateCannedSceneObject`. The earlier reconstruction
+  incorrectly passed that first pointer to the overlay as well.
+  Mnemonic similarity rises from 92.35% to 96.99%, differing encodings fall
+  from 314 to 154, and raw matching rises from 238 to 843 of 1,360 bytes.
+  Moving the other frame, shape and vacant-slot declarations does not improve
+  the retained result. These source forms reproduce observed code generation;
+  the original local names and declaration order are not established.
+  The flight and victory changes must be assessed together. In isolation
+  they lose 210 and 521 matching file positions respectively, despite
+  improving their instruction comparisons. Together they gain 1,277 because
+  relocation-block padding and offsets interact. Victory restores the
+  original 141/239 relocation counts on code pages `0x0042F000` and
+  `0x00430000`, versus 140/240 before. The final raw audit attributes all
+  1,402 additional matching code bytes to these three functions and another
+  652 to `.reloc`; `.rdata`, `.data` and `.idata` remain literally exact.
+  A separate relocation inventory identifies ten remaining core functions
+  with count differences: label placement, interactive calibration, shape
+  animation, missile-display animation, the two internal-damage routines,
+  player flight dynamics, flight controls, release-weapon selection, and
+  calibration-file loading. Counts guide investigation; binary-comp remains
+  the authority for matching. Snapshot typing, local scopes and viewport-
+  pointer captures in `InflightComputer` do not improve it. Mixed pointer
+  and indexed stores in label placement add sixteen bytes. Removing the
+  preferred-weapon search's redundant guard or comparing its index directly
+  leaves output unchanged; a qualified count reload makes it worse. These
+  probes are discarded.
+  Only these three rows change in the full report. Normalized exact functions
+  remain 1,338 of 1,550, with 205 same-size differences and seven size
+  differences. Mean mnemonic similarity rises to 99.65%; four functions
+  remain below 90%. All function spans and compilation-unit placements are
+  unchanged.
+  Strict whole-file matching rises by 2,054 positions, from 470,293 to
+  472,347 of 518,656 (90.6753% to 91.0713%); 46,309 positions still differ.
+  This counts equal positions throughout the file. The continuous matching
+  prefix remains 292 bytes, with the first difference at offset `0x124`.
+  Clean native and modern builds, source/address audits, the order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `8dd267a6c12c7eb1cf5ccf3c99005da27364beec689de21ca761fa2a122eeb0c`.
