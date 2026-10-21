@@ -15,10 +15,10 @@ void CalibrateJoystickInteractive()
     int failed;
     int fontLoaded;
     int horizontalRange;
-    int verticalRange;
+    int upScale;
     int leftScale;
     int rightScale;
-    int upScale;
+    int verticalRange;
     int downScale;
 
     fontLoaded = 0;

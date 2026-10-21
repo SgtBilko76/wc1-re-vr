@@ -167,12 +167,12 @@ void PlaceNavMapLabel(short x, short y, unsigned short colour,
 {
     short width;
     short offset;
+    NavMapLabel *label;
 
     width = (short)(strlen(text) * 4 + 2);
-    aNavMapLabels[
-        nNavMapLabelCount].colour = colour;
-    aNavMapLabels[
-        nNavMapLabelCount].text = text;
+    label = &aNavMapLabels[nNavMapLabelCount];
+    label->colour = colour;
+    label->text = text;
     offset = -1;
     do {
         offset++;

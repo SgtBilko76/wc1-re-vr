@@ -2703,3 +2703,30 @@ Shapes recovered with this method:
   with zero mismatches or skips; existing call/global-access diagnostics
   remain 11/56. The clean-build and post-verification hashes agree:
   `ec32b209895cdaf557c9ad4cd678318167882616330a2b20faf5b55b6eec628b`.
+- Recover the navigation and interactive-calibration spans together. A real
+  label pointer for `PlaceNavMapLabel`'s two initial stores restores its
+  336-byte span. Declaring `upScale` before `leftScale` and `verticalRange`
+  after `rightScale` restores `CalibrateJoystickInteractive`'s 1,040-byte
+  span. Their previous sixteen-byte errors canceled in the total code size
+  while displacing the code between them. This supersedes the earlier
+  decision to discard the label-pointer candidate in isolation.
+  The full report changes only these two routines and `DrawNavTriangleOutline`,
+  whose register choices gain ten differing encodings. Normalized exact
+  functions fall from 1,335 to 1,334 of 1,550, while size differences fall
+  from fourteen to twelve. Swapping placement's width/offset declarations,
+  or introducing a short or int label index at any of the three local
+  declaration positions, retains the size error; these probes are discarded.
+  Strict whole-file matching rises by 11,224 positions, from 435,090 to
+  446,314 of 518,656 (83.8880% to 86.0520%). The remaining 72,342 differences
+  comprise 56,212 in `.text`, 16,128 in `.reloc`, and two in the headers.
+  `.rdata`, `.data`, and `.idata` remain literally exact. The relocation
+  section's virtual-size excess falls from four bytes to two; raw section
+  sizes, compilation-unit ownership, and link order remain unchanged.
+  This percentage counts equal positions throughout the file: the continuous
+  matching prefix is only 292 bytes, with the first difference at offset
+  `0x124`. The final 106,040 raw bytes of `.text` still match continuously.
+  The clean native build, modern build, source/address audits, order report,
+  and full verification pass. Both value checks cover all 1,550 functions
+  with zero mismatches or skips; existing call/global-access diagnostics
+  remain 11/56. The clean-build and post-verification hashes agree:
+  `d58c403989c82c5d1f8991fb8d9b9110fe2a0759700b9a47e76514fd5da319fb`.
