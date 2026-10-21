@@ -156,15 +156,14 @@ void damage_ion_drive(short ship, short amount, short maximum)
 /* Function start: 0x4182F0 */
 int GetShipAccelerationRate(short ship)
 {
-    int shipIndex = (int)ship;
-    enum ObjectType objectType = aeObjectTypeList[shipIndex];
+    enum ObjectType objectType = aeObjectTypeList[ship];
     int acceleration = aObjectTypeData[objectType].acceleration;
 
-    if (ship < 10 && (acShipRating[shipIndex] > RATING_ACE_ICEMAN
+    if (ship < 10 && (acShipRating[ship] > RATING_ACE_ICEMAN
 #ifdef SDL_PORT
         /* SWC CODE_04 +0x1a10 also boosts ratings strictly between 0 and 8. */
-        || (SdlSwcFlightActive() && acShipRating[shipIndex] > 0 &&
-            acShipRating[shipIndex] < RATING_ACE_ICEMAN)
+        || (SdlSwcFlightActive() && acShipRating[ship] > 0 &&
+            acShipRating[ship] < RATING_ACE_ICEMAN)
 #endif
         ))
         return acceleration + acceleration / 3;
@@ -540,9 +539,9 @@ void vector_component_in_dir(const FixedVector *vector,
 /* Function start: 0x418BE0 */
 void rotate_about_i(short angle, FixedVector *j, FixedVector *k)
 {
-    int old;
     int cosine;
     int sine;
+    int old;
 
     cosine = CosFixed(angle);
     sine = SinFixed(angle);
@@ -580,9 +579,9 @@ void rotate_about_j(short angle, FixedVector *i, FixedVector *k)
 /* Function start: 0x418E40 */
 void rotate_about_k(short angle, FixedVector *i, FixedVector *j)
 {
-    int old;
-    int cosine;
     int sine;
+    int cosine;
+    int old;
 
     cosine = CosFixed(angle);
     sine = SinFixed(angle);

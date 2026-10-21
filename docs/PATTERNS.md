@@ -2538,3 +2538,33 @@ Shapes recovered with this method:
 - `DrawBarracksBunks` declares `frame` before `bunk`; the routine is exact once
   `barracks.c` reaches its original declaration count (probe offsets 17
   to 26).
+- `GetShipAccelerationRate` indexes the type and rating arrays with its short
+  `ship` parameter. The explicit promoted `shipIndex` temporary emitted no
+  additional instructions, but shifted the later geometry routines' symbol
+  indices. Removing it restores `equ_vector`'s comparison operands and
+  `rotate_about_j`'s register choices. Declare `cosine`, `sine`, `old` in
+  `rotate_about_i`, and `sine`, `cosine`, `old` in `rotate_about_k`; all three
+  rotations and the equality routine then compare exactly. The first
+  rotation recovers its four-byte frame and 288-byte span, eliminating
+  sixteen excess code bytes. All other geometry report rows are unchanged.
+  Keeping the promoted index and only permuting the three acceleration
+  locals leaves its five differing encodings unchanged. Removing both
+  the index and the object-type local disturbs the second rotation.
+  The complete report changes only these four rows: normalized exact
+  functions rise from 1,320 to 1,324 out of 1,550. The code section now
+  has the original 401,111 bytes, and the entry point is `0x0044E770`.
+  Binary-comp's strict whole-file comparison rises from 148,530 to
+  355,656 matching positions out of 518,656 (28.6375% to 68.5726%).
+  The remaining 163,000 differing positions include a relocation section
+  that is still four bytes too large; complete executable equality remains
+  incomplete.
+  A clean native build, modern build, source-order and address audits,
+  order report, and `make verify` pass. Both value checks cover 1,550
+  functions with zero mismatches or skips. The clean-build and final hashes
+  agree: `e25e0dd45e71cf29d12cf930c6e1c75fb0b557f900222f8560ef9eb9561df5e7`.
+- Reordering the first three terms of either IEEE-extended mantissa
+  expression in `IxSample::ix_sample_convert_from_ieee_extended` does not
+  change CL 4.20's operand order. All six orders per component retain ten
+  differing encodings in the actual 378-byte body. Use explicit ends at
+  `DirectSoundCreate` when checking it with binary-comp; the report's
+  documented 26-byte import-stub excess is unrelated to those differences.
