@@ -1,4 +1,4 @@
-# Wing Commander VR (Meta Quest 3) — 1.0.0
+# Wing Commander VR (Meta Quest 3 and PICO) — 1.0.1
 
 Standalone Quest build of the wc1-re reconstruction (SDL2 port of the 1990 DOS
 original).  Space flight is in stereo 3D with head-look: ships are placed at
@@ -13,7 +13,7 @@ The game data is **not** included; you need your own copy of the DOS game
 ## Install
 
 1. Install the APK (SideQuest, or):
-   `adb install -r WingCommanderVR-1.0.0.apk`
+   `adb install -r WingCommanderVR-1.0.1.apk`
 2. Copy the game data. Use the GOG *Wing Commander* (DOS) installer and unpack
    it on the PC, e.g. `innoextract setup_wing_commander_1.0_(28045).exe`.
    Copy `WC.EXE` and the whole `GAMEDAT` folder to the headset:
@@ -26,6 +26,15 @@ The game data is **not** included; you need your own copy of the DOS game
    start, allow "Access to all files" when asked (or:
    `adb shell appops set com.bilko.wc1vr MANAGE_EXTERNAL_STORAGE allow`).
    A red screen means the game data was not found.
+
+### PICO (untested)
+
+The same APK also runs on PICO 4 / Neo 3 (PICO OS 5.9.0 or
+newer): the PICO controllers use the same button layout as the Touch
+controllers below.  PICO support is new and not tested on PICO hardware yet.
+Install with `adb install -r WingCommanderVR-1.0.1.apk` (or the PICO file manager), copy
+the game data to `/sdcard/WingCommander` the same way, and allow storage access when
+the app asks on the first start (it restarts by itself afterwards).
 
 Saved games and pilot rosters are written to `/sdcard/WingCommander/GAMEDAT`
 as in the DOS game.
