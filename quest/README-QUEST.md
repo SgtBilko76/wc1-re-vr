@@ -41,6 +41,8 @@ as in the DOS game.
 
 ## Controls
 
+![Wing Commander VR controller mapping](../docs/controls.webp)
+
 **Menus, rooms and briefings** (laser beam from the controller):
 
 | Control | Action |
