@@ -1,5 +1,7 @@
 # Wing Commander VR (Meta Quest 3 and PICO) — 1.0.1
 
+**Download, install guide, controls and pictures: [portroyale.online/wingcommander.html](https://portroyale.online/wingcommander.html)**
+
 Standalone Quest build of the wc1-re reconstruction (SDL2 port of the 1990 DOS
 original).  Space flight is in stereo 3D with head-look: ships are placed at
 their real depth, stars sit at infinity, and the original cockpit art is wrapped
